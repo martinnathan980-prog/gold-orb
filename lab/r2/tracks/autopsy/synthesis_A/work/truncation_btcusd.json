@@ -1,0 +1,16 @@
+{
+ "written": "2026-11-12T15:18:35Z",
+ "sym": "btcusd",
+ "brk72_24h_wd:btcusd": {
+  "variant": "S0.75r",
+  "sampled_acting": 15,
+  "sampled_other": 15,
+  "a_tested": 30,
+  "a_identical": 30,
+  "b_tested": 30,
+  "b_identical": 30,
+  "c_tested": 0,
+  "c_identical": 0,
+  "mismatches": []
+ }
+}

@@ -1,0 +1,1150 @@
+{
+ "what": "Lens `weights`: diagnostics of the 15 evaluated variants (description only: no new stake rule is evaluated).\nIN SAMPLE ONLY.",
+ "mv_fold_ratios_U10_fp": {
+  "2018": {
+   "ocm4": {
+    "mu_week": 0.4029,
+    "sd_week": 2.4687,
+    "r_mu_over_s2": 0.0661,
+    "q_normalised": 0.282,
+    "r_inv_s": 0.4051
+   },
+   "noise30": {
+    "mu_week": 0.2332,
+    "sd_week": 1.9294,
+    "r_mu_over_s2": 0.0626,
+    "q_normalised": 0.268,
+    "r_inv_s": 0.5183
+   },
+   "donch4h": {
+    "mu_week": 0.1759,
+    "sd_week": 1.1944,
+    "r_mu_over_s2": 0.1233,
+    "q_normalised": 0.527,
+    "r_inv_s": 0.8373
+   },
+   "orb_gold": {
+    "mu_week": 0.7119,
+    "sd_week": 3.6443,
+    "r_mu_over_s2": 0.0536,
+    "q_normalised": 0.229,
+    "r_inv_s": 0.2744
+   },
+   "gold_fri": {
+    "mu_week": 0.0624,
+    "sd_week": 0.2491,
+    "r_mu_over_s2": 1.0056,
+    "q_normalised": 4.296,
+    "r_inv_s": 4.0152
+   },
+   "brk72_btc": {
+    "mu_week": 0.9659,
+    "sd_week": 2.5739,
+    "r_mu_over_s2": 0.1458,
+    "q_normalised": 0.623,
+    "r_inv_s": 0.3885
+   },
+   "F1_btc": {
+    "mu_week": 1.2584,
+    "sd_week": 2.2208,
+    "r_mu_over_s2": 0.2552,
+    "q_normalised": 1.09,
+    "r_inv_s": 0.4503
+   },
+   "nq_btc": {
+    "mu_week": 0.3901,
+    "sd_week": 1.5595,
+    "r_mu_over_s2": 0.1604,
+    "q_normalised": 0.685,
+    "r_inv_s": 0.6412
+   },
+   "_mean_r": 0.2341,
+   "_mean_r_without_gold_fri": 0.1239
+  },
+  "2019": {
+   "ocm4": {
+    "mu_week": 0.3849,
+    "sd_week": 2.3569,
+    "r_mu_over_s2": 0.0693,
+    "q_normalised": 0.393,
+    "r_inv_s": 0.4243
+   },
+   "noise30": {
+    "mu_week": 0.3315,
+    "sd_week": 1.9376,
+    "r_mu_over_s2": 0.0883,
+    "q_normalised": 0.501,
+    "r_inv_s": 0.5161
+   },
+   "donch4h": {
+    "mu_week": 0.1692,
+    "sd_week": 1.1678,
+    "r_mu_over_s2": 0.1241,
+    "q_normalised": 0.704,
+    "r_inv_s": 0.8563
+   },
+   "orb_gold": {
+    "mu_week": 0.5596,
+    "sd_week": 3.5537,
+    "r_mu_over_s2": 0.0443,
+    "q_normalised": 0.251,
+    "r_inv_s": 0.2814
+   },
+   "gold_fri": {
+    "mu_week": 0.0499,
+    "sd_week": 0.2515,
+    "r_mu_over_s2": 0.7884,
+    "q_normalised": 4.472,
+    "r_inv_s": 3.9767
+   },
+   "brk72_btc": {
+    "mu_week": 0.8418,
+    "sd_week": 2.4502,
+    "r_mu_over_s2": 0.1402,
+    "q_normalised": 0.795,
+    "r_inv_s": 0.4081
+   },
+   "brk72_eth": {
+    "mu_week": 1.1317,
+    "sd_week": 2.2736,
+    "r_mu_over_s2": 0.2189,
+    "q_normalised": 1.242,
+    "r_inv_s": 0.4398
+   },
+   "F1_btc": {
+    "mu_week": 1.3705,
+    "sd_week": 3.4788,
+    "r_mu_over_s2": 0.1132,
+    "q_normalised": 0.642,
+    "r_inv_s": 0.2875
+   },
+   "F1_eth": {
+    "mu_week": 1.0261,
+    "sd_week": 2.5943,
+    "r_mu_over_s2": 0.1525,
+    "q_normalised": 0.865,
+    "r_inv_s": 0.3855
+   },
+   "nq_btc": {
+    "mu_week": 0.0438,
+    "sd_week": 1.3535,
+    "r_mu_over_s2": 0.0239,
+    "q_normalised": 0.136,
+    "r_inv_s": 0.7388
+   },
+   "_mean_r": 0.1763,
+   "_mean_r_without_gold_fri": 0.1083
+  },
+  "2020": {
+   "ocm4": {
+    "mu_week": 0.3517,
+    "sd_week": 2.2833,
+    "r_mu_over_s2": 0.0675,
+    "q_normalised": 0.476,
+    "r_inv_s": 0.438
+   },
+   "noise30": {
+    "mu_week": 0.2893,
+    "sd_week": 1.863,
+    "r_mu_over_s2": 0.0833,
+    "q_normalised": 0.588,
+    "r_inv_s": 0.5368
+   },
+   "donch4h": {
+    "mu_week": 0.1562,
+    "sd_week": 1.1754,
+    "r_mu_over_s2": 0.1131,
+    "q_normalised": 0.798,
+    "r_inv_s": 0.8508
+   },
+   "orb_gold": {
+    "mu_week": 0.5332,
+    "sd_week": 3.4442,
+    "r_mu_over_s2": 0.0449,
+    "q_normalised": 0.317,
+    "r_inv_s": 0.2903
+   },
+   "gold_fri": {
+    "mu_week": 0.0383,
+    "sd_week": 0.2506,
+    "r_mu_over_s2": 0.6104,
+    "q_normalised": 4.307,
+    "r_inv_s": 3.9906
+   },
+   "brk72_btc": {
+    "mu_week": 0.8401,
+    "sd_week": 3.1327,
+    "r_mu_over_s2": 0.0856,
+    "q_normalised": 0.604,
+    "r_inv_s": 0.3192
+   },
+   "brk72_eth": {
+    "mu_week": 0.6775,
+    "sd_week": 1.9936,
+    "r_mu_over_s2": 0.1704,
+    "q_normalised": 1.203,
+    "r_inv_s": 0.5016
+   },
+   "F1_btc": {
+    "mu_week": 1.3513,
+    "sd_week": 3.5371,
+    "r_mu_over_s2": 0.108,
+    "q_normalised": 0.762,
+    "r_inv_s": 0.2827
+   },
+   "F1_eth": {
+    "mu_week": 0.7771,
+    "sd_week": 2.2394,
+    "r_mu_over_s2": 0.155,
+    "q_normalised": 1.093,
+    "r_inv_s": 0.4466
+   },
+   "nq_btc": {
+    "mu_week": -0.0298,
+    "sd_week": 1.1891,
+    "r_mu_over_s2": -0.0211,
+    "q_normalised": -0.149,
+    "r_inv_s": 0.8409
+   },
+   "_mean_r": 0.1417,
+   "_mean_r_without_gold_fri": 0.0896
+  },
+  "2021": {
+   "ocm4": {
+    "mu_week": 0.3259,
+    "sd_week": 2.25,
+    "r_mu_over_s2": 0.0644,
+    "q_normalised": 0.426,
+    "r_inv_s": 0.4444
+   },
+   "noise30": {
+    "mu_week": 0.3113,
+    "sd_week": 1.8481,
+    "r_mu_over_s2": 0.0911,
+    "q_normalised": 0.603,
+    "r_inv_s": 0.5411
+   },
+   "donch4h": {
+    "mu_week": 0.1889,
+    "sd_week": 1.2002,
+    "r_mu_over_s2": 0.1311,
+    "q_normalised": 0.867,
+    "r_inv_s": 0.8332
+   },
+   "orb_gold": {
+    "mu_week": 0.5627,
+    "sd_week": 3.4352,
+    "r_mu_over_s2": 0.0477,
+    "q_normalised": 0.315,
+    "r_inv_s": 0.2911
+   },
+   "gold_fri": {
+    "mu_week": 0.0352,
+    "sd_week": 0.2452,
+    "r_mu_over_s2": 0.5852,
+    "q_normalised": 3.87,
+    "r_inv_s": 4.0791
+   },
+   "brk72_btc": {
+    "mu_week": 0.874,
+    "sd_week": 2.9673,
+    "r_mu_over_s2": 0.0993,
+    "q_normalised": 0.656,
+    "r_inv_s": 0.337
+   },
+   "brk72_eth": {
+    "mu_week": 0.6742,
+    "sd_week": 2.0889,
+    "r_mu_over_s2": 0.1545,
+    "q_normalised": 1.022,
+    "r_inv_s": 0.4787
+   },
+   "F1_btc": {
+    "mu_week": 1.218,
+    "sd_week": 3.2171,
+    "r_mu_over_s2": 0.1177,
+    "q_normalised": 0.778,
+    "r_inv_s": 0.3108
+   },
+   "F1_eth": {
+    "mu_week": 0.643,
+    "sd_week": 2.2125,
+    "r_mu_over_s2": 0.1314,
+    "q_normalised": 0.869,
+    "r_inv_s": 0.452
+   },
+   "nq_btc": {
+    "mu_week": 0.1419,
+    "sd_week": 1.2557,
+    "r_mu_over_s2": 0.09,
+    "q_normalised": 0.595,
+    "r_inv_s": 0.7964
+   },
+   "_mean_r": 0.1512,
+   "_mean_r_without_gold_fri": 0.103
+  }
+ },
+ "attribution_U10_fp_2019_2021": {
+  "IV00": {
+   "k": 1.9932,
+   "portfolio_mean_week_ref": 3.5403,
+   "portfolio_mean_week_var": 3.7504,
+   "sd_week": 9.3003,
+   "by_sleeve": {
+    "ocm4": {
+     "mean_week_ref": 0.2536,
+     "mean_week_var": 0.2605,
+     "var_share_ref": 0.0742,
+     "var_share_var": 0.0858,
+     "sharpe_week_ann_alone": 0.834
+    },
+    "noise30": {
+     "mean_week_ref": 0.2844,
+     "mean_week_var": 0.3579,
+     "var_share_ref": 0.0464,
+     "var_share_var": 0.0747,
+     "sharpe_week_ann_alone": 1.368
+    },
+    "donch4h": {
+     "mean_week_ref": 0.1918,
+     "mean_week_var": 0.3829,
+     "var_share_ref": 0.0577,
+     "var_share_var": 0.1365,
+     "sharpe_week_ann_alone": 1.025
+    },
+    "orb_gold": {
+     "mean_week_ref": 0.3438,
+     "mean_week_var": 0.2334,
+     "var_share_ref": 0.1882,
+     "var_share_var": 0.1191,
+     "sharpe_week_ann_alone": 0.788
+    },
+    "gold_fri": {
+     "mean_week_ref": -0.0104,
+     "mean_week_var": -0.0414,
+     "var_share_ref": 0.0028,
+     "var_share_var": 0.0174,
+     "sharpe_week_ann_alone": -0.369
+    },
+    "brk72_btc": {
+     "mean_week_ref": 0.6657,
+     "mean_week_var": 0.566,
+     "var_share_ref": 0.1733,
+     "var_share_var": 0.1326,
+     "sharpe_week_ann_alone": 1.671
+    },
+    "brk72_eth": {
+     "mean_week_ref": 0.3126,
+     "mean_week_var": 0.3585,
+     "var_share_ref": 0.1143,
+     "var_share_var": 0.1179,
+     "sharpe_week_ann_alone": 1.217
+    },
+    "F1_btc": {
+     "mean_week_ref": 0.7359,
+     "mean_week_var": 0.4998,
+     "var_share_ref": 0.192,
+     "var_share_var": 0.1116,
+     "sharpe_week_ann_alone": 1.979
+    },
+    "F1_eth": {
+     "mean_week_ref": 0.3581,
+     "mean_week_var": 0.3559,
+     "var_share_ref": 0.1285,
+     "var_share_var": 0.1221,
+     "sharpe_week_ann_alone": 1.381
+    },
+    "nq_btc": {
+     "mean_week_ref": 0.4047,
+     "mean_week_var": 0.777,
+     "var_share_ref": 0.0227,
+     "var_share_var": 0.0823,
+     "sharpe_week_ann_alone": 2.117
+    }
+   }
+  },
+  "IV50": {
+   "k": 1.3365,
+   "portfolio_mean_week_ref": 3.5403,
+   "portfolio_mean_week_var": 3.6163,
+   "sd_week": 9.3003,
+   "by_sleeve": {
+    "ocm4": {
+     "mean_week_ref": 0.2536,
+     "mean_week_var": 0.2568,
+     "var_share_ref": 0.0742,
+     "var_share_var": 0.0785,
+     "sharpe_week_ann_alone": 0.834
+    },
+    "noise30": {
+     "mean_week_ref": 0.2844,
+     "mean_week_var": 0.3101,
+     "var_share_ref": 0.0464,
+     "var_share_var": 0.0558,
+     "sharpe_week_ann_alone": 1.368
+    },
+    "donch4h": {
+     "mean_week_ref": 0.1918,
+     "mean_week_var": 0.2565,
+     "var_share_ref": 0.0577,
+     "var_share_var": 0.0822,
+     "sharpe_week_ann_alone": 1.025
+    },
+    "orb_gold": {
+     "mean_week_ref": 0.3438,
+     "mean_week_var": 0.308,
+     "var_share_ref": 0.1882,
+     "var_share_var": 0.1655,
+     "sharpe_week_ann_alone": 0.788
+    },
+    "gold_fri": {
+     "mean_week_ref": -0.0104,
+     "mean_week_var": -0.0278,
+     "var_share_ref": 0.0028,
+     "var_share_var": 0.0098,
+     "sharpe_week_ann_alone": -0.369
+    },
+    "brk72_btc": {
+     "mean_week_ref": 0.6657,
+     "mean_week_var": 0.6346,
+     "var_share_ref": 0.1733,
+     "var_share_var": 0.1603,
+     "sharpe_week_ann_alone": 1.671
+    },
+    "brk72_eth": {
+     "mean_week_ref": 0.3126,
+     "mean_week_var": 0.3291,
+     "var_share_ref": 0.1143,
+     "var_share_var": 0.1169,
+     "sharpe_week_ann_alone": 1.217
+    },
+    "F1_btc": {
+     "mean_week_ref": 0.7359,
+     "mean_week_var": 0.6593,
+     "var_share_ref": 0.192,
+     "var_share_var": 0.1646,
+     "sharpe_week_ann_alone": 1.979
+    },
+    "F1_eth": {
+     "mean_week_ref": 0.3581,
+     "mean_week_var": 0.3586,
+     "var_share_ref": 0.1285,
+     "var_share_var": 0.1273,
+     "sharpe_week_ann_alone": 1.381
+    },
+    "nq_btc": {
+     "mean_week_ref": 0.4047,
+     "mean_week_var": 0.531,
+     "var_share_ref": 0.0227,
+     "var_share_var": 0.0391,
+     "sharpe_week_ann_alone": 2.117
+    }
+   }
+  },
+  "MV50": {
+   "k": 1.1778,
+   "portfolio_mean_week_ref": 3.5403,
+   "portfolio_mean_week_var": 3.4306,
+   "sd_week": 9.3003,
+   "by_sleeve": {
+    "ocm4": {
+     "mean_week_ref": 0.2536,
+     "mean_week_var": 0.2115,
+     "var_share_ref": 0.0742,
+     "var_share_var": 0.0558,
+     "sharpe_week_ann_alone": 0.834
+    },
+    "noise30": {
+     "mean_week_ref": 0.2844,
+     "mean_week_var": 0.2668,
+     "var_share_ref": 0.0464,
+     "var_share_var": 0.0383,
+     "sharpe_week_ann_alone": 1.368
+    },
+    "donch4h": {
+     "mean_week_ref": 0.1918,
+     "mean_week_var": 0.2024,
+     "var_share_ref": 0.0577,
+     "var_share_var": 0.0546,
+     "sharpe_week_ann_alone": 1.025
+    },
+    "orb_gold": {
+     "mean_week_ref": 0.3438,
+     "mean_week_var": 0.2622,
+     "var_share_ref": 0.1882,
+     "var_share_var": 0.1309,
+     "sharpe_week_ann_alone": 0.788
+    },
+    "gold_fri": {
+     "mean_week_ref": -0.0104,
+     "mean_week_var": -0.0245,
+     "var_share_ref": 0.0028,
+     "var_share_var": 0.0084,
+     "sharpe_week_ann_alone": -0.369
+    },
+    "brk72_btc": {
+     "mean_week_ref": 0.6657,
+     "mean_week_var": 0.6629,
+     "var_share_ref": 0.1733,
+     "var_share_var": 0.1861,
+     "sharpe_week_ann_alone": 1.671
+    },
+    "brk72_eth": {
+     "mean_week_ref": 0.3126,
+     "mean_week_var": 0.406,
+     "var_share_ref": 0.1143,
+     "var_share_var": 0.1638,
+     "sharpe_week_ann_alone": 1.217
+    },
+    "F1_btc": {
+     "mean_week_ref": 0.7359,
+     "mean_week_var": 0.7344,
+     "var_share_ref": 0.192,
+     "var_share_var": 0.1961,
+     "sharpe_week_ann_alone": 1.979
+    },
+    "F1_eth": {
+     "mean_week_ref": 0.3581,
+     "mean_week_var": 0.4055,
+     "var_share_ref": 0.1285,
+     "var_share_var": 0.1551,
+     "sharpe_week_ann_alone": 1.381
+    },
+    "nq_btc": {
+     "mean_week_ref": 0.4047,
+     "mean_week_var": 0.3033,
+     "var_share_ref": 0.0227,
+     "var_share_var": 0.011,
+     "sharpe_week_ann_alone": 2.117
+    }
+   }
+  },
+  "Z24": {
+   "k": 1.0673,
+   "portfolio_mean_week_ref": 3.5403,
+   "portfolio_mean_week_var": 3.3953,
+   "sd_week": 9.3003,
+   "by_sleeve": {
+    "ocm4": {
+     "mean_week_ref": 0.2536,
+     "mean_week_var": 0.2707,
+     "var_share_ref": 0.0742,
+     "var_share_var": 0.0864,
+     "sharpe_week_ann_alone": 0.834
+    },
+    "noise30": {
+     "mean_week_ref": 0.2844,
+     "mean_week_var": 0.3035,
+     "var_share_ref": 0.0464,
+     "var_share_var": 0.0525,
+     "sharpe_week_ann_alone": 1.368
+    },
+    "donch4h": {
+     "mean_week_ref": 0.1918,
+     "mean_week_var": 0.2047,
+     "var_share_ref": 0.0577,
+     "var_share_var": 0.0531,
+     "sharpe_week_ann_alone": 1.025
+    },
+    "orb_gold": {
+     "mean_week_ref": 0.3438,
+     "mean_week_var": 0.0914,
+     "var_share_ref": 0.1882,
+     "var_share_var": 0.1352,
+     "sharpe_week_ann_alone": 0.788
+    },
+    "gold_fri": {
+     "mean_week_ref": -0.0104,
+     "mean_week_var": -0.0187,
+     "var_share_ref": 0.0028,
+     "var_share_var": 0.0028,
+     "sharpe_week_ann_alone": -0.369
+    },
+    "brk72_btc": {
+     "mean_week_ref": 0.6657,
+     "mean_week_var": 0.7105,
+     "var_share_ref": 0.1733,
+     "var_share_var": 0.1886,
+     "sharpe_week_ann_alone": 1.671
+    },
+    "brk72_eth": {
+     "mean_week_ref": 0.3126,
+     "mean_week_var": 0.3336,
+     "var_share_ref": 0.1143,
+     "var_share_var": 0.1261,
+     "sharpe_week_ann_alone": 1.217
+    },
+    "F1_btc": {
+     "mean_week_ref": 0.7359,
+     "mean_week_var": 0.7854,
+     "var_share_ref": 0.192,
+     "var_share_var": 0.2076,
+     "sharpe_week_ann_alone": 1.979
+    },
+    "F1_eth": {
+     "mean_week_ref": 0.3581,
+     "mean_week_var": 0.3822,
+     "var_share_ref": 0.1285,
+     "var_share_var": 0.1371,
+     "sharpe_week_ann_alone": 1.381
+    },
+    "nq_btc": {
+     "mean_week_ref": 0.4047,
+     "mean_week_var": 0.3319,
+     "var_share_ref": 0.0227,
+     "var_share_var": 0.0106,
+     "sharpe_week_ann_alone": 2.117
+    }
+   }
+  },
+  "D5": {
+   "k": 0.9936,
+   "portfolio_mean_week_ref": 3.5403,
+   "portfolio_mean_week_var": 3.4744,
+   "sd_week": 9.3003,
+   "by_sleeve": {
+    "ocm4": {
+     "mean_week_ref": 0.2536,
+     "mean_week_var": 0.223,
+     "var_share_ref": 0.0742,
+     "var_share_var": 0.0728,
+     "sharpe_week_ann_alone": 0.834
+    },
+    "noise30": {
+     "mean_week_ref": 0.2844,
+     "mean_week_var": 0.236,
+     "var_share_ref": 0.0464,
+     "var_share_var": 0.0345,
+     "sharpe_week_ann_alone": 1.368
+    },
+    "donch4h": {
+     "mean_week_ref": 0.1918,
+     "mean_week_var": 0.1539,
+     "var_share_ref": 0.0577,
+     "var_share_var": 0.0499,
+     "sharpe_week_ann_alone": 1.025
+    },
+    "orb_gold": {
+     "mean_week_ref": 0.3438,
+     "mean_week_var": 0.3162,
+     "var_share_ref": 0.1882,
+     "var_share_var": 0.1748,
+     "sharpe_week_ann_alone": 0.788
+    },
+    "gold_fri": {
+     "mean_week_ref": -0.0104,
+     "mean_week_var": -0.012,
+     "var_share_ref": 0.0028,
+     "var_share_var": 0.0016,
+     "sharpe_week_ann_alone": -0.369
+    },
+    "brk72_btc": {
+     "mean_week_ref": 0.6657,
+     "mean_week_var": 0.7605,
+     "var_share_ref": 0.1733,
+     "var_share_var": 0.2207,
+     "sharpe_week_ann_alone": 1.671
+    },
+    "brk72_eth": {
+     "mean_week_ref": 0.3126,
+     "mean_week_var": 0.3212,
+     "var_share_ref": 0.1143,
+     "var_share_var": 0.1299,
+     "sharpe_week_ann_alone": 1.217
+    },
+    "F1_btc": {
+     "mean_week_ref": 0.7359,
+     "mean_week_var": 0.7193,
+     "var_share_ref": 0.192,
+     "var_share_var": 0.186,
+     "sharpe_week_ann_alone": 1.979
+    },
+    "F1_eth": {
+     "mean_week_ref": 0.3581,
+     "mean_week_var": 0.3414,
+     "var_share_ref": 0.1285,
+     "var_share_var": 0.1152,
+     "sharpe_week_ann_alone": 1.381
+    },
+    "nq_btc": {
+     "mean_week_ref": 0.4047,
+     "mean_week_var": 0.415,
+     "var_share_ref": 0.0227,
+     "var_share_var": 0.0146,
+     "sharpe_week_ann_alone": 2.117
+    }
+   }
+  },
+  "D7": {
+   "k": 0.9351,
+   "portfolio_mean_week_ref": 3.5403,
+   "portfolio_mean_week_var": 3.2533,
+   "sd_week": 9.3003,
+   "by_sleeve": {
+    "ocm4": {
+     "mean_week_ref": 0.2536,
+     "mean_week_var": 0.1956,
+     "var_share_ref": 0.0742,
+     "var_share_var": 0.0451,
+     "sharpe_week_ann_alone": 0.834
+    },
+    "noise30": {
+     "mean_week_ref": 0.2844,
+     "mean_week_var": 0.1921,
+     "var_share_ref": 0.0464,
+     "var_share_var": 0.0227,
+     "sharpe_week_ann_alone": 1.368
+    },
+    "donch4h": {
+     "mean_week_ref": 0.1918,
+     "mean_week_var": 0.1646,
+     "var_share_ref": 0.0577,
+     "var_share_var": 0.0488,
+     "sharpe_week_ann_alone": 1.025
+    },
+    "orb_gold": {
+     "mean_week_ref": 0.3438,
+     "mean_week_var": 0.3211,
+     "var_share_ref": 0.1882,
+     "var_share_var": 0.2042,
+     "sharpe_week_ann_alone": 0.788
+    },
+    "gold_fri": {
+     "mean_week_ref": -0.0104,
+     "mean_week_var": -0.0055,
+     "var_share_ref": 0.0028,
+     "var_share_var": 0.0013,
+     "sharpe_week_ann_alone": -0.369
+    },
+    "brk72_btc": {
+     "mean_week_ref": 0.6657,
+     "mean_week_var": 0.8017,
+     "var_share_ref": 0.1733,
+     "var_share_var": 0.2288,
+     "sharpe_week_ann_alone": 1.671
+    },
+    "brk72_eth": {
+     "mean_week_ref": 0.3126,
+     "mean_week_var": 0.3504,
+     "var_share_ref": 0.1143,
+     "var_share_var": 0.1428,
+     "sharpe_week_ann_alone": 1.217
+    },
+    "F1_btc": {
+     "mean_week_ref": 0.7359,
+     "mean_week_var": 0.6881,
+     "var_share_ref": 0.192,
+     "var_share_var": 0.1812,
+     "sharpe_week_ann_alone": 1.979
+    },
+    "F1_eth": {
+     "mean_week_ref": 0.3581,
+     "mean_week_var": 0.3349,
+     "var_share_ref": 0.1285,
+     "var_share_var": 0.1209,
+     "sharpe_week_ann_alone": 1.381
+    },
+    "nq_btc": {
+     "mean_week_ref": 0.4047,
+     "mean_week_var": 0.2103,
+     "var_share_ref": 0.0227,
+     "var_share_var": 0.0042,
+     "sharpe_week_ann_alone": 2.117
+    }
+   }
+  }
+ },
+ "z_skipped_U10_fp": {
+  "Z12": {
+   "total_trades_at_0": 470,
+   "R_of_skipped": 41.07,
+   "by_sleeve_year": {
+    "ocm4": {
+     "2019": {
+      "trades_at_0": 10,
+      "of": 123,
+      "R_of_skipped": 0.88
+     },
+     "2021": {
+      "trades_at_0": 35,
+      "of": 130,
+      "R_of_skipped": 3.76
+     }
+    },
+    "donch4h": {
+     "2019": {
+      "trades_at_0": 3,
+      "of": 51,
+      "R_of_skipped": 4.14
+     }
+    },
+    "orb_gold": {
+     "2019": {
+      "trades_at_0": 44,
+      "of": 113,
+      "R_of_skipped": 21.17
+     },
+     "2021": {
+      "trades_at_0": 3,
+      "of": 126,
+      "R_of_skipped": -3.09
+     }
+    },
+    "gold_fri": {
+     "2019": {
+      "trades_at_0": 28,
+      "of": 47,
+      "R_of_skipped": -0.07
+     },
+     "2020": {
+      "trades_at_0": 11,
+      "of": 46,
+      "R_of_skipped": 1.09
+     },
+     "2021": {
+      "trades_at_0": 19,
+      "of": 46,
+      "R_of_skipped": -1.11
+     }
+    },
+    "brk72_eth": {
+     "2021": {
+      "trades_at_0": 3,
+      "of": 146,
+      "R_of_skipped": -0.12
+     }
+    },
+    "F1_btc": {
+     "2021": {
+      "trades_at_0": 12,
+      "of": 147,
+      "R_of_skipped": 3.58
+     }
+    },
+    "F1_eth": {
+     "2021": {
+      "trades_at_0": 30,
+      "of": 136,
+      "R_of_skipped": 7.63
+     }
+    },
+    "nq_btc": {
+     "2019": {
+      "trades_at_0": 199,
+      "of": 199,
+      "R_of_skipped": -5.93
+     },
+     "2020": {
+      "trades_at_0": 73,
+      "of": 232,
+      "R_of_skipped": 9.13
+     }
+    }
+   }
+  },
+  "Z24": {
+   "total_trades_at_0": 459,
+   "R_of_skipped": 56.35,
+   "by_sleeve_year": {
+    "orb_gold": {
+     "2019": {
+      "trades_at_0": 94,
+      "of": 113,
+      "R_of_skipped": 25.15
+     },
+     "2020": {
+      "trades_at_0": 29,
+      "of": 109,
+      "R_of_skipped": 15.37
+     }
+    },
+    "gold_fri": {
+     "2019": {
+      "trades_at_0": 42,
+      "of": 47,
+      "R_of_skipped": -0.62
+     },
+     "2020": {
+      "trades_at_0": 17,
+      "of": 46,
+      "R_of_skipped": 1.25
+     },
+     "2021": {
+      "trades_at_0": 9,
+      "of": 46,
+      "R_of_skipped": 0.49
+     }
+    },
+    "nq_btc": {
+     "2019": {
+      "trades_at_0": 115,
+      "of": 199,
+      "R_of_skipped": 0.21
+     },
+     "2020": {
+      "trades_at_0": 153,
+      "of": 232,
+      "R_of_skipped": 14.5
+     }
+    }
+   }
+  },
+  "Z36": {
+   "total_trades_at_0": 229,
+   "R_of_skipped": 24.06,
+   "by_sleeve_year": {
+    "orb_gold": {
+     "2019": {
+      "trades_at_0": 6,
+      "of": 113,
+      "R_of_skipped": 5.44
+     },
+     "2020": {
+      "trades_at_0": 4,
+      "of": 109,
+      "R_of_skipped": 13.02
+     }
+    },
+    "gold_fri": {
+     "2019": {
+      "trades_at_0": 23,
+      "of": 47,
+      "R_of_skipped": -0.58
+     },
+     "2020": {
+      "trades_at_0": 41,
+      "of": 46,
+      "R_of_skipped": 1.55
+     },
+     "2021": {
+      "trades_at_0": 16,
+      "of": 46,
+      "R_of_skipped": -0.73
+     }
+    },
+    "nq_btc": {
+     "2019": {
+      "trades_at_0": 111,
+      "of": 199,
+      "R_of_skipped": -0.97
+     },
+     "2020": {
+      "trades_at_0": 28,
+      "of": 232,
+      "R_of_skipped": 6.32
+     }
+    }
+   }
+  }
+ },
+ "d_mean_stake_U10_fp": {
+  "D4": {
+   "ocm4": {
+    "2019": 0.86,
+    "2020": 0.862,
+    "2021": 1.042
+   },
+   "noise30": {
+    "2019": 0.869,
+    "2020": 0.854,
+    "2021": 1.062
+   },
+   "donch4h": {
+    "2019": 1.001,
+    "2020": 1.221,
+    "2021": 1.139
+   },
+   "orb_gold": {
+    "2019": 0.977,
+    "2020": 1.125,
+    "2021": 0.945
+   },
+   "gold_fri": {
+    "2019": 0.725,
+    "2020": 0.696,
+    "2021": 0.797
+   },
+   "brk72_btc": {
+    "2019": 1.228,
+    "2020": 1.174,
+    "2021": 1.125
+   },
+   "brk72_eth": {
+    "2019": 1.05,
+    "2020": 1.085,
+    "2021": 0.958
+   },
+   "F1_btc": {
+    "2019": 1.0,
+    "2020": 0.971,
+    "2021": 0.833
+   },
+   "F1_eth": {
+    "2019": 0.989,
+    "2020": 0.9,
+    "2021": 0.754
+   },
+   "nq_btc": {
+    "2019": 0.716,
+    "2020": 0.894,
+    "2021": 1.157
+   }
+  },
+  "D5": {
+   "ocm4": {
+    "2019": 0.814,
+    "2020": 0.857,
+    "2021": 1.058
+   },
+   "noise30": {
+    "2019": 0.875,
+    "2020": 0.731,
+    "2021": 1.103
+   },
+   "donch4h": {
+    "2019": 0.953,
+    "2020": 1.197,
+    "2021": 1.224
+   },
+   "orb_gold": {
+    "2019": 0.937,
+    "2020": 1.056,
+    "2021": 1.011
+   },
+   "gold_fri": {
+    "2019": 0.684,
+    "2020": 0.585,
+    "2021": 0.7
+   },
+   "brk72_btc": {
+    "2019": 1.312,
+    "2020": 1.231,
+    "2021": 1.226
+   },
+   "brk72_eth": {
+    "2019": 1.082,
+    "2020": 1.126,
+    "2021": 0.885
+   },
+   "F1_btc": {
+    "2019": 1.0,
+    "2020": 1.0,
+    "2021": 0.806
+   },
+   "F1_eth": {
+    "2019": 1.0,
+    "2020": 0.905,
+    "2021": 0.706
+   },
+   "nq_btc": {
+    "2019": 0.603,
+    "2020": 0.778,
+    "2021": 1.196
+   }
+  },
+  "D6": {
+   "ocm4": {
+    "2019": 0.82,
+    "2020": 0.927,
+    "2021": 0.92
+   },
+   "noise30": {
+    "2019": 0.993,
+    "2020": 0.677,
+    "2021": 0.941
+   },
+   "donch4h": {
+    "2019": 0.92,
+    "2020": 1.162,
+    "2021": 1.413
+   },
+   "orb_gold": {
+    "2019": 0.772,
+    "2020": 0.994,
+    "2021": 1.279
+   },
+   "gold_fri": {
+    "2019": 0.673,
+    "2020": 0.507,
+    "2021": 0.585
+   },
+   "brk72_btc": {
+    "2019": 1.318,
+    "2020": 1.325,
+    "2021": 1.325
+   },
+   "brk72_eth": {
+    "2019": 1.205,
+    "2020": 1.089,
+    "2021": 0.91
+   },
+   "F1_btc": {
+    "2019": 1.0,
+    "2020": 1.0,
+    "2021": 0.827
+   },
+   "F1_eth": {
+    "2019": 1.0,
+    "2020": 0.981,
+    "2021": 0.67
+   },
+   "nq_btc": {
+    "2019": 0.546,
+    "2020": 0.676,
+    "2021": 1.11
+   }
+  },
+  "D7": {
+   "ocm4": {
+    "2019": 0.845,
+    "2020": 0.838,
+    "2021": 0.833
+   },
+   "noise30": {
+    "2019": 0.722,
+    "2020": 0.722,
+    "2021": 0.722
+   },
+   "donch4h": {
+    "2019": 0.936,
+    "2020": 0.942,
+    "2021": 0.944
+   },
+   "orb_gold": {
+    "2019": 1.056,
+    "2020": 1.058,
+    "2021": 1.265
+   },
+   "gold_fri": {
+    "2019": 0.611,
+    "2020": 0.611,
+    "2021": 0.5
+   },
+   "brk72_btc": {
+    "2019": 1.281,
+    "2020": 1.365,
+    "2021": 1.389
+   },
+   "brk72_eth": {
+    "2019": 1.283,
+    "2020": 1.216,
+    "2021": 1.17
+   },
+   "F1_btc": {
+    "2019": 1.0,
+    "2020": 1.0,
+    "2021": 1.0
+   },
+   "F1_eth": {
+    "2019": 1.0,
+    "2020": 1.0,
+    "2021": 1.0
+   },
+   "nq_btc": {
+    "2019": 0.5,
+    "2020": 0.5,
+    "2021": 0.606
+   }
+  }
+ }
+}

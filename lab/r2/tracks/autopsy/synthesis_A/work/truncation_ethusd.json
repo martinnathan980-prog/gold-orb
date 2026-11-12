@@ -1,0 +1,16 @@
+{
+ "written": "2026-11-12T15:18:23Z",
+ "sym": "ethusd",
+ "F1_brk_ridge_filter:ethusd": {
+  "variant": "H2",
+  "sampled_acting": 15,
+  "sampled_other": 15,
+  "a_tested": 30,
+  "a_identical": 30,
+  "b_tested": 30,
+  "b_identical": 30,
+  "c_tested": 30,
+  "c_identical": 30,
+  "mismatches": []
+ }
+}

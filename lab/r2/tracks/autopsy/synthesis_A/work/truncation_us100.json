@@ -1,0 +1,16 @@
+{
+ "written": "2026-11-12T15:17:57Z",
+ "sym": "us100",
+ "ocm4:us100": {
+  "variant": "T1",
+  "sampled_acting": 15,
+  "sampled_other": 15,
+  "a_tested": 30,
+  "a_identical": 30,
+  "b_tested": 30,
+  "b_identical": 30,
+  "c_tested": 0,
+  "c_identical": 0,
+  "mismatches": []
+ }
+}

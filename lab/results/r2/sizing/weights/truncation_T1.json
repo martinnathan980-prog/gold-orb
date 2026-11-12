@@ -1,0 +1,331 @@
+{
+ "what": "For every declared variant, on U10 and U8_noF1 (fp chains): decision times T = 300 entries of 2019-2021 drawn with\nseed 3 + the first decision of each fold year 2019-2021 + up to 50 decisions where the variant's stake differs from\nthe previous trade of the same sleeve. At each T the book is cut to what is known at T (stakes.cut_book: trades\nentered after T removed, trades not closed strictly before T keep their entry but lose exit time, week and R) and\nthe stakes of EVERY trade entered at or before T are recomputed from that book alone and compared with the full run.\nPass = identical everywhere.",
+ "variants": {
+  "MV00": {
+   "U10": {
+    "points": 313,
+    "decisions_compared": 1855486,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 17
+   },
+   "U8_noF1": {
+    "points": 310,
+    "decisions_compared": 1613835,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 13
+   }
+  },
+  "MV25": {
+   "U10": {
+    "points": 314,
+    "decisions_compared": 1860705,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 18
+   },
+   "U8_noF1": {
+    "points": 311,
+    "decisions_compared": 1618470,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 14
+   }
+  },
+  "MV50": {
+   "U10": {
+    "points": 314,
+    "decisions_compared": 1860705,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 18
+   },
+   "U8_noF1": {
+    "points": 311,
+    "decisions_compared": 1618470,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 14
+   }
+  },
+  "MV75": {
+   "U10": {
+    "points": 316,
+    "decisions_compared": 1872501,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 20
+   },
+   "U8_noF1": {
+    "points": 313,
+    "decisions_compared": 1628811,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 16
+   }
+  },
+  "IV00": {
+   "U10": {
+    "points": 314,
+    "decisions_compared": 1860705,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 18
+   },
+   "U8_noF1": {
+    "points": 311,
+    "decisions_compared": 1618470,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 14
+   }
+  },
+  "IV25": {
+   "U10": {
+    "points": 314,
+    "decisions_compared": 1860705,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 18
+   },
+   "U8_noF1": {
+    "points": 311,
+    "decisions_compared": 1618470,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 14
+   }
+  },
+  "IV50": {
+   "U10": {
+    "points": 314,
+    "decisions_compared": 1860705,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 18
+   },
+   "U8_noF1": {
+    "points": 311,
+    "decisions_compared": 1618470,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 14
+   }
+  },
+  "IV75": {
+   "U10": {
+    "points": 316,
+    "decisions_compared": 1872501,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 20
+   },
+   "U8_noF1": {
+    "points": 313,
+    "decisions_compared": 1628811,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 16
+   }
+  },
+  "Z12": {
+   "U10": {
+    "points": 337,
+    "decisions_compared": 1994257,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 42
+   },
+   "U8_noF1": {
+    "points": 331,
+    "decisions_compared": 1712479,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 32
+   }
+  },
+  "Z24": {
+   "U10": {
+    "points": 332,
+    "decisions_compared": 1944600,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 37
+   },
+   "U8_noF1": {
+    "points": 336,
+    "decisions_compared": 1725301,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 37
+   }
+  },
+  "Z36": {
+   "U10": {
+    "points": 323,
+    "decisions_compared": 1899512,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 29
+   },
+   "U8_noF1": {
+    "points": 327,
+    "decisions_compared": 1689173,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 29
+   }
+  },
+  "D4": {
+   "U10": {
+    "points": 345,
+    "decisions_compared": 2051683,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 1317
+   },
+   "U8_noF1": {
+    "points": 344,
+    "decisions_compared": 1792306,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 1032
+   }
+  },
+  "D5": {
+   "U10": {
+    "points": 347,
+    "decisions_compared": 2053776,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 965
+   },
+   "U8_noF1": {
+    "points": 347,
+    "decisions_compared": 1803628,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 731
+   }
+  },
+  "D6": {
+   "U10": {
+    "points": 342,
+    "decisions_compared": 2050125,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 618
+   },
+   "U8_noF1": {
+    "points": 345,
+    "decisions_compared": 1812840,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 491
+   }
+  },
+  "D7": {
+   "U10": {
+    "points": 342,
+    "decisions_compared": 1999758,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 93
+   },
+   "U8_noF1": {
+    "points": 343,
+    "decisions_compared": 1763271,
+    "points_with_a_difference": 0,
+    "decisions_differing": 0,
+    "first_bad": null,
+    "pass": true,
+    "stake_changes_available": 54
+   }
+  }
+ },
+ "leaky_control": {
+  "U10": {
+   "points": 345,
+   "decisions_compared": 2047849,
+   "points_with_a_difference": 48,
+   "decisions_differing": 54,
+   "first_bad": {
+    "T": "2019-03-25T19:00:00.000000000",
+    "n_differ": 1
+   },
+   "pass": false
+  },
+  "U8_noF1": {
+   "points": 347,
+   "decisions_compared": 1807160,
+   "points_with_a_difference": 43,
+   "decisions_differing": 50,
+   "first_bad": {
+    "T": "2019-03-21T13:34:00.000000000",
+    "n_differ": 1
+   },
+   "pass": false
+  }
+ },
+ "all_variants_pass": true,
+ "control_caught": true
+}

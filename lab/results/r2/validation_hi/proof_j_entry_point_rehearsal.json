@@ -1,0 +1,54 @@
+{
+ "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process: same numbers as the proofs' run, nothing logged",
+ "output": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
+ "seconds": 72.8,
+ "checks": 7,
+ "failed": 0,
+ "ok": true,
+ "failures": [],
+ "rows": [
+  {
+   "field": "look.py --cut 2022-01-01 exits 0",
+   "expected": 0,
+   "got": 0,
+   "ok": true,
+   "stderr_tail": ""
+  },
+  {
+   "field": "look.py rehearsal == proofs run: portfolios",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "look.py rehearsal == proofs run: comparisons",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "look.py rehearsal == proofs run: sleeve_comparisons",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "look.py rehearsal == proofs run: official",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "look.py rehearsal == proofs run: every sleeve run",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "rehearsal did not log an access (meta.is_look False)",
+   "expected": false,
+   "got": false,
+   "ok": true
+  }
+ ]
+}

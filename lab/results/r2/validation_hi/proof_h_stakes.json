@@ -36,6 +36,48 @@
    },
    "note": "a mechanics example of the stake interface, not a candidate (not declared, not judged)"
   },
+  "python_stake_plugin_example": {
+   "fits": {
+    "2014": null,
+    "2015": {
+     "band": 1,
+     "mean": -0.04684949565301155,
+     "last_outcome_used": "2014-12-19 20:55:00+00:00"
+    },
+    "2016": {
+     "band": 2,
+     "mean": -0.00165148595007564,
+     "last_outcome_used": "2015-12-18 20:55:00+00:00"
+    },
+    "2017": {
+     "band": 2,
+     "mean": -0.021329817670533067,
+     "last_outcome_used": "2016-12-22 20:55:00+00:00"
+    },
+    "2018": {
+     "band": null,
+     "mean": 0.004184824342731538,
+     "last_outcome_used": "2017-12-20 16:30:00+00:00"
+    },
+    "2019": {
+     "band": null,
+     "mean": 0.020011919113780644,
+     "last_outcome_used": "2018-12-21 20:55:00+00:00"
+    },
+    "2020": {
+     "band": null,
+     "mean": 0.006563238304899337,
+     "last_outcome_used": "2019-12-19 20:55:00+00:00"
+    },
+    "2021": {
+     "band": null,
+     "mean": 0.02165952943091804,
+     "last_outcome_used": "2020-12-21 16:30:00+00:00"
+    }
+   },
+   "share_at_m_low": 0.0718,
+   "note": "mechanics example only, not a candidate"
+  },
   "generic_signal_table_vs_K1_table": {
    "orders": 2355,
    "max_abs_riskbp_diff": 1.3642420526593924e-12,
@@ -43,7 +85,7 @@
    "labels_identical": true
   }
  },
- "checks": 64,
+ "checks": 65,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -424,6 +466,18 @@
    "field": "wf_terciles stakes within [0, 2]",
    "expected": true,
    "got": true,
+   "ok": true
+  },
+  {
+   "field": "python stake plugin (example HourBandStake on noise30): loaded from its file, stakes in [0, 2], every yearly fit uses only outcomes known before 1 January minus 7 days",
+   "expected": [
+    true,
+    true
+   ],
+   "got": [
+    true,
+    true
+   ],
    "ok": true
   },
   {

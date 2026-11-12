@@ -7,7 +7,8 @@ A SLEEVE SPEC is a dict:
                          the one-position chain; trades still open at the last bar of the frame are dropped
                 "payoff" (payoff lens): an order whose stop distance is under 3 spreads of its fill bar is removed
                          before the simulation; censoring of the payoff lens (crypto: 'eod'; others: closed at the
-                         last bar by 'time' or 'eod')
+                         last bar by 'time' or 'eod'), except that crypto gets the non-crypto rule when the CUT does
+                         not fall inside the crypto weekend closure (the look's CUT): censored_harness
     change      None, or one of the CHANGES below (more can be registered with register_change)
     base        (payoff variants) the reference sleeve key it is compared with
 
@@ -32,12 +33,13 @@ EXECUTION
           New-York date (the hands' InpFridayClose = 23:50 server; if the market is already closed then, at its
           reopen: the hands close "at the first opportunity"); an entry at or after Friday 16:50 New York and before
           the Sunday 17:00 New York reopen is not taken (the hands block new positions then). The 3-spread refusal
-          is applied at the live fill bar (a refused order never blocks). The one-position rule keeps the rule's
-          own test at the rule's own activation bar (a signal is ignored while the previous trade is open, including
-          the minute that trade is closed by its time exit), applied to the LIVE exits: so a trade closed early by
-          the Friday close frees the sleeve for the next signal, and a signal at the exit minute stays ignored
-          (live_chain; with no delay and no Friday close it reproduces the official chain trade for trade, checked
-          in the proofs). A change's decision (K1 skip, payoff transform) is made exactly as in lab.
+          is applied at the live fill bar (a refused order never blocks). How the robot decides that a sleeve is
+          flat is declared in the spec ("live_one_position", see run()): by default the synthesis_B verifiers' way
+          (the chain re-simulated with the live exits, so a trade closed by the Friday close frees the sleeve for
+          the next signal; the one-position test at the delayed entry bar); 'rule' keeps the rule's own test at its
+          activation bar (live_chain: with no delay and no Friday close it reproduces the official chain trade for
+          trade, checked in the proofs); 'lab_chain' executes only the lab chain's trades. A change's decision
+          (K1 skip, payoff transform) is made exactly as in lab.
 """
 import time
 
@@ -119,18 +121,51 @@ def censored_payoff(mk, t, sym):
     return L.payoff()["C"].censored(mk, t, sym)
 
 
+def censored_general(mk, t):
+    """Trades without a result inside the frame: closed by the end of the frame ('eod'), or closed at the frame's
+    last bar by a time exit (a scheduled exit beyond the frame is mapped there by gl.exit_index). This is the payoff
+    lens's rule for non-crypto symbols."""
+    xb = exit_bar(mk, t)
+    r = t["reason"].to_numpy()
+    return (r == "eod") | ((xb >= len(mk) - 1) & np.isin(r, ["time", "eod"]))
+
+
+def cut_in_crypto_weekend(cut):
+    """True when the CUT instant falls inside FP's crypto weekend closure (no bars from Friday 16:55 to Sunday 17:00
+    New York): the crypto frame then ends on a scheduled closure, the payoff lens's in-sample assumption (CUT
+    2022-01-01 00:00 UTC = Friday 19:00 New York). False for the look's CUT 2026-01-01 (Wednesday 19:00 New York)."""
+    x = pd.Timestamp(cut).tz_convert(NY)
+    m = x.hour * 60 + x.minute
+    return bool((x.dayofweek == 4 and m >= 16 * 60 + 55) or x.dayofweek == 5 or (x.dayofweek == 6 and m < 17 * 60))
+
+
+def censored_harness(mk, t, sym):
+    """The payoff convention's censoring at any CUT: the lens's own rule (crypto: 'eod' only, a time exit at the last
+    bar being the scheduled exit before the weekend closure) when the CUT falls inside the crypto weekend closure, as
+    in sample; otherwise the non-crypto rule for every symbol (a time exit at the last bar of a frame that does not
+    end on a closure is an artefact of the cut). Checked: identical to the lens in sample (proof d), and results that
+    do not move when the CUT moves to a non-weekend date (proof k)."""
+    if sym in L.payoff()["C"].CRYPTO and not cut_in_crypto_weekend(G.current_cut()):
+        return censored_general(mk, t)
+    return censored_payoff(mk, t, sym)
+
+
 def finish(mk, t, sym, convention):
     """Drop the trades without a result inside the frame, by the convention's rule."""
     n0 = len(t)
+    differs = 0
     if convention == "sB":
         t = drop_boundary_sB(t, mk)
     elif convention == "payoff":
         if len(t):
-            t = t[~censored_payoff(mk, t, sym)]
+            cen = censored_harness(mk, t, sym)
+            differs = int((cen != censored_payoff(mk, t, sym)).sum())
+            t = t[~cen]
     else:
         raise ValueError(convention)
     t = t.copy()
     t.attrs["boundary_dropped"] = int(n0 - len(t))
+    t.attrs["payoff_rule_differs"] = differs
     return t
 
 
@@ -292,6 +327,20 @@ def _k1_folds(s, cut, q, purge, min_train, first_year=2013):
     return skip, folds, f_next
 
 
+def declared_T_check(dT, folds, f_next, cut):
+    """Each declared threshold {year: bp} against the walk-forward: the fold of that year (the look: 2022 is a fold at
+    CUT 2026), or the fit for the year starting at CUT (in sample: 2022 at CUT 2022)."""
+    cy = cut.year if cut == pd.Timestamp(f"{cut.year}-01-01", tz="UTC") else None
+    chk = {}
+    for y, v in dT.items():
+        f = folds.get(int(y)) or (f_next if int(y) == cy else None)
+        got = None if f is None else f["q_hi"]
+        chk[str(y)] = {"declared": float(v), "fitted": got,
+                       "fitted_from": "fold" if int(y) in folds else ("fit_for_year_starting_at_cut" if got is not None else None),
+                       "same_to_0.01bp": bool(got is not None and abs(got - float(v)) < 0.01)}
+    return chk
+
+
 @register_change("k1_riskbp")
 def change_k1(spec, mk, O, mode, ctx):
     """K1: returns the variant's orders (refused-alone and skipped signals removed). The base chain of the K1
@@ -323,15 +372,7 @@ def change_k1(spec, mk, O, mode, ctx):
             "labels_mode": lab_mode}
     dT = ch.get("declared_T")
     if dT:
-        cy = G.current_cut().year if G.current_cut() == pd.Timestamp(f"{G.current_cut().year}-01-01", tz="UTC") else None
-        chk = {}
-        for y, v in dT.items():
-            f = folds.get(int(y)) or (f_next if int(y) == cy else None)
-            got = None if f is None else f["q_hi"]
-            chk[str(y)] = {"declared": float(v), "fitted": got,
-                           "fitted_from": "fold" if int(y) in folds else ("fit_for_year_starting_at_cut" if got is not None else None),
-                           "same_to_0.01bp": bool(got is not None and abs(got - float(v)) < 0.01)}
-        diag["declared_T_check"] = chk
+        diag["declared_T_check"] = declared_T_check(dT, folds, f_next, G.current_cut())
     return var_orders, {"diag": diag, "base_orders": base_orders, "signals": s}
 
 
@@ -375,11 +416,16 @@ def change_payoff(spec, mk, O, mode, ctx):
 
 # ------------------------------------------------------------------------------------------------- the run
 def run(spec, m1, mode, exec_mode="lab", leader=None, every_signal=False, keep_signals=False,
-        live_one_position="rule"):
+        live_one_position="entry_bar"):
     """Trades of one sleeve spec in one cost mode ('fp' | 'stress') and one execution ('lab' | 'live').
-    live_one_position: 'rule' (default: the rule's own one-position test at its activation bar, live_chain) or
-    'entry_bar' (the official simulator on the delayed orders: the test moves to the delayed entry bar, so a signal
-    arriving in the minute the previous trade is closed by its time exit is taken; the synthesis_B verifiers' way).
+    live_one_position (how the live robot decides that a sleeve is flat; declared in the look's spec):
+      'entry_bar' (default) the official simulator on the delayed orders: the chain is re-simulated with the live
+                  exits, the one-position test at the delayed entry bar -- the synthesis_B verifiers' definition of
+                  "run as the current hands would" (proof g reproduces their 392 trades, +142.1 R for K2 exactly);
+      'rule'      the chain re-simulated with the live exits, the rule's own test at its activation bar (a signal at
+                  the previous trade's exit minute stays ignored, as the rule text says): live_chain;
+      'lab_chain' the lab chain's trades only, each executed live (a robot that follows make_orders' own chain:
+                  no extra trade after a Friday close).
     Returns (trades, info). trades carry COLS (oid = row of the rule's own order table)."""
     t0 = time.time()
     sym, rule, conv = spec["sym"], spec["rule"], spec.get("convention", "sB")
@@ -399,6 +445,9 @@ def run(spec, m1, mode, exec_mode="lab", leader=None, every_signal=False, keep_s
     for nm, oo in chains.items():
         li = None
         if exec_mode == "live":
+            if live_one_position == "lab_chain":         # the lab chain's orders only (same convention as lab)
+                tl = simulate_sB(mk, oo, sym, costs) if conv == "sB" else simulate(mk, oo, sym=sym, costs=costs)
+                oo = oo[oo.oid.isin(set(tl.oid.tolist()))]
             oo, li = live_orders(oo, mk, sym, mode)
             bad = live_refuse(mk, oo, sym, mode)         # both conventions: refused at the live fill, never blocks
             nref = int(bad.sum())
@@ -406,6 +455,12 @@ def run(spec, m1, mode, exec_mode="lab", leader=None, every_signal=False, keep_s
                 t = live_chain(mk, oo[~bad], sym, costs)
             elif live_one_position == "entry_bar":
                 t = simulate(mk, oo[~bad], sym=sym, costs=costs, no_overlap=True)
+            elif live_one_position == "lab_chain":
+                t = simulate(mk, oo[~bad], sym=sym, costs=costs, no_overlap=False)
+                if len(t):
+                    xb = exit_bar(mk, t)
+                    eb = np.searchsorted(mk.index.values, t.entry_time.values.astype(mk.index.values.dtype))
+                    li["overlapping_live_trades"] = int((eb[1:] <= xb[:-1]).sum())
             else:
                 raise ValueError(live_one_position)
         elif exec_mode != "lab":
@@ -422,6 +477,8 @@ def run(spec, m1, mode, exec_mode="lab", leader=None, every_signal=False, keep_s
         tt = t[cols + extra_cols].reset_index(drop=True)
         tt.attrs = {"refused_3spreads": nref, "boundary_dropped": t.attrs.get("boundary_dropped", 0)}
         out[nm] = tt
+        if conv == "payoff":
+            info[f"{nm}_payoff_rule_differs"] = int(t.attrs.get("payoff_rule_differs", 0))
         if nm == "main" and "ahead_oids" in extra:
             info["change_diag"]["extended_trades"] = int(np.isin(tt["oid"].to_numpy(), list(extra["ahead_oids"])).sum())
         info[f"{nm}_refused_3spreads"] = nref

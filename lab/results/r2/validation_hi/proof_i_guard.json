@@ -242,7 +242,7 @@
    "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
   }
  ],
- "checks": 22,
+ "checks": 25,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -278,19 +278,25 @@
    "ok": true
   },
   {
-   "field": "guard.cut_2026_01_02_refused_even_with_env",
-   "expected": false,
-   "got": false,
-   "ok": true
-  },
-  {
-   "field": "guard.cut_2027_refused_even_with_env",
-   "expected": false,
-   "got": false,
-   "ok": true
-  },
-  {
    "field": "guard.cut_2026_env_file_without_word_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.cut_2026_env_file_with_word_allowed (resolve only, nothing opened)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "guard.cut_2026_01_02_refused_even_with_declared_file",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.cut_2027_refused_even_with_declared_file",
    "expected": false,
    "got": false,
    "ok": true
@@ -366,6 +372,20 @@
    "expected": true,
    "got": true,
    "ok": true
+  },
+  {
+   "field": "look.py --cut 2026-01-01 without LOOK_DECLARED: refused (exit code, message)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "message": "REFUSED: CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=<path of the protocol addendum that declares it> is set"
+  },
+  {
+   "field": "look.py --cut 2026-01-02: refused (after the 2026 boundary)",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "message": "REFUSED: CUT 2026-01-02 00:00:00+00:00 is after 2026-01-01: the 2026 holdout is never read, whatever LOOK_DECLARED says"
   },
   {
    "field": "val_access.log lines with track autopsy_HI_look: before and after the proofs",

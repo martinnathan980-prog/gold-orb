@@ -1,0 +1,228 @@
+{
+ "built": {
+  "entry_point": "The look, once it is declared in the protocol:\n\nLOOK_DECLARED=/home/user/gold-orb/lab/PROTOCOL_V3.md NUMBA_CACHE_DIR=/tmp/numba_validation_hi PYTHONDONTWRITEBYTECODE=1 python3 /home/user/gold-orb/lab/r2/tracks/validation_hi/look.py --spec /home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json --cut 2026-01-01\n\nWhat it does, in order:\n1. It checks the CUT before anything else. It refuses any CUT after 2026-01-01. It refuses any CUT after 2022-01-01 unless LOOK_DECLARED names a file whose text contains the word \"declared\". It also refuses if that look's output file already exists.\n2. Only then does it append the single line to lab/results/val_access.log, in the existing format: track \"autopsy_HI_look\", label \"look:<spec name>:<sha256[:12]>\", period \"val\". After that it installs the read guard.\n3. It runs the spec on the 2022-01-01..2025-12-31 entry windows:\n   - the ten sleeves, K1, K2 and K3, and the 7 payoff variants with their references;\n   - FP costs and costs x1.5;\n   - \"lab\" (as specified) and \"live\" (one minute late at market, everything closed Friday 16:50 New York);\n   - the portfolios P0, P1, P2, P0+orb_eth, P0+orb_btc and P0 with each payoff variant, both as the plain sum of R x stake and through the capped account (6 positions, 2 per market);\n   - every comparison at equal weekly swing, with by-year weekly Sharpe;\n   - the official-trades check of the ten sleeves.\n4. It writes lab/results/r2/validation_hi/look/autopsy_HI_look__cut2026-01-01.json. That file holds all metrics, the spec and its sha256, the declared file and its sha256, a flag saying whether the declaration quotes the spec's sha256, and every read with its filter. Next to it goes ...__trades.parquet with every simulated trade.\n\nThe same command with --cut 2022-01-01 is an in-sample rehearsal: nothing is logged and the output goes to results/r2/validation_hi/rehearsal/.\n\nThe proofs: env -u LOOK_DECLARED NUMBA_CACHE_DIR=/tmp/numba_validation_hi PYTHONDONTWRITEBYTECODE=1 python3 /home/user/gold-orb/lab/r2/tracks/validation_hi/proofs.py (about 220 s). It writes proof_a..k JSON files and an index, proofs.json.",
+  "proofs": [
+   {
+    "what": "(a) The ten official sleeves rebuilt from frames read with ts < 2022-01-01, compared row by row with results/r2/recalc/trades (counts read with entry_time < CUT; results read with entry_time and exit_time < CUT)",
+    "expected": "synthesis_B first check. n: ocm4 999, noise30 1643, donch4h 495, orb gold 1039, GOLD_FRI_PM 414, brk72 btc 645, brk72 eth 519, F1 btc 631, F1 eth 517, nq 1063. Totals: 136.879 / 134.401 / 13.921 / 172.874 / 103.687 / 226.389 / 104.407 / 66.346. One official donch4h row and one orb gold row are still open at the cut.",
+    "got": "10/10 reproduced (116 checks, 0 failed). Same n; 0 rows differ; totals identical on every row closed before the CUT. The 2 rows still open at the cut are counted but their 2022 results are never read; their in-frame twins give 85.056 and 232.78, as synthesis_B found.",
+    "ok": true
+   },
+   {
+    "what": "(b) K1, brk72_24h_wd ethusd riskbp skip, FP and x1.5, against synthesis_B sleeve_runs C1",
+    "expected": "T 505.9 / 496.7 / 465.1 bp, T(2022) 478.3 bp. 2019-2021 FP: 395 -> 304 trades, +49.1 -> +63.9 R. x1.5: 397 -> 306, +40.86 -> +56.40. 103 trades removed (-20.817 R), 12 new (-6.037 R).",
+    "got": "Identical, 309 checks, 0 failed. The walk-forward generalised to any CUT gives the same skip mask and the same folds (exact floats) as s1_run.walk_forward. The declared-T check passes both at the CUT and through a fold.",
+    "ok": true
+   },
+   {
+    "what": "(c) K2 and K3: the frozen gold orb_asia_2d_buf10 on ethusd and btcusd, entries 2018-02..2021-12, against synthesis_B N1 / N2",
+    "expected": "344 trades +155.5 R and 375 trades +194.3 R (FP); x1.5 344 / +140.29 and 374 / +185.62; one boundary trade dropped in each; orders 643 / 785",
+    "got": "Identical, 230 checks including by year and early years",
+    "ok": true
+   },
+   {
+    "what": "(d) The 7 payoff variants in play and their references, against results/r2/autopsy/payoff/variants_table.csv and the lens's trials.jsonl",
+    "expected": "F1 eth H2 463 trades +190.63 R (x1.5 +178.14); ocm4 T1 350 / +127.43; donch4h S0.75r 251 / +55.76; nq T1 981 / +159.93; noise30 S0.25 795 / +280.15; brk72 btc S0.75r 563 / +205.44; orb xau S0.75r 498 / +69.54. All columns: win rate, avg win/loss, PF, t, max DD, holds, Sharpe per trade, bps, cost tolerance, earlier years, refusals, years better, by year, H extensions.",
+    "got": "Identical, 444 checks, 0 failed. The harness's censoring equals the lens's on every in-sample lab run.",
+    "ok": true
+   },
+   {
+    "what": "(e) Portfolios P0 / P1 / P2, FP and x1.5, plain sum at 1 R per trade, server weeks, against synthesis_B.json portfolio.results (every field)",
+    "expected": "P0 5205 trades +788.59 R, weekly Sharpe 2.873, worst week -12.54. P2 5833 / +1153.18 / 3.341 / -16.87. x1.5: P0 +711.09, P2 +1052.54.",
+    "got": "Identical, 1092 checks. Also equal to synthesis_B's own s2_portfolio.metrics run on the harness's book.",
+    "ok": true
+   },
+   {
+    "what": "(f) The capped account (6 positions, 2 per market)",
+    "expected": "cluster engine_check.json: FP 4878 taken / +795.672 R / 329 cap skips; x1.5 4881 / +721.407 / 328; account.py the same",
+    "got": "Identical. The harness's capped account takes the same trades as the cluster lens's run_engine on the P0 and P2 books (FP and x1.5).",
+    "ok": true
+   },
+   {
+    "what": "(g) Live execution: entry one minute late at market, Friday 16:50 New York close",
+    "expected": "K2 as the verifiers ran it (quoted in synthesis_B): 392 trades, +142.1 R, +0.363 R per trade; x1.5 +127.9 R",
+    "got": "392 / +142.1 / 0.3626; x1.5 392 / +127.9. The harness's declared default ('entry_bar') is that run without the trade still open at the end of 2021: 391 / +141.8. With no delay and no Friday close, the alternative resolver returns the official chain trade for trade on all ten sleeves.",
+    "ok": true
+   },
+   {
+    "what": "(h) The stake interface (Addendum I hook)",
+    "expected": "Stake 1 reproduces P0 in both accounts. A sleeve-year table {2020: 2} on noise30 adds exactly noise30's 2020 R. A walk-forward stake and a stake rule loaded from a python file use only outcomes known before 1 January minus 7 days, and stay within [0, 2].",
+    "got": "All 65 checks pass. P0 total + noise30 2020 = 809.6 = 809.6.",
+    "ok": true
+   },
+   {
+    "what": "(i) The guard",
+    "expected": "CUT after 2022 refused without a declared file; after 2026 refused even with one; holdout paths and unfiltered frame or trades reads refused; nq's default leader loader refused; look.py --cut 2026-01-01 and --cut 2026-01-02 refused; no autopsy_HI_look line in val_access.log",
+    "got": "25/25. 0 lines before and after. 48 reads in the run, every one with a row filter at 2022-01-01. LOOK_DECLARED was never set.",
+    "ok": true
+   },
+   {
+    "what": "(j) The single command run end to end (look.py --cut 2022-01-01, a separate process)",
+    "expected": "same numbers as the proofs' run, nothing logged",
+    "got": "Identical portfolios, comparisons, sleeve comparisons, official checks and every sleeve run; is_look false",
+    "ok": true
+   },
+   {
+    "what": "(k) Moving the CUT, as the look will: look.py at CUT 2021-01-01 (in sample) against the CUT 2022-01-01 run",
+    "expected": "Every trade that entered and closed inside the 2021 frame is identical in both runs. K1's fit for 2021 at CUT 2021 equals the 2021 fold of the CUT-2022 run.",
+    "got": "124 chains (sleeve x chain x mode x execution) and 84,931 trades identical. K1 fit identical (465.1178). The official check is reproduced at CUT 2021.",
+    "ok": true
+   }
+  ],
+  "guards": "vhi_guard.open_run(cut) runs before any read:\n- The CUT is the first instant that may not be read.\n- CUT > 2026-01-01 is always refused (GuardError).\n- CUT > 2022-01-01 is refused unless LOOK_DECLARED is a readable file whose text contains the word \"declared\" (case-insensitive regex \\bdeclared\\b).\n- Only for such a CUT is the one access line appended, and it is appended before anything is read. Any CUT <= 2022-01-01 writes nothing (log_access raises). One CUT per process.\n\nThe read guard is installed for the whole process on pandas.read_parquet, pandas.read_csv and pyarrow.parquet.read_table. Lens and strategy modules call these through their module attribute, so they are covered too. It refuses:\n- lab/holdout_raw, lab/data/holdout, and any data file whose name carries 2026;\n- any lab/data parquet without the filter ts < t, t <= CUT;\n- any parquet under lab/results without the filter entry_time < t, t <= CUT (all trades files, official and lens outputs);\n- raw data CSVs.\n\nAs a result, nq_btc_follow's default leader loader, which would read us100 to 2025, raises instead of reading.\n\nThe readers add more: official results are read with entry_time < CUT and exit_time < CUT, so no result realised after the CUT is materialised. The full-period attrs of the official trades files are dropped.\n\nrecalc.sleeves() is called once. synthesis_B and payoff receive that registry in memory, so every component calls the same make_orders objects (asserted before each build). The leader is set through the nq function's own globals and asserted to end before the CUT.",
+  "extending": "Add a sleeve line to look_spec.json, put its key in a portfolio, add a comparison, rehearse, declare, then run look.py once.\n\n1. Existing change kinds:\n   - k1_riskbp (q, purge_days, min_train, labels_mode, declared_T);\n   - payoff (family S with k and reentry true/false/'n/a', T with m, H with j, B with b) on any sleeve;\n   - new: a frozen rule on another instrument.\n   Portfolios can be written relative to P0: {\"replace\": {old: new}, \"add\": [...], \"drop\": [...]}.\n\n2. A new change that skips signals before the simulation (a skipped signal never blocks the sleeve): write a function decorated with vhi_sleeves.register_change(\"kind\") taking (spec, mk, O, mode, ctx) and returning (kept orders, {\"diag\": ...}). List its file in spec \"plugins\". Example: example_plugins.skip_ny_hours.\n\n3. An Addendum I stake rule (per trade or per sleeve):\n   - Write a class with .stakes(trades, ctx) -> multipliers, where 0 means not taken and the chain is unchanged. ctx carries cut, mode, exec, sleeve, sym, book (every sleeve's paper trades, for \"agreement\"), signals (per-signal tables: decision/fill time, riskbp, label alone, exit alone) and purge.\n   - Use vhi_stakes.yearly_refit for the 1 January refits; a fit for year Y may only use outcomes known before 1 January Y minus 7 days.\n   - Reference it as portfolios[P].stakes[sleeve] = {\"kind\": \"python\", \"module\": \"<file>\", \"factory\": \"<class>\", \"args\": {...}}. Built-in kinds: const, sleeve_year ({year: m}, e.g. Addendum I weights), trade_table (a parquet of entry_time, side, stake), wf_terciles (a descriptor of the signal table). Example: example_plugins.HourBandStake.\n   - Set \"signals\": true on the sleeve if the rule needs the signal table.\n\n4. Rehearse with proofs.py or look.py --cut 2022-01-01. Check the in-sample numbers against the lens that found the change (add a proof against its published file), then declare the spec (ideally quoting its sha256, which look.py records) and run the look once.",
+  "files": [
+   "/home/user/gold-orb/lab/r2/tracks/validation_hi/look.py",
+   "/home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json",
+   "/home/user/gold-orb/lab/r2/tracks/validation_hi/proofs.py",
+   "/home/user/gold-orb/lab/r2/tracks/validation_hi/vhi_guard.py",
+   "/home/user/gold-orb/lab/r2/tracks/validation_hi/vhi_lens.py",
+   "/home/user/gold-orb/lab/r2/tracks/validation_hi/vhi_data.py",
+   "/home/user/gold-orb/lab/r2/tracks/validation_hi/vhi_sleeves.py",
+   "/home/user/gold-orb/lab/r2/tracks/validation_hi/vhi_book.py",
+   "/home/user/gold-orb/lab/r2/tracks/validation_hi/vhi_stakes.py",
+   "/home/user/gold-orb/lab/r2/tracks/validation_hi/vhi_run.py",
+   "/home/user/gold-orb/lab/r2/tracks/validation_hi/example_plugins.py",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proof_a_official_trades.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proof_b_K1.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proof_c_K2_K3.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proof_d_payoff_variants.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proof_e_portfolios_P0_P1_P2.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proof_f_capped_account.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proof_g_live_execution.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proof_h_stakes.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proof_j_entry_point_rehearsal.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/proof_k_moving_the_cut.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01__trades.parquet",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/pseudo_look_cut2021__cut2021-01-01.json",
+   "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/pseudo_look_cut2021__cut2021-01-01__trades.parquet"
+  ],
+  "caveats": [
+   "The look was not run. LOOK_DECLARED was never set and val_access.log has no autopsy_HI_look line. The harness ran only at CUT 2022-01-01 and 2021-01-01 (both in sample). The CUT 2026 path is the same code: proof k shows that moving the CUT changes no completed trade. Not exercised: frames to 2025, which need about 1.6x the time and memory (the in-sample run takes about 75 s).",
+   "The live semantics must be declared. 'As the live program would' leaves open how the robot decides a sleeve is flat. The default 'entry_bar' (the verifiers' way, the one quoted in synthesis_B) re-simulates the chain with the live exits and tests one position at the delayed entry bar. 'rule' keeps the rule's own test, so a signal at the exit minute stays ignored. 'lab_chain' executes only the lab chain's trades. K2 in sample, FP: 391 / +141.8 R, 389 / +138.7 R and 344 / +103.3 R respectively. The last shows how much re-entering after the Friday close matters.",
+   "Live, literally applied to us100: the hands close at 23:50 server (16:50 New York), when us100 is already shut (about 16:15 New York). A us100 position still open then (only possible for variants that hold over a weekend, such as ocm4 T1) is closed at the Sunday reopen, 'at the first opportunity'. The live 3-spread refusal uses the open spread of the live fill bar; the verifier used the close spread (same result in sample).",
+   "Each sleeve keeps its lens's convention, and the two differ. sB (synthesis_B, breadth, sizing) uses the iterative 3-spread refusal and drops trades still open at the frame end. payoff refuses before the simulation and uses the lens's censoring. P0 uses sB; the payoff variants use payoff; the references agree in sample.",
+   "Payoff censoring for crypto is generalised. The lens keeps a 'time' exit at the frame's last bar because its in-sample crypto frames end inside the weekend closure. The look's CUT, 2026-01-01, is a Wednesday evening in New York, so the harness censors such exits whenever the CUT is not inside the closure. In sample this gives 0 differences. At CUT 2021 it removes one artificial brk72 btcusd exit per run that the lens's rule would have kept.",
+   "K1's walk-forward labels use the run's own cost mode (synthesis_B did this: x1.5 labels in x1.5). The declaration text says FP labels; the thresholds are identical either way. The option labels_mode 'fp' exists if the lead wants the declaration's wording.",
+   "The capped account matters for P2. In sample (FP, 2018-02..2021-12) the 6/2 caps refuse 964 P2 entries against 328 for P0: P2 makes +981.1 R capped against +1,153.2 R as a plain sum (weekly Sharpe 3.38 vs 3.34). The orb crypto sleeves compete for the 2 slots per market. Live, P0 falls from +788.6 to +670.8 R and P2 from +1,153.2 to +970.9 R (FP, plain sum).",
+   "Weeks follow synthesis_B: from the week of the window start to the week of its end minus 1 minute, every week counted. The look's first week (27 Dec 2021 - 2 Jan 2022) is therefore always zero. By-year weekly measures follow the sizing lenses' Thursday rule, clipped to the window's years, so no exit is lost at the end of 2025.",
+   "The Addendum I stake rules are not written yet. The harness gives the interface and examples, which are not candidates. Generic walk-forward stakes train on outcomes whose alone exit falls before 1 January minus 7 days, stricter than K1's 'decided before'.",
+   "Values that include a 2022 exit are not reproduced or quoted: synthesis_B's totR_official for donch4h and orb gold (84.235 and 230.065) includes a 2022 exit, so only rows closed before the CUT are compared. In proof f the cluster lens's trades reader was replaced in memory by the same read with the entry_time filter. No lens file was edited.",
+   "The lead's periodic commits ('Agents' work in progress') included the harness files; I ran no git command that changes anything. The proof script's check subprocesses (look.py rehearsals and refusals) ran while the parent process waited, one heavy process at a time."
+  ]
+ },
+ "review": {
+  "verdict": "ready_with_fixes",
+  "proofs_rerun": [
+   {
+    "what": "(a) Ten official sleeves rebuilt at CUT 2022-01-01 vs results/r2/recalc/trades (entry_time < CUT; results also exit_time < CUT)",
+    "ok": true,
+    "note": "116 checks, 0 failed. Numbers identical to the engineer's proof_a (0 differences). n 999/1643/495/1039/414/645/519/631/517/1063. The 2 rows still open at the cut (donch4h, orb gold) are counted and never read."
+   },
+   {
+    "what": "(b) K1 brk72_24h_wd ethusd riskbp skip, FP and x1.5, vs synthesis_B C1",
+    "ok": true,
+    "note": "309 checks, 0 failed. T = 505.8534 / 496.7461 / 465.1178 bp, T(2022) = 478.284. 2019-2021 FP: 395 -> 304 trades, +49.1 -> +63.9 R. x1.5: 397 -> 306, +40.86 -> +56.40. Skip mask and folds are exactly those of s1_run.walk_forward."
+   },
+   {
+    "what": "(c) K2 / K3: orb_asia_2d_buf10 on ethusd / btcusd vs synthesis_B N1 / N2",
+    "ok": true,
+    "note": "230 checks, 0 failed. FP 344 trades +155.5 R and 375 trades +194.3 R. x1.5 344 / +140.29 and 374 / +185.62. One boundary trade dropped in each."
+   },
+   {
+    "what": "(d) 7 payoff variants and their references vs variants_table.csv and trials.jsonl",
+    "ok": true,
+    "note": "444 checks, 0 failed. The harness's censoring equals the lens's on every in-sample lab run."
+   },
+   {
+    "what": "(e) Portfolios P0 / P1 / P2, FP and x1.5, vs synthesis_B portfolio.results (every field)",
+    "ok": true,
+    "note": "1092 checks, 0 failed. P0 5205 trades +788.59 R, P2 5833 / +1153.18. Also equal to s2_portfolio.metrics run on the harness's book."
+   },
+   {
+    "what": "(f) Capped account (6 positions, 2 per market) vs cluster run_engine, engine_check.json and account.py",
+    "ok": true,
+    "note": "16 checks, 0 failed."
+   },
+   {
+    "what": "(g) Live execution (entry one minute late at market, Friday 16:50 New York close)",
+    "ok": true,
+    "note": "17 checks, 0 failed. K2 the verifiers' way: 392 trades +142.1 R (x1.5 +127.9). Harness default 'entry_bar': 391 / +141.8. With no delay and no Friday close, live_chain equals the official chain on all ten sleeves."
+   },
+   {
+    "what": "(h) Stake interface",
+    "ok": true,
+    "note": "65 checks, 0 failed. Causality is only self-reported, through each fit's last_outcome_used (see fixes)."
+   },
+   {
+    "what": "(i) Guard",
+    "ok": true,
+    "note": "25 checks, 0 failed. val_access.log: 502 lines, 0 with autopsy_HI_look before and after, last written at 13:50."
+   },
+   {
+    "what": "(j) look.py --cut 2022-01-01 run end to end in its own process (my re-run uses --out into the review dir)",
+    "ok": true,
+    "note": "8 checks (I added one: every read of the rehearsal carries a filter at 2022-01-01). Identical to the in-process run; is_look false."
+   },
+   {
+    "what": "(k) Moving the CUT: look.py at CUT 2021-01-01 vs the CUT 2022 run",
+    "ok": true,
+    "note": "5 checks. 124 chains and 84,931 trades identical. K1 fit for 2021 = 465.1178 = the 2021 fold."
+   },
+   {
+    "what": "Reviewer, independent: every chain compared trade by trade with the trades the lenses saved themselves",
+    "ok": true,
+    "note": "58 chains, all identical. Sources: synthesis_B out/ref__*, var__*, new__* for the 10 sB sleeves, K1 main and base, K2, K3, FP and x1.5; payoff trades_* and reference_* for the 7 variants and their references, FP and x1.5. Entry and exit times, side, reason and oid identical; max |dR| = 0.0. The K1 signal table (2,355 signals, both cost modes) is identical in every column."
+   },
+   {
+    "what": "Reviewer: my re-run against the engineer's published JSON",
+    "ok": true,
+    "note": "0 numeric differences in proof_a..k and rehearsal_in_sample.json. 221 s; peak memory 1.6 GB (parent) and 1.8 GB (look.py child)."
+   },
+   {
+    "what": "Reviewer: K1 with labels_mode 'fp' in the x1.5 run (the declaration's wording)",
+    "ok": true,
+    "note": "Runs; no order-alignment assert fires. Same folds and T(2022) 478.284, same x1.5 chain (306 trades, +56.40 R over 2019-2021). Only E_lo / E_hi change, and their signs stay the same."
+   },
+   {
+    "what": "Reviewer: census of live edge cases over the 12 rule x symbol pairs (18,077 orders filled in lab)",
+    "ok": true,
+    "note": "0 signals decided inside the Friday block whose delayed entry bar falls after the reopen. 91 entries are delayed more than 1 minute by missing bars; 1 by more than 60 minutes (donch4h, not a live trade)."
+   },
+   {
+    "what": "Reviewer: look.py refusals without LOOK_DECLARED",
+    "ok": true,
+    "note": "CUT 2022-01-01T00:01, 2022-06-30, 2026-01-01 and 2030-01-01 all REFUSED; nothing written, no log line."
+   },
+   {
+    "what": "Reviewer: guard probes that read no data",
+    "ok": false,
+    "note": "Five gaps confirmed. (1) An open file handle, (2) a bytes path or (3) a file:// URI of an FP frame passes _check_read without any row filter. (4) lab/r2/audit/brk72_24h_wd/stat_skeptic/trades/fp_val_ethusd.parquet passes without a filter. (5) pq.read_pandas reaches the unwrapped pyarrow.parquet.core.read_table. Separately, resolve_cut('2026-01-01') with LOOK_DECLARED=PROTOCOL_V3.md (passed as an env dict, no run opened) is ALLOWED today: the file already contains 'declared' 22 times and never mentions autopsy_HI_look."
+   }
+  ],
+  "leaks_found": [
+   "L1 (the one real path before declaration). The 'declared' gate is already satisfied today. PROTOCOL_V3.md contains the word 'declared' 22 times and never mentions autopsy_HI_look. With the documented command (LOOK_DECLARED=/home/user/gold-orb/lab/PROTOCOL_V3.md ... look.py --cut 2026-01-01), the full 2022-2025 look would run now, before any addendum declares it. Nothing ties the declaration to this look or to this spec. Shown with resolve_cut and an env dict; no run was opened.",
+   "L2 (guard coverage). Parquet files outside lab/data and lab/results need no row filter. Validation-period trades files sit there: lab/r2/audit/brk72_24h_wd/stat_skeptic/trades/{fp,stress,every,every_gross,gross,mirror}_val_{btcusd,ethusd}.parquet. CSVs under lab/audit/scratch/** are not checked either. The current spec reads none of them, but a plugin or stake rule loaded into the guarded process could.",
+   "L3 (guard coverage). _check_read only resolves os.path.abspath(str(source)). An open file object, a bytes path or a file:// URI of lab/data/fp/*_m1.parquet therefore lands outside DATA_DIR and is allowed with no filter (probe: ALLOWED). Also unwrapped: pq.read_pandas (it calls the unpatched pyarrow.parquet.core.read_table), pq.ParquetFile, pq.ParquetDataset and pyarrow.dataset.dataset.",
+   "L4 (minor coverage). CSVs are refused only under lab/data and are not recorded in G.reads(). json and open() are not guarded at all; results/r2/recalc/summary.json, for example, holds the 2022-2025 validation metrics. None of this is used by the current code.",
+   "Status of this run: no 2022+ row was read by the engineer's runs or mine. All 49 guarded reads carry ts / entry_time (and exit_time) < 2022-01-01; frames are asserted to end before the cut; LOOK_DECLARED was never set in any process; val_access.log is unchanged. One permitted observation: official_count loads the 2022 exit timestamps of the two in-sample rows still open at the cut, only to count them, which the hard rule allows."
+  ],
+  "fixes_needed": [
+   "F1 (blocking for the look). Bind the declaration to the spec. In look.py pass the spec sha256 it already computes to G.open_run(a.cut, label, spec_sha=sha). In vhi_guard.resolve_cut, for any CUT > 2022-01-01, require declared_ok(path) AND that the declared text contains the full 64-hex spec_sha and the string 'autopsy_HI_look'; otherwise raise GuardError. Do this before anything is logged or read. Add to self_test / proof i that PROTOCOL_V3.md as it stands is refused.",
+   "F2 (run once). In open_run, refuse a look if results/val_access.log already holds a line with track 'autopsy_HI_look', unless an explicit --second-access '<reason>' is given and written into the label. For a look, refuse --out (fixed path under results/r2/validation_hi/look/) and write a '<stem>.started' marker right after the log line. Today a look that crashes after the log line, or one run with another --out or spec name, can simply be run again.",
+   "F3 (needed before any plugin enters the look). Harden vhi_guard._check_read and install_read_guard: (a) accept only str / os.PathLike, refuse file objects, bytes, buffers and anything containing '://', and resolve with os.path.realpath(os.fspath(src)); (b) require a ts / entry_time / t_dec '<' filter with bound <= CUT for EVERY parquet read, wherever the file is; (c) also wrap pyarrow.parquet.core.read_table, pq.read_pandas, pq.ParquetFile, pq.ParquetDataset and pyarrow.dataset.dataset; (d) record CSV reads in G.reads() and refuse CSVs under lab/ except an allowlist (results/r2/autopsy/payoff/variants_table.csv). Optionally refuse builtins.open on lab/data/** and the holdout paths.",
+   "F4 (declaration choice). K1 labels in the x1.5 run. synthesis_B.json proposed_validation_look says 'every signal taken alone with FP costs'. synthesis_B declared.json C1 ('labels, thresholds and chain rebuilt in each cost mode') and look_spec.json ('labels_mode': 'run') use x1.5 labels in the x1.5 run. Pick one in the addendum and set labels_mode to match. I recommend 'fp': it is the declared text, and in sample it gives the same folds, the same T(2022) 478.284 and the same x1.5 chain. The 2023-2025 refits could differ between the two.",
+   "F5. Make the declared T(2022) binding in vhi_sleeves.change_k1. If the 2022 fold differs from declared_T['2022'] = 478.284 by more than 0.01 bp, raise, or apply the declared value and record that it did. Today the mismatch is only written into declared_T_check.",
+   "F6 (payoff-variant reference). The '<sleeve>@payoff' references have no 3-spread refusal (the payoff lens's convention). The P0 sleeves (sB) apply it, and so does synthesis_A's declaration written at 15:12 ('broker refusal of stops under 3 spreads applied' to the unchanged runs). The P0|<variant> portfolios also swap an sB sleeve for a payoff-convention variant. Add 'refuse': true for the @payoff references (orders removed where V.refuse(I.r0, I.spread)) or compare against the sB sleeve. Add a run_spec diagnostic that reports any trade difference between '<sleeve>@payoff' and '<sleeve>' inside the look window. They are identical in sample (FP and x1.5, trade by trade). Also prune look_spec.json to synthesis_A's kept list: it drops noise30 S0.25 and nq_btc_follow T1 as refuted.",
+   "F7 (live). In live_orders, test the Friday-evening block on the decision instant (close of the lab fill bar, idx[fb] + 1 min) as well as on the delayed entry bar. Today a signal decided on Friday after 16:50 New York whose next bar is the Sunday reopen is entered at the reopen; there are 0 such cases in sample. Otherwise declare the entry-bar rule. Also declare in the addendum the 'entry_bar' one-position semantics and that a us100 position still open at Friday 16:50 is closed at the Sunday reopen.",
+   "F8 (Addendum I hook). Stake rules see no price data: ctx has no frame, and frames are freed before the portfolio stage. The conviction lens's stakes read the context lens's descriptor tables (results/r2/autopsy/context/signals), which exist only in sample. Add a documented per-sleeve 'descriptors' hook, evaluated in the sleeve loop on the cut frame (for example a no-skip change kind that runs lab/r2/tracks/autopsy/context/descr.py and returns its table as 'signals' for ctx). Make 'trade_table' stakes refuse a default for trades inside the look window, so a table built in sample cannot silently become stake 1 in 2022-2025.",
+   "F9. Add to proofs.py a generic causality test for any registered change kind and any stake plugin. For changes: N sampled decisions recomputed on the frame cut right after the decision bar must match. For stakes: with every outcome known after 1 January Y minus 7 days scrambled, the stakes of year Y must not change. Proof k only catches look-ahead past the end of the frame, and proof h relies on each fit reporting itself.",
+   "F10 (recommended). Compute synthesis_B's declared criteria mechanically in run_spec as a 'verdicts' block. K1: expectancy up and total R not lower in both FP and x1.5, and the skipped signals alone earn less on average than the kept ones. Each new sleeve: PF >= 1.06, expectancy > 0, every-signal expectancy > 0, at least 3 of 4 years positive, x1.5 expectancy > 0, and week_mean_over_sd(P0 + sleeve) >= that of P0. Add the payoff and Addendum I criteria once declared. Also state in the addendum whether 'equal weekly swing' uses scale factors fixed in sample (as const stakes) or recomputed on 2022-2025, which is what 'comparisons' does today."
+  ],
+  "notes": "Verdict: ready with fixes. The harness itself is correct. All 11 proofs reproduce exactly at CUT 2022-01-01, and my independent trade-by-trade comparison with the trades the lenses saved themselves (58 chains plus the K1 signal table) is identical to the last digit.\n\nFixes before the look:\n- F1 is blocking. Without it, setting LOOK_DECLARED to PROTOCOL_V3.md as it stands is enough to run the look today.\n- F3, F8 and F9 are needed before any Addendum I stake rule or new change kind enters the look.\n- F4 and F6 are choices the declaration must settle explicitly.\n\nImplementation against the declared texts:\n- synthesis_B, K1: thresholds, purge, terciles, worse side skipped only if it lost, at least 100 training signals, history from 31 January of Y-1, chains re-simulated. All match, except the label cost mode (F4).\n- synthesis_B, K2 / K3: FINALISTS['orb_asia_2d_buf10'] unchanged, sB convention, held through weekends.\n- Payoff variants: the lens's own variants.py is imported, so S / T / H / B are identical by construction.\n- Criteria inputs present: every-signal runs on K2 / K3, k1_extras, P0+orb_eth and P0+orb_btc portfolios, live runs.\n\nNothing in my review read 2022+ data, set LOOK_DECLARED, wrote under lab/, or ran a git command that changes anything. Another agent was writing lab/r2/tracks/sizing/synthesis/ and synthesis_A/ during the review. Its synthesis_A/declared.json (15:12) was read only to compare the payoff specs.\n\nReviewed versions (sha256):\n- look_spec.json 2df1e549...0ee10a (same as in proofs.json)\n- vhi_guard.py b475e746...463d\n- vhi_sleeves.py b0632ef5...6ab1\n- vhi_run.py 45702d65...9e\n- look.py 2be7804c...8a\n- proofs.py d06eddef...b1\n\nReview files, all in /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/validation_hi_review/:\n- rerun_proofs.py (drives the engineer's proofs with outputs redirected; out/proof_*.json, out/index.json, out/rehearsal_*.json, rerun.log)\n- check_trades.py (trade-by-trade check; out/check_trades.json)\n- check_more.py (guard probes, K1 'fp' labels, live census; out/check_more.json, check_more.log)"
+ }
+}

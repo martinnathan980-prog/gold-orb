@@ -467,7 +467,7 @@
    }
   }
  },
- "checks": 307,
+ "checks": 309,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -1441,6 +1441,20 @@
    "ok": true
   },
   {
+   "field": "fp.declared_T_check via a fold: 2021 = 465.1178 accepted, 2020 = 496.0 flagged",
+   "expected": [
+    true,
+    "fold",
+    false
+   ],
+   "got": [
+    true,
+    "fold",
+    false
+   ],
+   "ok": true
+  },
+  {
    "field": "stress.signals",
    "expected": 2355,
    "got": 2355,
@@ -2370,6 +2384,20 @@
     "skip": "hi",
     "n_train": 2345
    },
+   "ok": true
+  },
+  {
+   "field": "stress.declared_T_check via a fold: 2021 = 465.1178 accepted, 2020 = 496.0 flagged",
+   "expected": [
+    true,
+    "fold",
+    false
+   ],
+   "got": [
+    true,
+    "fold",
+    false
+   ],
    "ok": true
   }
  ]

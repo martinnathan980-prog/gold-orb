@@ -1,0 +1,1511 @@
+{
+ "what": "PROTOCOL_V3 Addendum I, lead analyst synthesis of the lenses conviction, clock and weights and of the attack on V05. IN SAMPLE ONLY: price frames read with the parquet row filter ts < 2022-01-01; official trades read with entry_time < 2022-01-01 and exit_time < 2022-01-01 in the read; context-lens tables read with t_dec < 2022-01-01; nothing dated 2022 or later was read, simulated or looked at. No validation look.",
+ "account_convention": "PLAIN SUM of the one-position chains of the sleeves (no 6-position / 2-per-market caps, no compounding), 1 R per trade times the stake; kept the same throughout. Chains: orders of the frozen rules from lab/r2/recalc.py::sleeves() on the in-sample slice, simulated with no_overlap, orders whose stop is closer than 3 spreads of the fill bar refused (sleeve re-simulated), trades still open at the end of the slice dropped. FP server weeks (New York + 7 h, Monday to Sunday); stake x R booked in the week of the EXIT; every calendar week counts (empty = 0). Out-of-fold window: the 157 server weeks whose Thursday falls in 2019, 2020 or 2021; a week belongs to the year of its Thursday. Weekly Sharpe = mean / sd (ddof 1) x sqrt(52). each variant's stakes are multiplied by k = sd(reference weekly R) / sd(variant weekly R) over the 157 out-of-fold weeks (same cost mode); every measure of the variant is then read at that scale. Per-year figures use the same k.",
+ "first_check_rule2": {
+  "all_ten_reproduced": true,
+  "official_rows_entered_and_closed_before_2022": {
+   "trades": 7963,
+   "R": 1274.351
+  },
+  "per_sleeve": {
+   "ocm4__us100": {
+    "official_trades_closed_before_2022": 999,
+    "matched_identical": 999,
+    "rows_differing": 0,
+    "total_R_official_closed": 136.879,
+    "total_R_mine_matched": 136.879,
+    "official_rows_entered_before_2022_exit_not_before_2022_not_read": 0,
+    "my_trades_open_at_slice_end": [],
+    "reproduced": true
+   },
+   "noise30__us100": {
+    "official_trades_closed_before_2022": 1643,
+    "matched_identical": 1643,
+    "rows_differing": 0,
+    "total_R_official_closed": 134.4007,
+    "total_R_mine_matched": 134.4007,
+    "official_rows_entered_before_2022_exit_not_before_2022_not_read": 0,
+    "my_trades_open_at_slice_end": [],
+    "reproduced": true
+   },
+   "donch4h_stop__xauusd": {
+    "official_trades_closed_before_2022": 494,
+    "matched_identical": 494,
+    "rows_differing": 0,
+    "total_R_official_closed": 84.3014,
+    "total_R_mine_matched": 84.3014,
+    "official_rows_entered_before_2022_exit_not_before_2022_not_read": 1,
+    "my_trades_open_at_slice_end": [
+     {
+      "entry_time": "2021-12-31 07:06:00+00:00",
+      "exit_time": "1640987940000000000",
+      "reason": "time"
+     }
+    ],
+    "reproduced": true
+   },
+   "orb_asia_2d_buf10__xauusd": {
+    "official_trades_closed_before_2022": 1038,
+    "matched_identical": 1038,
+    "rows_differing": 0,
+    "total_R_official_closed": 231.1453,
+    "total_R_mine_matched": 231.1453,
+    "official_rows_entered_before_2022_exit_not_before_2022_not_read": 1,
+    "my_trades_open_at_slice_end": [
+     {
+      "entry_time": "2021-12-31 07:03:00+00:00",
+      "exit_time": "1640988000000000000",
+      "reason": "eod"
+     }
+    ],
+    "reproduced": true
+   },
+   "GOLD_FRI_PM__xauusd": {
+    "official_trades_closed_before_2022": 414,
+    "matched_identical": 414,
+    "rows_differing": 0,
+    "total_R_official_closed": 13.921,
+    "total_R_mine_matched": 13.921,
+    "official_rows_entered_before_2022_exit_not_before_2022_not_read": 0,
+    "my_trades_open_at_slice_end": [],
+    "reproduced": true
+   },
+   "brk72_24h_wd__btcusd": {
+    "official_trades_closed_before_2022": 645,
+    "matched_identical": 645,
+    "rows_differing": 0,
+    "total_R_official_closed": 172.8743,
+    "total_R_mine_matched": 172.8743,
+    "official_rows_entered_before_2022_exit_not_before_2022_not_read": 0,
+    "my_trades_open_at_slice_end": [],
+    "reproduced": true
+   },
+   "F1_brk_ridge_filter__btcusd": {
+    "official_trades_closed_before_2022": 631,
+    "matched_identical": 631,
+    "rows_differing": 0,
+    "total_R_official_closed": 226.3891,
+    "total_R_mine_matched": 226.3891,
+    "official_rows_entered_before_2022_exit_not_before_2022_not_read": 0,
+    "my_trades_open_at_slice_end": [],
+    "reproduced": true
+   },
+   "nq_btc_follow__btcusd": {
+    "official_trades_closed_before_2022": 1063,
+    "matched_identical": 1063,
+    "rows_differing": 0,
+    "total_R_official_closed": 66.346,
+    "total_R_mine_matched": 66.346,
+    "official_rows_entered_before_2022_exit_not_before_2022_not_read": 0,
+    "my_trades_open_at_slice_end": [],
+    "reproduced": true
+   },
+   "brk72_24h_wd__ethusd": {
+    "official_trades_closed_before_2022": 519,
+    "matched_identical": 519,
+    "rows_differing": 0,
+    "total_R_official_closed": 103.6871,
+    "total_R_mine_matched": 103.6871,
+    "official_rows_entered_before_2022_exit_not_before_2022_not_read": 0,
+    "my_trades_open_at_slice_end": [],
+    "reproduced": true
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "official_trades_closed_before_2022": 517,
+    "matched_identical": 517,
+    "rows_differing": 0,
+    "total_R_official_closed": 104.4067,
+    "total_R_mine_matched": 104.4067,
+    "official_rows_entered_before_2022_exit_not_before_2022_not_read": 0,
+    "my_trades_open_at_slice_end": [],
+    "reproduced": true
+   }
+  },
+  "note": "8 sleeves identical row by row over all their in-sample rows; donch4h_stop and orb_asia_2d_buf10 identical on every official row closed before 2022 (494 and 1,038); each has one more official row, entered 2021-12-31 and closed in 2022, which was counted but not read; in my run that trade is still open at the slice end and is dropped from every statistic. The earlier syntheses quote 84.235 and 230.065 R including those two rows (-0.066 and -1.080 R): 84.301 - 0.066 and 231.145 - 1.080, consistent.",
+  "chains_equal_context_lens_chains_fp_and_x1_5": true,
+  "refused_3_spreads": {
+   "ocm4__us100": {
+    "fp": 0,
+    "stress": 0
+   },
+   "noise30__us100": {
+    "fp": 0,
+    "stress": 0
+   },
+   "donch4h_stop__xauusd": {
+    "fp": 0,
+    "stress": 0
+   },
+   "orb_asia_2d_buf10__xauusd": {
+    "fp": 0,
+    "stress": 0
+   },
+   "GOLD_FRI_PM__xauusd": {
+    "fp": 0,
+    "stress": 0
+   },
+   "brk72_24h_wd__btcusd": {
+    "fp": 0,
+    "stress": 0
+   },
+   "F1_brk_ridge_filter__btcusd": {
+    "fp": 0,
+    "stress": 0
+   },
+   "nq_btc_follow__btcusd": {
+    "fp": 0,
+    "stress": 0
+   },
+   "new_orb_asia_2d_buf10__btcusd": {
+    "fp": 0,
+    "stress": 0
+   },
+   "brk72_24h_wd__ethusd": {
+    "fp": 0,
+    "stress": 0
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "fp": 0,
+    "stress": 0
+   },
+   "new_orb_asia_2d_buf10__ethusd": {
+    "fp": 0,
+    "stress": 0
+   }
+  },
+  "P0_window_2018_02_2021_12": {
+   "fp": {
+    "trades": 5205,
+    "total_R": 788.59
+   },
+   "stress": {
+    "trades": 5207,
+    "total_R": 711.09
+   }
+  },
+  "P0_matches_synthesis_B": true
+ },
+ "kept_changes_addendum_I": [],
+ "decision": {
+  "decided_before_any_run_of_this_synthesis": true,
+  "addendum_I_kept_changes": [],
+  "why": [
+   "The three lenses report no candidate under the criteria fixed in Addendum I. clock: 9 declared rules x0.933 to x1.000 pooled weekly Sharpe at equal swing (FP). weights: 15 variants, best IV00 x1.059 (fails (a)). conviction: best V05 x1.095 (fails (a), x1.10 required).",
+   "V05 is the only change with a verdict (weakened). As declared (training trades with exit_time <= 1 January Y minus 7 days) it fails criterion (a): x1.0951 (lens and verifier). The verifier's strict reading of rule 3 (exit strictly before the cutoff) gives x1.1002: a reading chosen after the result, passing by 0.0002 because of two trades whose time exits fall on the cutoff instant (2018-12-25 00:00 UTC); a pass on a post hoc reading by that margin is not a pass of the pre-registered test.",
+   "Addendum H already keeps K1 on brk72_24h_wd ethusd (same descriptor riskbp) and allows at most one change per sleeve; the verifier finds V05 on top of K1 at x1.056 with 2019 down (x0.980): it fails (a) and (b) as an addition to what H keeps.",
+   "Criterion (b) is fragile (2019 x1.006; down with the live Friday close x0.997, on the capped account x0.990, on top of K1 x0.980); the earlier 2018 fold goes the other way (x0.944); on the user's 1,000 EUR account at today's prices it lowers the weekly Sharpe (x0.954 at 1 % risk, x0.993 at 2 %). The verifier recommends not carrying it.",
+   "The workflow rule keeps ONLY changes whose verdict is confirmed or weakened with a positive effect: a necessary condition, not a sufficient one; the candidate criteria of Addendum I remain binding."
+  ],
+  "consequence": "The account of the ten sleeves with the kept changes of Addendum I is the unchanged account. The simulations below are information: they re-measure, with the simulator and this synthesis's own code, the reference, the dropped near-miss, and what Addendum H keeps, on the measures of Addendum I. Their results cannot add a change to the kept set. If my re-implementation of V05 differs from the lens and the verifier by more than 0.002 in the pooled ratio, I report the discrepancy instead of re-deciding."
+ },
+ "dropped": [
+  {
+   "change": "V05, pooled crypto ridge (conviction lens; verdict weakened)",
+   "why": "fails criterion (a) as declared: my re-simulation x1.095 (2019 x1.006, 2020 x1.047, 2021 x1.339) FP, k 0.9473, 3792 trades, +609.04 R at equal swing against 3985 trades +556.16 R; with costs x1.5 x1.102 (2019 x1.010, 2020 x1.055, 2021 x1.340). The strict reading of rule 3 gives x1.100 (2019 x1.022, 2020 x1.047, 2021 x1.339): a post hoc reading passing by 0.0002 thanks to two trades whose time exits fall on the 2018-12-25 00:00 UTC cutoff (truncation test T1b: the declared fit uses 673 training trades, 671 on a frame cut at the training cut). On top of K1 (Addendum H, same sleeve, same lead descriptor riskbp) it adds only x1.056 (2019 x0.980, 2020 x1.040, 2021 x1.199) FP and x1.062 (2019 x0.977, 2020 x1.046, 2021 x1.206) with costs x1.5: fails (a) and (b) as an addition. The verifier adds: 2018 fold x0.944, 2018-2021 x1.043; 72 % of 2021's gain in 5 weeks; the zero rule removed trades that made +5.5 R; Friday close x1.084 with 2019 down; capped account x1.097 with 2019 down; 1,000 EUR account at today's prices x0.954 (1 % risk) and x0.993 (2 %). Recommendation of the verifier: do not carry. Noted after this synthesis's declaration (15:03 UTC), not used for the decision: three of its four sleeves already carry an Addendum H change (K1 on brk72 ethusd; synthesis_A, declared 15:12 UTC and in progress, proposes S0.75r on brk72 btcusd and H2 on F1 ethusd), and at most one change per sleeve may go forward."
+  },
+  {
+   "change": "the other conviction families (per-sleeve terciles, gated terciles, pooled single descriptor, per-sleeve ridge, agreement, combinations)",
+   "why": "no candidate: x0.942 to x1.061 pooled FP (lens figures), their nulls overlap them"
+  },
+  {
+   "change": "clock lens (hour bands and weekdays)",
+   "why": "no candidate: x0.933 to x1.000 pooled FP"
+  },
+  {
+   "change": "weights lens (mean-variance, inverse volatility, trailing switches, rank weights)",
+   "why": "no candidate: best IV00 x1.059 with 2019 down (x0.859); the others x0.919 to x0.990"
+  }
+ ],
+ "results_plain_sum_157_weeks_2019_2021": {
+  "S00_reference_equals_account_with_kept_changes_of_I": {
+   "fp": {
+    "pooled_2019_2021": {
+     "trades": 3985,
+     "R_per_trade": 0.1396,
+     "eur_per_100_risked": 13.96,
+     "sharpe": 2.7466,
+     "total_R": 556.16,
+     "losing_weeks_pct": 44.59,
+     "worst_week": -12.54,
+     "longest_losing_weeks": 7,
+     "losing_trades_per_month": 60.78,
+     "max_fall_weekly_R": 21.03
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1224,
+      "R_per_trade": 0.146,
+      "eur_per_100_risked": 14.6,
+      "sharpe": 2.3995,
+      "total_R": 178.67,
+      "losing_weeks_pct": 50.0,
+      "worst_week": -9.07,
+      "longest_losing_weeks": 5,
+      "losing_trades_per_month": 58.42,
+      "max_fall_weekly_R": 11.93
+     },
+     "2020": {
+      "trades": 1324,
+      "R_per_trade": 0.2044,
+      "eur_per_100_risked": 20.44,
+      "sharpe": 3.7143,
+      "total_R": 270.57,
+      "losing_weeks_pct": 39.62,
+      "worst_week": -10.97,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 58.5,
+      "max_fall_weekly_R": 20.24
+     },
+     "2021": {
+      "trades": 1437,
+      "R_per_trade": 0.0744,
+      "eur_per_100_risked": 7.44,
+      "sharpe": 2.0367,
+      "total_R": 106.92,
+      "losing_weeks_pct": 44.23,
+      "worst_week": -12.54,
+      "longest_losing_weeks": 7,
+      "losing_trades_per_month": 65.42,
+      "max_fall_weekly_R": 21.03
+     }
+    }
+   },
+   "stress": {
+    "pooled_2019_2021": {
+     "trades": 3987,
+     "R_per_trade": 0.1254,
+     "eur_per_100_risked": 12.54,
+     "sharpe": 2.4915,
+     "total_R": 499.97,
+     "losing_weeks_pct": 46.5,
+     "worst_week": -12.66,
+     "longest_losing_weeks": 7,
+     "losing_trades_per_month": 61.47,
+     "max_fall_weekly_R": 22.98
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1225,
+      "R_per_trade": 0.1293,
+      "eur_per_100_risked": 12.93,
+      "sharpe": 2.1431,
+      "total_R": 158.36,
+      "losing_weeks_pct": 55.77,
+      "worst_week": -9.37,
+      "longest_losing_weeks": 5,
+      "losing_trades_per_month": 59.5,
+      "max_fall_weekly_R": 13.85
+     },
+     "2020": {
+      "trades": 1326,
+      "R_per_trade": 0.1886,
+      "eur_per_100_risked": 18.86,
+      "sharpe": 3.4708,
+      "total_R": 250.05,
+      "losing_weeks_pct": 39.62,
+      "worst_week": -12.3,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 59.08,
+      "max_fall_weekly_R": 22.98
+     },
+     "2021": {
+      "trades": 1436,
+      "R_per_trade": 0.0638,
+      "eur_per_100_risked": 6.38,
+      "sharpe": 1.7549,
+      "total_R": 91.55,
+      "losing_weeks_pct": 44.23,
+      "worst_week": -12.66,
+      "longest_losing_weeks": 7,
+      "losing_trades_per_month": 65.83,
+      "max_fall_weekly_R": 22.95
+     }
+    }
+   }
+  },
+  "S01_V05_information": {
+   "fp": {
+    "scale_k": 0.9473,
+    "years_up": 3,
+    "pooled_2019_2021": {
+     "trades": 3792,
+     "R_per_trade": 0.1606,
+     "eur_per_100_risked": 16.62,
+     "sharpe": 3.0078,
+     "total_R": 609.04,
+     "losing_weeks_pct": 40.13,
+     "worst_week": -12.37,
+     "longest_losing_weeks": 6,
+     "losing_trades_per_month": 57.69,
+     "max_fall_weekly_R": 19.24,
+     "sharpe_ratio_vs_ref": 1.0951
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1118,
+      "R_per_trade": 0.1533,
+      "eur_per_100_risked": 15.17,
+      "sharpe": 2.4147,
+      "total_R": 171.35,
+      "losing_weeks_pct": 48.08,
+      "worst_week": -9.92,
+      "longest_losing_weeks": 4,
+      "losing_trades_per_month": 54.0,
+      "max_fall_weekly_R": 11.62,
+      "sharpe_ratio_vs_ref": 1.0063
+     },
+     "2020": {
+      "trades": 1284,
+      "R_per_trade": 0.2385,
+      "eur_per_100_risked": 24.51,
+      "sharpe": 3.8881,
+      "total_R": 306.3,
+      "losing_weeks_pct": 33.96,
+      "worst_week": -12.37,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 56.58,
+      "max_fall_weekly_R": 19.24,
+      "sharpe_ratio_vs_ref": 1.0468
+     },
+     "2021": {
+      "trades": 1390,
+      "R_per_trade": 0.0945,
+      "eur_per_100_risked": 10.22,
+      "sharpe": 2.7269,
+      "total_R": 131.39,
+      "losing_weeks_pct": 38.46,
+      "worst_week": -10.43,
+      "longest_losing_weeks": 6,
+      "losing_trades_per_month": 62.5,
+      "max_fall_weekly_R": 18.38,
+      "sharpe_ratio_vs_ref": 1.3389
+     }
+    }
+   },
+   "stress": {
+    "scale_k": 0.9493,
+    "years_up": 3,
+    "pooled_2019_2021": {
+     "trades": 3788,
+     "R_per_trade": 0.1454,
+     "eur_per_100_risked": 14.99,
+     "sharpe": 2.7456,
+     "total_R": 550.96,
+     "losing_weeks_pct": 43.31,
+     "worst_week": -14.22,
+     "longest_losing_weeks": 6,
+     "losing_trades_per_month": 58.33,
+     "max_fall_weekly_R": 22.83,
+     "sharpe_ratio_vs_ref": 1.102
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1115,
+      "R_per_trade": 0.1355,
+      "eur_per_100_risked": 13.39,
+      "sharpe": 2.1643,
+      "total_R": 151.09,
+      "losing_weeks_pct": 53.85,
+      "worst_week": -10.41,
+      "longest_losing_weeks": 5,
+      "losing_trades_per_month": 54.83,
+      "max_fall_weekly_R": 12.69,
+      "sharpe_ratio_vs_ref": 1.0099
+     },
+     "2020": {
+      "trades": 1286,
+      "R_per_trade": 0.2226,
+      "eur_per_100_risked": 22.69,
+      "sharpe": 3.6613,
+      "total_R": 286.2,
+      "losing_weeks_pct": 35.85,
+      "worst_week": -14.22,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 57.25,
+      "max_fall_weekly_R": 22.83,
+      "sharpe_ratio_vs_ref": 1.0549
+     },
+     "2021": {
+      "trades": 1387,
+      "R_per_trade": 0.082,
+      "eur_per_100_risked": 8.84,
+      "sharpe": 2.3519,
+      "total_R": 113.67,
+      "losing_weeks_pct": 40.38,
+      "worst_week": -10.58,
+      "longest_losing_weeks": 6,
+      "losing_trades_per_month": 62.92,
+      "max_fall_weekly_R": 21.48,
+      "sharpe_ratio_vs_ref": 1.3402
+     }
+    }
+   }
+  },
+  "S02_V05_strict_information": {
+   "fp": {
+    "scale_k": 0.9478,
+    "years_up": 3,
+    "pooled_2019_2021": {
+     "trades": 3790,
+     "R_per_trade": 0.1614,
+     "eur_per_100_risked": 16.69,
+     "sharpe": 3.0217,
+     "total_R": 611.85,
+     "losing_weeks_pct": 39.49,
+     "worst_week": -12.37,
+     "longest_losing_weeks": 6,
+     "losing_trades_per_month": 57.64,
+     "max_fall_weekly_R": 19.25,
+     "sharpe_ratio_vs_ref": 1.1002
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1116,
+      "R_per_trade": 0.1558,
+      "eur_per_100_risked": 15.4,
+      "sharpe": 2.4526,
+      "total_R": 173.93,
+      "losing_weeks_pct": 46.15,
+      "worst_week": -9.92,
+      "longest_losing_weeks": 4,
+      "losing_trades_per_month": 53.83,
+      "max_fall_weekly_R": 11.63,
+      "sharpe_ratio_vs_ref": 1.0221
+     },
+     "2020": {
+      "trades": 1284,
+      "R_per_trade": 0.2387,
+      "eur_per_100_risked": 24.51,
+      "sharpe": 3.8881,
+      "total_R": 306.46,
+      "losing_weeks_pct": 33.96,
+      "worst_week": -12.37,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 56.58,
+      "max_fall_weekly_R": 19.25,
+      "sharpe_ratio_vs_ref": 1.0468
+     },
+     "2021": {
+      "trades": 1390,
+      "R_per_trade": 0.0946,
+      "eur_per_100_risked": 10.22,
+      "sharpe": 2.7269,
+      "total_R": 131.46,
+      "losing_weeks_pct": 38.46,
+      "worst_week": -10.44,
+      "longest_losing_weeks": 6,
+      "losing_trades_per_month": 62.5,
+      "max_fall_weekly_R": 18.39,
+      "sharpe_ratio_vs_ref": 1.3389
+     }
+    }
+   },
+   "stress": {
+    "scale_k": 0.9501,
+    "years_up": 3,
+    "pooled_2019_2021": {
+     "trades": 3790,
+     "R_per_trade": 0.1456,
+     "eur_per_100_risked": 14.98,
+     "sharpe": 2.7501,
+     "total_R": 551.85,
+     "losing_weeks_pct": 42.68,
+     "worst_week": -14.23,
+     "longest_losing_weeks": 6,
+     "losing_trades_per_month": 58.36,
+     "max_fall_weekly_R": 22.85,
+     "sharpe_ratio_vs_ref": 1.1038
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1117,
+      "R_per_trade": 0.1358,
+      "eur_per_100_risked": 13.38,
+      "sharpe": 2.1754,
+      "total_R": 151.65,
+      "losing_weeks_pct": 51.92,
+      "worst_week": -10.42,
+      "longest_losing_weeks": 5,
+      "losing_trades_per_month": 54.92,
+      "max_fall_weekly_R": 12.45,
+      "sharpe_ratio_vs_ref": 1.0151
+     },
+     "2020": {
+      "trades": 1286,
+      "R_per_trade": 0.2227,
+      "eur_per_100_risked": 22.69,
+      "sharpe": 3.6613,
+      "total_R": 286.44,
+      "losing_weeks_pct": 35.85,
+      "worst_week": -14.23,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 57.25,
+      "max_fall_weekly_R": 22.85,
+      "sharpe_ratio_vs_ref": 1.0549
+     },
+     "2021": {
+      "trades": 1387,
+      "R_per_trade": 0.082,
+      "eur_per_100_risked": 8.84,
+      "sharpe": 2.3519,
+      "total_R": 113.77,
+      "losing_weeks_pct": 40.38,
+      "worst_week": -10.59,
+      "longest_losing_weeks": 6,
+      "losing_trades_per_month": 62.92,
+      "max_fall_weekly_R": 21.5,
+      "sharpe_ratio_vs_ref": 1.3402
+     }
+    }
+   }
+  },
+  "S03_K1_addendum_H": {
+   "fp": {
+    "scale_k": 1.0091,
+    "years_up": 2,
+    "pooled_2019_2021": {
+     "trades": 3894,
+     "R_per_trade": 0.148,
+     "eur_per_100_risked": 14.66,
+     "sharpe": 2.8453,
+     "total_R": 576.13,
+     "losing_weeks_pct": 45.22,
+     "worst_week": -11.64,
+     "longest_losing_weeks": 7,
+     "losing_trades_per_month": 58.97,
+     "max_fall_weekly_R": 20.56,
+     "sharpe_ratio_vs_ref": 1.0359
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1198,
+      "R_per_trade": 0.155,
+      "eur_per_100_risked": 15.36,
+      "sharpe": 2.4968,
+      "total_R": 185.66,
+      "losing_weeks_pct": 51.92,
+      "worst_week": -8.71,
+      "longest_losing_weeks": 5,
+      "losing_trades_per_month": 56.75,
+      "max_fall_weekly_R": 11.19,
+      "sharpe_ratio_vs_ref": 1.0406
+     },
+     "2020": {
+      "trades": 1310,
+      "R_per_trade": 0.2072,
+      "eur_per_100_risked": 20.53,
+      "sharpe": 3.6817,
+      "total_R": 271.41,
+      "losing_weeks_pct": 41.51,
+      "worst_week": -11.07,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 57.75,
+      "max_fall_weekly_R": 20.56,
+      "sharpe_ratio_vs_ref": 0.9912
+     },
+     "2021": {
+      "trades": 1386,
+      "R_per_trade": 0.0859,
+      "eur_per_100_risked": 8.51,
+      "sharpe": 2.3001,
+      "total_R": 119.06,
+      "losing_weeks_pct": 42.31,
+      "worst_week": -11.64,
+      "longest_losing_weeks": 7,
+      "losing_trades_per_month": 62.42,
+      "max_fall_weekly_R": 20.17,
+      "sharpe_ratio_vs_ref": 1.1293
+     }
+    }
+   },
+   "stress": {
+    "scale_k": 1.0088,
+    "years_up": 2,
+    "pooled_2019_2021": {
+     "trades": 3896,
+     "R_per_trade": 0.1335,
+     "eur_per_100_risked": 13.23,
+     "sharpe": 2.5915,
+     "total_R": 520.04,
+     "losing_weeks_pct": 47.13,
+     "worst_week": -12.4,
+     "longest_losing_weeks": 7,
+     "losing_trades_per_month": 59.67,
+     "max_fall_weekly_R": 23.31,
+     "sharpe_ratio_vs_ref": 1.0401
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1199,
+      "R_per_trade": 0.1379,
+      "eur_per_100_risked": 13.67,
+      "sharpe": 2.239,
+      "total_R": 165.37,
+      "losing_weeks_pct": 55.77,
+      "worst_week": -8.99,
+      "longest_losing_weeks": 5,
+      "losing_trades_per_month": 57.83,
+      "max_fall_weekly_R": 12.67,
+      "sharpe_ratio_vs_ref": 1.0447
+     },
+     "2020": {
+      "trades": 1312,
+      "R_per_trade": 0.1911,
+      "eur_per_100_risked": 18.95,
+      "sharpe": 3.4403,
+      "total_R": 250.76,
+      "losing_weeks_pct": 41.51,
+      "worst_week": -12.4,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 58.33,
+      "max_fall_weekly_R": 23.31,
+      "sharpe_ratio_vs_ref": 0.9912
+     },
+     "2021": {
+      "trades": 1385,
+      "R_per_trade": 0.075,
+      "eur_per_100_risked": 7.44,
+      "sharpe": 2.0219,
+      "total_R": 103.91,
+      "losing_weeks_pct": 44.23,
+      "worst_week": -11.76,
+      "longest_losing_weeks": 7,
+      "losing_trades_per_month": 62.83,
+      "max_fall_weekly_R": 22.02,
+      "sharpe_ratio_vs_ref": 1.1521
+     }
+    }
+   }
+  },
+  "S04_K1_plus_V05_information": {
+   "fp_vs_S00": {
+    "scale_k": 0.9464,
+    "years_up": 3,
+    "pooled_2019_2021": {
+     "trades": 3771,
+     "R_per_trade": 0.1613,
+     "eur_per_100_risked": 16.7,
+     "sharpe": 3.0041,
+     "total_R": 608.29,
+     "losing_weeks_pct": 40.76,
+     "worst_week": -12.35,
+     "longest_losing_weeks": 6,
+     "losing_trades_per_month": 57.33,
+     "max_fall_weekly_R": 19.22,
+     "sharpe_ratio_vs_ref": 1.0938
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1112,
+      "R_per_trade": 0.1562,
+      "eur_per_100_risked": 15.47,
+      "sharpe": 2.4474,
+      "total_R": 173.67,
+      "losing_weeks_pct": 48.08,
+      "worst_week": -9.91,
+      "longest_losing_weeks": 4,
+      "losing_trades_per_month": 53.58,
+      "max_fall_weekly_R": 11.31,
+      "sharpe_ratio_vs_ref": 1.02
+     },
+     "2020": {
+      "trades": 1282,
+      "R_per_trade": 0.2364,
+      "eur_per_100_risked": 24.32,
+      "sharpe": 3.8279,
+      "total_R": 303.1,
+      "losing_weeks_pct": 33.96,
+      "worst_week": -12.35,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 56.5,
+      "max_fall_weekly_R": 19.22,
+      "sharpe_ratio_vs_ref": 1.0306
+     },
+     "2021": {
+      "trades": 1377,
+      "R_per_trade": 0.0955,
+      "eur_per_100_risked": 10.33,
+      "sharpe": 2.7582,
+      "total_R": 131.52,
+      "losing_weeks_pct": 40.38,
+      "worst_week": -9.88,
+      "longest_losing_weeks": 6,
+      "losing_trades_per_month": 61.92,
+      "max_fall_weekly_R": 17.07,
+      "sharpe_ratio_vs_ref": 1.3542
+     }
+    }
+   },
+   "fp_vs_S03_K1": {
+    "scale_k": 0.9378,
+    "years_up": 2,
+    "pooled_2019_2021": {
+     "trades": 3771,
+     "R_per_trade": 0.1599,
+     "eur_per_100_risked": 16.7,
+     "sharpe": 3.0041,
+     "total_R": 602.81,
+     "losing_weeks_pct": 40.76,
+     "worst_week": -12.24,
+     "longest_losing_weeks": 6,
+     "losing_trades_per_month": 57.33,
+     "max_fall_weekly_R": 19.05,
+     "sharpe_ratio_vs_ref": 1.0558
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1112,
+      "R_per_trade": 0.1548,
+      "eur_per_100_risked": 15.47,
+      "sharpe": 2.4474,
+      "total_R": 172.1,
+      "losing_weeks_pct": 48.08,
+      "worst_week": -9.82,
+      "longest_losing_weeks": 4,
+      "losing_trades_per_month": 53.58,
+      "max_fall_weekly_R": 11.2,
+      "sharpe_ratio_vs_ref": 0.9802
+     },
+     "2020": {
+      "trades": 1282,
+      "R_per_trade": 0.2343,
+      "eur_per_100_risked": 24.32,
+      "sharpe": 3.8279,
+      "total_R": 300.37,
+      "losing_weeks_pct": 33.96,
+      "worst_week": -12.24,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 56.5,
+      "max_fall_weekly_R": 19.05,
+      "sharpe_ratio_vs_ref": 1.0397
+     },
+     "2021": {
+      "trades": 1377,
+      "R_per_trade": 0.0947,
+      "eur_per_100_risked": 10.33,
+      "sharpe": 2.7582,
+      "total_R": 130.34,
+      "losing_weeks_pct": 40.38,
+      "worst_week": -9.79,
+      "longest_losing_weeks": 6,
+      "losing_trades_per_month": 61.92,
+      "max_fall_weekly_R": 16.91,
+      "sharpe_ratio_vs_ref": 1.1992
+     }
+    }
+   },
+   "stress_vs_S00": {
+    "scale_k": 0.9492,
+    "years_up": 3,
+    "pooled_2019_2021": {
+     "trades": 3768,
+     "R_per_trade": 0.1465,
+     "eur_per_100_risked": 15.1,
+     "sharpe": 2.7517,
+     "total_R": 552.19,
+     "losing_weeks_pct": 43.95,
+     "worst_week": -14.22,
+     "longest_losing_weeks": 6,
+     "losing_trades_per_month": 57.97,
+     "max_fall_weekly_R": 22.83,
+     "sharpe_ratio_vs_ref": 1.1044
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1108,
+      "R_per_trade": 0.138,
+      "eur_per_100_risked": 13.63,
+      "sharpe": 2.1871,
+      "total_R": 152.91,
+      "losing_weeks_pct": 53.85,
+      "worst_week": -10.41,
+      "longest_losing_weeks": 5,
+      "losing_trades_per_month": 54.42,
+      "max_fall_weekly_R": 12.43,
+      "sharpe_ratio_vs_ref": 1.0205
+     },
+     "2020": {
+      "trades": 1284,
+      "R_per_trade": 0.2204,
+      "eur_per_100_risked": 22.47,
+      "sharpe": 3.6003,
+      "total_R": 282.99,
+      "losing_weeks_pct": 35.85,
+      "worst_week": -14.22,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 57.17,
+      "max_fall_weekly_R": 22.83,
+      "sharpe_ratio_vs_ref": 1.0373
+     },
+     "2021": {
+      "trades": 1376,
+      "R_per_trade": 0.0845,
+      "eur_per_100_risked": 9.11,
+      "sharpe": 2.4375,
+      "total_R": 116.29,
+      "losing_weeks_pct": 42.31,
+      "worst_week": -10.09,
+      "longest_losing_weeks": 6,
+      "losing_trades_per_month": 62.33,
+      "max_fall_weekly_R": 20.14,
+      "sharpe_ratio_vs_ref": 1.389
+     }
+    }
+   },
+   "stress_vs_S03_K1": {
+    "scale_k": 0.941,
+    "years_up": 2,
+    "pooled_2019_2021": {
+     "trades": 3768,
+     "R_per_trade": 0.1453,
+     "eur_per_100_risked": 15.1,
+     "sharpe": 2.7517,
+     "total_R": 547.38,
+     "losing_weeks_pct": 43.95,
+     "worst_week": -14.09,
+     "longest_losing_weeks": 6,
+     "losing_trades_per_month": 57.97,
+     "max_fall_weekly_R": 22.63,
+     "sharpe_ratio_vs_ref": 1.0618
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1108,
+      "R_per_trade": 0.1368,
+      "eur_per_100_risked": 13.63,
+      "sharpe": 2.1871,
+      "total_R": 151.58,
+      "losing_weeks_pct": 53.85,
+      "worst_week": -10.32,
+      "longest_losing_weeks": 5,
+      "losing_trades_per_month": 54.42,
+      "max_fall_weekly_R": 12.32,
+      "sharpe_ratio_vs_ref": 0.9768
+     },
+     "2020": {
+      "trades": 1284,
+      "R_per_trade": 0.2185,
+      "eur_per_100_risked": 22.47,
+      "sharpe": 3.6003,
+      "total_R": 280.52,
+      "losing_weeks_pct": 35.85,
+      "worst_week": -14.09,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 57.17,
+      "max_fall_weekly_R": 22.63,
+      "sharpe_ratio_vs_ref": 1.0465
+     },
+     "2021": {
+      "trades": 1376,
+      "R_per_trade": 0.0838,
+      "eur_per_100_risked": 9.11,
+      "sharpe": 2.4375,
+      "total_R": 115.28,
+      "losing_weeks_pct": 42.31,
+      "worst_week": -10.0,
+      "longest_losing_weeks": 6,
+      "losing_trades_per_month": 62.33,
+      "max_fall_weekly_R": 19.96,
+      "sharpe_ratio_vs_ref": 1.2055
+     }
+    }
+   }
+  },
+  "S05_P2_K1_K2_K3_addendum_H": {
+   "fp": {
+    "scale_k": 0.8269,
+    "years_up": 3,
+    "pooled_2019_2021": {
+     "trades": 4462,
+     "R_per_trade": 0.14,
+     "eur_per_100_risked": 16.93,
+     "sharpe": 3.0843,
+     "total_R": 624.54,
+     "losing_weeks_pct": 40.76,
+     "worst_week": -13.95,
+     "longest_losing_weeks": 4,
+     "losing_trades_per_month": 68.94,
+     "max_fall_weekly_R": 24.07,
+     "sharpe_ratio_vs_ref": 1.123
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1371,
+      "R_per_trade": 0.1721,
+      "eur_per_100_risked": 20.81,
+      "sharpe": 3.1717,
+      "total_R": 235.99,
+      "losing_weeks_pct": 42.31,
+      "worst_week": -9.57,
+      "longest_losing_weeks": 4,
+      "losing_trades_per_month": 64.92,
+      "max_fall_weekly_R": 11.15,
+      "sharpe_ratio_vs_ref": 1.3218
+     },
+     "2020": {
+      "trades": 1510,
+      "R_per_trade": 0.1823,
+      "eur_per_100_risked": 22.05,
+      "sharpe": 3.8749,
+      "total_R": 275.31,
+      "losing_weeks_pct": 33.96,
+      "worst_week": -8.67,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 68.67,
+      "max_fall_weekly_R": 15.37,
+      "sharpe_ratio_vs_ref": 1.0432
+     },
+     "2021": {
+      "trades": 1581,
+      "R_per_trade": 0.0716,
+      "eur_per_100_risked": 8.66,
+      "sharpe": 2.0679,
+      "total_R": 113.24,
+      "losing_weeks_pct": 46.15,
+      "worst_week": -13.95,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 73.25,
+      "max_fall_weekly_R": 24.07,
+      "sharpe_ratio_vs_ref": 1.0153
+     }
+    }
+   },
+   "stress": {
+    "scale_k": 0.8308,
+    "years_up": 3,
+    "pooled_2019_2021": {
+     "trades": 4463,
+     "R_per_trade": 0.1272,
+     "eur_per_100_risked": 15.31,
+     "sharpe": 2.8292,
+     "total_R": 567.73,
+     "losing_weeks_pct": 43.31,
+     "worst_week": -14.2,
+     "longest_losing_weeks": 5,
+     "losing_trades_per_month": 69.67,
+     "max_fall_weekly_R": 26.99,
+     "sharpe_ratio_vs_ref": 1.1355
+    },
+    "by_year": {
+     "2019": {
+      "trades": 1372,
+      "R_per_trade": 0.1564,
+      "eur_per_100_risked": 18.83,
+      "sharpe": 2.9069,
+      "total_R": 214.61,
+      "losing_weeks_pct": 50.0,
+      "worst_week": -9.8,
+      "longest_losing_weeks": 5,
+      "losing_trades_per_month": 66.08,
+      "max_fall_weekly_R": 12.95,
+      "sharpe_ratio_vs_ref": 1.3564
+     },
+     "2020": {
+      "trades": 1512,
+      "R_per_trade": 0.1682,
+      "eur_per_100_risked": 20.24,
+      "sharpe": 3.6146,
+      "total_R": 254.29,
+      "losing_weeks_pct": 35.85,
+      "worst_week": -8.99,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 69.25,
+      "max_fall_weekly_R": 16.48,
+      "sharpe_ratio_vs_ref": 1.0414
+     },
+     "2021": {
+      "trades": 1579,
+      "R_per_trade": 0.0626,
+      "eur_per_100_risked": 7.53,
+      "sharpe": 1.8171,
+      "total_R": 98.83,
+      "losing_weeks_pct": 44.23,
+      "worst_week": -14.2,
+      "longest_losing_weeks": 3,
+      "losing_trades_per_month": 73.67,
+      "max_fall_weekly_R": 26.99,
+      "sharpe_ratio_vs_ref": 1.0354
+     }
+    }
+   }
+  },
+  "V05_fits": {
+   "2019": {
+    "coef": {
+     "riskbp": -0.073,
+     "al1": -0.0717,
+     "vol": -0.0414,
+     "oth24": -0.0446,
+     "prev": -0.039,
+     "room": -0.046
+    },
+    "b_lo": -0.0381,
+    "b_hi": 0.0886,
+    "zero_on": [
+     "brk72_24h_wd__btcusd",
+     "brk72_24h_wd__ethusd",
+     "F1_brk_ridge_filter__ethusd"
+    ],
+    "n_train": 673
+   },
+   "2020": {
+    "coef": {
+     "riskbp": -0.0634,
+     "vol": -0.0489,
+     "prev": -0.04,
+     "trig": 0.0385,
+     "al1": -0.022,
+     "oth24": -0.0073
+    },
+    "b_lo": -0.0225,
+    "b_hi": 0.0639,
+    "zero_on": [
+     "brk72_24h_wd__ethusd"
+    ],
+    "n_train": 1182
+   },
+   "2021": {
+    "coef": {
+     "riskbp": -0.0563,
+     "vol": -0.0443,
+     "prev": -0.0367,
+     "trig": 0.0385,
+     "oth24": -0.0237,
+     "al1": -0.0237
+    },
+    "b_lo": -0.0191,
+    "b_hi": 0.0606,
+    "zero_on": [
+     "brk72_24h_wd__ethusd"
+    ],
+    "n_train": 1724
+   }
+  },
+  "V05_trade_changes_fp": {
+   "brk72_24h_wd__btcusd": {
+    "baseline_trades_removed": 30,
+    "R_removed": 1.831,
+    "new_trades": 3,
+    "R_new": -0.031
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "baseline_trades_removed": 48,
+    "R_removed": 13.183,
+    "new_trades": 1,
+    "R_new": -1.008
+   },
+   "brk72_24h_wd__ethusd": {
+    "baseline_trades_removed": 135,
+    "R_removed": -9.48,
+    "new_trades": 16,
+    "R_new": -3.636
+   }
+  },
+  "V05_per_crypto_sleeve_fp_unscaled": {
+   "brk72_24h_wd__btcusd": {
+    "trades": 393,
+    "trades_ref": 420,
+    "stakes": 429.5,
+    "R_at_stake_unscaled": 148.08,
+    "R_ref": 104.52,
+    "R_per_stake": 0.3448,
+    "stake_counts": {
+     "0.5": 79,
+     "1.0": 162,
+     "1.5": 152
+    }
+   },
+   "brk72_24h_wd__ethusd": {
+    "trades": 277,
+    "trades_ref": 396,
+    "stakes": 330.5,
+    "R_at_stake_unscaled": 69.13,
+    "R_ref": 48.08,
+    "R_per_stake": 0.2092,
+    "stake_counts": {
+     "1.0": 170,
+     "1.5": 107
+    }
+   },
+   "F1_brk_ridge_filter__btcusd": {
+    "trades": 422,
+    "trades_ref": 422,
+    "stakes": 416.5,
+    "R_at_stake_unscaled": 135.83,
+    "R_ref": 115.53,
+    "R_per_stake": 0.3261,
+    "stake_counts": {
+     "0.5": 129,
+     "1.0": 175,
+     "1.5": 118
+    }
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "trades": 346,
+    "trades_ref": 393,
+    "stakes": 338.5,
+    "R_at_stake_unscaled": 58.1,
+    "R_ref": 56.22,
+    "R_per_stake": 0.1716,
+    "stake_counts": {
+     "0.5": 103,
+     "1.0": 155,
+     "1.5": 88
+    }
+   }
+  },
+  "K1_folds_fp": {
+   "2019": {
+    "q_lo": 339.05660377358396,
+    "q_hi": 505.8534470299173,
+    "E_lo": 0.7958276276585986,
+    "E_hi": -0.23297035856020337,
+    "skip": "hi",
+    "n_train": 586,
+    "n_test": 509,
+    "n_skipped": 138
+   },
+   "2020": {
+    "q_lo": 366.7952975421773,
+    "q_hi": 496.74614912368685,
+    "E_lo": 0.5172254396287123,
+    "E_hi": -0.13060143993196474,
+    "skip": "hi",
+    "n_train": 1089,
+    "n_test": 612,
+    "n_skipped": 113
+   },
+   "2021": {
+    "q_lo": 336.0095567497519,
+    "q_hi": 465.1178140105435,
+    "E_lo": 0.4189072066298652,
+    "E_hi": -0.048552582370478006,
+    "skip": "hi",
+    "n_train": 1703,
+    "n_test": 646,
+    "n_skipped": 267
+   }
+  },
+  "K1_fit_for_2022": {
+   "fp": {
+    "q_lo": 348.5868,
+    "q_hi": 478.284,
+    "E_lo": 0.3424,
+    "E_hi": -0.1309,
+    "skip": "hi",
+    "n_train": 2345
+   },
+   "stress": {
+    "q_lo": 348.5868,
+    "q_hi": 478.284,
+    "E_lo": 0.3187,
+    "E_hi": -0.1449,
+    "skip": "hi",
+    "n_train": 2345
+   }
+  }
+ },
+ "truncation": {
+  "T1_fits_on_physically_cut_frames": {
+   "2019_a_cut_at_Y0101": {
+    "V05_identical": true,
+    "V05_n_train_cut": 673,
+    "V05_n_train_full": 673,
+    "V05_strict_identical": true,
+    "V05_strict_n_train_cut": 671,
+    "K1_identical": true,
+    "K1_q_hi_cut": 505.8534,
+    "K1_q_hi_full": 505.8534,
+    "K1_n_train_cut": 586,
+    "K1_n_train_full": 586
+   },
+   "2019_b_cut_at_training_cut": {
+    "V05_identical": false,
+    "V05_n_train_cut": 671,
+    "V05_n_train_full": 673,
+    "V05_strict_identical": true,
+    "V05_strict_n_train_cut": 671,
+    "K1_identical": false,
+    "K1_q_hi_cut": 505.6108,
+    "K1_q_hi_full": 505.8534,
+    "K1_n_train_cut": 585,
+    "K1_n_train_full": 586,
+    "V05_stakes_changed_in_year_by_cut_fit": 30,
+    "V05_max_abs_coef_diff": 0.0032120103009035395
+   },
+   "2020_a_cut_at_Y0101": {
+    "V05_identical": true,
+    "V05_n_train_cut": 1182,
+    "V05_n_train_full": 1182,
+    "V05_strict_identical": true,
+    "V05_strict_n_train_cut": 1182,
+    "K1_identical": true,
+    "K1_q_hi_cut": 496.7461,
+    "K1_q_hi_full": 496.7461,
+    "K1_n_train_cut": 1089,
+    "K1_n_train_full": 1089
+   },
+   "2020_b_cut_at_training_cut": {
+    "V05_identical": true,
+    "V05_n_train_cut": 1182,
+    "V05_n_train_full": 1182,
+    "V05_strict_identical": true,
+    "V05_strict_n_train_cut": 1182,
+    "K1_identical": true,
+    "K1_q_hi_cut": 496.7461,
+    "K1_q_hi_full": 496.7461,
+    "K1_n_train_cut": 1089,
+    "K1_n_train_full": 1089
+   },
+   "2021_a_cut_at_Y0101": {
+    "V05_identical": true,
+    "V05_n_train_cut": 1724,
+    "V05_n_train_full": 1724,
+    "V05_strict_identical": true,
+    "V05_strict_n_train_cut": 1724,
+    "K1_identical": true,
+    "K1_q_hi_cut": 465.1178,
+    "K1_q_hi_full": 465.1178,
+    "K1_n_train_cut": 1703,
+    "K1_n_train_full": 1703
+   },
+   "2021_b_cut_at_training_cut": {
+    "V05_identical": true,
+    "V05_n_train_cut": 1724,
+    "V05_n_train_full": 1724,
+    "V05_strict_identical": true,
+    "V05_strict_n_train_cut": 1724,
+    "K1_identical": true,
+    "K1_q_hi_cut": 465.1178,
+    "K1_q_hi_full": 465.1178,
+    "K1_n_train_cut": 1703,
+    "K1_n_train_full": 1703
+   }
+  },
+  "T2_decisions": {
+   "decisions": 78,
+   "value_mismatch": 0,
+   "stop_mismatch": 0,
+   "stake_mismatch": 0,
+   "k1_mismatch": 0,
+   "max_abs_diff": 0.0,
+   "negative_control_identical": 0,
+   "pass": true,
+   "per_sleeve": {
+    "brk72_24h_wd__btcusd": {
+     "chain_decisions": 12,
+     "zero_stake_signals": 6,
+     "k1_signals": 0,
+     "value_mismatch": 0,
+     "stake_mismatch": 0
+    },
+    "brk72_24h_wd__ethusd": {
+     "chain_decisions": 12,
+     "zero_stake_signals": 6,
+     "k1_signals": 12,
+     "value_mismatch": 0,
+     "stake_mismatch": 0
+    },
+    "F1_brk_ridge_filter__btcusd": {
+     "chain_decisions": 12,
+     "zero_stake_signals": 0,
+     "k1_signals": 0,
+     "value_mismatch": 0,
+     "stake_mismatch": 0
+    },
+    "F1_brk_ridge_filter__ethusd": {
+     "chain_decisions": 12,
+     "zero_stake_signals": 6,
+     "k1_signals": 0,
+     "value_mismatch": 0,
+     "stake_mismatch": 0
+    }
+   }
+  },
+  "reading": "Every fit is identical when rebuilt from frames cut at 1 January of the year it is used in, and the 78 decisions recomputed on frames cut at the decision give 0 mismatches (descriptors, stop distance, stake, K1 skip); a price read 2 minutes after the decision differs on the cut frame in 78 of 78. On frames cut at the 7-day purge point, 2019 differs for V05 as declared (673 vs 671 training trades: two time exits exactly at 2018-12-25 00:00 UTC; 30 stakes of 2019 change) and for K1 (586 vs 585 training signals: one signal decided within the last day before the purge point, its outcome known a few hours after it; threshold 505.85 vs 505.61 bp); V05 strict is identical. Neither uses anything from the year it is applied to."
+ },
+ "account_before": {
+  "fp": {
+   "pooled_2019_2021": {
+    "trades": 3985,
+    "R_per_trade": 0.1396,
+    "eur_per_100_risked": 13.96,
+    "sharpe": 2.7466,
+    "total_R": 556.16,
+    "losing_weeks_pct": 44.59,
+    "worst_week": -12.54,
+    "longest_losing_weeks": 7,
+    "losing_trades_per_month": 60.78,
+    "max_fall_weekly_R": 21.03
+   },
+   "by_year": {
+    "2019": {
+     "trades": 1224,
+     "R_per_trade": 0.146,
+     "eur_per_100_risked": 14.6,
+     "sharpe": 2.3995,
+     "total_R": 178.67,
+     "losing_weeks_pct": 50.0,
+     "worst_week": -9.07,
+     "longest_losing_weeks": 5,
+     "losing_trades_per_month": 58.42,
+     "max_fall_weekly_R": 11.93
+    },
+    "2020": {
+     "trades": 1324,
+     "R_per_trade": 0.2044,
+     "eur_per_100_risked": 20.44,
+     "sharpe": 3.7143,
+     "total_R": 270.57,
+     "losing_weeks_pct": 39.62,
+     "worst_week": -10.97,
+     "longest_losing_weeks": 3,
+     "losing_trades_per_month": 58.5,
+     "max_fall_weekly_R": 20.24
+    },
+    "2021": {
+     "trades": 1437,
+     "R_per_trade": 0.0744,
+     "eur_per_100_risked": 7.44,
+     "sharpe": 2.0367,
+     "total_R": 106.92,
+     "losing_weeks_pct": 44.23,
+     "worst_week": -12.54,
+     "longest_losing_weeks": 7,
+     "losing_trades_per_month": 65.42,
+     "max_fall_weekly_R": 21.03
+    }
+   }
+  },
+  "stress": {
+   "pooled_2019_2021": {
+    "trades": 3987,
+    "R_per_trade": 0.1254,
+    "eur_per_100_risked": 12.54,
+    "sharpe": 2.4915,
+    "total_R": 499.97,
+    "losing_weeks_pct": 46.5,
+    "worst_week": -12.66,
+    "longest_losing_weeks": 7,
+    "losing_trades_per_month": 61.47,
+    "max_fall_weekly_R": 22.98
+   },
+   "by_year": {
+    "2019": {
+     "trades": 1225,
+     "R_per_trade": 0.1293,
+     "eur_per_100_risked": 12.93,
+     "sharpe": 2.1431,
+     "total_R": 158.36,
+     "losing_weeks_pct": 55.77,
+     "worst_week": -9.37,
+     "longest_losing_weeks": 5,
+     "losing_trades_per_month": 59.5,
+     "max_fall_weekly_R": 13.85
+    },
+    "2020": {
+     "trades": 1326,
+     "R_per_trade": 0.1886,
+     "eur_per_100_risked": 18.86,
+     "sharpe": 3.4708,
+     "total_R": 250.05,
+     "losing_weeks_pct": 39.62,
+     "worst_week": -12.3,
+     "longest_losing_weeks": 3,
+     "losing_trades_per_month": 59.08,
+     "max_fall_weekly_R": 22.98
+    },
+    "2021": {
+     "trades": 1436,
+     "R_per_trade": 0.0638,
+     "eur_per_100_risked": 6.38,
+     "sharpe": 1.7549,
+     "total_R": 91.55,
+     "losing_weeks_pct": 44.23,
+     "worst_week": -12.66,
+     "longest_losing_weeks": 7,
+     "losing_trades_per_month": 65.83,
+     "max_fall_weekly_R": 22.95
+    }
+   }
+  }
+ },
+ "account_after": "identical to account_before: Addendum I keeps no change",
+ "growth_meaning": {
+  "kept_set": "Addendum I keeps nothing: the weekly Sharpe at equal swing is unchanged (x1.00), so is the growth.",
+  "rule": "At equal weekly swing the mean weekly gain moves in proportion to the weekly Sharpe. A compounding account staked at a fixed fraction of its optimal (Kelly) stake grows at a rate proportional to the square of the Sharpe. At a fixed fall over a long horizon (expected deepest fall about stake x variance / mean), the stake can rise about in proportion to the Sharpe and the gain about with its square; over a short horizon such as one month the falls come from the swing, so the stake cannot rise and the gain rises only in proportion to the Sharpe. In these samples the deepest fall at equal swing is noisy: K1+K2+K3 has a higher Sharpe and a deeper fall (24.1 R against 21.0 R).",
+  "information_only_in_sample": {
+   "V05 (dropped)": {
+    "sharpe_ratio": 1.0951,
+    "growth_ratio_at_fixed_fraction_of_optimal": 1.199
+   },
+   "V05 on top of K1 (dropped)": {
+    "sharpe_ratio": 1.0558,
+    "growth_ratio_at_fixed_fraction_of_optimal": 1.115
+   },
+   "K1 (Addendum H)": {
+    "sharpe_ratio": 1.0359,
+    "growth_ratio_at_fixed_fraction_of_optimal": 1.073
+   },
+   "K1+K2+K3 (Addendum H, the look's content)": {
+    "sharpe_ratio": 1.123,
+    "growth_ratio_at_fixed_fraction_of_optimal": 1.261
+   }
+  },
+  "demand": {
+   "R_per_trade_needed_at_todays_noise": 0.35,
+   "R_per_trade_2022_2025_task_figure": 0.08,
+   "sharpe_multiple_needed": 4.38,
+   "growth_multiple_needed": 19.1,
+   "remaining_after_this_addendum": 4.38
+  }
+ },
+ "proposed_validation_look": "DECLARATION for the single look at 2022-2025 (PROTOCOL_V3 Addendum I, lead synthesis; written 2026-11-12 before any 2022+ row is read by this synthesis, which reads none). 1. ADDENDUM I ADDS NO CHANGE. No conviction, clock or weight rule survived the criteria fixed in Addendum I and the attack, so none enters the look. FROZEN for Addendum I: every trade of every sleeve keeps a stake of 1 base stake (1 R); nothing is fitted, so nothing is refitted on 1 January 2022, 2023, 2024 or 2025. V05 (the pooled crypto ridge, x1.095 in sample, below the x1.10 bar), IV00 and every other variant of the three lenses are excluded and may not be added to the look, before or after any 2022+ result. 2. THE ONE LOOK covers exactly the kept changes of Addendum H, each as declared by its synthesis, at most one change per sleeve: K1, K2 and K3 as declared in results/r2/autopsy/synthesis_B.json (K1: brk72_24h_wd ethusd skips a signal when 10,000 x stop_dist / P >= T(Y); T(2022) = 478.28 bp, the 2/3 quantile of the riskbp of the 2345 in-sample signals decided before 2021-12-25, each taken alone with FP costs, whose upper third averaged -0.131 R against +0.342 R for the lower third; refitted each 1 January Y on the signals decided before 1 January Y minus 7 days, the worse third skipped only if it lost; with costs x1.5 the same procedure on the x1.5 labels (T(2022) = 478.28 bp); K2 and K3: orb_asia_2d_buf10 unchanged on ethusd and btcusd), with synthesis_B's comparisons and criteria unchanged; plus the changes that synthesis_A keeps, if its declaration is complete before the look is run. 3. READING ADDED BY ADDENDUM I, NOT A CRITERION (so that the gain per unit of swing is on file): on the plain sum of the one-position chains (3-spread refusal; trades open at 2025-12-31 23:59 dropped), FP server weeks booked at the exit, every week of 2022-2025 counted, the weekly Sharpe of (i) the ten unchanged and (ii) the portfolio with every kept change of Addendum H (new sleeves included), (ii) scaled so that its weekly standard deviation over 2022-2025 equals (i)'s; pooled and for each year 2022, 2023, 2024, 2025; FP costs and costs x1.5 (frames and orders rebuilt); with trades, R per trade, euros earned per 100 euros risked, total R, share of losing weeks, worst week, longest run of losing weeks and losing trades per month. 4. EXPECTATIONS declared now, not targets: for Addendum I, none (no change). On this measure the in-sample H set (K1+K2+K3 against the ten, 2019-2021, FP) gave x1.123 (2019 x1.322, 2020 x1.043, 2021 x1.015), mostly 2019; the verifiers' forward estimates are +0.03 to +0.06 R per trade for K1 (possibly zero), +0.15 to +0.25 for K2, +0.10 to +0.16 for K3 (zero plausible). 5. CRITERIA: Addendum I has none, since nothing of it is in the look; each change of Addendum H is judged by the criteria of its own declaration. The 2026 holdout stays untouched. A failure is final: nothing is re-tuned, re-declared or looked at again.",
+ "summary_for_the_user_fr": "R\u00e9ponse : non. Miser plus sur les trades \u00ab qui ont des chances \u00bb n'apporte pas assez ; rien n'est retenu.\nTest\u00e9 sur 2019-2021 seulement, \u00e0 risque hebdomadaire \u00e9gal : mise selon le contexte, l'heure, le jour, ou par r\u00e8gle.\nHeure et jour : rien (de -7 % \u00e0 0 % de gain \u00e0 risque \u00e9gal). Mise par r\u00e8gle : +6 % au mieux, 2019 en baisse.\nMeilleure id\u00e9e : 1,5 mise sur les cassures crypto bien not\u00e9es, 0,5 ou 0 ailleurs : +9,5 % ; il fallait +10 %.\nCe gain vient presque tout de 2021 (+34 %) ; 2019 : +0,6 % ; 2018 va dans l'autre sens (-6 %).\nAvec le filtre \u00e9ther d\u00e9j\u00e0 retenu, elle n'ajoute que +6 %, et 2019 baisse.\nSur 1 000 \u20ac aux prix actuels, les petites mises passent sous le lot minimum : -5 %.\nLe portefeuille reste celui d'avant : 2019-2021, 14 \u20ac gagn\u00e9s pour 100 \u20ac risqu\u00e9s, 45 % de semaines perdantes, pire semaine -13 mises.\nDoubler en un mois avec des chutes sous 20 % demande 35 \u20ac pour 100 \u20ac risqu\u00e9s au lieu de 8 (2022-2025), soit 4,4 fois plus : on reste \u00e0 1.\nSeul levier qui bouge un peu : ajouter des r\u00e8gles, comme deux r\u00e8gles \u00ab Asie \u00bb sur crypto (essai pr\u00e9c\u00e9dent) : +12 %, surtout 2019, pire chute plus profonde.\nTout vient des ann\u00e9es qui ont servi \u00e0 b\u00e2tir les r\u00e8gles : c'est optimiste.\nSuite : le seul test 2022-2025 d\u00e9j\u00e0 pr\u00e9vu, sans mise variable.",
+ "ideas_that_do_not_work": [
+  "Stakes or skips by hour band or weekday (clock lens, 9 declared rules): x0.933 to x1.000 pooled weekly Sharpe at equal swing, 2019-2021, FP (x0.952 to x0.998 with costs x1.5), up in at most 1 of 3 years. Even stakes set with perfect hindsight of each year (x1.18 hour bands, x1.38 weekdays) stay below the median of the same bound on randomly shuffled labels (x1.22, x1.41): the clock carries no more structure than noise.",
+  "One stake per sleeve (weights lens, 15 variants): walk-forward mean/variance x0.938 to x0.985; inverse volatility x1.007 to x1.059 with 2019 down at every shrinkage (IV00: 2019 x0.859, 2020 x1.074, 2021 x1.297); switching a sleeve off while its trailing 12/24/36-month expectancy is not positive x0.959 to x0.990 (the 24-month switch turned off 459 trades that made +56.4 R); rank weights D4-D7 x0.919 to x0.981. Even the best static weights chosen with hindsight of 2019-2021 give only +24.6 %.",
+  "Per-sleeve terciles of one descriptor with 0 / 0.5 / 1.5 stakes (conviction V01-V04, V23-V28): x0.942 to x1.047 FP; on the six non-crypto sleeves every per-sleeve rule lowered the R (230.5 R to 149-218 R, 2019-2021); the chosen descriptor drifts from year to year; V04's permutation null reaches it in 29.5 % of draws.",
+  "Bigger stakes when another sleeve holds the same side of the same market (V11-V15): x0.952 to x0.997 FP; its null reaches V11 in 59.5 % of draws. The +0.24 R vs +0.14 R seen by the cluster lens does not hold out of fold.",
+  "Combining the pooled ridge with per-sleeve rules (V16-V20): x1.018 to x1.061, worse than the ridge alone; a per-sleeve ridge for all ten (V10, 8 fitted parameters per sleeve): x1.007.",
+  "Cutting the trades 'with no chance' (V05's zero rule alone, verifier): x1.042; the 213 baseline crypto trades it removed made +5.5 R in total (+0.026 R each, my run: brk72 btc 30 trades +1.8 R, F1 eth 48 trades +13.2 R, brk72 eth 135 trades -9.5 R). What gains is the 1.5 stake on high scores, mostly in 2020-2021.",
+  "The best idea, the pooled crypto ridge V05: my re-simulation x1.095 (2019 x1.006, 2020 x1.047, 2021 x1.339) FP, x1.102 (2019 x1.010, 2020 x1.055, 2021 x1.340) with costs x1.5; strict training cut x1.100 (2019 x1.022, 2020 x1.047, 2021 x1.339); on top of K1 x1.056 (2019 x0.980, 2020 x1.040, 2021 x1.199); earlier 2018 fold x0.944 (verifier); on a 1,000 EUR account at today's prices as the live program would run it x0.954 at 1 % risk, x0.993 at 2 % (verifier). Not kept."
+ ],
+ "caveats": [
+  "In sample only, on the years that built the ten rules (F1's scorecard was fitted on candidates up to 2021-12-27): every figure here, walk-forward included, is optimistic. The measure that counts is the validation look, then the demo account.",
+  "The kept set (none) was declared before any run of this synthesis (declared.json, 15:03 UTC). My runs reproduce the lens and verifier figures to the fourth decimal (V05 x1.0951, strict x1.1002, on K1 x1.0558, K1 x1.0359, reference 3,985 trades +556.16 R Sharpe 2.7466) and do not change it.",
+  "Account: plain sum of the one-position chains, 1 R x stake, no 6-position / 2-per-market caps, no compounding, no minimum lot. On the user's 1,000 EUR account many 0.5 stakes and BTC stakes fall under 0.01 lot (Addendum E); the verifier's live-like run of V05 there gives x0.954 at 1 % risk.",
+  "The H set measured here (K1+K2+K3, x1.123 (2019 x1.322, 2020 x1.043, 2021 x1.015) FP, k 0.8269) covers synthesis_B's changes only. Its gain sits in 2019; at equal swing its deepest weekly fall is 24.07 R against 21.03 R and its worst week -13.95 R against -12.54 R; K2 and K3 were chosen by the breadth lens on 2013-2021, so 2019-2021 is not out of sample for their selection; their edge per trade halved from 2018-2019 to 2020-2021; ethusd would carry three sleeves for two slots. synthesis_A (declared 15:12 UTC, in progress) may add other H changes to the look (ocm4 T1, F1 ethusd H2, brk72 btcusd S0.75r, donch4h_stop S0.75r, orb_asia_2d_buf10 S0.75r); they are not in these figures.",
+  "Rule 3's 7-day purge: in their 2019 fits V05 as declared uses two outcomes known exactly at the purge instant and K1 one outcome known a few hours after it (truncation test T1b); both fits are identical on frames cut at 1 January of the year they are used in (T1a), so neither sees the year it is applied to.",
+  "The FP frames' spread uses a day-median shape that is not causal; it affects fills and labels, not the descriptors of the stakes (riskbp replaces sprR).",
+  "The two gold trades entered on 2021-12-31 whose official exit is in 2022 were counted but not read, and are excluded everywhere. Weeks are FP server weeks booked at the exit and belong to the year of their Thursday; the 3,985 reference trades include a few entered in late December 2018 (the clock and weights lenses count 3,981 by entry).",
+  "Selection: the three lenses tried 30 + 15 + 15 variants and the verifier 77 lines; this synthesis ran 6 re-measurements x 2 cost modes (12 trial lines) and chose no parameter.",
+  "Repository: only lab/r2/tracks/sizing/synthesis/ and lab/results/r2/sizing/synthesis.json were written; no git command that changes anything; the last line of results/val_access.log (13:50:26 UTC, track stake) predates this synthesis, whose code never calls a validation cut. synthesis_A's declaration (in sample, no result) was read; nothing in validation_hi was opened. The brain maps were read with every sentence mentioning 2022-2026 or validation masked."
+ ],
+ "files": [
+  "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/declared.json",
+  "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/trials.jsonl",
+  "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/sy_common.py",
+  "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/s0_repro.py",
+  "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/s1_variants.py",
+  "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/s2_truncation.py",
+  "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/s3_summary.py",
+  "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/out/s0_repro.json",
+  "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/out/s1_variants.json",
+  "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/out/s2_truncation.json",
+  "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/out/ (chains: ref__*, var__*, k1sig__*)",
+  "/home/user/gold-orb/lab/results/r2/sizing/synthesis.json"
+ ],
+ "trials": {
+  "this_synthesis_lines": 12,
+  "file": "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/trials.jsonl",
+  "declared_before_runs": "/home/user/gold-orb/lab/r2/tracks/sizing/synthesis/declared.json",
+  "plus": "1 truncation test (T1: 6 fit rebuilds; T2: 78 decisions)",
+  "lens_trials": {
+   "conviction": "30 variants and controls + reference V00",
+   "clock": 15,
+   "weights": 15
+  },
+  "verifier_V05": "77 lines"
+ }
+}

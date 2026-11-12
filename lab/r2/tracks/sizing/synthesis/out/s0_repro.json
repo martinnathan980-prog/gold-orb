@@ -1,0 +1,409 @@
+{
+ "rule2": {
+  "ocm4__us100": {
+   "n_mine_all": 999,
+   "n_official_closed_before_2022": 999,
+   "official_rows_entered_before_2022_with_exit_not_before_2022": 0,
+   "their_entry_times": [],
+   "matched": 999,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "only_mine": [],
+   "only_official": 0,
+   "totR_mine_matched": 136.879,
+   "totR_official_closed": 136.879,
+   "n_matched_equals_official": true,
+   "reproduced": true
+  },
+  "noise30__us100": {
+   "n_mine_all": 1643,
+   "n_official_closed_before_2022": 1643,
+   "official_rows_entered_before_2022_with_exit_not_before_2022": 0,
+   "their_entry_times": [],
+   "matched": 1643,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "only_mine": [],
+   "only_official": 0,
+   "totR_mine_matched": 134.4007,
+   "totR_official_closed": 134.4007,
+   "n_matched_equals_official": true,
+   "reproduced": true
+  },
+  "donch4h_stop__xauusd": {
+   "n_mine_all": 495,
+   "n_official_closed_before_2022": 494,
+   "official_rows_entered_before_2022_with_exit_not_before_2022": 1,
+   "their_entry_times": [
+    "2021-12-31 07:06:00+00:00"
+   ],
+   "matched": 494,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "only_mine": [
+    {
+     "entry_time": "2021-12-31 07:06:00+00:00",
+     "exit_time": "1640987940000000000",
+     "reason": "time"
+    }
+   ],
+   "only_official": 0,
+   "totR_mine_matched": 84.3014,
+   "totR_official_closed": 84.3014,
+   "n_matched_equals_official": true,
+   "reproduced": true
+  },
+  "orb_asia_2d_buf10__xauusd": {
+   "n_mine_all": 1039,
+   "n_official_closed_before_2022": 1038,
+   "official_rows_entered_before_2022_with_exit_not_before_2022": 1,
+   "their_entry_times": [
+    "2021-12-31 07:03:00+00:00"
+   ],
+   "matched": 1038,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "only_mine": [
+    {
+     "entry_time": "2021-12-31 07:03:00+00:00",
+     "exit_time": "1640988000000000000",
+     "reason": "eod"
+    }
+   ],
+   "only_official": 0,
+   "totR_mine_matched": 231.1453,
+   "totR_official_closed": 231.1453,
+   "n_matched_equals_official": true,
+   "reproduced": true
+  },
+  "GOLD_FRI_PM__xauusd": {
+   "n_mine_all": 414,
+   "n_official_closed_before_2022": 414,
+   "official_rows_entered_before_2022_with_exit_not_before_2022": 0,
+   "their_entry_times": [],
+   "matched": 414,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "only_mine": [],
+   "only_official": 0,
+   "totR_mine_matched": 13.921,
+   "totR_official_closed": 13.921,
+   "n_matched_equals_official": true,
+   "reproduced": true
+  },
+  "brk72_24h_wd__btcusd": {
+   "n_mine_all": 645,
+   "n_official_closed_before_2022": 645,
+   "official_rows_entered_before_2022_with_exit_not_before_2022": 0,
+   "their_entry_times": [],
+   "matched": 645,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "only_mine": [],
+   "only_official": 0,
+   "totR_mine_matched": 172.8743,
+   "totR_official_closed": 172.8743,
+   "n_matched_equals_official": true,
+   "reproduced": true
+  },
+  "F1_brk_ridge_filter__btcusd": {
+   "n_mine_all": 631,
+   "n_official_closed_before_2022": 631,
+   "official_rows_entered_before_2022_with_exit_not_before_2022": 0,
+   "their_entry_times": [],
+   "matched": 631,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "only_mine": [],
+   "only_official": 0,
+   "totR_mine_matched": 226.3891,
+   "totR_official_closed": 226.3891,
+   "n_matched_equals_official": true,
+   "reproduced": true
+  },
+  "nq_btc_follow__btcusd": {
+   "n_mine_all": 1063,
+   "n_official_closed_before_2022": 1063,
+   "official_rows_entered_before_2022_with_exit_not_before_2022": 0,
+   "their_entry_times": [],
+   "matched": 1063,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "only_mine": [],
+   "only_official": 0,
+   "totR_mine_matched": 66.346,
+   "totR_official_closed": 66.346,
+   "n_matched_equals_official": true,
+   "reproduced": true
+  },
+  "brk72_24h_wd__ethusd": {
+   "n_mine_all": 519,
+   "n_official_closed_before_2022": 519,
+   "official_rows_entered_before_2022_with_exit_not_before_2022": 0,
+   "their_entry_times": [],
+   "matched": 519,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "only_mine": [],
+   "only_official": 0,
+   "totR_mine_matched": 103.6871,
+   "totR_official_closed": 103.6871,
+   "n_matched_equals_official": true,
+   "reproduced": true
+  },
+  "F1_brk_ridge_filter__ethusd": {
+   "n_mine_all": 517,
+   "n_official_closed_before_2022": 517,
+   "official_rows_entered_before_2022_with_exit_not_before_2022": 0,
+   "their_entry_times": [],
+   "matched": 517,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "only_mine": [],
+   "only_official": 0,
+   "totR_mine_matched": 104.4067,
+   "totR_official_closed": 104.4067,
+   "n_matched_equals_official": true,
+   "reproduced": true
+  }
+ },
+ "chains": {
+  "ocm4__us100": {
+   "fp": {
+    "orders": 999,
+    "trades": 999,
+    "refused_3spreads": 0,
+    "total_R": 136.879,
+    "equals_context_chain": true
+   },
+   "stress": {
+    "orders": 999,
+    "trades": 999,
+    "refused_3spreads": 0,
+    "total_R": 123.8645,
+    "equals_context_chain": true
+   }
+  },
+  "noise30__us100": {
+   "fp": {
+    "orders": 1643,
+    "trades": 1643,
+    "refused_3spreads": 0,
+    "total_R": 134.4007,
+    "equals_context_chain": true
+   },
+   "stress": {
+    "orders": 1643,
+    "trades": 1643,
+    "refused_3spreads": 0,
+    "total_R": 120.3321,
+    "equals_context_chain": true
+   }
+  },
+  "donch4h_stop__xauusd": {
+   "fp": {
+    "orders": 1654,
+    "trades": 494,
+    "refused_3spreads": 0,
+    "total_R": 84.3014,
+    "equals_context_chain": true
+   },
+   "stress": {
+    "orders": 1660,
+    "trades": 494,
+    "refused_3spreads": 0,
+    "total_R": 78.0082,
+    "equals_context_chain": true
+   }
+  },
+  "orb_asia_2d_buf10__xauusd": {
+   "fp": {
+    "orders": 1829,
+    "trades": 1038,
+    "refused_3spreads": 0,
+    "total_R": 231.1453,
+    "equals_context_chain": true
+   },
+   "stress": {
+    "orders": 1826,
+    "trades": 1038,
+    "refused_3spreads": 0,
+    "total_R": 200.8868,
+    "equals_context_chain": true
+   }
+  },
+  "GOLD_FRI_PM__xauusd": {
+   "fp": {
+    "orders": 443,
+    "trades": 414,
+    "refused_3spreads": 0,
+    "total_R": 13.921,
+    "equals_context_chain": true
+   },
+   "stress": {
+    "orders": 443,
+    "trades": 408,
+    "refused_3spreads": 0,
+    "total_R": 12.0071,
+    "equals_context_chain": true
+   }
+  },
+  "brk72_24h_wd__btcusd": {
+   "fp": {
+    "orders": 2914,
+    "trades": 645,
+    "refused_3spreads": 0,
+    "total_R": 172.8743,
+    "equals_context_chain": true
+   },
+   "stress": {
+    "orders": 2914,
+    "trades": 645,
+    "refused_3spreads": 0,
+    "total_R": 167.0234,
+    "equals_context_chain": true
+   }
+  },
+  "F1_brk_ridge_filter__btcusd": {
+   "fp": {
+    "orders": 1235,
+    "trades": 631,
+    "refused_3spreads": 0,
+    "total_R": 226.3891,
+    "equals_context_chain": true
+   },
+   "stress": {
+    "orders": 1234,
+    "trades": 632,
+    "refused_3spreads": 0,
+    "total_R": 218.2666,
+    "equals_context_chain": true
+   }
+  },
+  "nq_btc_follow__btcusd": {
+   "fp": {
+    "orders": 2611,
+    "trades": 1063,
+    "refused_3spreads": 0,
+    "total_R": 66.346,
+    "equals_context_chain": true
+   },
+   "stress": {
+    "orders": 2611,
+    "trades": 1063,
+    "refused_3spreads": 0,
+    "total_R": 51.0147,
+    "equals_context_chain": true
+   }
+  },
+  "new_orb_asia_2d_buf10__btcusd": {
+   "fp": {
+    "orders": 785,
+    "trades": 442,
+    "refused_3spreads": 0,
+    "total_R": 252.2993
+   },
+   "stress": {
+    "orders": 783,
+    "trades": 441,
+    "refused_3spreads": 0,
+    "total_R": 240.7662
+   }
+  },
+  "brk72_24h_wd__ethusd": {
+   "fp": {
+    "orders": 2355,
+    "trades": 519,
+    "refused_3spreads": 0,
+    "total_R": 103.6871,
+    "equals_context_chain": true
+   },
+   "stress": {
+    "orders": 2355,
+    "trades": 521,
+    "refused_3spreads": 0,
+    "total_R": 93.2424,
+    "equals_context_chain": true
+   }
+  },
+  "F1_brk_ridge_filter__ethusd": {
+   "fp": {
+    "orders": 995,
+    "trades": 517,
+    "refused_3spreads": 0,
+    "total_R": 104.4067,
+    "equals_context_chain": true
+   },
+   "stress": {
+    "orders": 995,
+    "trades": 519,
+    "refused_3spreads": 0,
+    "total_R": 87.268,
+    "equals_context_chain": true
+   }
+  },
+  "new_orb_asia_2d_buf10__ethusd": {
+   "fp": {
+    "orders": 643,
+    "trades": 353,
+    "refused_3spreads": 0,
+    "total_R": 154.4191
+   },
+   "stress": {
+    "orders": 643,
+    "trades": 353,
+    "refused_3spreads": 0,
+    "total_R": 139.1218
+   }
+  }
+ },
+ "frames": {
+  "us100": {
+   "bars": 2513306,
+   "first": "2013-01-01 00:00:00+00:00",
+   "last": "2021-12-31 21:14:00+00:00"
+  },
+  "xauusd": {
+   "bars": 3172985,
+   "first": "2012-12-31 00:00:00+00:00",
+   "last": "2021-12-31 21:59:00+00:00"
+  },
+  "btcusd": {
+   "bars": 1699217,
+   "first": "2017-05-07 23:59:00+00:00",
+   "last": "2021-12-31 16:58:00+00:00"
+  },
+  "ethusd": {
+   "bars": 1397208,
+   "first": "2018-01-01 00:00:00+00:00",
+   "last": "2021-12-31 16:58:00+00:00"
+  }
+ },
+ "k1_signal_table": {
+  "fp": {
+   "signals": 2355,
+   "filled": 2355,
+   "refused": 0,
+   "boundary": 0,
+   "context_same_n": true,
+   "context_max_abs_diff_riskbp": 4.547473508864641e-13,
+   "context_max_abs_diff_label": 0.0,
+   "context_side_equal": true
+  },
+  "stress": {
+   "signals": 2355,
+   "filled": 2355,
+   "refused": 0,
+   "boundary": 0,
+   "context_same_n": true,
+   "context_max_abs_diff_riskbp": 4.547473508864641e-13,
+   "context_max_abs_diff_label": 0.0,
+   "context_side_equal": true
+  }
+ },
+ "all_ten_reproduced": true,
+ "official_closed_total": {
+  "trades": 7963,
+  "R": 1274.351
+ }
+}

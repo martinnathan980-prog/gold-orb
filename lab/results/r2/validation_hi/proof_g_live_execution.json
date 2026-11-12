@@ -1,23 +1,51 @@
 {
- "what": "the live execution (entry one minute late at market, Friday 16:50 New York close): with no delay and no Friday close the live chain resolver returns the official chain trade for trade; K2 run the verifier's way reproduces the figures quoted in synthesis_B; the harness's own live chain keeps the rule's one-position test (see detail)",
+ "what": "the live execution (entry one minute late at market, Friday 16:50 New York close): K2 run this way reproduces the verifiers' figures quoted in synthesis_B (392 trades, +142.1 R; x1.5 +127.9 R) and the harness's declared default is that run without the trade still open at the end of 2021; the alternative chain resolver ('rule') returns the official chain trade for trade when there is no delay and no Friday close, and differs from the default only by signals at the previous trade's exit minute",
  "detail": {
+  "example_change_plugin": {
+   "empty_skip_equals_reference": true,
+   "skipped_orders": 368,
+   "trades_ref": 1643,
+   "trades_with_skip": 1275,
+   "no_trade_left_in_skipped_hours": true
+  },
   "K2_ethusd_fp": {
    "verifier_way_incl_open_trade": {
     "n": 392,
     "total": 142.1,
     "exp": 0.3626
    },
-   "harness_live_chain_open_trade_dropped": {
-    "n": 389,
-    "exp": 0.3567,
-    "total": 138.74,
-    "win": 0.4473,
-    "avg_win": 1.8165,
-    "avg_loss": -0.8248,
-    "pf": 1.782,
-    "sd": 1.9018,
-    "mean_over_sd": 0.1875
+   "harness_default_entry_bar_open_trade_dropped": {
+    "n": 391,
+    "exp": 0.3627,
+    "total": 141.8,
+    "win": 0.4476,
+    "avg_win": 1.8295,
+    "avg_loss": -0.8257,
+    "pf": 1.795,
+    "sd": 1.9114,
+    "mean_over_sd": 0.1897
    },
+   "alternative_rule_open_trade_dropped": {
+    "n": 389,
+    "total": 138.74,
+    "exp": 0.3567,
+    "overlapping_live_trades": null
+   },
+   "alternative_lab_chain_open_trade_dropped": {
+    "n": 344,
+    "total": 103.34,
+    "exp": 0.3004,
+    "overlapping_live_trades": 0
+   },
+   "rule_way_incl_open_trade": {
+    "n": 390,
+    "total": 139.08
+   },
+   "trades_only_in_verifier_way": 3,
+   "R_of_those": 4.336,
+   "trades_only_in_harness_way": 1,
+   "every_difference_is_a_signal_at_the_previous_trades_exit_bar": true,
+   "explanation": "the verifier's run (the harness's declared default 'entry_bar') applies the one-position test at the DELAYED entry bar, so a touch in the very bar where the previous trade exits is taken one minute later; the alternative 'rule' keeps the rule's own test at the rule's bar (that touch is ignored, as in the lab); 'lab_chain' takes only the lab chain's trades (no extra trade after a Friday close). Which one the robot does is a declaration of the look.",
    "reasons_verifier_way": {
     "time": 236,
     "stop": 155,
@@ -30,17 +58,38 @@
     "total": 127.9,
     "exp": 0.3262
    },
-   "harness_live_chain_open_trade_dropped": {
-    "n": 389,
-    "exp": 0.3205,
-    "total": 124.66,
-    "win": 0.4473,
-    "avg_win": 1.7417,
-    "avg_loss": -0.8297,
-    "pf": 1.699,
-    "sd": 1.8316,
-    "mean_over_sd": 0.175
+   "harness_default_entry_bar_open_trade_dropped": {
+    "n": 391,
+    "exp": 0.3263,
+    "total": 127.59,
+    "win": 0.4476,
+    "avg_win": 1.7543,
+    "avg_loss": -0.8306,
+    "pf": 1.711,
+    "sd": 1.8412,
+    "mean_over_sd": 0.1772
    },
+   "alternative_rule_open_trade_dropped": {
+    "n": 389,
+    "total": 124.66,
+    "exp": 0.3205,
+    "overlapping_live_trades": null
+   },
+   "alternative_lab_chain_open_trade_dropped": {
+    "n": 344,
+    "total": 91.96,
+    "exp": 0.2673,
+    "overlapping_live_trades": 0
+   },
+   "rule_way_incl_open_trade": {
+    "n": 390,
+    "total": 124.95
+   },
+   "trades_only_in_verifier_way": 3,
+   "R_of_those": 4.157,
+   "trades_only_in_harness_way": 1,
+   "every_difference_is_a_signal_at_the_previous_trades_exit_bar": true,
+   "explanation": "the verifier's run (the harness's declared default 'entry_bar') applies the one-position test at the DELAYED entry bar, so a touch in the very bar where the previous trade exits is taken one minute later; the alternative 'rule' keeps the rule's own test at the rule's bar (that touch is ignored, as in the lab); 'lab_chain' takes only the lab chain's trades (no extra trade after a Friday close). Which one the robot does is a declaration of the look.",
    "reasons_verifier_way": {
     "time": 236,
     "stop": 155,
@@ -161,15 +210,15 @@
      "mean_over_sd": 0.1227
     },
     "live": {
-     "n": 238,
-     "exp": 0.083,
-     "total": 19.76,
-     "win": 0.437,
-     "avg_win": 0.8867,
-     "avg_loss": -0.5407,
-     "pf": 1.273,
-     "sd": 0.9257,
-     "mean_over_sd": 0.0897
+     "n": 240,
+     "exp": 0.0799,
+     "total": 19.18,
+     "win": 0.4375,
+     "avg_win": 0.8861,
+     "avg_loss": -0.5471,
+     "pf": 1.26,
+     "sd": 0.9292,
+     "mean_over_sd": 0.086
     }
    },
    "stress": {
@@ -185,15 +234,15 @@
      "mean_over_sd": 0.1117
     },
     "live": {
-     "n": 239,
-     "exp": 0.07,
-     "total": 16.72,
-     "win": 0.4351,
-     "avg_win": 0.8776,
-     "avg_loss": -0.5522,
-     "pf": 1.224,
-     "sd": 0.9259,
-     "mean_over_sd": 0.0756
+     "n": 241,
+     "exp": 0.0669,
+     "total": 16.13,
+     "win": 0.4357,
+     "avg_win": 0.8771,
+     "avg_loss": -0.5585,
+     "pf": 1.212,
+     "sd": 0.9294,
+     "mean_over_sd": 0.072
     }
    }
   },
@@ -211,15 +260,15 @@
      "mean_over_sd": 0.029
     },
     "live": {
-     "n": 508,
-     "exp": -0.0388,
-     "total": -19.73,
-     "win": 0.3307,
+     "n": 510,
+     "exp": -0.0427,
+     "total": -21.76,
+     "win": 0.3294,
      "avg_win": 1.8087,
-     "avg_loss": -0.9517,
-     "pf": 0.939,
-     "sd": 1.6525,
-     "mean_over_sd": -0.0235
+     "avg_loss": -0.9521,
+     "pf": 0.933,
+     "sd": 1.6504,
+     "mean_over_sd": -0.0259
     }
    },
    "stress": {
@@ -235,15 +284,15 @@
      "mean_over_sd": 0.0165
     },
     "live": {
-     "n": 506,
-     "exp": -0.052,
-     "total": -26.34,
-     "win": 0.3281,
+     "n": 508,
+     "exp": -0.0559,
+     "total": -28.39,
+     "win": 0.3268,
      "avg_win": 1.8009,
-     "avg_loss": -0.9567,
-     "pf": 0.919,
-     "sd": 1.6403,
-     "mean_over_sd": -0.0317
+     "avg_loss": -0.9571,
+     "pf": 0.913,
+     "sd": 1.6382,
+     "mean_over_sd": -0.0341
     }
    }
   },
@@ -311,15 +360,15 @@
      "mean_over_sd": 0.1417
     },
     "live": {
-     "n": 549,
-     "exp": 0.2426,
-     "total": 133.2,
-     "win": 0.4426,
-     "avg_win": 1.4558,
-     "avg_loss": -0.7207,
-     "pf": 1.604,
-     "sd": 1.8053,
-     "mean_over_sd": 0.1344
+     "n": 558,
+     "exp": 0.237,
+     "total": 132.24,
+     "win": 0.4444,
+     "avg_win": 1.4365,
+     "avg_loss": -0.7226,
+     "pf": 1.59,
+     "sd": 1.7865,
+     "mean_over_sd": 0.1327
     }
    },
    "stress": {
@@ -335,15 +384,15 @@
      "mean_over_sd": 0.1366
     },
     "live": {
-     "n": 549,
-     "exp": 0.234,
-     "total": 128.49,
-     "win": 0.4408,
-     "avg_win": 1.4526,
-     "avg_loss": -0.7265,
-     "pf": 1.576,
-     "sd": 1.8042,
-     "mean_over_sd": 0.1297
+     "n": 558,
+     "exp": 0.2294,
+     "total": 128.0,
+     "win": 0.4427,
+     "avg_win": 1.4332,
+     "avg_loss": -0.7267,
+     "pf": 1.566,
+     "sd": 1.7848,
+     "mean_over_sd": 0.1285
     }
    }
   },
@@ -361,15 +410,15 @@
      "mean_over_sd": 0.1481
     },
     "live": {
-     "n": 516,
-     "exp": 0.1751,
-     "total": 90.34,
-     "win": 0.438,
-     "avg_win": 1.3386,
-     "avg_loss": -0.7317,
-     "pf": 1.426,
-     "sd": 1.3988,
-     "mean_over_sd": 0.1252
+     "n": 525,
+     "exp": 0.1758,
+     "total": 92.31,
+     "win": 0.4362,
+     "avg_win": 1.3455,
+     "avg_loss": -0.7291,
+     "pf": 1.428,
+     "sd": 1.3975,
+     "mean_over_sd": 0.1258
     }
    },
    "stress": {
@@ -385,15 +434,15 @@
      "mean_over_sd": 0.1337
     },
     "live": {
-     "n": 516,
-     "exp": 0.1576,
-     "total": 81.33,
-     "win": 0.4302,
-     "avg_win": 1.3406,
-     "avg_loss": -0.7357,
-     "pf": 1.376,
-     "sd": 1.3939,
-     "mean_over_sd": 0.1131
+     "n": 525,
+     "exp": 0.1585,
+     "total": 83.2,
+     "win": 0.4286,
+     "avg_win": 1.3474,
+     "avg_loss": -0.7332,
+     "pf": 1.378,
+     "sd": 1.3925,
+     "mean_over_sd": 0.1138
     }
    }
   },
@@ -511,15 +560,15 @@
      "mean_over_sd": 0.1006
     },
     "live": {
-     "n": 944,
-     "exp": 0.0461,
-     "total": 43.54,
-     "win": 0.5127,
-     "avg_win": 0.4452,
-     "avg_loss": -0.3738,
-     "pf": 1.253,
-     "sd": 0.5704,
-     "mean_over_sd": 0.0809
+     "n": 949,
+     "exp": 0.0482,
+     "total": 45.77,
+     "win": 0.5121,
+     "avg_win": 0.4483,
+     "avg_loss": -0.3717,
+     "pf": 1.266,
+     "sd": 0.5706,
+     "mean_over_sd": 0.0845
     }
    },
    "stress": {
@@ -535,15 +584,15 @@
      "mean_over_sd": 0.075
     },
     "live": {
-     "n": 944,
-     "exp": 0.0264,
-     "total": 24.93,
-     "win": 0.4915,
-     "avg_win": 0.4447,
-     "avg_loss": -0.378,
-     "pf": 1.137,
-     "sd": 0.5713,
-     "mean_over_sd": 0.0462
+     "n": 949,
+     "exp": 0.0285,
+     "total": 27.06,
+     "win": 0.491,
+     "avg_win": 0.4479,
+     "avg_loss": -0.3761,
+     "pf": 1.149,
+     "sd": 0.5715,
+     "mean_over_sd": 0.0499
     }
    }
   },
@@ -561,15 +610,15 @@
      "mean_over_sd": 0.1971
     },
     "live": {
-     "n": 424,
-     "exp": 0.2511,
-     "total": 106.47,
-     "win": 0.4693,
-     "avg_win": 1.3778,
-     "avg_loss": -0.7453,
-     "pf": 1.635,
-     "sd": 1.4569,
-     "mean_over_sd": 0.1724
+     "n": 430,
+     "exp": 0.2526,
+     "total": 108.64,
+     "win": 0.4674,
+     "avg_win": 1.387,
+     "avg_loss": -0.743,
+     "pf": 1.638,
+     "sd": 1.4564,
+     "mean_over_sd": 0.1735
     }
    },
    "stress": {
@@ -585,15 +634,15 @@
      "mean_over_sd": 0.1814
     },
     "live": {
-     "n": 424,
-     "exp": 0.2327,
-     "total": 98.68,
-     "win": 0.4623,
-     "avg_win": 1.3755,
-     "avg_loss": -0.7496,
-     "pf": 1.577,
-     "sd": 1.4513,
-     "mean_over_sd": 0.1604
+     "n": 430,
+     "exp": 0.2343,
+     "total": 100.76,
+     "win": 0.4605,
+     "avg_win": 1.3847,
+     "avg_loss": -0.7474,
+     "pf": 1.581,
+     "sd": 1.4508,
+     "mean_over_sd": 0.1615
     }
    }
   },
@@ -611,15 +660,15 @@
      "mean_over_sd": 0.1932
     },
     "live": {
-     "n": 389,
-     "exp": 0.3567,
-     "total": 138.74,
-     "win": 0.4473,
-     "avg_win": 1.8165,
-     "avg_loss": -0.8248,
-     "pf": 1.782,
-     "sd": 1.9018,
-     "mean_over_sd": 0.1875
+     "n": 391,
+     "exp": 0.3627,
+     "total": 141.8,
+     "win": 0.4476,
+     "avg_win": 1.8295,
+     "avg_loss": -0.8257,
+     "pf": 1.795,
+     "sd": 1.9114,
+     "mean_over_sd": 0.1897
     }
    },
    "stress": {
@@ -635,15 +684,15 @@
      "mean_over_sd": 0.1804
     },
     "live": {
-     "n": 389,
-     "exp": 0.3205,
-     "total": 124.66,
-     "win": 0.4473,
-     "avg_win": 1.7417,
-     "avg_loss": -0.8297,
-     "pf": 1.699,
-     "sd": 1.8316,
-     "mean_over_sd": 0.175
+     "n": 391,
+     "exp": 0.3263,
+     "total": 127.59,
+     "win": 0.4476,
+     "avg_win": 1.7543,
+     "avg_loss": -0.8306,
+     "pf": 1.711,
+     "sd": 1.8412,
+     "mean_over_sd": 0.1772
     }
    }
   },
@@ -661,15 +710,15 @@
      "mean_over_sd": 0.1801
     },
     "live": {
-     "n": 424,
-     "exp": 0.3342,
-     "total": 141.68,
-     "win": 0.3821,
-     "avg_win": 2.2561,
-     "avg_loss": -0.8542,
-     "pf": 1.633,
-     "sd": 2.4518,
-     "mean_over_sd": 0.1363
+     "n": 427,
+     "exp": 0.3326,
+     "total": 142.04,
+     "win": 0.3841,
+     "avg_win": 2.2362,
+     "avg_loss": -0.8544,
+     "pf": 1.632,
+     "sd": 2.444,
+     "mean_over_sd": 0.1361
     }
    },
    "stress": {
@@ -685,20 +734,20 @@
      "mean_over_sd": 0.1757
     },
     "live": {
-     "n": 423,
-     "exp": 0.3152,
-     "total": 133.35,
-     "win": 0.383,
-     "avg_win": 2.2057,
-     "avg_loss": -0.8581,
-     "pf": 1.595,
-     "sd": 2.404,
-     "mean_over_sd": 0.1311
+     "n": 426,
+     "exp": 0.3138,
+     "total": 133.68,
+     "win": 0.385,
+     "avg_win": 2.1863,
+     "avg_loss": -0.8583,
+     "pf": 1.594,
+     "sd": 2.3963,
+     "mean_over_sd": 0.131
     }
    }
   }
  },
- "checks": 12,
+ "checks": 17,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -713,6 +762,18 @@
    "field": "noise30__us100: live_chain with no delay and no Friday close == official chain",
    "expected": true,
    "got": true,
+   "ok": true
+  },
+  {
+   "field": "example change plugin skip_ny_hours: empty set == reference chain; skipped hours absent from the re-simulated chain",
+   "expected": [
+    true,
+    true
+   ],
+   "got": [
+    true,
+    true
+   ],
    "ok": true
   },
   {
@@ -776,6 +837,24 @@
    "ok": true
   },
   {
+   "field": "K2 ethusd fp: the harness's live run (declared default 'entry_bar') == the verifier's way without the trade still open at the end of 2021",
+   "expected": [
+    391,
+    141.8
+   ],
+   "got": [
+    391,
+    141.8
+   ],
+   "ok": true
+  },
+  {
+   "field": "K2 ethusd fp: every trade the verifier's way adds over the 'rule' alternative is a signal at the previous trade's exit bar",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
    "field": "K2 ethusd stress: entry +1 min at market and Friday 16:50 NY close, the verifier's one-position test (synthesis_B: 392 trades, +127.9 R)",
    "expected": [
     392,
@@ -785,6 +864,24 @@
     392,
     127.9
    ],
+   "ok": true
+  },
+  {
+   "field": "K2 ethusd stress: the harness's live run (declared default 'entry_bar') == the verifier's way without the trade still open at the end of 2021",
+   "expected": [
+    391,
+    127.59
+   ],
+   "got": [
+    391,
+    127.59
+   ],
+   "ok": true
+  },
+  {
+   "field": "K2 ethusd stress: every trade the verifier's way adds over the 'rule' alternative is a signal at the previous trade's exit bar",
+   "expected": true,
+   "got": true,
    "ok": true
   }
  ]

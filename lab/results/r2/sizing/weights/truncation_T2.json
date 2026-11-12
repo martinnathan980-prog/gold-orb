@@ -1,0 +1,174 @@
+{
+ "what": "12 decision times T (4 per out-of-fold year 2019-2021, entries of the U10 fp book drawn with seed 5, never on the day\nafter US Thanksgiving, where GOLD_FRI_PM's early-close filter is applied after the fact). For each T, every market's\nin-sample frame is cut right after the decision (bars starting before T + 2 min: the entry bar and one more bar, which\nthe rules need to emit an order whose entry bar is T), the ten sleeves are re-simulated on the cut frames (FP costs,\n3-spread refusal; nq_btc_follow's leader = the us100 frame cut the same way), the book is rebuilt from those trades\nonly (a trade not closed strictly before T is unknown), and the stakes of every decision at or before T are\nrecomputed for every variant (U10 and U8_noF1) and compared with the full run, trade by trade on (sleeve, entry,\nside). The known trades of the cut world must equal the full chains (same exit, same R).\nOutput: results/r2/sizing/weights/truncation_T2.json\n",
+ "points": [
+  {
+   "T": "2019-01-14 08:00:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 4011,
+   "trades_at_or_before_T_full": 4011,
+   "matched": 4011,
+   "known_trades": 4008,
+   "known_trades_identical": 4008,
+   "decisions_compared_per_variant": {
+    "U10": 4011,
+    "U8_noF1": 3669
+   },
+   "stakes_differing": "none",
+   "pass": true
+  },
+  {
+   "T": "2019-09-05 12:00:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 4806,
+   "trades_at_or_before_T_full": 4806,
+   "matched": 4806,
+   "known_trades": 4803,
+   "known_trades_identical": 4803,
+   "decisions_compared_per_variant": {
+    "U10": 4806,
+    "U8_noF1": 4294
+   },
+   "stakes_differing": "none",
+   "pass": true
+  },
+  {
+   "T": "2019-10-17 09:31:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 4972,
+   "trades_at_or_before_T_full": 4972,
+   "matched": 4972,
+   "known_trades": 4970,
+   "known_trades_identical": 4970,
+   "decisions_compared_per_variant": {
+    "U10": 4972,
+    "U8_noF1": 4432
+   },
+   "stakes_differing": "none",
+   "pass": true
+  },
+  {
+   "T": "2019-10-18 09:00:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 4977,
+   "trades_at_or_before_T_full": 4977,
+   "matched": 4977,
+   "known_trades": 4972,
+   "known_trades_identical": 4972,
+   "decisions_compared_per_variant": {
+    "U10": 4977,
+    "U8_noF1": 4435
+   },
+   "stakes_differing": "none",
+   "pass": true
+  },
+  {
+   "T": "2020-01-20 12:00:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 5287,
+   "trades_at_or_before_T_full": 5287,
+   "matched": 5287,
+   "known_trades": 5284,
+   "known_trades_identical": 5284,
+   "decisions_compared_per_variant": {
+    "U10": 5287,
+    "U8_noF1": 4688
+   },
+   "stakes_differing": "none",
+   "pass": true
+  },
+  {
+   "T": "2020-03-27 08:00:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 5580,
+   "trades_at_or_before_T_full": 5580,
+   "matched": 5580,
+   "known_trades": 5577,
+   "known_trades_identical": 5577,
+   "decisions_compared_per_variant": {
+    "U10": 5580,
+    "U8_noF1": 4923
+   },
+   "stakes_differing": "none",
+   "pass": true
+  },
+  {
+   "T": "2020-03-31 08:44:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 5589,
+   "trades_at_or_before_T_full": 5589,
+   "matched": 5589,
+   "known_trades": 5587,
+   "known_trades_identical": 5587,
+   "decisions_compared_per_variant": {
+    "U10": 5589,
+    "U8_noF1": 4930
+   },
+   "stakes_differing": "none",
+   "pass": true
+  },
+  {
+   "T": "2020-12-21 14:34:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 6498,
+   "trades_at_or_before_T_full": 6498,
+   "matched": 6498,
+   "known_trades": 6494,
+   "known_trades_identical": 6494,
+   "decisions_compared_per_variant": {
+    "U10": 6498,
+    "U8_noF1": 5641
+   },
+   "stakes_differing": "none",
+   "pass": true
+  },
+  {
+   "T": "2021-01-04 02:00:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 6528,
+   "trades_at_or_before_T_full": 6528,
+   "matched": 6528,
+   "known_trades": 6526,
+   "known_trades_identical": 6526,
+   "decisions_compared_per_variant": {
+    "U10": 6528,
+    "U8_noF1": 5663
+   },
+   "stakes_differing": "none",
+   "pass": true
+  },
+  {
+   "T": "2021-01-19 08:00:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 6591,
+   "trades_at_or_before_T_full": 6591,
+   "matched": 6591,
+   "known_trades": 6589,
+   "known_trades_identical": 6589,
+   "decisions_compared_per_variant": {
+    "U10": 6591,
+    "U8_noF1": 5715
+   },
+   "stakes_differing": "none",
+   "pass": true
+  },
+  {
+   "T": "2021-01-20 04:00:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 6596,
+   "trades_at_or_before_T_full": 6596,
+   "matched": 6596,
+   "known_trades": 6595,
+   "known_trades_identical": 6595,
+   "decisions_compared_per_variant": {
+    "U10": 6596,
+    "U8_noF1": 5720
+   },
+   "stakes_differing": "none",
+   "pass": true
+  },
+  {
+   "T": "2021-02-23 05:00:00+00:00",
+   "trades_in_cut_world_at_or_before_T": 6713,
+   "trades_at_or_before_T_full": 6713,
+   "matched": 6713,
+   "known_trades": 6710,
+   "known_trades_identical": 6710,
+   "decisions_compared_per_variant": {
+    "U10": 6713,
+    "U8_noF1": 5809
+   },
+   "stakes_differing": "none",
+   "pass": true
+  }
+ ],
+ "pass": true
+}

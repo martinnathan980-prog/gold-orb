@@ -1,0 +1,59 @@
+{
+ "lens": "weights (PROTOCOL_V3 Addendum I): ONE STAKE PER SLEEVE",
+ "declared_at": "2026-11-12T14:27Z, after the first check (s0_repro.py: ten sleeves reproduced, P0 5,205 trades +788.592 R) and BEFORE any description statistic (PART 1) and before any variant is evaluated",
+ "in_sample_only": "price frames read with the row filter ts < 2022-01-01; official trades with entry_time < 2022-01-01 (and exit_time < 2022-01-01 for any R read); nothing dated 2022 or later is read, simulated or looked at",
+ "account": "PLAIN SUM of the ten sleeves' one-position chains (synthesis_B's P0 convention, the same as the clock lens), kept the same throughout. No cap across sleeves. A trade's result = stake x R; stake = base (1 R) x the variant's multiplier. A multiplier 0 = the trade is followed on paper only; no stake ever changes a sleeve's chain.",
+ "book": "the reference chains of s0_repro.py (fp: FP costs; stress: spread and slippage x1.5, orders rebuilt on the widened quotes), every trade from each sleeve's first trade (gold 2012-12, us100 2014-01, btcusd 2017-05, ethusd 2018-01) to the end of 2021; trades still open at the end of the slice are not in the book; broker's 3-spread minimum stop applied (0 refusal in sample)",
+ "universes": {
+  "U10": "the ten sleeves (judges)",
+  "U8_noF1": "the ten minus F1_brk_ridge_filter btcusd and ethusd (their in-sample results are inflated: their scorecard was fitted on these years). Every variant is reported on U8 too; normalisations and ranks are computed inside the universe",
+  "U5_gold_us100": "information only, judges nothing: ocm4, noise30, donch4h_stop, orb_asia_2d_buf10, GOLD_FRI_PM, whose frames allow earlier out-of-fold years 2015-2018"
+ },
+ "clock": "FP server time = New York + 7 h; server week Monday 00:00 - Sunday 24:00; a trade's result is booked in the server week of its EXIT; the year of a week = the year of its Thursday; every calendar week counted, empty week = 0",
+ "walk_forward": {
+  "fold": "fold year Y = the trades whose entry (UTC) is in year Y; cutoff c_Y = Y-01-01 00:00 UTC minus 7 days",
+  "training_series": "for sleeve k and fold Y: its weekly R over every server week from the week of its FIRST trade's entry to the last server week that ENDS (next Monday 00:00 server) at or before c_Y (server clock); empty weeks 0; only trades closed in those weeks (hence before c_Y) enter",
+  "enough_history": ">= 26 such weeks and sd > 0; otherwise the sleeve gets stake 1 in that fold and is left out of the normalisation",
+  "out_of_fold_years": [2019, 2020, 2021],
+  "early_years_information_only": "U10: 2018 (trades entered from 2018-02-01, weeks from the one of 2018-02-01; ethusd sleeves have no history for the 2018 fold of MV / IV and get 1); U5_gold_us100: 2015-2018"
+ },
+ "variants": [
+  {"id": "MV00", "family": "MV", "lambda": 0.0, "rule": "w_k = clip(lambda + (1 - lambda) * q_k, 0.25, 2); q_k = r_k / mean_j(r_j) over the sleeves of the universe with enough history (if that mean <= 0: q = 1 for all); r_k = mu_k / s_k^2 with mu_k, s_k the mean and standard deviation (ddof 1) of sleeve k's weekly training series (expanding window, refitted every fold); F1 sleeves: w = min(w, 1); one stake per sleeve for the whole fold year", "fitted_per_sleeve": 2, "neighbours": ["MV25"]},
+  {"id": "MV25", "family": "MV", "lambda": 0.25, "rule": "as MV00 with lambda 0.25", "fitted_per_sleeve": 2, "neighbours": ["MV00", "MV50"]},
+  {"id": "MV50", "family": "MV", "lambda": 0.5, "rule": "as MV00 with lambda 0.5", "fitted_per_sleeve": 2, "neighbours": ["MV25", "MV75"]},
+  {"id": "MV75", "family": "MV", "lambda": 0.75, "rule": "as MV00 with lambda 0.75", "fitted_per_sleeve": 2, "neighbours": ["MV50"]},
+  {"id": "IV00", "family": "IV", "lambda": 0.0, "rule": "inverse volatility: as MV00 with r_k = 1 / s_k (s_k = standard deviation of sleeve k's weekly training series, expanding window, refitted every fold); clip [0.25, 2]; F1 <= 1", "fitted_per_sleeve": 1, "neighbours": ["IV25"]},
+  {"id": "IV25", "family": "IV", "lambda": 0.25, "rule": "as IV00 with lambda 0.25", "fitted_per_sleeve": 1, "neighbours": ["IV00", "IV50"]},
+  {"id": "IV50", "family": "IV", "lambda": 0.5, "rule": "as IV00 with lambda 0.5", "fitted_per_sleeve": 1, "neighbours": ["IV25", "IV75"]},
+  {"id": "IV75", "family": "IV", "lambda": 0.75, "rule": "as IV00 with lambda 0.75", "fitted_per_sleeve": 1, "neighbours": ["IV50"]},
+  {"id": "Z12", "family": "Z", "window_days": 365, "rule": "sleeve off while its trailing expectancy is not positive: at the entry time t of each trade of sleeve k, take sleeve k's paper trades (its whole chain, whatever their stakes) whose exit time is in [t - window, t); if there are at least 20 and their mean R is <= 0, stake 0 (the trade is followed on paper only), else 1. No fitted parameter (a state rule using only trades closed before the decision)", "fitted_per_sleeve": 0, "neighbours": ["Z24"]},
+  {"id": "Z24", "family": "Z", "window_days": 730, "rule": "as Z12 with a 24-month (730-day) window: the variant named by the protocol", "fitted_per_sleeve": 0, "neighbours": ["Z12", "Z36"]},
+  {"id": "Z36", "family": "Z", "window_days": 1095, "rule": "as Z12 with a 36-month (1095-day) window", "fitted_per_sleeve": 0, "neighbours": ["Z24"]},
+  {"id": "D4", "family": "D", "window_days": 91, "rule": "cluster lens D4 (engine code 5) redone on the plain-sum account: at the entry time t of each trade, for every sleeve u of the universe the paper mean R per trade of its trades with exit time in [t - 91 days, t); the sleeves with at least 5 such trades are ranked (average ranks for ties, 0 = lowest); stake = 0.5 + rank / (n_ranked - 1) if the trade's sleeve is ranked and n_ranked >= 2, else 1; F1: min(stake, 1)", "fitted_per_sleeve": 0, "neighbours": ["D5"]},
+  {"id": "D5", "family": "D", "window_days": 182, "rule": "as D4 over 182 days", "fitted_per_sleeve": 0, "neighbours": ["D4", "D6"]},
+  {"id": "D6", "family": "D", "window_days": 365, "rule": "as D4 over 365 days", "fitted_per_sleeve": 0, "neighbours": ["D5"]},
+  {"id": "D7", "family": "D", "window_days": null, "rule": "as D4 with every paper trade closed before t (expanding mean): the cluster lens's control of a static tilt; it has no neighbour and, as in the cluster lens, cannot be a candidate", "fitted_per_sleeve": 0, "neighbours": []}
+ ],
+ "budget": {"allowed": 15, "declared": 15, "note": "one trials.jsonl line per variant, holding its four evaluations (U10 / U8 x fp / stress) and the information universe U5; the reference and the PART 1 hindsight bound are logged as lines of kind 'reference' / 'description', which are not variants and judge nothing"},
+ "measure": {
+  "oof_book": "trades entered in [2019-01-01, 2022-01-01) UTC",
+  "weekly": "W = sum of stake x R by server week of the exit, over every server week whose Thursday is in 2019-2021 (157 weeks), empty week 0; per year: the weeks whose Thursday is in that year (a partition of the pooled weeks)",
+  "equal_swing": "k = sd(W_reference) / sd(W_variant), pooled 2019-2021, computed separately for each mode (fp / stress) and universe, against the equal-stake reference of the same mode and universe; the variant is reported at stakes k x w",
+  "weekly_sharpe": "mean / sd (ddof 1) of W x sqrt(52) (scale-free)",
+  "reported": "pooled and per-year weekly Sharpe; at equal swing: total R, mean and sd of weekly R, share of losing weeks (W < 0), worst week, longest run of consecutive losing weeks, maximum drawdown of the cumulative weekly R, losing trades per month (stake > 0 and R < 0, divided by 36), trades taken, stakes (raw and scaled); a paired block bootstrap (blocks of 4 weeks, 2,000 draws, seed 7) of the pooled Sharpe ratio variant / reference, information only"
+ },
+ "criteria_fixed_here": {
+  "a": "pooled 2019-2021 weekly Sharpe (U10, fp) at least 1.10 x the reference's",
+  "b": "weekly Sharpe above the reference's in at least 2 of 2019, 2020, 2021 (U10, fp)",
+  "c": "with costs x1.5: the whole procedure re-run on the stress chains (weights refitted on them, stress reference, its own k): (a) and (b) hold",
+  "d": "every declared neighbour has a pooled 2019-2021 weekly Sharpe (U10, fp) above the reference's; a variant with no declared neighbour (D7) cannot be a candidate",
+  "e": "causal: the truncation tests pass (T1 and T2 below)",
+  "f": "raw stakes in [0, 2] with F1 <= 1, at most 3 fitted parameters per sleeve (checked on the stakes produced)",
+  "reported_beside": "the same criteria on U8_noF1; a candidate that fails on U8 is flagged 'rests on the F1 sleeves (inflated in sample)'; and, for the user, losing trades per month, share of losing weeks, worst week and longest run of losing weeks before and after at equal weekly swing"
+ },
+ "truncation_tests": {
+  "T1_trade_level": "every variant, U10 and U8, fp: 300 decision times T (entries of 2019-2021 drawn with seed 3) plus the first decision of each fold year 2019-2021 and up to 50 decisions where the variant's stake differs from the previous trade of the same sleeve; at each T the book is cut to what is known at T (trades entered after T removed; trades open at T keep their entry but their exit time and R are set unknown) and the stakes of every trade entered at or before T are recomputed and compared with the full run: they must be identical",
+  "T2_price_frames": "12 decision times (4 per out-of-fold year, seed 5, avoiding the day after US Thanksgiving): every market's in-sample frame cut at T + 2 min, the ten sleeves re-simulated on the cut frames (FP; nq_btc_follow's leader = the us100 frame cut the same way), the book rebuilt from those trades (a trade not closed before T is unknown), and every variant's stakes of the decisions at or before T recomputed and compared with the full run"
+ },
+ "to_be_said_with_any_result": "found on the years that built the rules (the ten sleeves were chosen on data that include 2019-2021), so optimistic; the measure that counts is the validation look, then the demo account; stakes below the broker's minimum lot are skipped on a small account (Addendum E)"
+}

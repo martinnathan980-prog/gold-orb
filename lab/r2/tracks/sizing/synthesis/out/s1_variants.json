@@ -1,0 +1,6731 @@
+{
+ "variants": {
+  "S00_R0": {
+   "fp": {
+    "vs_S00": {
+     "scale_k": 1.0,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3985,
+      "sharpe": 2.7466,
+      "total_R": 556.16,
+      "R_per_trade": 0.1396,
+      "eur_per_100_risked": 13.96,
+      "mean_week": 3.5424,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 44.59,
+      "worst_week": -12.54,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 21.03,
+      "losing_trades_per_month": 60.78,
+      "mean_stake_scaled": 1.0,
+      "sharpe_ratio_vs_ref": 1.0
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3985,
+      "sharpe": 2.7466,
+      "total_R": 556.16,
+      "R_per_trade": 0.1396,
+      "eur_per_100_risked": 13.96,
+      "mean_week": 3.5424,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 44.59,
+      "worst_week": -12.54,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 21.03,
+      "losing_trades_per_month": 60.78,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1224,
+        "sharpe": 2.3995,
+        "total_R": 178.67,
+        "R_per_trade": 0.146,
+        "eur_per_100_risked": 14.6,
+        "mean_week": 3.436,
+        "sd_week": 10.3257,
+        "losing_weeks_pct": 50.0,
+        "worst_week": -9.07,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 11.93,
+        "losing_trades_per_month": 58.42,
+        "mean_stake_scaled": 1.0,
+        "sharpe_ratio_vs_ref": 1.0
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1224,
+        "sharpe": 2.3995,
+        "total_R": 178.67,
+        "R_per_trade": 0.146,
+        "eur_per_100_risked": 14.6,
+        "mean_week": 3.436,
+        "sd_week": 10.3257,
+        "losing_weeks_pct": 50.0,
+        "worst_week": -9.07,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 11.93,
+        "losing_trades_per_month": 58.42,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1324,
+        "sharpe": 3.7143,
+        "total_R": 270.57,
+        "R_per_trade": 0.2044,
+        "eur_per_100_risked": 20.44,
+        "mean_week": 5.1051,
+        "sd_week": 9.9112,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -10.97,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 20.24,
+        "losing_trades_per_month": 58.5,
+        "mean_stake_scaled": 1.0,
+        "sharpe_ratio_vs_ref": 1.0
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1324,
+        "sharpe": 3.7143,
+        "total_R": 270.57,
+        "R_per_trade": 0.2044,
+        "eur_per_100_risked": 20.44,
+        "mean_week": 5.1051,
+        "sd_week": 9.9112,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -10.97,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 20.24,
+        "losing_trades_per_month": 58.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1437,
+        "sharpe": 2.0367,
+        "total_R": 106.92,
+        "R_per_trade": 0.0744,
+        "eur_per_100_risked": 7.44,
+        "mean_week": 2.0562,
+        "sd_week": 7.28,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.54,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 21.03,
+        "losing_trades_per_month": 65.42,
+        "mean_stake_scaled": 1.0,
+        "sharpe_ratio_vs_ref": 1.0
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1437,
+        "sharpe": 2.0367,
+        "total_R": 106.92,
+        "R_per_trade": 0.0744,
+        "eur_per_100_risked": 7.44,
+        "mean_week": 2.0562,
+        "sd_week": 7.28,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.54,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 21.03,
+        "losing_trades_per_month": 65.42,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 0
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 3985,
+     "sharpe": 2.7466,
+     "total_R": 556.16,
+     "R_per_trade": 0.1396,
+     "eur_per_100_risked": 13.96,
+     "mean_week": 3.5424,
+     "sd_week": 9.3004,
+     "losing_weeks_pct": 44.59,
+     "worst_week": -12.54,
+     "longest_losing_weeks": 7,
+     "max_fall_weekly_R": 21.03,
+     "losing_trades_per_month": 60.78,
+     "mean_stake_scaled": 1.0
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 39.82,
+      "R_ref": 39.82,
+      "R_per_stake": 0.1056,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 44.65,
+      "R_ref": 44.65,
+      "R_per_stake": 0.0733,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 31.58,
+      "R_ref": 31.58,
+      "R_per_stake": 0.1986,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 53.94,
+      "R_ref": 53.94,
+      "R_per_stake": 0.1545,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 139,
+      "trades_ref": 139,
+      "stakes": 139.0,
+      "R_at_stake_unscaled": -1.63,
+      "R_ref": -1.63,
+      "R_per_stake": -0.0117,
+      "stake_counts": {
+       "1.0": 139
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 420,
+      "trades_ref": 420,
+      "stakes": 420.0,
+      "R_at_stake_unscaled": 104.52,
+      "R_ref": 104.52,
+      "R_per_stake": 0.2489,
+      "stake_counts": {
+       "1.0": 420
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 396,
+      "trades_ref": 396,
+      "stakes": 396.0,
+      "R_at_stake_unscaled": 48.08,
+      "R_ref": 48.08,
+      "R_per_stake": 0.1214,
+      "stake_counts": {
+       "1.0": 396
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 422,
+      "trades_ref": 422,
+      "stakes": 422.0,
+      "R_at_stake_unscaled": 115.53,
+      "R_ref": 115.53,
+      "R_per_stake": 0.2738,
+      "stake_counts": {
+       "1.0": 422
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 393,
+      "trades_ref": 393,
+      "stakes": 393.0,
+      "R_at_stake_unscaled": 56.22,
+      "R_ref": 56.22,
+      "R_per_stake": 0.1431,
+      "stake_counts": {
+       "1.0": 393
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 63.44,
+      "R_ref": 63.44,
+      "R_per_stake": 0.088,
+      "stake_counts": {
+       "1.0": 721
+      }
+     }
+    },
+    "trade_changes": {}
+   },
+   "stress": {
+    "vs_S00": {
+     "scale_k": 1.0,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3987,
+      "sharpe": 2.4915,
+      "total_R": 499.97,
+      "R_per_trade": 0.1254,
+      "eur_per_100_risked": 12.54,
+      "mean_week": 3.1845,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 46.5,
+      "worst_week": -12.66,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 22.98,
+      "losing_trades_per_month": 61.47,
+      "mean_stake_scaled": 1.0,
+      "sharpe_ratio_vs_ref": 1.0
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3987,
+      "sharpe": 2.4915,
+      "total_R": 499.97,
+      "R_per_trade": 0.1254,
+      "eur_per_100_risked": 12.54,
+      "mean_week": 3.1845,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 46.5,
+      "worst_week": -12.66,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 22.98,
+      "losing_trades_per_month": 61.47,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1225,
+        "sharpe": 2.1431,
+        "total_R": 158.36,
+        "R_per_trade": 0.1293,
+        "eur_per_100_risked": 12.93,
+        "mean_week": 3.0455,
+        "sd_week": 10.2476,
+        "losing_weeks_pct": 55.77,
+        "worst_week": -9.37,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 13.85,
+        "losing_trades_per_month": 59.5,
+        "mean_stake_scaled": 1.0,
+        "sharpe_ratio_vs_ref": 1.0
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1225,
+        "sharpe": 2.1431,
+        "total_R": 158.36,
+        "R_per_trade": 0.1293,
+        "eur_per_100_risked": 12.93,
+        "mean_week": 3.0455,
+        "sd_week": 10.2476,
+        "losing_weeks_pct": 55.77,
+        "worst_week": -9.37,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 13.85,
+        "losing_trades_per_month": 59.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1326,
+        "sharpe": 3.4708,
+        "total_R": 250.05,
+        "R_per_trade": 0.1886,
+        "eur_per_100_risked": 18.86,
+        "mean_week": 4.718,
+        "sd_week": 9.8023,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -12.3,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 22.98,
+        "losing_trades_per_month": 59.08,
+        "mean_stake_scaled": 1.0,
+        "sharpe_ratio_vs_ref": 1.0
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1326,
+        "sharpe": 3.4708,
+        "total_R": 250.05,
+        "R_per_trade": 0.1886,
+        "eur_per_100_risked": 18.86,
+        "mean_week": 4.718,
+        "sd_week": 9.8023,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -12.3,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 22.98,
+        "losing_trades_per_month": 59.08,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1436,
+        "sharpe": 1.7549,
+        "total_R": 91.55,
+        "R_per_trade": 0.0638,
+        "eur_per_100_risked": 6.38,
+        "mean_week": 1.7606,
+        "sd_week": 7.2342,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.66,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 22.95,
+        "losing_trades_per_month": 65.83,
+        "mean_stake_scaled": 1.0,
+        "sharpe_ratio_vs_ref": 1.0
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1436,
+        "sharpe": 1.7549,
+        "total_R": 91.55,
+        "R_per_trade": 0.0638,
+        "eur_per_100_risked": 6.38,
+        "mean_week": 1.7606,
+        "sd_week": 7.2342,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.66,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 22.95,
+        "losing_trades_per_month": 65.83,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 0
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 3987,
+     "sharpe": 2.4915,
+     "total_R": 499.97,
+     "R_per_trade": 0.1254,
+     "eur_per_100_risked": 12.54,
+     "mean_week": 3.1845,
+     "sd_week": 9.2168,
+     "losing_weeks_pct": 46.5,
+     "worst_week": -12.66,
+     "longest_losing_weeks": 7,
+     "max_fall_weekly_R": 22.98,
+     "losing_trades_per_month": 61.47,
+     "mean_stake_scaled": 1.0
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 37.53,
+      "R_ref": 37.53,
+      "R_per_stake": 0.0995,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 40.77,
+      "R_ref": 40.77,
+      "R_per_stake": 0.0669,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 29.68,
+      "R_ref": 29.68,
+      "R_per_stake": 0.1867,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 44.63,
+      "R_ref": 44.63,
+      "R_per_stake": 0.1279,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 137,
+      "trades_ref": 137,
+      "stakes": 137.0,
+      "R_at_stake_unscaled": -2.25,
+      "R_ref": -2.25,
+      "R_per_stake": -0.0164,
+      "stake_counts": {
+       "1.0": 137
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 420,
+      "trades_ref": 420,
+      "stakes": 420.0,
+      "R_at_stake_unscaled": 101.12,
+      "R_ref": 101.12,
+      "R_per_stake": 0.2408,
+      "stake_counts": {
+       "1.0": 420
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 398,
+      "trades_ref": 398,
+      "stakes": 398.0,
+      "R_at_stake_unscaled": 39.85,
+      "R_ref": 39.85,
+      "R_per_stake": 0.1001,
+      "stake_counts": {
+       "1.0": 398
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 423,
+      "trades_ref": 423,
+      "stakes": 423.0,
+      "R_at_stake_unscaled": 110.13,
+      "R_ref": 110.13,
+      "R_per_stake": 0.2603,
+      "stake_counts": {
+       "1.0": 423
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 394,
+      "trades_ref": 394,
+      "stakes": 394.0,
+      "R_at_stake_unscaled": 45.97,
+      "R_ref": 45.97,
+      "R_per_stake": 0.1167,
+      "stake_counts": {
+       "1.0": 394
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 52.55,
+      "R_ref": 52.55,
+      "R_per_stake": 0.0729,
+      "stake_counts": {
+       "1.0": 721
+      }
+     }
+    },
+    "trade_changes": {}
+   }
+  },
+  "S01_V05": {
+   "fp": {
+    "vs_S00": {
+     "scale_k": 0.9473,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3792,
+      "sharpe": 3.0078,
+      "total_R": 609.04,
+      "R_per_trade": 0.1606,
+      "eur_per_100_risked": 16.62,
+      "mean_week": 3.8792,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 40.13,
+      "worst_week": -12.37,
+      "longest_losing_weeks": 6,
+      "max_fall_weekly_R": 19.24,
+      "losing_trades_per_month": 57.69,
+      "mean_stake_scaled": 0.9665,
+      "sharpe_ratio_vs_ref": 1.0951
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3985,
+      "sharpe": 2.7466,
+      "total_R": 556.16,
+      "R_per_trade": 0.1396,
+      "eur_per_100_risked": 13.96,
+      "mean_week": 3.5424,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 44.59,
+      "worst_week": -12.54,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 21.03,
+      "losing_trades_per_month": 60.78,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1118,
+        "sharpe": 2.4147,
+        "total_R": 171.35,
+        "R_per_trade": 0.1533,
+        "eur_per_100_risked": 15.17,
+        "mean_week": 3.2952,
+        "sd_week": 9.8404,
+        "losing_weeks_pct": 48.08,
+        "worst_week": -9.92,
+        "longest_losing_weeks": 4,
+        "max_fall_weekly_R": 11.62,
+        "losing_trades_per_month": 54.0,
+        "mean_stake_scaled": 1.0104,
+        "sharpe_ratio_vs_ref": 1.0063
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1224,
+        "sharpe": 2.3995,
+        "total_R": 178.67,
+        "R_per_trade": 0.146,
+        "eur_per_100_risked": 14.6,
+        "mean_week": 3.436,
+        "sd_week": 10.3257,
+        "losing_weeks_pct": 50.0,
+        "worst_week": -9.07,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 11.93,
+        "losing_trades_per_month": 58.42,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1284,
+        "sharpe": 3.8881,
+        "total_R": 306.3,
+        "R_per_trade": 0.2385,
+        "eur_per_100_risked": 24.51,
+        "mean_week": 5.7792,
+        "sd_week": 10.7184,
+        "losing_weeks_pct": 33.96,
+        "worst_week": -12.37,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 19.24,
+        "losing_trades_per_month": 56.58,
+        "mean_stake_scaled": 0.9731,
+        "sharpe_ratio_vs_ref": 1.0468
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1324,
+        "sharpe": 3.7143,
+        "total_R": 270.57,
+        "R_per_trade": 0.2044,
+        "eur_per_100_risked": 20.44,
+        "mean_week": 5.1051,
+        "sd_week": 9.9112,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -10.97,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 20.24,
+        "losing_trades_per_month": 58.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1390,
+        "sharpe": 2.7269,
+        "total_R": 131.39,
+        "R_per_trade": 0.0945,
+        "eur_per_100_risked": 10.22,
+        "mean_week": 2.5267,
+        "sd_week": 6.6817,
+        "losing_weeks_pct": 38.46,
+        "worst_week": -10.43,
+        "longest_losing_weeks": 6,
+        "max_fall_weekly_R": 18.38,
+        "losing_trades_per_month": 62.5,
+        "mean_stake_scaled": 0.9251,
+        "sharpe_ratio_vs_ref": 1.3389
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1437,
+        "sharpe": 2.0367,
+        "total_R": 106.92,
+        "R_per_trade": 0.0744,
+        "eur_per_100_risked": 7.44,
+        "mean_week": 2.0562,
+        "sd_week": 7.28,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.54,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 21.03,
+        "losing_trades_per_month": 65.42,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 3
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 3792,
+     "sharpe": 3.0078,
+     "total_R": 642.94,
+     "R_per_trade": 0.1696,
+     "eur_per_100_risked": 16.62,
+     "mean_week": 4.0952,
+     "sd_week": 9.8182,
+     "losing_weeks_pct": 40.13,
+     "worst_week": -13.05,
+     "longest_losing_weeks": 6,
+     "max_fall_weekly_R": 20.31,
+     "losing_trades_per_month": 57.69,
+     "mean_stake_scaled": 1.0203
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 39.82,
+      "R_ref": 39.82,
+      "R_per_stake": 0.1056,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 44.65,
+      "R_ref": 44.65,
+      "R_per_stake": 0.0733,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 31.58,
+      "R_ref": 31.58,
+      "R_per_stake": 0.1986,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 53.94,
+      "R_ref": 53.94,
+      "R_per_stake": 0.1545,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 139,
+      "trades_ref": 139,
+      "stakes": 139.0,
+      "R_at_stake_unscaled": -1.63,
+      "R_ref": -1.63,
+      "R_per_stake": -0.0117,
+      "stake_counts": {
+       "1.0": 139
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 393,
+      "trades_ref": 420,
+      "stakes": 429.5,
+      "R_at_stake_unscaled": 148.08,
+      "R_ref": 104.52,
+      "R_per_stake": 0.3448,
+      "stake_counts": {
+       "0.5": 79,
+       "1.0": 162,
+       "1.5": 152
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 277,
+      "trades_ref": 396,
+      "stakes": 330.5,
+      "R_at_stake_unscaled": 69.13,
+      "R_ref": 48.08,
+      "R_per_stake": 0.2092,
+      "stake_counts": {
+       "1.0": 170,
+       "1.5": 107
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 422,
+      "trades_ref": 422,
+      "stakes": 416.5,
+      "R_at_stake_unscaled": 135.83,
+      "R_ref": 115.53,
+      "R_per_stake": 0.3261,
+      "stake_counts": {
+       "0.5": 129,
+       "1.0": 175,
+       "1.5": 118
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 346,
+      "trades_ref": 393,
+      "stakes": 338.5,
+      "R_at_stake_unscaled": 58.1,
+      "R_ref": 56.22,
+      "R_per_stake": 0.1716,
+      "stake_counts": {
+       "0.5": 103,
+       "1.0": 155,
+       "1.5": 88
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 63.44,
+      "R_ref": 63.44,
+      "R_per_stake": 0.088,
+      "stake_counts": {
+       "1.0": 721
+      }
+     }
+    },
+    "trade_changes": {
+     "brk72_24h_wd__btcusd": {
+      "baseline_trades_removed": 30,
+      "R_removed": 1.831,
+      "new_trades": 3,
+      "R_new": -0.031
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "baseline_trades_removed": 48,
+      "R_removed": 13.183,
+      "new_trades": 1,
+      "R_new": -1.008
+     },
+     "brk72_24h_wd__ethusd": {
+      "baseline_trades_removed": 135,
+      "R_removed": -9.48,
+      "new_trades": 16,
+      "R_new": -3.636
+     }
+    }
+   },
+   "stress": {
+    "vs_S00": {
+     "scale_k": 0.9493,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3788,
+      "sharpe": 2.7456,
+      "total_R": 550.96,
+      "R_per_trade": 0.1454,
+      "eur_per_100_risked": 14.99,
+      "mean_week": 3.5093,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 43.31,
+      "worst_week": -14.22,
+      "longest_losing_weeks": 6,
+      "max_fall_weekly_R": 22.83,
+      "losing_trades_per_month": 58.33,
+      "mean_stake_scaled": 0.9705,
+      "sharpe_ratio_vs_ref": 1.102
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3987,
+      "sharpe": 2.4915,
+      "total_R": 499.97,
+      "R_per_trade": 0.1254,
+      "eur_per_100_risked": 12.54,
+      "mean_week": 3.1845,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 46.5,
+      "worst_week": -12.66,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 22.98,
+      "losing_trades_per_month": 61.47,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1115,
+        "sharpe": 2.1643,
+        "total_R": 151.09,
+        "R_per_trade": 0.1355,
+        "eur_per_100_risked": 13.39,
+        "mean_week": 2.9056,
+        "sd_week": 9.6808,
+        "losing_weeks_pct": 53.85,
+        "worst_week": -10.41,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 12.69,
+        "losing_trades_per_month": 54.83,
+        "mean_stake_scaled": 1.0123,
+        "sharpe_ratio_vs_ref": 1.0099
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1225,
+        "sharpe": 2.1431,
+        "total_R": 158.36,
+        "R_per_trade": 0.1293,
+        "eur_per_100_risked": 12.93,
+        "mean_week": 3.0455,
+        "sd_week": 10.2476,
+        "losing_weeks_pct": 55.77,
+        "worst_week": -9.37,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 13.85,
+        "losing_trades_per_month": 59.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1286,
+        "sharpe": 3.6613,
+        "total_R": 286.2,
+        "R_per_trade": 0.2226,
+        "eur_per_100_risked": 22.69,
+        "mean_week": 5.4,
+        "sd_week": 10.6355,
+        "losing_weeks_pct": 35.85,
+        "worst_week": -14.22,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 22.83,
+        "losing_trades_per_month": 57.25,
+        "mean_stake_scaled": 0.9807,
+        "sharpe_ratio_vs_ref": 1.0549
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1326,
+        "sharpe": 3.4708,
+        "total_R": 250.05,
+        "R_per_trade": 0.1886,
+        "eur_per_100_risked": 18.86,
+        "mean_week": 4.718,
+        "sd_week": 9.8023,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -12.3,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 22.98,
+        "losing_trades_per_month": 59.08,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1387,
+        "sharpe": 2.3519,
+        "total_R": 113.67,
+        "R_per_trade": 0.082,
+        "eur_per_100_risked": 8.84,
+        "mean_week": 2.186,
+        "sd_week": 6.7026,
+        "losing_weeks_pct": 40.38,
+        "worst_week": -10.58,
+        "longest_losing_weeks": 6,
+        "max_fall_weekly_R": 21.48,
+        "losing_trades_per_month": 62.92,
+        "mean_stake_scaled": 0.9274,
+        "sharpe_ratio_vs_ref": 1.3402
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1436,
+        "sharpe": 1.7549,
+        "total_R": 91.55,
+        "R_per_trade": 0.0638,
+        "eur_per_100_risked": 6.38,
+        "mean_week": 1.7606,
+        "sd_week": 7.2342,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.66,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 22.95,
+        "losing_trades_per_month": 65.83,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 3
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 3788,
+     "sharpe": 2.7456,
+     "total_R": 580.36,
+     "R_per_trade": 0.1532,
+     "eur_per_100_risked": 14.99,
+     "mean_week": 3.6966,
+     "sd_week": 9.7086,
+     "losing_weeks_pct": 43.31,
+     "worst_week": -14.98,
+     "longest_losing_weeks": 6,
+     "max_fall_weekly_R": 24.05,
+     "losing_trades_per_month": 58.33,
+     "mean_stake_scaled": 1.0223
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 37.53,
+      "R_ref": 37.53,
+      "R_per_stake": 0.0995,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 40.77,
+      "R_ref": 40.77,
+      "R_per_stake": 0.0669,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 29.68,
+      "R_ref": 29.68,
+      "R_per_stake": 0.1867,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 44.63,
+      "R_ref": 44.63,
+      "R_per_stake": 0.1279,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 137,
+      "trades_ref": 137,
+      "stakes": 137.0,
+      "R_at_stake_unscaled": -2.25,
+      "R_ref": -2.25,
+      "R_per_stake": -0.0164,
+      "stake_counts": {
+       "1.0": 137
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 392,
+      "trades_ref": 420,
+      "stakes": 430.5,
+      "R_at_stake_unscaled": 138.79,
+      "R_ref": 101.12,
+      "R_per_stake": 0.3224,
+      "stake_counts": {
+       "0.5": 75,
+       "1.0": 165,
+       "1.5": 152
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 276,
+      "trades_ref": 398,
+      "stakes": 333.0,
+      "R_at_stake_unscaled": 60.0,
+      "R_ref": 39.85,
+      "R_per_stake": 0.1802,
+      "stake_counts": {
+       "1.0": 162,
+       "1.5": 114
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 423,
+      "trades_ref": 423,
+      "stakes": 421.0,
+      "R_at_stake_unscaled": 131.33,
+      "R_ref": 110.13,
+      "R_per_stake": 0.3119,
+      "stake_counts": {
+       "0.5": 129,
+       "1.0": 169,
+       "1.5": 125
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 345,
+      "trades_ref": 394,
+      "stakes": 336.0,
+      "R_at_stake_unscaled": 47.33,
+      "R_ref": 45.97,
+      "R_per_stake": 0.1409,
+      "stake_counts": {
+       "0.5": 105,
+       "1.0": 153,
+       "1.5": 87
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 52.55,
+      "R_ref": 52.55,
+      "R_per_stake": 0.0729,
+      "stake_counts": {
+       "1.0": 721
+      }
+     }
+    },
+    "trade_changes": {
+     "brk72_24h_wd__btcusd": {
+      "baseline_trades_removed": 32,
+      "R_removed": 0.588,
+      "new_trades": 4,
+      "R_new": -1.079
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "baseline_trades_removed": 49,
+      "R_removed": 12.904,
+      "new_trades": 0,
+      "R_new": 0.0
+     },
+     "brk72_24h_wd__ethusd": {
+      "baseline_trades_removed": 137,
+      "R_removed": -8.632,
+      "new_trades": 15,
+      "R_new": -4.364
+     }
+    }
+   }
+  },
+  "S02_V05_strict": {
+   "fp": {
+    "vs_S00": {
+     "scale_k": 0.9478,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3790,
+      "sharpe": 3.0217,
+      "total_R": 611.85,
+      "R_per_trade": 0.1614,
+      "eur_per_100_risked": 16.69,
+      "mean_week": 3.8971,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 39.49,
+      "worst_week": -12.37,
+      "longest_losing_weeks": 6,
+      "max_fall_weekly_R": 19.25,
+      "losing_trades_per_month": 57.64,
+      "mean_stake_scaled": 0.9673,
+      "sharpe_ratio_vs_ref": 1.1002
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3985,
+      "sharpe": 2.7466,
+      "total_R": 556.16,
+      "R_per_trade": 0.1396,
+      "eur_per_100_risked": 13.96,
+      "mean_week": 3.5424,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 44.59,
+      "worst_week": -12.54,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 21.03,
+      "losing_trades_per_month": 60.78,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1116,
+        "sharpe": 2.4526,
+        "total_R": 173.93,
+        "R_per_trade": 0.1558,
+        "eur_per_100_risked": 15.4,
+        "mean_week": 3.3447,
+        "sd_week": 9.8339,
+        "losing_weeks_pct": 46.15,
+        "worst_week": -9.92,
+        "longest_losing_weeks": 4,
+        "max_fall_weekly_R": 11.63,
+        "losing_trades_per_month": 53.83,
+        "mean_stake_scaled": 1.0119,
+        "sharpe_ratio_vs_ref": 1.0221
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1224,
+        "sharpe": 2.3995,
+        "total_R": 178.67,
+        "R_per_trade": 0.146,
+        "eur_per_100_risked": 14.6,
+        "mean_week": 3.436,
+        "sd_week": 10.3257,
+        "losing_weeks_pct": 50.0,
+        "worst_week": -9.07,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 11.93,
+        "losing_trades_per_month": 58.42,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1284,
+        "sharpe": 3.8881,
+        "total_R": 306.46,
+        "R_per_trade": 0.2387,
+        "eur_per_100_risked": 24.51,
+        "mean_week": 5.7823,
+        "sd_week": 10.7242,
+        "losing_weeks_pct": 33.96,
+        "worst_week": -12.37,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 19.25,
+        "losing_trades_per_month": 56.58,
+        "mean_stake_scaled": 0.9736,
+        "sharpe_ratio_vs_ref": 1.0468
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1324,
+        "sharpe": 3.7143,
+        "total_R": 270.57,
+        "R_per_trade": 0.2044,
+        "eur_per_100_risked": 20.44,
+        "mean_week": 5.1051,
+        "sd_week": 9.9112,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -10.97,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 20.24,
+        "losing_trades_per_month": 58.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1390,
+        "sharpe": 2.7269,
+        "total_R": 131.46,
+        "R_per_trade": 0.0946,
+        "eur_per_100_risked": 10.22,
+        "mean_week": 2.5281,
+        "sd_week": 6.6853,
+        "losing_weeks_pct": 38.46,
+        "worst_week": -10.44,
+        "longest_losing_weeks": 6,
+        "max_fall_weekly_R": 18.39,
+        "losing_trades_per_month": 62.5,
+        "mean_stake_scaled": 0.9256,
+        "sharpe_ratio_vs_ref": 1.3389
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1437,
+        "sharpe": 2.0367,
+        "total_R": 106.92,
+        "R_per_trade": 0.0744,
+        "eur_per_100_risked": 7.44,
+        "mean_week": 2.0562,
+        "sd_week": 7.28,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.54,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 21.03,
+        "losing_trades_per_month": 65.42,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 3
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 3790,
+     "sharpe": 3.0217,
+     "total_R": 645.56,
+     "R_per_trade": 0.1703,
+     "eur_per_100_risked": 16.69,
+     "mean_week": 4.1119,
+     "sd_week": 9.8128,
+     "losing_weeks_pct": 39.49,
+     "worst_week": -13.05,
+     "longest_losing_weeks": 6,
+     "max_fall_weekly_R": 20.31,
+     "losing_trades_per_month": 57.64,
+     "mean_stake_scaled": 1.0206
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 39.82,
+      "R_ref": 39.82,
+      "R_per_stake": 0.1056,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 44.65,
+      "R_ref": 44.65,
+      "R_per_stake": 0.0733,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 31.58,
+      "R_ref": 31.58,
+      "R_per_stake": 0.1986,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 53.94,
+      "R_ref": 53.94,
+      "R_per_stake": 0.1545,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 139,
+      "trades_ref": 139,
+      "stakes": 139.0,
+      "R_at_stake_unscaled": -1.63,
+      "R_ref": -1.63,
+      "R_per_stake": -0.0117,
+      "stake_counts": {
+       "1.0": 139
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 393,
+      "trades_ref": 420,
+      "stakes": 430.0,
+      "R_at_stake_unscaled": 147.57,
+      "R_ref": 104.52,
+      "R_per_stake": 0.3432,
+      "stake_counts": {
+       "0.5": 79,
+       "1.0": 161,
+       "1.5": 153
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 275,
+      "trades_ref": 396,
+      "stakes": 328.5,
+      "R_at_stake_unscaled": 69.63,
+      "R_ref": 48.08,
+      "R_per_stake": 0.212,
+      "stake_counts": {
+       "1.0": 168,
+       "1.5": 107
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 422,
+      "trades_ref": 422,
+      "stakes": 417.0,
+      "R_at_stake_unscaled": 138.46,
+      "R_ref": 115.53,
+      "R_per_stake": 0.332,
+      "stake_counts": {
+       "0.5": 129,
+       "1.0": 174,
+       "1.5": 119
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 346,
+      "trades_ref": 393,
+      "stakes": 338.5,
+      "R_at_stake_unscaled": 58.1,
+      "R_ref": 56.22,
+      "R_per_stake": 0.1716,
+      "stake_counts": {
+       "0.5": 103,
+       "1.0": 155,
+       "1.5": 88
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 63.44,
+      "R_ref": 63.44,
+      "R_per_stake": 0.088,
+      "stake_counts": {
+       "1.0": 721
+      }
+     }
+    },
+    "trade_changes": {
+     "brk72_24h_wd__btcusd": {
+      "baseline_trades_removed": 30,
+      "R_removed": 1.831,
+      "new_trades": 3,
+      "R_new": -0.031
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "baseline_trades_removed": 48,
+      "R_removed": 13.183,
+      "new_trades": 1,
+      "R_new": -1.008
+     },
+     "brk72_24h_wd__ethusd": {
+      "baseline_trades_removed": 137,
+      "R_removed": -9.37,
+      "new_trades": 16,
+      "R_new": -2.778
+     }
+    }
+   },
+   "stress": {
+    "vs_S00": {
+     "scale_k": 0.9501,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3790,
+      "sharpe": 2.7501,
+      "total_R": 551.85,
+      "R_per_trade": 0.1456,
+      "eur_per_100_risked": 14.98,
+      "mean_week": 3.515,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 42.68,
+      "worst_week": -14.23,
+      "longest_losing_weeks": 6,
+      "max_fall_weekly_R": 22.85,
+      "losing_trades_per_month": 58.36,
+      "mean_stake_scaled": 0.9717,
+      "sharpe_ratio_vs_ref": 1.1038
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3987,
+      "sharpe": 2.4915,
+      "total_R": 499.97,
+      "R_per_trade": 0.1254,
+      "eur_per_100_risked": 12.54,
+      "mean_week": 3.1845,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 46.5,
+      "worst_week": -12.66,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 22.98,
+      "losing_trades_per_month": 61.47,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1117,
+        "sharpe": 2.1754,
+        "total_R": 151.65,
+        "R_per_trade": 0.1358,
+        "eur_per_100_risked": 13.38,
+        "mean_week": 2.9163,
+        "sd_week": 9.6671,
+        "losing_weeks_pct": 51.92,
+        "worst_week": -10.42,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 12.45,
+        "losing_trades_per_month": 54.92,
+        "mean_stake_scaled": 1.0144,
+        "sharpe_ratio_vs_ref": 1.0151
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1225,
+        "sharpe": 2.1431,
+        "total_R": 158.36,
+        "R_per_trade": 0.1293,
+        "eur_per_100_risked": 12.93,
+        "mean_week": 3.0455,
+        "sd_week": 10.2476,
+        "losing_weeks_pct": 55.77,
+        "worst_week": -9.37,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 13.85,
+        "losing_trades_per_month": 59.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1286,
+        "sharpe": 3.6613,
+        "total_R": 286.44,
+        "R_per_trade": 0.2227,
+        "eur_per_100_risked": 22.69,
+        "mean_week": 5.4045,
+        "sd_week": 10.6443,
+        "losing_weeks_pct": 35.85,
+        "worst_week": -14.23,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 22.85,
+        "losing_trades_per_month": 57.25,
+        "mean_stake_scaled": 0.9815,
+        "sharpe_ratio_vs_ref": 1.0549
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1326,
+        "sharpe": 3.4708,
+        "total_R": 250.05,
+        "R_per_trade": 0.1886,
+        "eur_per_100_risked": 18.86,
+        "mean_week": 4.718,
+        "sd_week": 9.8023,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -12.3,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 22.98,
+        "losing_trades_per_month": 59.08,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1387,
+        "sharpe": 2.3519,
+        "total_R": 113.77,
+        "R_per_trade": 0.082,
+        "eur_per_100_risked": 8.84,
+        "mean_week": 2.1878,
+        "sd_week": 6.7082,
+        "losing_weeks_pct": 40.38,
+        "worst_week": -10.59,
+        "longest_losing_weeks": 6,
+        "max_fall_weekly_R": 21.5,
+        "losing_trades_per_month": 62.92,
+        "mean_stake_scaled": 0.9282,
+        "sharpe_ratio_vs_ref": 1.3402
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1436,
+        "sharpe": 1.7549,
+        "total_R": 91.55,
+        "R_per_trade": 0.0638,
+        "eur_per_100_risked": 6.38,
+        "mean_week": 1.7606,
+        "sd_week": 7.2342,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.66,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 22.95,
+        "losing_trades_per_month": 65.83,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 3
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 3790,
+     "sharpe": 2.7501,
+     "total_R": 580.81,
+     "R_per_trade": 0.1532,
+     "eur_per_100_risked": 14.98,
+     "mean_week": 3.6994,
+     "sd_week": 9.7006,
+     "losing_weeks_pct": 42.68,
+     "worst_week": -14.98,
+     "longest_losing_weeks": 6,
+     "max_fall_weekly_R": 24.05,
+     "losing_trades_per_month": 58.36,
+     "mean_stake_scaled": 1.0227
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 37.53,
+      "R_ref": 37.53,
+      "R_per_stake": 0.0995,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 40.77,
+      "R_ref": 40.77,
+      "R_per_stake": 0.0669,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 29.68,
+      "R_ref": 29.68,
+      "R_per_stake": 0.1867,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 44.63,
+      "R_ref": 44.63,
+      "R_per_stake": 0.1279,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 137,
+      "trades_ref": 137,
+      "stakes": 137.0,
+      "R_at_stake_unscaled": -2.25,
+      "R_ref": -2.25,
+      "R_per_stake": -0.0164,
+      "stake_counts": {
+       "1.0": 137
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 393,
+      "trades_ref": 420,
+      "stakes": 431.5,
+      "R_at_stake_unscaled": 137.79,
+      "R_ref": 101.12,
+      "R_per_stake": 0.3193,
+      "stake_counts": {
+       "0.5": 75,
+       "1.0": 166,
+       "1.5": 152
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 275,
+      "trades_ref": 398,
+      "stakes": 332.5,
+      "R_at_stake_unscaled": 61.05,
+      "R_ref": 39.85,
+      "R_per_stake": 0.1836,
+      "stake_counts": {
+       "1.0": 160,
+       "1.5": 115
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 423,
+      "trades_ref": 423,
+      "stakes": 421.5,
+      "R_at_stake_unscaled": 132.05,
+      "R_ref": 110.13,
+      "R_per_stake": 0.3133,
+      "stake_counts": {
+       "0.5": 127,
+       "1.0": 172,
+       "1.5": 124
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 347,
+      "trades_ref": 394,
+      "stakes": 338.5,
+      "R_at_stake_unscaled": 47.02,
+      "R_ref": 45.97,
+      "R_per_stake": 0.1389,
+      "stake_counts": {
+       "0.5": 105,
+       "1.0": 154,
+       "1.5": 88
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 52.55,
+      "R_ref": 52.55,
+      "R_per_stake": 0.0729,
+      "stake_counts": {
+       "1.0": 721
+      }
+     }
+    },
+    "trade_changes": {
+     "brk72_24h_wd__btcusd": {
+      "baseline_trades_removed": 32,
+      "R_removed": 0.588,
+      "new_trades": 5,
+      "R_new": -2.087
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "baseline_trades_removed": 48,
+      "R_removed": 12.38,
+      "new_trades": 1,
+      "R_new": -1.012
+     },
+     "brk72_24h_wd__ethusd": {
+      "baseline_trades_removed": 138,
+      "R_removed": -9.64,
+      "new_trades": 15,
+      "R_new": -4.364
+     }
+    }
+   }
+  },
+  "S03_K1": {
+   "fp": {
+    "vs_S00": {
+     "scale_k": 1.0091,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3894,
+      "sharpe": 2.8453,
+      "total_R": 576.13,
+      "R_per_trade": 0.148,
+      "eur_per_100_risked": 14.66,
+      "mean_week": 3.6696,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 45.22,
+      "worst_week": -11.64,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 20.56,
+      "losing_trades_per_month": 58.97,
+      "mean_stake_scaled": 1.0091,
+      "sharpe_ratio_vs_ref": 1.0359
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3985,
+      "sharpe": 2.7466,
+      "total_R": 556.16,
+      "R_per_trade": 0.1396,
+      "eur_per_100_risked": 13.96,
+      "mean_week": 3.5424,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 44.59,
+      "worst_week": -12.54,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 21.03,
+      "losing_trades_per_month": 60.78,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1198,
+        "sharpe": 2.4968,
+        "total_R": 185.66,
+        "R_per_trade": 0.155,
+        "eur_per_100_risked": 15.36,
+        "mean_week": 3.5704,
+        "sd_week": 10.3116,
+        "losing_weeks_pct": 51.92,
+        "worst_week": -8.71,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 11.19,
+        "losing_trades_per_month": 56.75,
+        "mean_stake_scaled": 1.0091,
+        "sharpe_ratio_vs_ref": 1.0406
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1224,
+        "sharpe": 2.3995,
+        "total_R": 178.67,
+        "R_per_trade": 0.146,
+        "eur_per_100_risked": 14.6,
+        "mean_week": 3.436,
+        "sd_week": 10.3257,
+        "losing_weeks_pct": 50.0,
+        "worst_week": -9.07,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 11.93,
+        "losing_trades_per_month": 58.42,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1310,
+        "sharpe": 3.6817,
+        "total_R": 271.41,
+        "R_per_trade": 0.2072,
+        "eur_per_100_risked": 20.53,
+        "mean_week": 5.121,
+        "sd_week": 10.0303,
+        "losing_weeks_pct": 41.51,
+        "worst_week": -11.07,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 20.56,
+        "losing_trades_per_month": 57.75,
+        "mean_stake_scaled": 1.0091,
+        "sharpe_ratio_vs_ref": 0.9912
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1324,
+        "sharpe": 3.7143,
+        "total_R": 270.57,
+        "R_per_trade": 0.2044,
+        "eur_per_100_risked": 20.44,
+        "mean_week": 5.1051,
+        "sd_week": 9.9112,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -10.97,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 20.24,
+        "losing_trades_per_month": 58.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1386,
+        "sharpe": 2.3001,
+        "total_R": 119.06,
+        "R_per_trade": 0.0859,
+        "eur_per_100_risked": 8.51,
+        "mean_week": 2.2896,
+        "sd_week": 7.1783,
+        "losing_weeks_pct": 42.31,
+        "worst_week": -11.64,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 20.17,
+        "losing_trades_per_month": 62.42,
+        "mean_stake_scaled": 1.0091,
+        "sharpe_ratio_vs_ref": 1.1293
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1437,
+        "sharpe": 2.0367,
+        "total_R": 106.92,
+        "R_per_trade": 0.0744,
+        "eur_per_100_risked": 7.44,
+        "mean_week": 2.0562,
+        "sd_week": 7.28,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.54,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 21.03,
+        "losing_trades_per_month": 65.42,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 2
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 3894,
+     "sharpe": 2.8453,
+     "total_R": 570.94,
+     "R_per_trade": 0.1466,
+     "eur_per_100_risked": 14.66,
+     "mean_week": 3.6365,
+     "sd_week": 9.2165,
+     "losing_weeks_pct": 45.22,
+     "worst_week": -11.54,
+     "longest_losing_weeks": 7,
+     "max_fall_weekly_R": 20.38,
+     "losing_trades_per_month": 58.97,
+     "mean_stake_scaled": 1.0
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 39.82,
+      "R_ref": 39.82,
+      "R_per_stake": 0.1056,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 44.65,
+      "R_ref": 44.65,
+      "R_per_stake": 0.0733,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 31.58,
+      "R_ref": 31.58,
+      "R_per_stake": 0.1986,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 53.94,
+      "R_ref": 53.94,
+      "R_per_stake": 0.1545,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 139,
+      "trades_ref": 139,
+      "stakes": 139.0,
+      "R_at_stake_unscaled": -1.63,
+      "R_ref": -1.63,
+      "R_per_stake": -0.0117,
+      "stake_counts": {
+       "1.0": 139
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 420,
+      "trades_ref": 420,
+      "stakes": 420.0,
+      "R_at_stake_unscaled": 104.52,
+      "R_ref": 104.52,
+      "R_per_stake": 0.2489,
+      "stake_counts": {
+       "1.0": 420
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 305,
+      "trades_ref": 396,
+      "stakes": 305.0,
+      "R_at_stake_unscaled": 62.86,
+      "R_ref": 48.08,
+      "R_per_stake": 0.2061,
+      "stake_counts": {
+       "1.0": 305
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 422,
+      "trades_ref": 422,
+      "stakes": 422.0,
+      "R_at_stake_unscaled": 115.53,
+      "R_ref": 115.53,
+      "R_per_stake": 0.2738,
+      "stake_counts": {
+       "1.0": 422
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 393,
+      "trades_ref": 393,
+      "stakes": 393.0,
+      "R_at_stake_unscaled": 56.22,
+      "R_ref": 56.22,
+      "R_per_stake": 0.1431,
+      "stake_counts": {
+       "1.0": 393
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 63.44,
+      "R_ref": 63.44,
+      "R_per_stake": 0.088,
+      "stake_counts": {
+       "1.0": 721
+      }
+     }
+    },
+    "trade_changes": {
+     "brk72_24h_wd__ethusd": {
+      "baseline_trades_removed": 103,
+      "R_removed": -20.817,
+      "new_trades": 12,
+      "R_new": -6.037
+     }
+    }
+   },
+   "stress": {
+    "vs_S00": {
+     "scale_k": 1.0088,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3896,
+      "sharpe": 2.5915,
+      "total_R": 520.04,
+      "R_per_trade": 0.1335,
+      "eur_per_100_risked": 13.23,
+      "mean_week": 3.3124,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 47.13,
+      "worst_week": -12.4,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 23.31,
+      "losing_trades_per_month": 59.67,
+      "mean_stake_scaled": 1.0088,
+      "sharpe_ratio_vs_ref": 1.0401
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3987,
+      "sharpe": 2.4915,
+      "total_R": 499.97,
+      "R_per_trade": 0.1254,
+      "eur_per_100_risked": 12.54,
+      "mean_week": 3.1845,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 46.5,
+      "worst_week": -12.66,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 22.98,
+      "losing_trades_per_month": 61.47,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1199,
+        "sharpe": 2.239,
+        "total_R": 165.37,
+        "R_per_trade": 0.1379,
+        "eur_per_100_risked": 13.67,
+        "mean_week": 3.1801,
+        "sd_week": 10.2422,
+        "losing_weeks_pct": 55.77,
+        "worst_week": -8.99,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 12.67,
+        "losing_trades_per_month": 57.83,
+        "mean_stake_scaled": 1.0088,
+        "sharpe_ratio_vs_ref": 1.0447
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1225,
+        "sharpe": 2.1431,
+        "total_R": 158.36,
+        "R_per_trade": 0.1293,
+        "eur_per_100_risked": 12.93,
+        "mean_week": 3.0455,
+        "sd_week": 10.2476,
+        "losing_weeks_pct": 55.77,
+        "worst_week": -9.37,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 13.85,
+        "losing_trades_per_month": 59.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1312,
+        "sharpe": 3.4403,
+        "total_R": 250.76,
+        "R_per_trade": 0.1911,
+        "eur_per_100_risked": 18.95,
+        "mean_week": 4.7314,
+        "sd_week": 9.9172,
+        "losing_weeks_pct": 41.51,
+        "worst_week": -12.4,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 23.31,
+        "losing_trades_per_month": 58.33,
+        "mean_stake_scaled": 1.0088,
+        "sharpe_ratio_vs_ref": 0.9912
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1326,
+        "sharpe": 3.4708,
+        "total_R": 250.05,
+        "R_per_trade": 0.1886,
+        "eur_per_100_risked": 18.86,
+        "mean_week": 4.718,
+        "sd_week": 9.8023,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -12.3,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 22.98,
+        "losing_trades_per_month": 59.08,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1385,
+        "sharpe": 2.0219,
+        "total_R": 103.91,
+        "R_per_trade": 0.075,
+        "eur_per_100_risked": 7.44,
+        "mean_week": 1.9983,
+        "sd_week": 7.127,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -11.76,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 22.02,
+        "losing_trades_per_month": 62.83,
+        "mean_stake_scaled": 1.0088,
+        "sharpe_ratio_vs_ref": 1.1521
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1436,
+        "sharpe": 1.7549,
+        "total_R": 91.55,
+        "R_per_trade": 0.0638,
+        "eur_per_100_risked": 6.38,
+        "mean_week": 1.7606,
+        "sd_week": 7.2342,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.66,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 22.95,
+        "losing_trades_per_month": 65.83,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 2
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 3896,
+     "sharpe": 2.5915,
+     "total_R": 515.51,
+     "R_per_trade": 0.1323,
+     "eur_per_100_risked": 13.23,
+     "mean_week": 3.2835,
+     "sd_week": 9.1365,
+     "losing_weeks_pct": 47.13,
+     "worst_week": -12.3,
+     "longest_losing_weeks": 7,
+     "max_fall_weekly_R": 23.1,
+     "losing_trades_per_month": 59.67,
+     "mean_stake_scaled": 1.0
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 37.53,
+      "R_ref": 37.53,
+      "R_per_stake": 0.0995,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 40.77,
+      "R_ref": 40.77,
+      "R_per_stake": 0.0669,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 29.68,
+      "R_ref": 29.68,
+      "R_per_stake": 0.1867,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 44.63,
+      "R_ref": 44.63,
+      "R_per_stake": 0.1279,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 137,
+      "trades_ref": 137,
+      "stakes": 137.0,
+      "R_at_stake_unscaled": -2.25,
+      "R_ref": -2.25,
+      "R_per_stake": -0.0164,
+      "stake_counts": {
+       "1.0": 137
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 420,
+      "trades_ref": 420,
+      "stakes": 420.0,
+      "R_at_stake_unscaled": 101.12,
+      "R_ref": 101.12,
+      "R_per_stake": 0.2408,
+      "stake_counts": {
+       "1.0": 420
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 307,
+      "trades_ref": 398,
+      "stakes": 307.0,
+      "R_at_stake_unscaled": 55.4,
+      "R_ref": 39.85,
+      "R_per_stake": 0.1804,
+      "stake_counts": {
+       "1.0": 307
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 423,
+      "trades_ref": 423,
+      "stakes": 423.0,
+      "R_at_stake_unscaled": 110.13,
+      "R_ref": 110.13,
+      "R_per_stake": 0.2603,
+      "stake_counts": {
+       "1.0": 423
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 394,
+      "trades_ref": 394,
+      "stakes": 394.0,
+      "R_at_stake_unscaled": 45.97,
+      "R_ref": 45.97,
+      "R_per_stake": 0.1167,
+      "stake_counts": {
+       "1.0": 394
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 52.55,
+      "R_ref": 52.55,
+      "R_per_stake": 0.0729,
+      "stake_counts": {
+       "1.0": 721
+      }
+     }
+    },
+    "trade_changes": {
+     "brk72_24h_wd__ethusd": {
+      "baseline_trades_removed": 103,
+      "R_removed": -21.685,
+      "new_trades": 12,
+      "R_new": -6.141
+     }
+    }
+   }
+  },
+  "S04_K1_V05": {
+   "fp": {
+    "vs_S00": {
+     "scale_k": 0.9464,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3771,
+      "sharpe": 3.0041,
+      "total_R": 608.29,
+      "R_per_trade": 0.1613,
+      "eur_per_100_risked": 16.7,
+      "mean_week": 3.8745,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 40.76,
+      "worst_week": -12.35,
+      "longest_losing_weeks": 6,
+      "max_fall_weekly_R": 19.22,
+      "losing_trades_per_month": 57.33,
+      "mean_stake_scaled": 0.9658,
+      "sharpe_ratio_vs_ref": 1.0938
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3985,
+      "sharpe": 2.7466,
+      "total_R": 556.16,
+      "R_per_trade": 0.1396,
+      "eur_per_100_risked": 13.96,
+      "mean_week": 3.5424,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 44.59,
+      "worst_week": -12.54,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 21.03,
+      "losing_trades_per_month": 60.78,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1112,
+        "sharpe": 2.4474,
+        "total_R": 173.67,
+        "R_per_trade": 0.1562,
+        "eur_per_100_risked": 15.47,
+        "mean_week": 3.3398,
+        "sd_week": 9.8405,
+        "losing_weeks_pct": 48.08,
+        "worst_week": -9.91,
+        "longest_losing_weeks": 4,
+        "max_fall_weekly_R": 11.31,
+        "losing_trades_per_month": 53.58,
+        "mean_stake_scaled": 1.0098,
+        "sharpe_ratio_vs_ref": 1.02
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1224,
+        "sharpe": 2.3995,
+        "total_R": 178.67,
+        "R_per_trade": 0.146,
+        "eur_per_100_risked": 14.6,
+        "mean_week": 3.436,
+        "sd_week": 10.3257,
+        "losing_weeks_pct": 50.0,
+        "worst_week": -9.07,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 11.93,
+        "losing_trades_per_month": 58.42,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1282,
+        "sharpe": 3.8279,
+        "total_R": 303.1,
+        "R_per_trade": 0.2364,
+        "eur_per_100_risked": 24.32,
+        "mean_week": 5.7189,
+        "sd_week": 10.7735,
+        "losing_weeks_pct": 33.96,
+        "worst_week": -12.35,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 19.22,
+        "losing_trades_per_month": 56.5,
+        "mean_stake_scaled": 0.9722,
+        "sharpe_ratio_vs_ref": 1.0306
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1324,
+        "sharpe": 3.7143,
+        "total_R": 270.57,
+        "R_per_trade": 0.2044,
+        "eur_per_100_risked": 20.44,
+        "mean_week": 5.1051,
+        "sd_week": 9.9112,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -10.97,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 20.24,
+        "losing_trades_per_month": 58.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1377,
+        "sharpe": 2.7582,
+        "total_R": 131.52,
+        "R_per_trade": 0.0955,
+        "eur_per_100_risked": 10.33,
+        "mean_week": 2.5293,
+        "sd_week": 6.6127,
+        "losing_weeks_pct": 40.38,
+        "worst_week": -9.88,
+        "longest_losing_weeks": 6,
+        "max_fall_weekly_R": 17.07,
+        "losing_trades_per_month": 61.92,
+        "mean_stake_scaled": 0.9244,
+        "sharpe_ratio_vs_ref": 1.3542
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1437,
+        "sharpe": 2.0367,
+        "total_R": 106.92,
+        "R_per_trade": 0.0744,
+        "eur_per_100_risked": 7.44,
+        "mean_week": 2.0562,
+        "sd_week": 7.28,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.54,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 21.03,
+        "losing_trades_per_month": 65.42,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 3
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 3771,
+     "sharpe": 3.0041,
+     "total_R": 642.77,
+     "R_per_trade": 0.1705,
+     "eur_per_100_risked": 16.7,
+     "mean_week": 4.0941,
+     "sd_week": 9.8274,
+     "losing_weeks_pct": 40.76,
+     "worst_week": -13.05,
+     "longest_losing_weeks": 6,
+     "max_fall_weekly_R": 20.31,
+     "losing_trades_per_month": 57.33,
+     "mean_stake_scaled": 1.0206
+    },
+    "vs_S03_K1": {
+     "scale_k": 0.9378,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3771,
+      "sharpe": 3.0041,
+      "total_R": 602.81,
+      "R_per_trade": 0.1599,
+      "eur_per_100_risked": 16.7,
+      "mean_week": 3.8395,
+      "sd_week": 9.2165,
+      "losing_weeks_pct": 40.76,
+      "worst_week": -12.24,
+      "longest_losing_weeks": 6,
+      "max_fall_weekly_R": 19.05,
+      "losing_trades_per_month": 57.33,
+      "mean_stake_scaled": 0.9571,
+      "sharpe_ratio_vs_ref": 1.0558
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3894,
+      "sharpe": 2.8453,
+      "total_R": 570.94,
+      "R_per_trade": 0.1466,
+      "eur_per_100_risked": 14.66,
+      "mean_week": 3.6365,
+      "sd_week": 9.2165,
+      "losing_weeks_pct": 45.22,
+      "worst_week": -11.54,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 20.38,
+      "losing_trades_per_month": 58.97,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1112,
+        "sharpe": 2.4474,
+        "total_R": 172.1,
+        "R_per_trade": 0.1548,
+        "eur_per_100_risked": 15.47,
+        "mean_week": 3.3097,
+        "sd_week": 9.7518,
+        "losing_weeks_pct": 48.08,
+        "worst_week": -9.82,
+        "longest_losing_weeks": 4,
+        "max_fall_weekly_R": 11.2,
+        "losing_trades_per_month": 53.58,
+        "mean_stake_scaled": 1.0007,
+        "sharpe_ratio_vs_ref": 0.9802
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1198,
+        "sharpe": 2.4968,
+        "total_R": 183.99,
+        "R_per_trade": 0.1536,
+        "eur_per_100_risked": 15.36,
+        "mean_week": 3.5382,
+        "sd_week": 10.2186,
+        "losing_weeks_pct": 51.92,
+        "worst_week": -8.64,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 11.09,
+        "losing_trades_per_month": 56.75,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1282,
+        "sharpe": 3.8279,
+        "total_R": 300.37,
+        "R_per_trade": 0.2343,
+        "eur_per_100_risked": 24.32,
+        "mean_week": 5.6673,
+        "sd_week": 10.6763,
+        "losing_weeks_pct": 33.96,
+        "worst_week": -12.24,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 19.05,
+        "losing_trades_per_month": 56.5,
+        "mean_stake_scaled": 0.9634,
+        "sharpe_ratio_vs_ref": 1.0397
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1310,
+        "sharpe": 3.6817,
+        "total_R": 268.97,
+        "R_per_trade": 0.2053,
+        "eur_per_100_risked": 20.53,
+        "mean_week": 5.0748,
+        "sd_week": 9.9399,
+        "losing_weeks_pct": 41.51,
+        "worst_week": -10.97,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 20.38,
+        "losing_trades_per_month": 57.75,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1377,
+        "sharpe": 2.7582,
+        "total_R": 130.34,
+        "R_per_trade": 0.0947,
+        "eur_per_100_risked": 10.33,
+        "mean_week": 2.5065,
+        "sd_week": 6.553,
+        "losing_weeks_pct": 40.38,
+        "worst_week": -9.79,
+        "longest_losing_weeks": 6,
+        "max_fall_weekly_R": 16.91,
+        "losing_trades_per_month": 61.92,
+        "mean_stake_scaled": 0.916,
+        "sharpe_ratio_vs_ref": 1.1992
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1386,
+        "sharpe": 2.3001,
+        "total_R": 117.99,
+        "R_per_trade": 0.0851,
+        "eur_per_100_risked": 8.51,
+        "mean_week": 2.269,
+        "sd_week": 7.1135,
+        "losing_weeks_pct": 42.31,
+        "worst_week": -11.54,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 19.99,
+        "losing_trades_per_month": 62.42,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 2
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 39.82,
+      "R_ref": 39.82,
+      "R_per_stake": 0.1056,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 44.65,
+      "R_ref": 44.65,
+      "R_per_stake": 0.0733,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 31.58,
+      "R_ref": 31.58,
+      "R_per_stake": 0.1986,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 53.94,
+      "R_ref": 53.94,
+      "R_per_stake": 0.1545,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 139,
+      "trades_ref": 139,
+      "stakes": 139.0,
+      "R_at_stake_unscaled": -1.63,
+      "R_ref": -1.63,
+      "R_per_stake": -0.0117,
+      "stake_counts": {
+       "1.0": 139
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 393,
+      "trades_ref": 420,
+      "stakes": 429.5,
+      "R_at_stake_unscaled": 148.08,
+      "R_ref": 104.52,
+      "R_per_stake": 0.3448,
+      "stake_counts": {
+       "0.5": 79,
+       "1.0": 162,
+       "1.5": 152
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 256,
+      "trades_ref": 396,
+      "stakes": 310.0,
+      "R_at_stake_unscaled": 68.96,
+      "R_ref": 48.08,
+      "R_per_stake": 0.2224,
+      "stake_counts": {
+       "1.0": 148,
+       "1.5": 108
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 422,
+      "trades_ref": 422,
+      "stakes": 416.5,
+      "R_at_stake_unscaled": 135.83,
+      "R_ref": 115.53,
+      "R_per_stake": 0.3261,
+      "stake_counts": {
+       "0.5": 129,
+       "1.0": 175,
+       "1.5": 118
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 346,
+      "trades_ref": 393,
+      "stakes": 338.5,
+      "R_at_stake_unscaled": 58.1,
+      "R_ref": 56.22,
+      "R_per_stake": 0.1716,
+      "stake_counts": {
+       "0.5": 103,
+       "1.0": 155,
+       "1.5": 88
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 63.44,
+      "R_ref": 63.44,
+      "R_per_stake": 0.088,
+      "stake_counts": {
+       "1.0": 721
+      }
+     }
+    },
+    "trade_changes": {
+     "brk72_24h_wd__btcusd": {
+      "baseline_trades_removed": 30,
+      "R_removed": 1.831,
+      "new_trades": 3,
+      "R_new": -0.031
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "baseline_trades_removed": 48,
+      "R_removed": 13.183,
+      "new_trades": 1,
+      "R_new": -1.008
+     },
+     "brk72_24h_wd__ethusd": {
+      "baseline_trades_removed": 155,
+      "R_removed": -9.015,
+      "new_trades": 15,
+      "R_new": -2.839
+     }
+    }
+   },
+   "stress": {
+    "vs_S00": {
+     "scale_k": 0.9492,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3768,
+      "sharpe": 2.7517,
+      "total_R": 552.19,
+      "R_per_trade": 0.1465,
+      "eur_per_100_risked": 15.1,
+      "mean_week": 3.5171,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 43.95,
+      "worst_week": -14.22,
+      "longest_losing_weeks": 6,
+      "max_fall_weekly_R": 22.83,
+      "losing_trades_per_month": 57.97,
+      "mean_stake_scaled": 0.9707,
+      "sharpe_ratio_vs_ref": 1.1044
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3987,
+      "sharpe": 2.4915,
+      "total_R": 499.97,
+      "R_per_trade": 0.1254,
+      "eur_per_100_risked": 12.54,
+      "mean_week": 3.1845,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 46.5,
+      "worst_week": -12.66,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 22.98,
+      "losing_trades_per_month": 61.47,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1108,
+        "sharpe": 2.1871,
+        "total_R": 152.91,
+        "R_per_trade": 0.138,
+        "eur_per_100_risked": 13.63,
+        "mean_week": 2.9407,
+        "sd_week": 9.6954,
+        "losing_weeks_pct": 53.85,
+        "worst_week": -10.41,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 12.43,
+        "losing_trades_per_month": 54.42,
+        "mean_stake_scaled": 1.0126,
+        "sharpe_ratio_vs_ref": 1.0205
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1225,
+        "sharpe": 2.1431,
+        "total_R": 158.36,
+        "R_per_trade": 0.1293,
+        "eur_per_100_risked": 12.93,
+        "mean_week": 3.0455,
+        "sd_week": 10.2476,
+        "losing_weeks_pct": 55.77,
+        "worst_week": -9.37,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 13.85,
+        "losing_trades_per_month": 59.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1284,
+        "sharpe": 3.6003,
+        "total_R": 282.99,
+        "R_per_trade": 0.2204,
+        "eur_per_100_risked": 22.47,
+        "mean_week": 5.3394,
+        "sd_week": 10.6944,
+        "losing_weeks_pct": 35.85,
+        "worst_week": -14.22,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 22.83,
+        "losing_trades_per_month": 57.17,
+        "mean_stake_scaled": 0.9807,
+        "sharpe_ratio_vs_ref": 1.0373
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1326,
+        "sharpe": 3.4708,
+        "total_R": 250.05,
+        "R_per_trade": 0.1886,
+        "eur_per_100_risked": 18.86,
+        "mean_week": 4.718,
+        "sd_week": 9.8023,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -12.3,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 22.98,
+        "losing_trades_per_month": 59.08,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1376,
+        "sharpe": 2.4375,
+        "total_R": 116.29,
+        "R_per_trade": 0.0845,
+        "eur_per_100_risked": 9.11,
+        "mean_week": 2.2363,
+        "sd_week": 6.616,
+        "losing_weeks_pct": 42.31,
+        "worst_week": -10.09,
+        "longest_losing_weeks": 6,
+        "max_fall_weekly_R": 20.14,
+        "losing_trades_per_month": 62.33,
+        "mean_stake_scaled": 0.9275,
+        "sharpe_ratio_vs_ref": 1.389
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1436,
+        "sharpe": 1.7549,
+        "total_R": 91.55,
+        "R_per_trade": 0.0638,
+        "eur_per_100_risked": 6.38,
+        "mean_week": 1.7606,
+        "sd_week": 7.2342,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.66,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 22.95,
+        "losing_trades_per_month": 65.83,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 3
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 3768,
+     "sharpe": 2.7517,
+     "total_R": 581.72,
+     "R_per_trade": 0.1544,
+     "eur_per_100_risked": 15.1,
+     "mean_week": 3.7052,
+     "sd_week": 9.7097,
+     "losing_weeks_pct": 43.95,
+     "worst_week": -14.98,
+     "longest_losing_weeks": 6,
+     "max_fall_weekly_R": 24.05,
+     "losing_trades_per_month": 57.97,
+     "mean_stake_scaled": 1.0226
+    },
+    "vs_S03_K1": {
+     "scale_k": 0.941,
+     "pooled": {
+      "weeks": 157,
+      "trades": 3768,
+      "sharpe": 2.7517,
+      "total_R": 547.38,
+      "R_per_trade": 0.1453,
+      "eur_per_100_risked": 15.1,
+      "mean_week": 3.4865,
+      "sd_week": 9.1365,
+      "losing_weeks_pct": 43.95,
+      "worst_week": -14.09,
+      "longest_losing_weeks": 6,
+      "max_fall_weekly_R": 22.63,
+      "losing_trades_per_month": 57.97,
+      "mean_stake_scaled": 0.9622,
+      "sharpe_ratio_vs_ref": 1.0618
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3896,
+      "sharpe": 2.5915,
+      "total_R": 515.51,
+      "R_per_trade": 0.1323,
+      "eur_per_100_risked": 13.23,
+      "mean_week": 3.2835,
+      "sd_week": 9.1365,
+      "losing_weeks_pct": 47.13,
+      "worst_week": -12.3,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 23.1,
+      "losing_trades_per_month": 59.67,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1108,
+        "sharpe": 2.1871,
+        "total_R": 151.58,
+        "R_per_trade": 0.1368,
+        "eur_per_100_risked": 13.63,
+        "mean_week": 2.915,
+        "sd_week": 9.611,
+        "losing_weeks_pct": 53.85,
+        "worst_week": -10.32,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 12.32,
+        "losing_trades_per_month": 54.42,
+        "mean_stake_scaled": 1.0038,
+        "sharpe_ratio_vs_ref": 0.9768
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1199,
+        "sharpe": 2.239,
+        "total_R": 163.93,
+        "R_per_trade": 0.1367,
+        "eur_per_100_risked": 13.67,
+        "mean_week": 3.1524,
+        "sd_week": 10.1529,
+        "losing_weeks_pct": 55.77,
+        "worst_week": -8.92,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 12.56,
+        "losing_trades_per_month": 57.83,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1284,
+        "sharpe": 3.6003,
+        "total_R": 280.52,
+        "R_per_trade": 0.2185,
+        "eur_per_100_risked": 22.47,
+        "mean_week": 5.2929,
+        "sd_week": 10.6012,
+        "losing_weeks_pct": 35.85,
+        "worst_week": -14.09,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 22.63,
+        "losing_trades_per_month": 57.17,
+        "mean_stake_scaled": 0.9721,
+        "sharpe_ratio_vs_ref": 1.0465
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1312,
+        "sharpe": 3.4403,
+        "total_R": 248.58,
+        "R_per_trade": 0.1895,
+        "eur_per_100_risked": 18.95,
+        "mean_week": 4.6902,
+        "sd_week": 9.8309,
+        "losing_weeks_pct": 41.51,
+        "worst_week": -12.3,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 23.1,
+        "losing_trades_per_month": 58.33,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1376,
+        "sharpe": 2.4375,
+        "total_R": 115.28,
+        "R_per_trade": 0.0838,
+        "eur_per_100_risked": 9.11,
+        "mean_week": 2.2168,
+        "sd_week": 6.5583,
+        "losing_weeks_pct": 42.31,
+        "worst_week": -10.0,
+        "longest_losing_weeks": 6,
+        "max_fall_weekly_R": 19.96,
+        "losing_trades_per_month": 62.33,
+        "mean_stake_scaled": 0.9194,
+        "sharpe_ratio_vs_ref": 1.2055
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1385,
+        "sharpe": 2.0219,
+        "total_R": 103.01,
+        "R_per_trade": 0.0744,
+        "eur_per_100_risked": 7.44,
+        "mean_week": 1.9809,
+        "sd_week": 7.0649,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -11.65,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 21.83,
+        "losing_trades_per_month": 62.83,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 2
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 37.53,
+      "R_ref": 37.53,
+      "R_per_stake": 0.0995,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 40.77,
+      "R_ref": 40.77,
+      "R_per_stake": 0.0669,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 29.68,
+      "R_ref": 29.68,
+      "R_per_stake": 0.1867,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 44.63,
+      "R_ref": 44.63,
+      "R_per_stake": 0.1279,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 137,
+      "trades_ref": 137,
+      "stakes": 137.0,
+      "R_at_stake_unscaled": -2.25,
+      "R_ref": -2.25,
+      "R_per_stake": -0.0164,
+      "stake_counts": {
+       "1.0": 137
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 392,
+      "trades_ref": 420,
+      "stakes": 430.5,
+      "R_at_stake_unscaled": 138.79,
+      "R_ref": 101.12,
+      "R_per_stake": 0.3224,
+      "stake_counts": {
+       "0.5": 75,
+       "1.0": 165,
+       "1.5": 152
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 256,
+      "trades_ref": 398,
+      "stakes": 313.5,
+      "R_at_stake_unscaled": 61.36,
+      "R_ref": 39.85,
+      "R_per_stake": 0.1957,
+      "stake_counts": {
+       "1.0": 141,
+       "1.5": 115
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 423,
+      "trades_ref": 423,
+      "stakes": 421.0,
+      "R_at_stake_unscaled": 131.33,
+      "R_ref": 110.13,
+      "R_per_stake": 0.3119,
+      "stake_counts": {
+       "0.5": 129,
+       "1.0": 169,
+       "1.5": 125
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 345,
+      "trades_ref": 394,
+      "stakes": 336.0,
+      "R_at_stake_unscaled": 47.33,
+      "R_ref": 45.97,
+      "R_per_stake": 0.1409,
+      "stake_counts": {
+       "0.5": 105,
+       "1.0": 153,
+       "1.5": 87
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 52.55,
+      "R_ref": 52.55,
+      "R_per_stake": 0.0729,
+      "stake_counts": {
+       "1.0": 721
+      }
+     }
+    },
+    "trade_changes": {
+     "brk72_24h_wd__btcusd": {
+      "baseline_trades_removed": 32,
+      "R_removed": 0.588,
+      "new_trades": 4,
+      "R_new": -1.079
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "baseline_trades_removed": 49,
+      "R_removed": 12.904,
+      "new_trades": 0,
+      "R_new": 0.0
+     },
+     "brk72_24h_wd__ethusd": {
+      "baseline_trades_removed": 156,
+      "R_removed": -9.551,
+      "new_trades": 14,
+      "R_new": -3.416
+     }
+    }
+   }
+  },
+  "S05_P2": {
+   "fp": {
+    "vs_S00": {
+     "scale_k": 0.8269,
+     "pooled": {
+      "weeks": 157,
+      "trades": 4462,
+      "sharpe": 3.0843,
+      "total_R": 624.54,
+      "R_per_trade": 0.14,
+      "eur_per_100_risked": 16.93,
+      "mean_week": 3.978,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 40.76,
+      "worst_week": -13.95,
+      "longest_losing_weeks": 4,
+      "max_fall_weekly_R": 24.07,
+      "losing_trades_per_month": 68.94,
+      "mean_stake_scaled": 0.8269,
+      "sharpe_ratio_vs_ref": 1.123
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3985,
+      "sharpe": 2.7466,
+      "total_R": 556.16,
+      "R_per_trade": 0.1396,
+      "eur_per_100_risked": 13.96,
+      "mean_week": 3.5424,
+      "sd_week": 9.3004,
+      "losing_weeks_pct": 44.59,
+      "worst_week": -12.54,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 21.03,
+      "losing_trades_per_month": 60.78,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1371,
+        "sharpe": 3.1717,
+        "total_R": 235.99,
+        "R_per_trade": 0.1721,
+        "eur_per_100_risked": 20.81,
+        "mean_week": 4.5382,
+        "sd_week": 10.3179,
+        "losing_weeks_pct": 42.31,
+        "worst_week": -9.57,
+        "longest_losing_weeks": 4,
+        "max_fall_weekly_R": 11.15,
+        "losing_trades_per_month": 64.92,
+        "mean_stake_scaled": 0.8269,
+        "sharpe_ratio_vs_ref": 1.3218
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1224,
+        "sharpe": 2.3995,
+        "total_R": 178.67,
+        "R_per_trade": 0.146,
+        "eur_per_100_risked": 14.6,
+        "mean_week": 3.436,
+        "sd_week": 10.3257,
+        "losing_weeks_pct": 50.0,
+        "worst_week": -9.07,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 11.93,
+        "losing_trades_per_month": 58.42,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1510,
+        "sharpe": 3.8749,
+        "total_R": 275.31,
+        "R_per_trade": 0.1823,
+        "eur_per_100_risked": 22.05,
+        "mean_week": 5.1945,
+        "sd_week": 9.667,
+        "losing_weeks_pct": 33.96,
+        "worst_week": -8.67,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 15.37,
+        "losing_trades_per_month": 68.67,
+        "mean_stake_scaled": 0.8269,
+        "sharpe_ratio_vs_ref": 1.0432
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1324,
+        "sharpe": 3.7143,
+        "total_R": 270.57,
+        "R_per_trade": 0.2044,
+        "eur_per_100_risked": 20.44,
+        "mean_week": 5.1051,
+        "sd_week": 9.9112,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -10.97,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 20.24,
+        "losing_trades_per_month": 58.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1581,
+        "sharpe": 2.0679,
+        "total_R": 113.24,
+        "R_per_trade": 0.0716,
+        "eur_per_100_risked": 8.66,
+        "mean_week": 2.1778,
+        "sd_week": 7.5944,
+        "losing_weeks_pct": 46.15,
+        "worst_week": -13.95,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 24.07,
+        "losing_trades_per_month": 73.25,
+        "mean_stake_scaled": 0.8269,
+        "sharpe_ratio_vs_ref": 1.0153
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1437,
+        "sharpe": 2.0367,
+        "total_R": 106.92,
+        "R_per_trade": 0.0744,
+        "eur_per_100_risked": 7.44,
+        "mean_week": 2.0562,
+        "sd_week": 7.28,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.54,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 21.03,
+        "losing_trades_per_month": 65.42,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 3
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 4462,
+     "sharpe": 3.0843,
+     "total_R": 755.24,
+     "R_per_trade": 0.1693,
+     "eur_per_100_risked": 16.93,
+     "mean_week": 4.8105,
+     "sd_week": 11.2467,
+     "losing_weeks_pct": 40.76,
+     "worst_week": -16.87,
+     "longest_losing_weeks": 4,
+     "max_fall_weekly_R": 29.11,
+     "losing_trades_per_month": 68.94,
+     "mean_stake_scaled": 1.0
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 39.82,
+      "R_ref": 39.82,
+      "R_per_stake": 0.1056,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 44.65,
+      "R_ref": 44.65,
+      "R_per_stake": 0.0733,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 31.58,
+      "R_ref": 31.58,
+      "R_per_stake": 0.1986,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 53.94,
+      "R_ref": 53.94,
+      "R_per_stake": 0.1545,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 139,
+      "trades_ref": 139,
+      "stakes": 139.0,
+      "R_at_stake_unscaled": -1.63,
+      "R_ref": -1.63,
+      "R_per_stake": -0.0117,
+      "stake_counts": {
+       "1.0": 139
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 420,
+      "trades_ref": 420,
+      "stakes": 420.0,
+      "R_at_stake_unscaled": 104.52,
+      "R_ref": 104.52,
+      "R_per_stake": 0.2489,
+      "stake_counts": {
+       "1.0": 420
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 305,
+      "trades_ref": 396,
+      "stakes": 305.0,
+      "R_at_stake_unscaled": 62.86,
+      "R_ref": 48.08,
+      "R_per_stake": 0.2061,
+      "stake_counts": {
+       "1.0": 305
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 422,
+      "trades_ref": 422,
+      "stakes": 422.0,
+      "R_at_stake_unscaled": 115.53,
+      "R_ref": 115.53,
+      "R_per_stake": 0.2738,
+      "stake_counts": {
+       "1.0": 422
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 393,
+      "trades_ref": 393,
+      "stakes": 393.0,
+      "R_at_stake_unscaled": 56.22,
+      "R_ref": 56.22,
+      "R_per_stake": 0.1431,
+      "stake_counts": {
+       "1.0": 393
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 63.44,
+      "R_ref": 63.44,
+      "R_per_stake": 0.088,
+      "stake_counts": {
+       "1.0": 721
+      }
+     },
+     "new_orb_asia_2d_buf10__ethusd": {
+      "trades": 273,
+      "trades_ref": 0,
+      "stakes": 273.0,
+      "R_at_stake_unscaled": 84.53,
+      "R_ref": 0.0,
+      "R_per_stake": 0.3096,
+      "stake_counts": {
+       "1.0": 273
+      }
+     },
+     "new_orb_asia_2d_buf10__btcusd": {
+      "trades": 295,
+      "trades_ref": 0,
+      "stakes": 295.0,
+      "R_at_stake_unscaled": 99.78,
+      "R_ref": 0.0,
+      "R_per_stake": 0.3382,
+      "stake_counts": {
+       "1.0": 295
+      }
+     }
+    },
+    "trade_changes": {}
+   },
+   "stress": {
+    "vs_S00": {
+     "scale_k": 0.8308,
+     "pooled": {
+      "weeks": 157,
+      "trades": 4463,
+      "sharpe": 2.8292,
+      "total_R": 567.73,
+      "R_per_trade": 0.1272,
+      "eur_per_100_risked": 15.31,
+      "mean_week": 3.6161,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 43.31,
+      "worst_week": -14.2,
+      "longest_losing_weeks": 5,
+      "max_fall_weekly_R": 26.99,
+      "losing_trades_per_month": 69.67,
+      "mean_stake_scaled": 0.8308,
+      "sharpe_ratio_vs_ref": 1.1355
+     },
+     "pooled_ref": {
+      "weeks": 157,
+      "trades": 3987,
+      "sharpe": 2.4915,
+      "total_R": 499.97,
+      "R_per_trade": 0.1254,
+      "eur_per_100_risked": 12.54,
+      "mean_week": 3.1845,
+      "sd_week": 9.2168,
+      "losing_weeks_pct": 46.5,
+      "worst_week": -12.66,
+      "longest_losing_weeks": 7,
+      "max_fall_weekly_R": 22.98,
+      "losing_trades_per_month": 61.47,
+      "mean_stake_scaled": 1.0
+     },
+     "by_year": {
+      "2019": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1372,
+        "sharpe": 2.9069,
+        "total_R": 214.61,
+        "R_per_trade": 0.1564,
+        "eur_per_100_risked": 18.83,
+        "mean_week": 4.1272,
+        "sd_week": 10.2384,
+        "losing_weeks_pct": 50.0,
+        "worst_week": -9.8,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 12.95,
+        "losing_trades_per_month": 66.08,
+        "mean_stake_scaled": 0.8308,
+        "sharpe_ratio_vs_ref": 1.3564
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1225,
+        "sharpe": 2.1431,
+        "total_R": 158.36,
+        "R_per_trade": 0.1293,
+        "eur_per_100_risked": 12.93,
+        "mean_week": 3.0455,
+        "sd_week": 10.2476,
+        "losing_weeks_pct": 55.77,
+        "worst_week": -9.37,
+        "longest_losing_weeks": 5,
+        "max_fall_weekly_R": 13.85,
+        "losing_trades_per_month": 59.5,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2020": {
+       "variant": {
+        "weeks": 53,
+        "trades": 1512,
+        "sharpe": 3.6146,
+        "total_R": 254.29,
+        "R_per_trade": 0.1682,
+        "eur_per_100_risked": 20.24,
+        "mean_week": 4.7978,
+        "sd_week": 9.5717,
+        "losing_weeks_pct": 35.85,
+        "worst_week": -8.99,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 16.48,
+        "losing_trades_per_month": 69.25,
+        "mean_stake_scaled": 0.8308,
+        "sharpe_ratio_vs_ref": 1.0414
+       },
+       "ref": {
+        "weeks": 53,
+        "trades": 1326,
+        "sharpe": 3.4708,
+        "total_R": 250.05,
+        "R_per_trade": 0.1886,
+        "eur_per_100_risked": 18.86,
+        "mean_week": 4.718,
+        "sd_week": 9.8023,
+        "losing_weeks_pct": 39.62,
+        "worst_week": -12.3,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 22.98,
+        "losing_trades_per_month": 59.08,
+        "mean_stake_scaled": 1.0
+       }
+      },
+      "2021": {
+       "variant": {
+        "weeks": 52,
+        "trades": 1579,
+        "sharpe": 1.8171,
+        "total_R": 98.83,
+        "R_per_trade": 0.0626,
+        "eur_per_100_risked": 7.53,
+        "mean_week": 1.9006,
+        "sd_week": 7.5425,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -14.2,
+        "longest_losing_weeks": 3,
+        "max_fall_weekly_R": 26.99,
+        "losing_trades_per_month": 73.67,
+        "mean_stake_scaled": 0.8308,
+        "sharpe_ratio_vs_ref": 1.0354
+       },
+       "ref": {
+        "weeks": 52,
+        "trades": 1436,
+        "sharpe": 1.7549,
+        "total_R": 91.55,
+        "R_per_trade": 0.0638,
+        "eur_per_100_risked": 6.38,
+        "mean_week": 1.7606,
+        "sd_week": 7.2342,
+        "losing_weeks_pct": 44.23,
+        "worst_week": -12.66,
+        "longest_losing_weeks": 7,
+        "max_fall_weekly_R": 22.95,
+        "losing_trades_per_month": 65.83,
+        "mean_stake_scaled": 1.0
+       }
+      }
+     },
+     "years_up": 3
+    },
+    "unscaled_pooled": {
+     "weeks": 157,
+     "trades": 4463,
+     "sharpe": 2.8292,
+     "total_R": 683.37,
+     "R_per_trade": 0.1531,
+     "eur_per_100_risked": 15.31,
+     "mean_week": 4.3527,
+     "sd_week": 11.0942,
+     "losing_weeks_pct": 43.31,
+     "worst_week": -17.09,
+     "longest_losing_weeks": 5,
+     "max_fall_weekly_R": 32.49,
+     "losing_trades_per_month": 69.67,
+     "mean_stake_scaled": 1.0
+    },
+    "per_sleeve_oof": {
+     "ocm4__us100": {
+      "trades": 377,
+      "trades_ref": 377,
+      "stakes": 377.0,
+      "R_at_stake_unscaled": 37.53,
+      "R_ref": 37.53,
+      "R_per_stake": 0.0995,
+      "stake_counts": {
+       "1.0": 377
+      }
+     },
+     "noise30__us100": {
+      "trades": 609,
+      "trades_ref": 609,
+      "stakes": 609.0,
+      "R_at_stake_unscaled": 40.77,
+      "R_ref": 40.77,
+      "R_per_stake": 0.0669,
+      "stake_counts": {
+       "1.0": 609
+      }
+     },
+     "donch4h_stop__xauusd": {
+      "trades": 159,
+      "trades_ref": 159,
+      "stakes": 159.0,
+      "R_at_stake_unscaled": 29.68,
+      "R_ref": 29.68,
+      "R_per_stake": 0.1867,
+      "stake_counts": {
+       "1.0": 159
+      }
+     },
+     "orb_asia_2d_buf10__xauusd": {
+      "trades": 349,
+      "trades_ref": 349,
+      "stakes": 349.0,
+      "R_at_stake_unscaled": 44.63,
+      "R_ref": 44.63,
+      "R_per_stake": 0.1279,
+      "stake_counts": {
+       "1.0": 349
+      }
+     },
+     "GOLD_FRI_PM__xauusd": {
+      "trades": 137,
+      "trades_ref": 137,
+      "stakes": 137.0,
+      "R_at_stake_unscaled": -2.25,
+      "R_ref": -2.25,
+      "R_per_stake": -0.0164,
+      "stake_counts": {
+       "1.0": 137
+      }
+     },
+     "brk72_24h_wd__btcusd": {
+      "trades": 420,
+      "trades_ref": 420,
+      "stakes": 420.0,
+      "R_at_stake_unscaled": 101.12,
+      "R_ref": 101.12,
+      "R_per_stake": 0.2408,
+      "stake_counts": {
+       "1.0": 420
+      }
+     },
+     "brk72_24h_wd__ethusd": {
+      "trades": 307,
+      "trades_ref": 398,
+      "stakes": 307.0,
+      "R_at_stake_unscaled": 55.4,
+      "R_ref": 39.85,
+      "R_per_stake": 0.1804,
+      "stake_counts": {
+       "1.0": 307
+      }
+     },
+     "F1_brk_ridge_filter__btcusd": {
+      "trades": 423,
+      "trades_ref": 423,
+      "stakes": 423.0,
+      "R_at_stake_unscaled": 110.13,
+      "R_ref": 110.13,
+      "R_per_stake": 0.2603,
+      "stake_counts": {
+       "1.0": 423
+      }
+     },
+     "F1_brk_ridge_filter__ethusd": {
+      "trades": 394,
+      "trades_ref": 394,
+      "stakes": 394.0,
+      "R_at_stake_unscaled": 45.97,
+      "R_ref": 45.97,
+      "R_per_stake": 0.1167,
+      "stake_counts": {
+       "1.0": 394
+      }
+     },
+     "nq_btc_follow__btcusd": {
+      "trades": 721,
+      "trades_ref": 721,
+      "stakes": 721.0,
+      "R_at_stake_unscaled": 52.55,
+      "R_ref": 52.55,
+      "R_per_stake": 0.0729,
+      "stake_counts": {
+       "1.0": 721
+      }
+     },
+     "new_orb_asia_2d_buf10__ethusd": {
+      "trades": 273,
+      "trades_ref": 0,
+      "stakes": 273.0,
+      "R_at_stake_unscaled": 73.66,
+      "R_ref": 0.0,
+      "R_per_stake": 0.2698,
+      "stake_counts": {
+       "1.0": 273
+      }
+     },
+     "new_orb_asia_2d_buf10__btcusd": {
+      "trades": 294,
+      "trades_ref": 0,
+      "stakes": 294.0,
+      "R_at_stake_unscaled": 94.2,
+      "R_ref": 0.0,
+      "R_per_stake": 0.3204,
+      "stake_counts": {
+       "1.0": 294
+      }
+     }
+    },
+    "trade_changes": {}
+   }
+  }
+ },
+ "fits": {
+  "fp": {
+   "S01_V05": {
+    "2019": {
+     "year": 2019,
+     "strict": false,
+     "n_train": 673,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 223,
+      "brk72_24h_wd__ethusd": 122,
+      "F1_brk_ridge_filter__btcusd": 206,
+      "F1_brk_ridge_filter__ethusd": 122
+     },
+     "keep": [
+      7,
+      1,
+      0,
+      10,
+      9,
+      4
+     ],
+     "descriptors": [
+      "riskbp",
+      "al1",
+      "vol",
+      "oth24",
+      "prev",
+      "room"
+     ],
+     "beta": [
+      -0.07295883203219362,
+      -0.07171935360217674,
+      -0.04143074639544685,
+      -0.04456559448443386,
+      -0.038967153838968725,
+      -0.0459643510403417
+     ],
+     "coef": {
+      "riskbp": -0.073,
+      "al1": -0.0717,
+      "vol": -0.0414,
+      "oth24": -0.0446,
+      "prev": -0.039,
+      "room": -0.046
+     },
+     "corr": {
+      "vol": -0.1138,
+      "al1": -0.1328,
+      "al5": 0.0352,
+      "al20": 0.0083,
+      "room": -0.0438,
+      "cushion": 0.0059,
+      "trig": 0.0384,
+      "riskbp": -0.1352,
+      "rel": 0.0353,
+      "prev": -0.0862,
+      "oth24": -0.0886
+     },
+     "b_lo": -0.03808681129282376,
+     "b_hi": 0.08859835719758864,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": -0.10235686524685221,
+      "brk72_24h_wd__ethusd": -0.19418909024022216,
+      "F1_brk_ridge_filter__btcusd": 0.15010167780548347,
+      "F1_brk_ridge_filter__ethusd": 0.007138815154287381
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": true,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": true
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2119767911772414,
+        0.7619565179076764,
+        1.3082934728223408,
+        1.3153510469505258,
+        1.6912446380261317,
+        4.025891415639604,
+        0.8201083288856285,
+        398.25015666949497,
+        0.0705669192469754,
+        0.3185217348199591,
+        0.8102976975556404
+       ],
+       [
+        0.8900550373083363,
+        0.6105105498101301,
+        1.5462020934374276,
+        3.5192120186408427,
+        1.859750899458724,
+        2.0995953725881393,
+        1.078090796182189,
+        261.87893740772944,
+        0.6710112181952563,
+        1.5720864942337878,
+        3.9925967195987813
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        0.8647249373459353,
+        0.7361310274038797,
+        1.368405251142916,
+        1.6053082411296642,
+        1.6796912547098677,
+        4.220457929675318,
+        0.9885713347987735,
+        447.10819821348747,
+        0.04293703133422296,
+        0.47700585110291666,
+        1.055052236389235
+       ],
+       [
+        0.46878749018493854,
+        0.5428655668320562,
+        1.6380743211257665,
+        4.082498682676457,
+        1.8463492602403613,
+        2.403589776551119,
+        1.2562357920682599,
+        302.08630678624843,
+        0.6646019185873911,
+        1.7217906829565799,
+        4.979157658089364
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1076789413473047,
+        0.6932754582070073,
+        0.8830530935181543,
+        1.5292102449483727,
+        1.7550863084605306,
+        4.052229213754836,
+        2.1643382987005984,
+        257.39687911985396,
+        0.13028962568846802,
+        0.54150083598975,
+        0.2058262052100643
+       ],
+       [
+        0.7679636872331558,
+        0.5929020873848057,
+        1.621621294964785,
+        3.3156688659099807,
+        1.8680281958264802,
+        2.1412305477908067,
+        2.795977200679597,
+        145.5171617352734,
+        0.6248156057877957,
+        2.292169702015257,
+        2.3243297458926664
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        0.7862771604901592,
+        0.750275600469644,
+        1.0032539717059692,
+        1.3539024076220516,
+        1.985525044588845,
+        4.107697075591572,
+        2.531263935483292,
+        282.5366509233009,
+        0.16175101683590493,
+        0.3902446215143007,
+        0.43982352005226455
+       ],
+       [
+        0.307689702089802,
+        0.6782617532558934,
+        1.923692468211087,
+        4.272522183270965,
+        2.071760541830725,
+        2.4712037371779383,
+        2.8248362060630763,
+        133.49222742976775,
+        0.6921197274068918,
+        1.7461638661992975,
+        2.8880727193208457
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    },
+    "2020": {
+     "year": 2020,
+     "strict": false,
+     "n_train": 1182,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 364,
+      "brk72_24h_wd__ethusd": 240,
+      "F1_brk_ridge_filter__btcusd": 342,
+      "F1_brk_ridge_filter__ethusd": 236
+     },
+     "keep": [
+      7,
+      0,
+      9,
+      6,
+      1,
+      10
+     ],
+     "descriptors": [
+      "riskbp",
+      "vol",
+      "prev",
+      "trig",
+      "al1",
+      "oth24"
+     ],
+     "beta": [
+      -0.06335752375070695,
+      -0.04893165541197043,
+      -0.040037113606944875,
+      0.038479784186362435,
+      -0.021981016856195284,
+      -0.007300807389550162
+     ],
+     "coef": {
+      "riskbp": -0.0634,
+      "vol": -0.0489,
+      "prev": -0.04,
+      "trig": 0.0385,
+      "al1": -0.022,
+      "oth24": -0.0073
+     },
+     "corr": {
+      "vol": -0.1154,
+      "al1": -0.0512,
+      "al5": 0.0235,
+      "al20": -0.0218,
+      "room": 0.0033,
+      "cushion": -0.0015,
+      "trig": 0.0646,
+      "riskbp": -0.1303,
+      "rel": -0.0171,
+      "prev": -0.0797,
+      "oth24": -0.0345
+     },
+     "b_lo": -0.022477858533065387,
+     "b_hi": 0.06393353444918029,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": 0.07075092174545919,
+      "brk72_24h_wd__ethusd": -0.16865426989170326,
+      "F1_brk_ridge_filter__btcusd": 0.19125341759194198,
+      "F1_brk_ridge_filter__ethusd": 0.1066255559615649
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": false,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": false
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2295011066085098,
+        0.7684108827314156,
+        1.183623529530711,
+        1.2859428342367303,
+        1.6796313450592821,
+        3.8582217945245985,
+        0.8659087695260435,
+        343.36115369083427,
+        0.062450680769013826,
+        0.3147596313350957,
+        0.5486562265484264
+       ],
+       [
+        0.9444192916207503,
+        0.6951647210910834,
+        1.5910905725670006,
+        3.3863477912953353,
+        1.721098385003706,
+        1.9910671109502305,
+        1.085945237134642,
+        242.53858949993796,
+        0.6248889393661586,
+        1.947403369742791,
+        3.474582907576696
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        1.0117586407644472,
+        0.7545764154553055,
+        1.1731552406629355,
+        1.3241071785006582,
+        1.6746639358563404,
+        3.8035983958348583,
+        0.8907077527807918,
+        449.40040234407144,
+        0.018273167538773626,
+        0.2919595364300001,
+        0.9944527274989567
+       ],
+       [
+        0.5256255118606741,
+        0.5704053500484046,
+        1.5784878594206242,
+        3.459964654802592,
+        1.6151347818968689,
+        2.0799299211480187,
+        1.1216487249701637,
+        243.37243667501156,
+        0.6287912828504009,
+        1.4463240029939903,
+        4.577826798432752
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1762550456791268,
+        0.7156390727886289,
+        0.9357106570896515,
+        1.6395995376799526,
+        1.6708666140458923,
+        3.9695608423862616,
+        2.249012246223082,
+        227.74579273167643,
+        0.08276568245821027,
+        0.5240765375795249,
+        0.39443370986359627
+       ],
+       [
+        0.7829302090687471,
+        0.7192298417397853,
+        1.7926896534759518,
+        3.2791085331508683,
+        1.6907549296624402,
+        2.106659351144334,
+        2.7435096482865533,
+        134.8309582068064,
+        0.5939881242824668,
+        2.251792998820669,
+        3.3377656679520586
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        0.9911985582027648,
+        0.7526263295769796,
+        0.9623095945931455,
+        1.3611091426166464,
+        1.837754464969285,
+        3.8765331501402773,
+        2.251685525642118,
+        289.8422685460818,
+        0.09273472211690058,
+        0.324392916015217,
+        0.49554233951499516
+       ],
+       [
+        0.4922157020480063,
+        0.6405406486608436,
+        1.9153629810829107,
+        3.6979207971747705,
+        1.765308207678022,
+        2.17583517718833,
+        2.5005924920423896,
+        115.57799607810136,
+        0.6190921547135612,
+        1.550184829337295,
+        3.0862229896276934
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    },
+    "2021": {
+     "year": 2021,
+     "strict": false,
+     "n_train": 1724,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 495,
+      "brk72_24h_wd__ethusd": 371,
+      "F1_brk_ridge_filter__btcusd": 480,
+      "F1_brk_ridge_filter__ethusd": 378
+     },
+     "keep": [
+      7,
+      0,
+      9,
+      6,
+      10,
+      1
+     ],
+     "descriptors": [
+      "riskbp",
+      "vol",
+      "prev",
+      "trig",
+      "oth24",
+      "al1"
+     ],
+     "beta": [
+      -0.05626510194725854,
+      -0.04428482240645518,
+      -0.03668404165945934,
+      0.03850407104666212,
+      -0.02366087108884538,
+      -0.023677261999974487
+     ],
+     "coef": {
+      "riskbp": -0.0563,
+      "vol": -0.0443,
+      "prev": -0.0367,
+      "trig": 0.0385,
+      "oth24": -0.0237,
+      "al1": -0.0237
+     },
+     "corr": {
+      "vol": -0.1053,
+      "al1": -0.0527,
+      "al5": 0.0182,
+      "al20": 0.0013,
+      "room": -0.0168,
+      "cushion": 0.0216,
+      "trig": 0.0611,
+      "riskbp": -0.1184,
+      "rel": 0.0089,
+      "prev": -0.0773,
+      "oth24": -0.0558
+     },
+     "b_lo": -0.019128028425969317,
+     "b_hi": 0.06055083362326083,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": 0.0608916607625891,
+      "brk72_24h_wd__ethusd": -0.11963023126200785,
+      "F1_brk_ridge_filter__btcusd": 0.2648546500920111,
+      "F1_brk_ridge_filter__ethusd": 0.08954929582634853
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": false,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": false
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2159347282242945,
+        0.7568058395074837,
+        1.182868041015351,
+        1.3560806270687178,
+        1.6152751264424985,
+        3.821604725497378,
+        0.8428091148549799,
+        316.70880939702283,
+        0.1019620767828687,
+        0.3305724380154668,
+        0.6217312221637062
+       ],
+       [
+        0.8536066861129461,
+        0.6585790777975133,
+        1.547728052408318,
+        3.3973700854208486,
+        1.6730812222128308,
+        1.984074949735663,
+        1.0216839617540683,
+        220.15838576933106,
+        0.6205203141842935,
+        1.9063692071936087,
+        3.393295495191486
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        1.0852353090198616,
+        0.7680088935272009,
+        1.15169466183425,
+        1.3505036310403333,
+        1.6603621516040716,
+        3.7545046554954564,
+        0.801510747295976,
+        416.77544637374274,
+        0.07188368450730757,
+        0.27971761534665074,
+        1.006882549209842
+       ],
+       [
+        0.6001758213969316,
+        0.567699362939699,
+        1.6042994330359912,
+        3.530496381747646,
+        1.6543276918237142,
+        2.073265882378878,
+        0.9674763304548372,
+        231.00030455246127,
+        0.6216721140044774,
+        1.5129233207882582,
+        4.2042742855946935
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1857976767835168,
+        0.7068502906279404,
+        0.936343069109743,
+        1.7072487431553323,
+        1.6041191105295176,
+        3.906416861019677,
+        2.1587492125121797,
+        216.6201672894749,
+        0.13232546707486414,
+        0.46829873139961203,
+        0.4419145780812228
+       ],
+       [
+        0.7298843067047202,
+        0.6955347841552507,
+        1.758325608875471,
+        3.2663049701571967,
+        1.6269491284079511,
+        2.0603684984475485,
+        2.7690648630714167,
+        132.98514921484247,
+        0.6197855176411228,
+        2.054841156945306,
+        3.2616377379678987
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        1.0803262595384764,
+        0.7621563662557315,
+        1.001161464692889,
+        1.5844421924193604,
+        1.676111610760474,
+        3.8700473683261696,
+        2.2384928672797444,
+        279.6300579939707,
+        0.14557931502435026,
+        0.2575531081118796,
+        0.6709504675678581
+       ],
+       [
+        0.5616413191377895,
+        0.6449812692264347,
+        1.8276040945150007,
+        3.589131509517453,
+        1.659158338864928,
+        2.0911836267353867,
+        2.6359261233462288,
+        134.96440169417534,
+        0.6585204630849902,
+        1.461810579703966,
+        3.0624516623075464
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    }
+   },
+   "S02_V05_strict": {
+    "2019": {
+     "year": 2019,
+     "strict": true,
+     "n_train": 671,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 222,
+      "brk72_24h_wd__ethusd": 121,
+      "F1_brk_ridge_filter__btcusd": 206,
+      "F1_brk_ridge_filter__ethusd": 122
+     },
+     "keep": [
+      7,
+      1,
+      0,
+      10,
+      9,
+      4
+     ],
+     "descriptors": [
+      "riskbp",
+      "al1",
+      "vol",
+      "oth24",
+      "prev",
+      "room"
+     ],
+     "beta": [
+      -0.07174610143158087,
+      -0.0685073433012732,
+      -0.03885984773771424,
+      -0.04551985593010277,
+      -0.03880672111806399,
+      -0.04697460165750351
+     ],
+     "coef": {
+      "riskbp": -0.0717,
+      "al1": -0.0685,
+      "vol": -0.0389,
+      "oth24": -0.0455,
+      "prev": -0.0388,
+      "room": -0.047
+     },
+     "corr": {
+      "vol": -0.1085,
+      "al1": -0.1271,
+      "al5": 0.0434,
+      "al20": 0.0085,
+      "room": -0.0462,
+      "cushion": 0.007,
+      "trig": 0.0416,
+      "riskbp": -0.1317,
+      "rel": 0.0351,
+      "prev": -0.0855,
+      "oth24": -0.0894
+     },
+     "b_lo": -0.03582613734761684,
+     "b_hi": 0.08608194340110509,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": -0.08384229485030449,
+      "brk72_24h_wd__ethusd": -0.18277756078713708,
+      "F1_brk_ridge_filter__btcusd": 0.23181999133884906,
+      "F1_brk_ridge_filter__ethusd": 0.007138815154287381
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": true,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": true
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2079197528796448,
+        0.7601222089563626,
+        1.2987892249632176,
+        1.3184917146463866,
+        1.6955649628844742,
+        4.027601328296332,
+        0.8213520463975148,
+        397.21075313943567,
+        0.07079159459280862,
+        0.31854686500321383,
+        0.8139476871842694
+       ],
+       [
+        0.8899977229947815,
+        0.6113067998979256,
+        1.5433486922584896,
+        3.527045516068988,
+        1.862914706066613,
+        2.1042533067778275,
+        1.080356568654178,
+        262.00873872251407,
+        0.6725124374701916,
+        1.575639192115295,
+        4.001207717528875
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        0.8501409383434637,
+        0.7109618418501054,
+        1.3272374993073974,
+        1.5928318015114276,
+        1.692498386707425,
+        4.2011674576804285,
+        0.9702558270328071,
+        443.52764384411955,
+        0.04312089942399337,
+        0.47150650643591996,
+        1.0637716763593938
+       ],
+       [
+        0.4423000951376983,
+        0.4730550307026551,
+        1.5843059983398144,
+        4.098358676750572,
+        1.8492221317587116,
+        2.4050601923311303,
+        1.245088307647684,
+        300.74280474495157,
+        0.6673394664249416,
+        1.7278913365944963,
+        4.998762661259007
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1076789413473047,
+        0.6932754582070073,
+        0.8830530935181543,
+        1.5292102449483727,
+        1.7550863084605306,
+        4.052229213754836,
+        2.1643382987005984,
+        257.39687911985396,
+        0.13028962568846802,
+        0.54150083598975,
+        0.2058262052100643
+       ],
+       [
+        0.7679636872331558,
+        0.5929020873848057,
+        1.621621294964785,
+        3.3156688659099807,
+        1.8680281958264802,
+        2.1412305477908067,
+        2.795977200679597,
+        145.5171617352734,
+        0.6248156057877957,
+        2.292169702015257,
+        2.3243297458926664
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        0.7862771604901592,
+        0.750275600469644,
+        1.0032539717059692,
+        1.3539024076220516,
+        1.985525044588845,
+        4.107697075591572,
+        2.531263935483292,
+        282.5366509233009,
+        0.16175101683590493,
+        0.3902446215143007,
+        0.43982352005226455
+       ],
+       [
+        0.307689702089802,
+        0.6782617532558934,
+        1.923692468211087,
+        4.272522183270965,
+        2.071760541830725,
+        2.4712037371779383,
+        2.8248362060630763,
+        133.49222742976775,
+        0.6921197274068918,
+        1.7461638661992975,
+        2.8880727193208457
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    },
+    "2020": {
+     "year": 2020,
+     "strict": true,
+     "n_train": 1182,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 364,
+      "brk72_24h_wd__ethusd": 240,
+      "F1_brk_ridge_filter__btcusd": 342,
+      "F1_brk_ridge_filter__ethusd": 236
+     },
+     "keep": [
+      7,
+      0,
+      9,
+      6,
+      1,
+      10
+     ],
+     "descriptors": [
+      "riskbp",
+      "vol",
+      "prev",
+      "trig",
+      "al1",
+      "oth24"
+     ],
+     "beta": [
+      -0.06335752375070695,
+      -0.04893165541197043,
+      -0.040037113606944875,
+      0.038479784186362435,
+      -0.021981016856195284,
+      -0.007300807389550162
+     ],
+     "coef": {
+      "riskbp": -0.0634,
+      "vol": -0.0489,
+      "prev": -0.04,
+      "trig": 0.0385,
+      "al1": -0.022,
+      "oth24": -0.0073
+     },
+     "corr": {
+      "vol": -0.1154,
+      "al1": -0.0512,
+      "al5": 0.0235,
+      "al20": -0.0218,
+      "room": 0.0033,
+      "cushion": -0.0015,
+      "trig": 0.0646,
+      "riskbp": -0.1303,
+      "rel": -0.0171,
+      "prev": -0.0797,
+      "oth24": -0.0345
+     },
+     "b_lo": -0.022477858533065387,
+     "b_hi": 0.06393353444918029,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": 0.07075092174545919,
+      "brk72_24h_wd__ethusd": -0.16865426989170326,
+      "F1_brk_ridge_filter__btcusd": 0.19125341759194198,
+      "F1_brk_ridge_filter__ethusd": 0.1066255559615649
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": false,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": false
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2295011066085098,
+        0.7684108827314156,
+        1.183623529530711,
+        1.2859428342367303,
+        1.6796313450592821,
+        3.8582217945245985,
+        0.8659087695260435,
+        343.36115369083427,
+        0.062450680769013826,
+        0.3147596313350957,
+        0.5486562265484264
+       ],
+       [
+        0.9444192916207503,
+        0.6951647210910834,
+        1.5910905725670006,
+        3.3863477912953353,
+        1.721098385003706,
+        1.9910671109502305,
+        1.085945237134642,
+        242.53858949993796,
+        0.6248889393661586,
+        1.947403369742791,
+        3.474582907576696
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        1.0117586407644472,
+        0.7545764154553055,
+        1.1731552406629355,
+        1.3241071785006582,
+        1.6746639358563404,
+        3.8035983958348583,
+        0.8907077527807918,
+        449.40040234407144,
+        0.018273167538773626,
+        0.2919595364300001,
+        0.9944527274989567
+       ],
+       [
+        0.5256255118606741,
+        0.5704053500484046,
+        1.5784878594206242,
+        3.459964654802592,
+        1.6151347818968689,
+        2.0799299211480187,
+        1.1216487249701637,
+        243.37243667501156,
+        0.6287912828504009,
+        1.4463240029939903,
+        4.577826798432752
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1762550456791268,
+        0.7156390727886289,
+        0.9357106570896515,
+        1.6395995376799526,
+        1.6708666140458923,
+        3.9695608423862616,
+        2.249012246223082,
+        227.74579273167643,
+        0.08276568245821027,
+        0.5240765375795249,
+        0.39443370986359627
+       ],
+       [
+        0.7829302090687471,
+        0.7192298417397853,
+        1.7926896534759518,
+        3.2791085331508683,
+        1.6907549296624402,
+        2.106659351144334,
+        2.7435096482865533,
+        134.8309582068064,
+        0.5939881242824668,
+        2.251792998820669,
+        3.3377656679520586
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        0.9911985582027648,
+        0.7526263295769796,
+        0.9623095945931455,
+        1.3611091426166464,
+        1.837754464969285,
+        3.8765331501402773,
+        2.251685525642118,
+        289.8422685460818,
+        0.09273472211690058,
+        0.324392916015217,
+        0.49554233951499516
+       ],
+       [
+        0.4922157020480063,
+        0.6405406486608436,
+        1.9153629810829107,
+        3.6979207971747705,
+        1.765308207678022,
+        2.17583517718833,
+        2.5005924920423896,
+        115.57799607810136,
+        0.6190921547135612,
+        1.550184829337295,
+        3.0862229896276934
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    },
+    "2021": {
+     "year": 2021,
+     "strict": true,
+     "n_train": 1724,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 495,
+      "brk72_24h_wd__ethusd": 371,
+      "F1_brk_ridge_filter__btcusd": 480,
+      "F1_brk_ridge_filter__ethusd": 378
+     },
+     "keep": [
+      7,
+      0,
+      9,
+      6,
+      10,
+      1
+     ],
+     "descriptors": [
+      "riskbp",
+      "vol",
+      "prev",
+      "trig",
+      "oth24",
+      "al1"
+     ],
+     "beta": [
+      -0.05626510194725854,
+      -0.04428482240645518,
+      -0.03668404165945934,
+      0.03850407104666212,
+      -0.02366087108884538,
+      -0.023677261999974487
+     ],
+     "coef": {
+      "riskbp": -0.0563,
+      "vol": -0.0443,
+      "prev": -0.0367,
+      "trig": 0.0385,
+      "oth24": -0.0237,
+      "al1": -0.0237
+     },
+     "corr": {
+      "vol": -0.1053,
+      "al1": -0.0527,
+      "al5": 0.0182,
+      "al20": 0.0013,
+      "room": -0.0168,
+      "cushion": 0.0216,
+      "trig": 0.0611,
+      "riskbp": -0.1184,
+      "rel": 0.0089,
+      "prev": -0.0773,
+      "oth24": -0.0558
+     },
+     "b_lo": -0.019128028425969317,
+     "b_hi": 0.06055083362326083,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": 0.0608916607625891,
+      "brk72_24h_wd__ethusd": -0.11963023126200785,
+      "F1_brk_ridge_filter__btcusd": 0.2648546500920111,
+      "F1_brk_ridge_filter__ethusd": 0.08954929582634853
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": false,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": false
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2159347282242945,
+        0.7568058395074837,
+        1.182868041015351,
+        1.3560806270687178,
+        1.6152751264424985,
+        3.821604725497378,
+        0.8428091148549799,
+        316.70880939702283,
+        0.1019620767828687,
+        0.3305724380154668,
+        0.6217312221637062
+       ],
+       [
+        0.8536066861129461,
+        0.6585790777975133,
+        1.547728052408318,
+        3.3973700854208486,
+        1.6730812222128308,
+        1.984074949735663,
+        1.0216839617540683,
+        220.15838576933106,
+        0.6205203141842935,
+        1.9063692071936087,
+        3.393295495191486
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        1.0852353090198616,
+        0.7680088935272009,
+        1.15169466183425,
+        1.3505036310403333,
+        1.6603621516040716,
+        3.7545046554954564,
+        0.801510747295976,
+        416.77544637374274,
+        0.07188368450730757,
+        0.27971761534665074,
+        1.006882549209842
+       ],
+       [
+        0.6001758213969316,
+        0.567699362939699,
+        1.6042994330359912,
+        3.530496381747646,
+        1.6543276918237142,
+        2.073265882378878,
+        0.9674763304548372,
+        231.00030455246127,
+        0.6216721140044774,
+        1.5129233207882582,
+        4.2042742855946935
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1857976767835168,
+        0.7068502906279404,
+        0.936343069109743,
+        1.7072487431553323,
+        1.6041191105295176,
+        3.906416861019677,
+        2.1587492125121797,
+        216.6201672894749,
+        0.13232546707486414,
+        0.46829873139961203,
+        0.4419145780812228
+       ],
+       [
+        0.7298843067047202,
+        0.6955347841552507,
+        1.758325608875471,
+        3.2663049701571967,
+        1.6269491284079511,
+        2.0603684984475485,
+        2.7690648630714167,
+        132.98514921484247,
+        0.6197855176411228,
+        2.054841156945306,
+        3.2616377379678987
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        1.0803262595384764,
+        0.7621563662557315,
+        1.001161464692889,
+        1.5844421924193604,
+        1.676111610760474,
+        3.8700473683261696,
+        2.2384928672797444,
+        279.6300579939707,
+        0.14557931502435026,
+        0.2575531081118796,
+        0.6709504675678581
+       ],
+       [
+        0.5616413191377895,
+        0.6449812692264347,
+        1.8276040945150007,
+        3.589131509517453,
+        1.659158338864928,
+        2.0911836267353867,
+        2.6359261233462288,
+        134.96440169417534,
+        0.6585204630849902,
+        1.461810579703966,
+        3.0624516623075464
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    }
+   }
+  },
+  "stress": {
+   "S01_V05": {
+    "2019": {
+     "year": 2019,
+     "strict": false,
+     "n_train": 674,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 223,
+      "brk72_24h_wd__ethusd": 122,
+      "F1_brk_ridge_filter__btcusd": 206,
+      "F1_brk_ridge_filter__ethusd": 123
+     },
+     "keep": [
+      1,
+      7,
+      0,
+      9,
+      10,
+      4
+     ],
+     "descriptors": [
+      "al1",
+      "riskbp",
+      "vol",
+      "prev",
+      "oth24",
+      "room"
+     ],
+     "beta": [
+      -0.07225165612540677,
+      -0.06777864413927502,
+      -0.03973676921149706,
+      -0.041256229473116496,
+      -0.04062729623612693,
+      -0.04413978088447337
+     ],
+     "coef": {
+      "al1": -0.0723,
+      "riskbp": -0.0678,
+      "vol": -0.0397,
+      "prev": -0.0413,
+      "oth24": -0.0406,
+      "room": -0.0441
+     },
+     "corr": {
+      "vol": -0.11,
+      "al1": -0.1328,
+      "al5": 0.0317,
+      "al20": 0.0069,
+      "room": -0.0424,
+      "cushion": 0.0016,
+      "trig": 0.019,
+      "riskbp": -0.1281,
+      "rel": 0.0325,
+      "prev": -0.0888,
+      "oth24": -0.0839
+     },
+     "b_lo": -0.0360796692940325,
+     "b_hi": 0.08557788465927949,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": -0.09335258199491195,
+      "brk72_24h_wd__ethusd": -0.2016293497557029,
+      "F1_brk_ridge_filter__btcusd": 0.17045848837935546,
+      "F1_brk_ridge_filter__ethusd": 0.0013058518128476768
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": true,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": true
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2119767911772414,
+        0.7619565179076764,
+        1.3082934728223408,
+        1.3153510469505258,
+        1.6912446380261317,
+        4.025891415639604,
+        0.8201083288856285,
+        398.25015666949497,
+        0.0705669192469754,
+        0.30755363094636007,
+        0.7269667245195522
+       ],
+       [
+        0.8900550373083363,
+        0.6105105498101301,
+        1.5462020934374276,
+        3.5192120186408427,
+        1.859750899458724,
+        2.0995953725881393,
+        1.078090796182189,
+        261.87893740772944,
+        0.6710112181952563,
+        1.5729162686743605,
+        3.9594629759151165
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        0.8647249373459353,
+        0.7361310274038797,
+        1.368405251142916,
+        1.6053082411296642,
+        1.6796912547098677,
+        4.220457929675318,
+        0.9885713347987735,
+        447.10819821348747,
+        0.04293703133422296,
+        0.4587423874370992,
+        0.9673983629450683
+       ],
+       [
+        0.46878749018493854,
+        0.5428655668320562,
+        1.6380743211257665,
+        4.082498682676457,
+        1.8463492602403613,
+        2.403589776551119,
+        1.2562357920682599,
+        302.08630678624843,
+        0.6646019185873911,
+        1.7149651303647326,
+        4.970296742318868
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1073909993245619,
+        0.6932754582070073,
+        0.8830530935181543,
+        1.5292102449483727,
+        1.7550863084605306,
+        4.052229213754836,
+        2.1566499528632623,
+        258.10404550182085,
+        0.13028962568846802,
+        0.5283511234062893,
+        0.13230595741393303
+       ],
+       [
+        0.7661377965730272,
+        0.5929020873848057,
+        1.621621294964785,
+        3.3156688659099807,
+        1.8680281958264802,
+        2.1412305477908067,
+        2.787369379879606,
+        145.73210717646546,
+        0.6248156057877957,
+        2.2860666370686187,
+        2.305438194985189
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        0.7862762361159523,
+        0.7594877446158548,
+        1.032358844681792,
+        1.403651186095264,
+        1.9700147091019244,
+        4.1497019616124176,
+        2.54298034355609,
+        282.0344629487487,
+        0.1609485379555291,
+        0.3308735226334821,
+        0.3912895100426367
+       ],
+       [
+        0.3064197945393056,
+        0.6831194702114801,
+        1.9426404751303803,
+        4.290452012912205,
+        2.0704215698026016,
+        2.5044873358616,
+        2.81611537954874,
+        132.99499757731357,
+        0.6893574770376112,
+        1.7079919674619564,
+        2.8609784035703205
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    },
+    "2020": {
+     "year": 2020,
+     "strict": false,
+     "n_train": 1185,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 364,
+      "brk72_24h_wd__ethusd": 240,
+      "F1_brk_ridge_filter__btcusd": 343,
+      "F1_brk_ridge_filter__ethusd": 238
+     },
+     "keep": [
+      7,
+      0,
+      9,
+      1,
+      6,
+      10
+     ],
+     "descriptors": [
+      "riskbp",
+      "vol",
+      "prev",
+      "al1",
+      "trig",
+      "oth24"
+     ],
+     "beta": [
+      -0.059897072136012364,
+      -0.049147935499305344,
+      -0.043067043600603976,
+      -0.020220910395885854,
+      0.019953432691337106,
+      -0.005157686185705644
+     ],
+     "coef": {
+      "riskbp": -0.0599,
+      "vol": -0.0491,
+      "prev": -0.0431,
+      "al1": -0.0202,
+      "trig": 0.02,
+      "oth24": -0.0052
+     },
+     "corr": {
+      "vol": -0.1131,
+      "al1": -0.0534,
+      "al5": 0.0181,
+      "al20": -0.0249,
+      "room": 0.0063,
+      "cushion": -0.0064,
+      "trig": 0.0369,
+      "riskbp": -0.1229,
+      "rel": -0.0183,
+      "prev": -0.0837,
+      "oth24": -0.0318
+     },
+     "b_lo": -0.01845607041847082,
+     "b_hi": 0.06165844490351055,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": 0.05024472704571232,
+      "brk72_24h_wd__ethusd": -0.19925206637946344,
+      "F1_brk_ridge_filter__btcusd": 0.34319899809573384,
+      "F1_brk_ridge_filter__ethusd": 0.059024213551571544
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": false,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": false
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2295011066085098,
+        0.7684108827314156,
+        1.183623529530711,
+        1.2859428342367303,
+        1.6796313450592821,
+        3.8582217945245985,
+        0.8659087695260435,
+        343.36115369083427,
+        0.062450680769013826,
+        0.30358018047545854,
+        0.476490485136496
+       ],
+       [
+        0.9444192916207503,
+        0.6951647210910834,
+        1.5910905725670006,
+        3.3863477912953353,
+        1.721098385003706,
+        1.9910671109502305,
+        1.085945237134642,
+        242.53858949993796,
+        0.6248889393661586,
+        1.9472722919062475,
+        3.448544181493028
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        1.0117586407644472,
+        0.7545764154553055,
+        1.1731552406629355,
+        1.3241071785006582,
+        1.6746639358563404,
+        3.8035983958348583,
+        0.8907077527807918,
+        449.40040234407144,
+        0.018273167538773626,
+        0.27408702242933053,
+        0.9214247669192076
+       ],
+       [
+        0.5256255118606741,
+        0.5704053500484046,
+        1.5784878594206242,
+        3.459964654802592,
+        1.6151347818968689,
+        2.0799299211480187,
+        1.1216487249701637,
+        243.37243667501156,
+        0.6287912828504009,
+        1.4416821038754568,
+        4.556922928868372
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1767219636402757,
+        0.7234267083647133,
+        0.9503835538280702,
+        1.6577678309149364,
+        1.666938663083525,
+        3.9834388731901167,
+        2.238450774188732,
+        227.86982394226902,
+        0.07976961710234133,
+        0.5058958456534275,
+        0.3321982467287837
+       ],
+       [
+        0.7808178320622532,
+        0.7324785267739782,
+        1.8105240163438396,
+        3.291518484600894,
+        1.6898504721682133,
+        2.1191847293890125,
+        2.736570705911241,
+        134.97907337222784,
+        0.5957039431970091,
+        2.2399011976700476,
+        3.3147229729466425
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        0.9915748557706588,
+        0.7583092435520957,
+        0.9781494941091381,
+        1.3858727918168896,
+        1.8247845292917668,
+        3.8956500605725783,
+        2.2495757182363367,
+        289.4509496907632,
+        0.0911888217477839,
+        0.2761421645411758,
+        0.4624104282723645
+       ],
+       [
+        0.49059638507118797,
+        0.6421768146065028,
+        1.9216438972467558,
+        3.7035451860818838,
+        1.7636239968293506,
+        2.1953473984082965,
+        2.4952789973122105,
+        115.18494536299508,
+        0.6168762412045877,
+        1.5250397698450904,
+        3.063943609003733
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    },
+    "2021": {
+     "year": 2021,
+     "strict": false,
+     "n_train": 1729,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 495,
+      "brk72_24h_wd__ethusd": 373,
+      "F1_brk_ridge_filter__btcusd": 481,
+      "F1_brk_ridge_filter__ethusd": 380
+     },
+     "keep": [
+      7,
+      0,
+      9,
+      10,
+      1,
+      6
+     ],
+     "descriptors": [
+      "riskbp",
+      "vol",
+      "prev",
+      "oth24",
+      "al1",
+      "trig"
+     ],
+     "beta": [
+      -0.052996312840114856,
+      -0.043575428247464174,
+      -0.03825828381059401,
+      -0.022334373994039425,
+      -0.021384158184457176,
+      0.025531747816882697
+     ],
+     "coef": {
+      "riskbp": -0.053,
+      "vol": -0.0436,
+      "prev": -0.0383,
+      "oth24": -0.0223,
+      "al1": -0.0214,
+      "trig": 0.0255
+     },
+     "corr": {
+      "vol": -0.102,
+      "al1": -0.0526,
+      "al5": 0.0148,
+      "al20": 0.0004,
+      "room": -0.0146,
+      "cushion": 0.019,
+      "trig": 0.0417,
+      "riskbp": -0.1118,
+      "rel": 0.0103,
+      "prev": -0.0792,
+      "oth24": -0.0539
+     },
+     "b_lo": -0.01587350096476216,
+     "b_hi": 0.05853929993409015,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": 0.078998466257232,
+      "brk72_24h_wd__ethusd": -0.13020305667688364,
+      "F1_brk_ridge_filter__btcusd": 0.2764992790286657,
+      "F1_brk_ridge_filter__ethusd": 0.07834946095193207
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": false,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": false
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2159347282242945,
+        0.7568058395074837,
+        1.182868041015351,
+        1.3560806270687178,
+        1.6152751264424985,
+        3.821604725497378,
+        0.8428091148549799,
+        316.70880939702283,
+        0.1019620767828687,
+        0.3201883214050985,
+        0.5526387933270842
+       ],
+       [
+        0.853606686112946,
+        0.6585790777975133,
+        1.547728052408318,
+        3.3973700854208486,
+        1.6730812222128308,
+        1.984074949735663,
+        1.0216839617540683,
+        220.15838576933106,
+        0.6205203141842935,
+        1.905888236849275,
+        3.3697188333375556
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        1.0831176969626275,
+        0.7662263588154248,
+        1.1516181710589328,
+        1.3376293222772098,
+        1.6580676605925333,
+        3.7497266243908394,
+        0.8035456038616865,
+        415.847102450652,
+        0.06521463032700672,
+        0.255013970941455,
+        0.9481199169675478
+       ],
+       [
+        0.599263085486428,
+        0.5666701996105922,
+        1.6010300985877468,
+        3.526292256041154,
+        1.6525162763877064,
+        2.069774044688326,
+        0.9667591820889975,
+        230.76055157925495,
+        0.6288518861874386,
+        1.506118155850435,
+        4.174063992053965
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1860994729684935,
+        0.7124219076440684,
+        0.9468049634325237,
+        1.7200638686732617,
+        1.6014568658796726,
+        3.916444529516743,
+        2.15140084660459,
+        216.72666588688884,
+        0.1300859448260498,
+        0.4524962181849862,
+        0.38142806088247616
+       ],
+       [
+        0.728360866677144,
+        0.7054526771752093,
+        1.7713886838447592,
+        3.274965187700773,
+        1.6263033069615118,
+        2.0699175646761363,
+        2.7638513948627517,
+        133.10314326438075,
+        0.6210820340854899,
+        2.045294600305645,
+        3.237262223668808
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        1.0800164090851887,
+        0.7656655069207844,
+        1.0108777603365908,
+        1.5987766198142355,
+        1.6688390871214438,
+        3.8820547268696326,
+        2.2370460539332977,
+        279.41645025443665,
+        0.14433296377786428,
+        0.21774082406388923,
+        0.6301694600521999
+       ],
+       [
+        0.5603288157882514,
+        0.6459301948454416,
+        1.8320096946539899,
+        3.5924397688695375,
+        1.6578784478226452,
+        2.104426219522799,
+        2.6318500006660615,
+        134.6248615599776,
+        0.6571040191119046,
+        1.4424099371416907,
+        3.0383187180553897
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    }
+   },
+   "S02_V05_strict": {
+    "2019": {
+     "year": 2019,
+     "strict": true,
+     "n_train": 672,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 222,
+      "brk72_24h_wd__ethusd": 121,
+      "F1_brk_ridge_filter__btcusd": 206,
+      "F1_brk_ridge_filter__ethusd": 123
+     },
+     "keep": [
+      1,
+      7,
+      0,
+      9,
+      10,
+      4
+     ],
+     "descriptors": [
+      "al1",
+      "riskbp",
+      "vol",
+      "prev",
+      "oth24",
+      "room"
+     ],
+     "beta": [
+      -0.06903119250649964,
+      -0.0665646563151187,
+      -0.0371690938522516,
+      -0.04109184056097086,
+      -0.041555395757450285,
+      -0.045130130319182754
+     ],
+     "coef": {
+      "al1": -0.069,
+      "riskbp": -0.0666,
+      "vol": -0.0372,
+      "prev": -0.0411,
+      "oth24": -0.0416,
+      "room": -0.0451
+     },
+     "corr": {
+      "vol": -0.1047,
+      "al1": -0.1271,
+      "al5": 0.0399,
+      "al20": 0.0071,
+      "room": -0.0448,
+      "cushion": 0.0028,
+      "trig": 0.0222,
+      "riskbp": -0.1246,
+      "rel": 0.0323,
+      "prev": -0.0881,
+      "oth24": -0.0846
+     },
+     "b_lo": -0.03521741862818443,
+     "b_hi": 0.08362552797401061,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": -0.07399595501571399,
+      "brk72_24h_wd__ethusd": -0.19062392306051573,
+      "F1_brk_ridge_filter__btcusd": 0.155592331973439,
+      "F1_brk_ridge_filter__ethusd": 0.0013058518128476768
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": true,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": true
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2079197528796448,
+        0.7601222089563626,
+        1.2987892249632176,
+        1.3184917146463866,
+        1.6955649628844742,
+        4.027601328296332,
+        0.8213520463975148,
+        397.21075313943567,
+        0.07079159459280862,
+        0.30754720757643045,
+        0.7302413494047754
+       ],
+       [
+        0.8899977229947815,
+        0.6113067998979256,
+        1.5433486922584896,
+        3.527045516068988,
+        1.862914706066613,
+        2.1042533067778275,
+        1.080356568654178,
+        262.00873872251407,
+        0.6725124374701916,
+        1.5764708833391214,
+        3.968069363253047
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        0.8501409383434637,
+        0.7109618418501054,
+        1.3272374993073974,
+        1.5928318015114276,
+        1.692498386707425,
+        4.2011674576804285,
+        0.9702558270328071,
+        443.52764384411955,
+        0.04312089942399337,
+        0.4531872674220825,
+        0.9753933907380027
+       ],
+       [
+        0.4423000951376983,
+        0.4730550307026551,
+        1.5843059983398144,
+        4.098358676750572,
+        1.8492221317587116,
+        2.4050601923311303,
+        1.245088307647684,
+        300.74280474495157,
+        0.6673394664249416,
+        1.7210115129353005,
+        4.990011568784226
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1073909993245619,
+        0.6932754582070073,
+        0.8830530935181543,
+        1.5292102449483727,
+        1.7550863084605306,
+        4.052229213754836,
+        2.1566499528632623,
+        258.10404550182085,
+        0.13028962568846802,
+        0.5283511234062893,
+        0.13230595741393303
+       ],
+       [
+        0.7661377965730272,
+        0.5929020873848057,
+        1.621621294964785,
+        3.3156688659099807,
+        1.8680281958264802,
+        2.1412305477908067,
+        2.787369379879606,
+        145.73210717646546,
+        0.6248156057877957,
+        2.2860666370686187,
+        2.305438194985189
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        0.7862762361159523,
+        0.7594877446158548,
+        1.032358844681792,
+        1.403651186095264,
+        1.9700147091019244,
+        4.1497019616124176,
+        2.54298034355609,
+        282.0344629487487,
+        0.1609485379555291,
+        0.3308735226334821,
+        0.3912895100426367
+       ],
+       [
+        0.3064197945393056,
+        0.6831194702114801,
+        1.9426404751303803,
+        4.290452012912205,
+        2.0704215698026016,
+        2.5044873358616,
+        2.81611537954874,
+        132.99499757731357,
+        0.6893574770376112,
+        1.7079919674619564,
+        2.8609784035703205
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    },
+    "2020": {
+     "year": 2020,
+     "strict": true,
+     "n_train": 1185,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 364,
+      "brk72_24h_wd__ethusd": 240,
+      "F1_brk_ridge_filter__btcusd": 343,
+      "F1_brk_ridge_filter__ethusd": 238
+     },
+     "keep": [
+      7,
+      0,
+      9,
+      1,
+      6,
+      10
+     ],
+     "descriptors": [
+      "riskbp",
+      "vol",
+      "prev",
+      "al1",
+      "trig",
+      "oth24"
+     ],
+     "beta": [
+      -0.059897072136012364,
+      -0.049147935499305344,
+      -0.043067043600603976,
+      -0.020220910395885854,
+      0.019953432691337106,
+      -0.005157686185705644
+     ],
+     "coef": {
+      "riskbp": -0.0599,
+      "vol": -0.0491,
+      "prev": -0.0431,
+      "al1": -0.0202,
+      "trig": 0.02,
+      "oth24": -0.0052
+     },
+     "corr": {
+      "vol": -0.1131,
+      "al1": -0.0534,
+      "al5": 0.0181,
+      "al20": -0.0249,
+      "room": 0.0063,
+      "cushion": -0.0064,
+      "trig": 0.0369,
+      "riskbp": -0.1229,
+      "rel": -0.0183,
+      "prev": -0.0837,
+      "oth24": -0.0318
+     },
+     "b_lo": -0.01845607041847082,
+     "b_hi": 0.06165844490351055,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": 0.05024472704571232,
+      "brk72_24h_wd__ethusd": -0.19925206637946344,
+      "F1_brk_ridge_filter__btcusd": 0.34319899809573384,
+      "F1_brk_ridge_filter__ethusd": 0.059024213551571544
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": false,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": false
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2295011066085098,
+        0.7684108827314156,
+        1.183623529530711,
+        1.2859428342367303,
+        1.6796313450592821,
+        3.8582217945245985,
+        0.8659087695260435,
+        343.36115369083427,
+        0.062450680769013826,
+        0.30358018047545854,
+        0.476490485136496
+       ],
+       [
+        0.9444192916207503,
+        0.6951647210910834,
+        1.5910905725670006,
+        3.3863477912953353,
+        1.721098385003706,
+        1.9910671109502305,
+        1.085945237134642,
+        242.53858949993796,
+        0.6248889393661586,
+        1.9472722919062475,
+        3.448544181493028
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        1.0117586407644472,
+        0.7545764154553055,
+        1.1731552406629355,
+        1.3241071785006582,
+        1.6746639358563404,
+        3.8035983958348583,
+        0.8907077527807918,
+        449.40040234407144,
+        0.018273167538773626,
+        0.27408702242933053,
+        0.9214247669192076
+       ],
+       [
+        0.5256255118606741,
+        0.5704053500484046,
+        1.5784878594206242,
+        3.459964654802592,
+        1.6151347818968689,
+        2.0799299211480187,
+        1.1216487249701637,
+        243.37243667501156,
+        0.6287912828504009,
+        1.4416821038754568,
+        4.556922928868372
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1767219636402757,
+        0.7234267083647133,
+        0.9503835538280702,
+        1.6577678309149364,
+        1.666938663083525,
+        3.9834388731901167,
+        2.238450774188732,
+        227.86982394226902,
+        0.07976961710234133,
+        0.5058958456534275,
+        0.3321982467287837
+       ],
+       [
+        0.7808178320622532,
+        0.7324785267739782,
+        1.8105240163438396,
+        3.291518484600894,
+        1.6898504721682133,
+        2.1191847293890125,
+        2.736570705911241,
+        134.97907337222784,
+        0.5957039431970091,
+        2.2399011976700476,
+        3.3147229729466425
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        0.9915748557706588,
+        0.7583092435520957,
+        0.9781494941091381,
+        1.3858727918168896,
+        1.8247845292917668,
+        3.8956500605725783,
+        2.2495757182363367,
+        289.4509496907632,
+        0.0911888217477839,
+        0.2761421645411758,
+        0.4624104282723645
+       ],
+       [
+        0.49059638507118797,
+        0.6421768146065028,
+        1.9216438972467558,
+        3.7035451860818838,
+        1.7636239968293506,
+        2.1953473984082965,
+        2.4952789973122105,
+        115.18494536299508,
+        0.6168762412045877,
+        1.5250397698450904,
+        3.063943609003733
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    },
+    "2021": {
+     "year": 2021,
+     "strict": true,
+     "n_train": 1729,
+     "n_by_sleeve": {
+      "brk72_24h_wd__btcusd": 495,
+      "brk72_24h_wd__ethusd": 373,
+      "F1_brk_ridge_filter__btcusd": 481,
+      "F1_brk_ridge_filter__ethusd": 380
+     },
+     "keep": [
+      7,
+      0,
+      9,
+      10,
+      1,
+      6
+     ],
+     "descriptors": [
+      "riskbp",
+      "vol",
+      "prev",
+      "oth24",
+      "al1",
+      "trig"
+     ],
+     "beta": [
+      -0.052996312840114856,
+      -0.043575428247464174,
+      -0.03825828381059401,
+      -0.022334373994039425,
+      -0.021384158184457176,
+      0.025531747816882697
+     ],
+     "coef": {
+      "riskbp": -0.053,
+      "vol": -0.0436,
+      "prev": -0.0383,
+      "oth24": -0.0223,
+      "al1": -0.0214,
+      "trig": 0.0255
+     },
+     "corr": {
+      "vol": -0.102,
+      "al1": -0.0526,
+      "al5": 0.0148,
+      "al20": 0.0004,
+      "room": -0.0146,
+      "cushion": 0.019,
+      "trig": 0.0417,
+      "riskbp": -0.1118,
+      "rel": 0.0103,
+      "prev": -0.0792,
+      "oth24": -0.0539
+     },
+     "b_lo": -0.01587350096476216,
+     "b_hi": 0.05853929993409015,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": 0.078998466257232,
+      "brk72_24h_wd__ethusd": -0.13020305667688364,
+      "F1_brk_ridge_filter__btcusd": 0.2764992790286657,
+      "F1_brk_ridge_filter__ethusd": 0.07834946095193207
+     },
+     "zero_on": {
+      "brk72_24h_wd__btcusd": false,
+      "brk72_24h_wd__ethusd": true,
+      "F1_brk_ridge_filter__btcusd": false,
+      "F1_brk_ridge_filter__ethusd": false
+     },
+     "stand": {
+      "brk72_24h_wd__btcusd": [
+       [
+        1.2159347282242945,
+        0.7568058395074837,
+        1.182868041015351,
+        1.3560806270687178,
+        1.6152751264424985,
+        3.821604725497378,
+        0.8428091148549799,
+        316.70880939702283,
+        0.1019620767828687,
+        0.3201883214050985,
+        0.5526387933270842
+       ],
+       [
+        0.853606686112946,
+        0.6585790777975133,
+        1.547728052408318,
+        3.3973700854208486,
+        1.6730812222128308,
+        1.984074949735663,
+        1.0216839617540683,
+        220.15838576933106,
+        0.6205203141842935,
+        1.905888236849275,
+        3.3697188333375556
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "brk72_24h_wd__ethusd": [
+       [
+        1.0831176969626275,
+        0.7662263588154248,
+        1.1516181710589328,
+        1.3376293222772098,
+        1.6580676605925333,
+        3.7497266243908394,
+        0.8035456038616865,
+        415.847102450652,
+        0.06521463032700672,
+        0.255013970941455,
+        0.9481199169675478
+       ],
+       [
+        0.599263085486428,
+        0.5666701996105922,
+        1.6010300985877468,
+        3.526292256041154,
+        1.6525162763877064,
+        2.069774044688326,
+        0.9667591820889975,
+        230.76055157925495,
+        0.6288518861874386,
+        1.506118155850435,
+        4.174063992053965
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__btcusd": [
+       [
+        1.1860994729684935,
+        0.7124219076440684,
+        0.9468049634325237,
+        1.7200638686732617,
+        1.6014568658796726,
+        3.916444529516743,
+        2.15140084660459,
+        216.72666588688884,
+        0.1300859448260498,
+        0.4524962181849862,
+        0.38142806088247616
+       ],
+       [
+        0.728360866677144,
+        0.7054526771752093,
+        1.7713886838447592,
+        3.274965187700773,
+        1.6263033069615118,
+        2.0699175646761363,
+        2.7638513948627517,
+        133.10314326438075,
+        0.6210820340854899,
+        2.045294600305645,
+        3.237262223668808
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ],
+      "F1_brk_ridge_filter__ethusd": [
+       [
+        1.0800164090851887,
+        0.7656655069207844,
+        1.0108777603365908,
+        1.5987766198142355,
+        1.6688390871214438,
+        3.8820547268696326,
+        2.2370460539332977,
+        279.41645025443665,
+        0.14433296377786428,
+        0.21774082406388923,
+        0.6301694600521999
+       ],
+       [
+        0.5603288157882514,
+        0.6459301948454416,
+        1.8320096946539899,
+        3.5924397688695375,
+        1.6578784478226452,
+        2.104426219522799,
+        2.6318500006660615,
+        134.6248615599776,
+        0.6571040191119046,
+        1.4424099371416907,
+        3.0383187180553897
+       ],
+       [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+       ]
+      ]
+     }
+    }
+   }
+  }
+ },
+ "k1_folds": {
+  "fp": {
+   "2019": {
+    "q_lo": 339.05660377358396,
+    "q_hi": 505.8534470299173,
+    "E_lo": 0.7958276276585986,
+    "E_hi": -0.23297035856020337,
+    "skip": "hi",
+    "n_train": 586,
+    "n_test": 509,
+    "n_skipped": 138
+   },
+   "2020": {
+    "q_lo": 366.7952975421773,
+    "q_hi": 496.74614912368685,
+    "E_lo": 0.5172254396287123,
+    "E_hi": -0.13060143993196474,
+    "skip": "hi",
+    "n_train": 1089,
+    "n_test": 612,
+    "n_skipped": 113
+   },
+   "2021": {
+    "q_lo": 336.0095567497519,
+    "q_hi": 465.1178140105435,
+    "E_lo": 0.4189072066298652,
+    "E_hi": -0.048552582370478006,
+    "skip": "hi",
+    "n_train": 1703,
+    "n_test": 646,
+    "n_skipped": 267
+   }
+  },
+  "stress": {
+   "2019": {
+    "q_lo": 339.05660377358396,
+    "q_hi": 505.8534470299173,
+    "E_lo": 0.7648278995797666,
+    "E_hi": -0.23997409805667558,
+    "skip": "hi",
+    "n_train": 586,
+    "n_test": 509,
+    "n_skipped": 138
+   },
+   "2020": {
+    "q_lo": 366.7952975421773,
+    "q_hi": 496.74614912368685,
+    "E_lo": 0.49243679456838474,
+    "E_hi": -0.13873791139987215,
+    "skip": "hi",
+    "n_train": 1089,
+    "n_test": 612,
+    "n_skipped": 113
+   },
+   "2021": {
+    "q_lo": 336.0095567497519,
+    "q_hi": 465.1178140105435,
+    "E_lo": 0.3934181741858479,
+    "E_hi": -0.06187163493979653,
+    "skip": "hi",
+    "n_train": 1703,
+    "n_test": 646,
+    "n_skipped": 267
+   }
+  }
+ },
+ "sec": 3.3
+}

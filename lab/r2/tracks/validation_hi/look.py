@@ -51,16 +51,17 @@ def main():
     spec = json.loads(raw)
     label = f"look:{spec['name']}:{sha[:12]}"
     try:
-        cut = G.open_run(a.cut, label)          # refusals happen here, before anything is read or logged
+        c0 = G.resolve_cut(a.cut)               # the CUT rules, checked before anything is written, read or logged
     except G.GuardError as e:
         raise SystemExit(f"REFUSED: {e}")
-    look = G.is_look(cut)
+    look = G.is_look(c0)
     base = os.path.join(G.LAB, "results", "r2", "validation_hi", "look" if look else "rehearsal")
-    os.makedirs(base, exist_ok=True)
-    stem = f"{spec['name']}__cut{cut.date()}"
+    stem = f"{spec['name']}__cut{c0.date()}"
     out = a.out or os.path.join(base, stem + ".json")
     if look and os.path.exists(out):
         raise SystemExit(f"REFUSED: {out} exists: the look is run once")
+    cut = G.open_run(a.cut, label)              # for a look: the one access line, then the read guard
+    os.makedirs(base, exist_ok=True)
     import pandas as pd
     import vhi_run as RUN
     t0 = time.time()

@@ -220,7 +220,7 @@ def run_spec(spec, cut, progress=print):
     res = {"spec": spec.get("name"), "cut": str(cut), "windows": {"eval": [str(x) for x in W["eval"]],
                                                                   "years": W["years"], "splits": [[n, str(a), str(b)] for n, a, b in W["splits"]]},
            "frames": {}, "official": {}, "sleeves": {}, "portfolios": {}, "comparisons": {}, "sleeve_comparisons": {},
-           "plugins": plugins, "live_one_position": spec.get("live_one_position", "rule")}
+           "plugins": plugins, "live_one_position": spec.get("live_one_position", "entry_bar")}
     trades = {}          # (key, chain, mode, exec) -> DataFrame
     signals = {}         # (key, mode) -> signal table (K1 / generic)
     leader = None
@@ -251,7 +251,7 @@ def run_spec(spec, cut, progress=print):
                 for ex in execs:
                     out, info = SL.run(s, m1, mode, ex, leader, every_signal=bool(s.get("every_signal")),
                                        keep_signals=True,
-                                       live_one_position=spec.get("live_one_position", "rule"))
+                                       live_one_position=spec.get("live_one_position", "entry_bar"))
                     for chain in ("main", "base", "every_signal"):
                         if chain in out:
                             trades[(k, chain, mode, ex)] = out[chain]
@@ -347,20 +347,27 @@ def sha256(path):
     return h.hexdigest()
 
 
-def jdump(obj, path):
-    def _js(o):
-        if isinstance(o, (np.integer,)):
-            return int(o)
-        if isinstance(o, (np.floating,)):
-            return None if not np.isfinite(o) else float(o)
-        if isinstance(o, (np.bool_,)):
-            return bool(o)
-        if isinstance(o, (pd.Timestamp,)):
-            return str(o)
-        if isinstance(o, np.ndarray):
-            return o.tolist()
-        if isinstance(o, set):
-            return sorted(o)
+def js_default(o):
+    if isinstance(o, (np.integer,)):
+        return int(o)
+    if isinstance(o, (np.floating,)):
+        return None if not np.isfinite(o) else float(o)
+    if isinstance(o, (np.bool_,)):
+        return bool(o)
+    if isinstance(o, (pd.Timestamp,)):
         return str(o)
+    if isinstance(o, np.ndarray):
+        return o.tolist()
+    if isinstance(o, set):
+        return sorted(o)
+    return str(o)
+
+
+def canonical(obj):
+    """obj as it reads back from its JSON file (NaN -> None), for exact comparisons between runs."""
+    return json.loads(json.dumps(obj, default=js_default), parse_constant=lambda c: None)
+
+
+def jdump(obj, path):
     with open(path, "w") as f:
-        json.dump(obj, f, indent=1, default=_js)
+        json.dump(obj, f, indent=1, default=js_default)

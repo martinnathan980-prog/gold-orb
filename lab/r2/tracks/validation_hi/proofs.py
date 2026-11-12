@@ -212,6 +212,13 @@ def proof_b(res, sb):
                    "got": bool(same_folds), "ok": bool(same_folds)})
         rr.append({"field": f"{mode}.fit_for_2022_identical_to_s1_run", "expected": f_next,
                    "got": dg["fit_for_year_starting_at_cut"], "ok": f_next == dg["fit_for_year_starting_at_cut"]})
+        # the declared-threshold check through a FOLD (the look's case: T(2022) is a fold at CUT 2026), exercised here
+        # on the in-sample folds: T(2021) = 465.1178 declared, and a wrong value refused
+        ck = SL.declared_T_check({"2021": 465.1178, "2020": 496.0}, dg["folds_full"], None, cut)
+        rr.append({"field": f"{mode}.declared_T_check via a fold: 2021 = 465.1178 accepted, 2020 = 496.0 flagged",
+                   "expected": [True, "fold", False], "got": [ck["2021"]["same_to_0.01bp"], ck["2021"]["fitted_from"],
+                                                             ck["2020"]["same_to_0.01bp"]],
+                   "ok": ck["2021"]["same_to_0.01bp"] and ck["2021"]["fitted_from"] == "fold" and not ck["2020"]["same_to_0.01bp"]})
         rows += rr
         out[mode] = {"got": got, "declared_T_check": dg.get("declared_T_check"),
                      "skipped_alone_vs_kept_alone_window": {kk: r["k1"][kk] for kk in ("skipped_signals_alone", "kept_signals_alone")}}
@@ -328,6 +335,14 @@ def proof_d(res):
                             {"extended_orders": tl["fp"]["extended_orders"], "extended_trades": tl["fp"]["extended_trades"]},
                             f"{sl}.{vid}.fp")
         out[f"{sl}.{vid}"] = {"variant": gv, "reference": gr}
+    # the harness's censoring (any symbol, any CUT) is the payoff lens's own on every in-sample lab run
+    diff = {f"{k}/{r}": v["info"].get("main_payoff_rule_differs", 0)
+            for k, s in res["sleeves"].items() if s["spec"].get("convention") == "payoff"
+            for r, v in s["runs"].items()}
+    lab_diff = sum(v for kk, v in diff.items() if kk.endswith("/lab"))
+    rows.append({"field": "censoring: harness rule == payoff lens rule on every in-sample lab run (trades differing)",
+                 "expected": 0, "got": lab_diff, "ok": lab_diff == 0})
+    out["censoring_rule_differences_by_run"] = diff
     return {"what": "the seven payoff variants in play (and their references) against "
                     "results/r2/autopsy/payoff/variants_table.csv (fp and x1.5 columns, common window "
                     "2018-02-01..2021-12-31, earlier entries, refusals, years better) and the lens's trials.jsonl "
@@ -513,11 +528,74 @@ def frames_pass(res, sb):
                                         f"verifier's one-position test (synthesis_B: {exp_n} trades, {exp_R:+.1f} R)",
                                "expected": [exp_n, exp_R], "got": got, "ok": got == [exp_n, exp_R]})
                 h = res["sleeves"]["orb_asia_2d_buf10__ethusd"]["runs"][f"{mode}/live"]["main"]["window"]
-                out_g[f"K2_ethusd_{mode}"] = {"verifier_way_incl_open_trade": {"n": got[0], "total": got[1],
-                                                                               "exp": round(float(tv.R.mean()), 4)},
-                                              "harness_live_chain_open_trade_dropped": h,
-                                              "reasons_verifier_way": tv.reason.value_counts().to_dict()}
+                # the harness's default live run (spec live_one_position = entry_bar) is the verifier's way with the
+                # trade still open at the end of the frame dropped
+                tvc = tv[tv.exit_time < mk.index[-1]]
+                same_default = [h.get("n"), h.get("total")] == [int(len(tvc)), round(float(tvc.R.sum()), 2)]
+                rows_g.append({"field": f"K2 ethusd {mode}: the harness's live run (declared default 'entry_bar') == the "
+                                        "verifier's way without the trade still open at the end of 2021",
+                               "expected": [int(len(tvc)), round(float(tvc.R.sum()), 2)], "got": [h.get("n"), h.get("total")],
+                               "ok": same_default})
+                spec_k2 = {"key": "k2", "rule": "orb_asia_2d_buf10", "sym": sym, "convention": "sB", "change": {"kind": "new"}}
+                alt = {}
+                for sem in ("rule", "lab_chain"):
+                    o_, i_ = SL.run(spec_k2, m1, mode, "live", None, live_one_position=sem)
+                    w_ = o_["main"][(o_["main"].entry_time >= pd.Timestamp("2018-02-01", tz="UTC"))]
+                    alt[sem] = {"n": int(len(w_)), "total": round(float(w_.R.sum()), 2),
+                                "exp": round(float(w_.R.mean()), 4) if len(w_) else None,
+                                "overlapping_live_trades": i_.get("main_live", {}).get("overlapping_live_trades")}
+                # the rule's one-position test on the same live orders, open trade kept: which
+                # trades differ, and is every difference a signal whose activation bar is the previous exit bar?
+                th = SL.live_chain(mk, x[~bad], sym, costs)
+                th = th[th.entry_time >= pd.Timestamp("2018-02-01", tz="UTC")]
+                kv, kh = set(tv.oid), set(th.oid)
+                only_v = tv[tv.oid.isin(kv - kh)]
+                tva = simulate(mk, x[~bad], sym=sym, costs=costs, no_overlap=True)
+                xb = SL.exit_bar(mk, tva)
+                prev_exit = pd.Series(xb, index=tva.oid.to_numpy()).shift(1)
+                act = pd.Series(tva.act_i.to_numpy(), index=tva.oid.to_numpy())
+                exit_minute = [bool(act[o] == prev_exit[o]) for o in only_v.oid]
+                out_g[f"K2_ethusd_{mode}"] = {
+                    "verifier_way_incl_open_trade": {"n": got[0], "total": got[1], "exp": round(float(tv.R.mean()), 4)},
+                    "harness_default_entry_bar_open_trade_dropped": h,
+                    "alternative_rule_open_trade_dropped": alt["rule"],
+                    "alternative_lab_chain_open_trade_dropped": alt["lab_chain"],
+                    "rule_way_incl_open_trade": {"n": int(len(th)), "total": round(float(th.R.sum()), 2)},
+                    "trades_only_in_verifier_way": int(len(only_v)), "R_of_those": round(float(only_v.R.sum()), 3),
+                    "trades_only_in_harness_way": int(len(kh - kv)),
+                    "every_difference_is_a_signal_at_the_previous_trades_exit_bar": bool(all(exit_minute)),
+                    "explanation": "the verifier's run (the harness's declared default 'entry_bar') applies the "
+                                   "one-position test at the DELAYED entry bar, so a touch in the very bar where the "
+                                   "previous trade exits is taken one minute later; the alternative 'rule' keeps the "
+                                   "rule's own test at the rule's bar (that touch is ignored, as in the lab); "
+                                   "'lab_chain' takes only the lab chain's trades (no extra trade after a Friday "
+                                   "close). Which one the robot does is a declaration of the look.",
+                    "reasons_verifier_way": tv.reason.value_counts().to_dict()}
+                rows_g.append({"field": f"K2 ethusd {mode}: every trade the verifier's way adds over the 'rule' "
+                                        "alternative is a signal at the previous trade's exit bar",
+                               "expected": True,
+                               "got": out_g[f"K2_ethusd_{mode}"]["every_difference_is_a_signal_at_the_previous_trades_exit_bar"],
+                               "ok": out_g[f"K2_ethusd_{mode}"]["every_difference_is_a_signal_at_the_previous_trades_exit_bar"]})
                 del mk
+        if sym == "us100":
+            # the example change plugin (example_plugins.py): an empty skip set gives the reference chain; a skip set
+            # removes those signals and the chain is re-simulated (a skipped signal never blocks)
+            import example_plugins  # noqa: F401  (registers the change kind "skip_ny_hours")
+            ref = res["_trades"][("noise30__us100", "main", "fp", "lab")]
+            s0 = {"key": "x", "rule": "noise30", "sym": "us100", "convention": "sB",
+                  "change": {"kind": "skip_ny_hours", "hours": []}}
+            t0_, _ = SL.run(s0, m1, "fp", "lab", leader)
+            same0 = len(t0_["main"]) == len(ref) and bool((t0_["main"].R.to_numpy() == ref.R.to_numpy()).all())
+            s1 = dict(s0, change={"kind": "skip_ny_hours", "hours": [12, 13]})
+            t1_, i1 = SL.run(s1, m1, "fp", "lab", leader)
+            hrs = pd.DatetimeIndex(t1_["main"].entry_time).tz_convert("America/New_York").hour
+            none_left = not bool(np.isin(hrs, [12, 13]).any())
+            out_g["example_change_plugin"] = {"empty_skip_equals_reference": same0, "skipped_orders": i1["change_diag"]["skipped"],
+                                              "trades_ref": int(len(ref)), "trades_with_skip": int(len(t1_["main"])),
+                                              "no_trade_left_in_skipped_hours": none_left}
+            rows_g.append({"field": "example change plugin skip_ny_hours: empty set == reference chain; skipped hours "
+                                    "absent from the re-simulated chain", "expected": [True, True],
+                           "got": [same0, none_left], "ok": same0 and none_left})
         del m1
         L.clear_rule_caches()
     # every sleeve in sample, lab against live (information)
@@ -579,6 +657,24 @@ def proof_h(res, signals):
                                   "equal_swing_vs_P0_2019_2021": {"scale_k": sw["scale_k"], "sharpe_ratio": sw["sharpe_ratio"],
                                                                   "years_up": sw["years_up"]},
                                   "note": "a mechanics example of the stake interface, not a candidate (not declared, not judged)"}
+    # 3b) a stake rule loaded from a file (the 'python' kind: how a sizing-lens rule enters the look)
+    k = "noise30__us100"
+    sr = ST.from_spec({"kind": "python", "module": "example_plugins.py", "factory": "HourBandStake",
+                       "args": {"bands": [[10, 12], [12, 14], [14, 16]], "m_low": 0.5}})
+    paper = B.make_book({kk: (res["_trades"][(kk, "main", "fp", "lab")], None, res["_meta"][kk]) for kk in base["sleeves"]})
+    tn = res["_trades"][(k, "main", "fp", "lab")]
+    mn = sr.stakes(tn, {"cut": cut, "mode": "fp", "exec": "lab", "sleeve": k, "sym": "us100", "book": paper,
+                        "signals": {}, "purge": ST.PURGE})
+    fits_n = sr.fits[(k, "fp", "lab")]
+    causal_n = all(f is None or "last_outcome_used" not in f or
+                   pd.Timestamp(f["last_outcome_used"]) < pd.Timestamp(f"{Y}-01-01", tz="UTC") - ST.PURGE
+                   for Y, f in fits_n.items())
+    rows.append({"field": "python stake plugin (example HourBandStake on noise30): loaded from its file, stakes in "
+                          "[0, 2], every yearly fit uses only outcomes known before 1 January minus 7 days",
+                 "expected": [True, True], "got": [ST.check_bounds(mn), bool(causal_n)],
+                 "ok": ST.check_bounds(mn) and bool(causal_n)})
+    out["python_stake_plugin_example"] = {"fits": fits_n, "share_at_m_low": round(float((mn == 0.5).mean()), 4),
+                                          "note": "mechanics example only, not a candidate"}
     # 4) riskbp of the generic signal table against synthesis_B's K1 table (same orders, same prices)
     sB_s = res["_signals"][("brk72_24h_wd__ethusd+K1", "fp")].set_index("oid")
     g_s = signals[("brk72_24h_wd__ethusd", "fp")].set_index("oid")
@@ -621,6 +717,20 @@ def proof_i():
         except G.GuardError:
             refused = True
         rows.append({"field": f"refused in process: {name}", "expected": True, "got": refused, "ok": refused})
+    # the entry point itself, asked for the look without a declared addendum: refused before anything is read
+    import subprocess
+    env = {k: v for k, v in os.environ.items() if k != "LOOK_DECLARED"}
+    p = subprocess.run([sys.executable, os.path.join(HERE, "look.py"), "--cut", "2026-01-01"], env=env,
+                       capture_output=True, text=True, timeout=600, cwd="/tmp")
+    refused_cli = p.returncode != 0 and "REFUSED" in (p.stdout + p.stderr)
+    rows.append({"field": "look.py --cut 2026-01-01 without LOOK_DECLARED: refused (exit code, message)",
+                 "expected": True, "got": refused_cli, "ok": refused_cli,
+                 "message": (p.stdout + p.stderr).strip()[-300:]})
+    p2 = subprocess.run([sys.executable, os.path.join(HERE, "look.py"), "--cut", "2026-01-02"], env=env,
+                        capture_output=True, text=True, timeout=600, cwd="/tmp")
+    refused_cli2 = p2.returncode != 0 and "REFUSED" in (p2.stdout + p2.stderr)
+    rows.append({"field": "look.py --cut 2026-01-02: refused (after the 2026 boundary)", "expected": True,
+                 "got": refused_cli2, "ok": refused_cli2, "message": (p2.stdout + p2.stderr).strip()[-300:]})
     after = hi_lines()
     rows.append({"field": "val_access.log lines with track autopsy_HI_look: before and after the proofs",
                  "expected": [0, 0], "got": [LOG_BEFORE, after], "ok": LOG_BEFORE == 0 and after == 0})
@@ -630,6 +740,113 @@ def proof_i():
                  "expected": 0, "got": len(bad), "ok": not bad})
     return {"what": "the guard of the harness (vhi_guard): CUT rules, refused reads, the access log untouched",
             "reads": rd, **verdict(rows), "rows": rows}
+
+
+# ------------------------------------------------------------------------------------------------- (j)
+def proof_j(res):
+    """The single command of the look, run at CUT 2022-01-01 (a rehearsal: nothing logged), in its own process:
+    its output must equal this run's, number for number."""
+    import subprocess
+    env = {k: v for k, v in os.environ.items() if k != "LOOK_DECLARED"}
+    out = os.path.join(OUT, "rehearsal", "autopsy_HI_look__cut2022-01-01.json")
+    t0 = time.time()
+    p = subprocess.run([sys.executable, os.path.join(HERE, "look.py"), "--cut", "2022-01-01", "--spec", SPEC],
+                       env=env, capture_output=True, text=True, timeout=3000, cwd="/tmp")
+    rows = [{"field": "look.py --cut 2022-01-01 exits 0", "expected": 0, "got": p.returncode, "ok": p.returncode == 0,
+             "stderr_tail": p.stderr.strip()[-500:]}]
+    if p.returncode == 0:
+        with open(out) as f:
+            theirs = json.load(f, parse_constant=lambda c: None)
+        mine = RUN.canonical(RUN.strip_private(res))
+        for part in ("portfolios", "comparisons", "sleeve_comparisons", "official"):
+            same_part = theirs[part] == mine[part]
+            rows.append({"field": f"look.py rehearsal == proofs run: {part}", "expected": True, "got": same_part,
+                         "ok": same_part})
+        same_sl = all(theirs["sleeves"][k]["runs"][r]["main"] == mine["sleeves"][k]["runs"][r]["main"]
+                      for k in mine["sleeves"] for r in mine["sleeves"][k]["runs"])
+        rows.append({"field": "look.py rehearsal == proofs run: every sleeve run", "expected": True, "got": same_sl,
+                     "ok": same_sl})
+        rows.append({"field": "rehearsal did not log an access (meta.is_look False)", "expected": False,
+                     "got": theirs["meta"]["is_look"], "ok": theirs["meta"]["is_look"] is False})
+    return {"what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process: same "
+                    "numbers as the proofs' run, nothing logged", "output": out, "seconds": round(time.time() - t0, 1),
+            **verdict(rows), "rows": rows}
+
+
+# ------------------------------------------------------------------------------------------------- (k)
+SCRATCH = os.environ.get("VHI_SCRATCH", "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi")
+
+
+def proof_k(res):
+    """MOVING THE CUT, as the look will: the same spec run by look.py at CUT 2021-01-01 (in sample) must give, for
+    every sleeve, chain, cost mode and execution, exactly the trades of the CUT 2022-01-01 run that entered and
+    closed inside the shorter frame -- the harness's results do not depend on where the frame ends except for the
+    trades it cannot finish. K1's fit for the year starting at that CUT must be the CUT-2022 run's 2021 fold."""
+    import subprocess
+    spec = json.load(open(SPEC))
+    spec["name"] = "pseudo_look_cut2021"
+    spec["windows"]["in_sample"] = {"eval": ["2020-01-01", "2021-01-01"], "years": [2020], "judge_years": [2020],
+                                    "splits": [["h1_2020", "2020-01-01", "2020-07-01"], ["h2_2020", "2020-07-01", "2021-01-01"]]}
+    for s in spec["sleeves"]:
+        if (s.get("change") or {}).get("kind") == "k1_riskbp":
+            s["change"]["declared_T"] = {"2021": 465.1178}
+    os.makedirs(SCRATCH, exist_ok=True)
+    sp = os.path.join(SCRATCH, "pseudo_look_cut2021_spec.json")
+    with open(sp, "w") as f:
+        json.dump(spec, f, indent=1)
+    env = {k: v for k, v in os.environ.items() if k != "LOOK_DECLARED"}
+    t0 = time.time()
+    p = subprocess.run([sys.executable, os.path.join(HERE, "look.py"), "--cut", "2021-01-01", "--spec", sp], env=env,
+                       capture_output=True, text=True, timeout=3000, cwd="/tmp")
+    rows = [{"field": "look.py --cut 2021-01-01 exits 0", "expected": 0, "got": p.returncode, "ok": p.returncode == 0,
+             "stderr_tail": p.stderr.strip()[-500:]}]
+    out = {"spec": sp, "seconds": round(time.time() - t0, 1)}
+    if p.returncode != 0:
+        return {"what": proof_k.__doc__, "detail": out, **verdict(rows), "rows": rows}
+    jp = os.path.join(OUT, "rehearsal", "pseudo_look_cut2021__cut2021-01-01.json")
+    with open(jp) as f:
+        r21 = json.load(f, parse_constant=lambda c: None)
+    t21 = D.trades_file(r21["meta"]["trades_file"])
+    last = {sym: pd.Timestamp(v["last"]) for sym, v in r21["frames"].items()}
+    cut21 = pd.Timestamp("2021-01-01", tz="UTC")
+    n_keys, n_trades, bad = 0, 0, []
+    for (k, chain, mode, ex), t22 in res["_trades"].items():
+        sym = res["_meta"][k]["sym"]
+        a = t22[(t22.entry_time < cut21) & (t22.exit_time < last[sym])].sort_values(["entry_time", "side"], kind="stable")
+        b = t21[(t21.sleeve == k) & (t21.chain == chain) & (t21["mode"] == mode) & (t21["exec"] == ex)]
+        b = b.sort_values(["entry_time", "side"], kind="stable")
+        ok = len(a) == len(b)
+        if ok and len(a):
+            ok = bool((pd.DatetimeIndex(a.entry_time).as_unit("ns") == pd.DatetimeIndex(b.entry_time).as_unit("ns")).all()
+                      and (pd.DatetimeIndex(a.exit_time).as_unit("ns") == pd.DatetimeIndex(b.exit_time).as_unit("ns")).all()
+                      and (a.side.to_numpy() == b.side.to_numpy()).all()
+                      and (a.reason.astype(str).to_numpy() == b.reason.astype(str).to_numpy()).all()
+                      and np.allclose(a.R.to_numpy(float), b.R.to_numpy(float), rtol=0, atol=1e-12))
+        n_keys += 1
+        n_trades += len(a)
+        if not ok:
+            bad.append({"key": f"{k}/{chain}/{mode}/{ex}", "n_cut2022_restricted": int(len(a)), "n_cut2021": int(len(b))})
+    rows.append({"field": "every sleeve x chain x mode x execution: trades at CUT 2021 == trades of the CUT 2022 run "
+                          "entered and closed inside the 2021 frame", "expected": 0, "got": len(bad), "ok": not bad,
+                 "chains_compared": n_keys, "trades_compared": n_trades, "mismatches": bad[:20]})
+    off_ok = all(v["reproduced"] for v in r21["official"].values())
+    rows.append({"field": "official check at CUT 2021: the ten sleeves reproduced (rows still open at the cut "
+                          "counted, not read)", "expected": True, "got": off_ok, "ok": off_ok})
+    k1 = [s for s in r21["sleeves"].values() if (s["spec"].get("change") or {}).get("kind") == "k1_riskbp"]
+    if k1:
+        dg = k1[0]["runs"]["fp/lab"]["info"]["change_diag"]
+        f21 = dg["fit_for_year_starting_at_cut"]
+        f22 = res["sleeves"]["brk72_24h_wd__ethusd+K1"]["runs"]["fp/lab"]["info"]["change_diag"]["folds"]["2021"] \
+            if "2021" in res["sleeves"]["brk72_24h_wd__ethusd+K1"]["runs"]["fp/lab"]["info"]["change_diag"]["folds"] \
+            else res["sleeves"]["brk72_24h_wd__ethusd+K1"]["runs"]["fp/lab"]["info"]["change_diag"]["folds"][2021]
+        same_fit = all(f21[q] == f22[q] for q in ("q_lo", "q_hi", "E_lo", "E_hi", "skip", "n_train"))
+        rows.append({"field": "K1: fit for the year starting at CUT 2021 == the CUT-2022 run's 2021 fold", "expected": True,
+                     "got": same_fit, "ok": same_fit, "fit_cut2021": f21})
+        rows.append({"field": "K1: declared-T check at CUT 2021 (T(2021) = 465.1178)", "expected": True,
+                     "got": dg["declared_T_check"]["2021"]["same_to_0.01bp"], "ok": dg["declared_T_check"]["2021"]["same_to_0.01bp"]})
+    out["frames_cut2021"] = r21["frames"]
+    out["output"] = jp
+    return {"what": proof_k.__doc__.strip(), "detail": out, **verdict(rows), "rows": rows}
 
 
 # ------------------------------------------------------------------------------------------------- main
@@ -649,13 +866,17 @@ def main():
     proofs["f_capped_account"] = proof_f(res)
     rows_g, out_g, signals = frames_pass(res, sb)
     proofs["g_live_execution"] = {"what": "the live execution (entry one minute late at market, Friday 16:50 New "
-                                          "York close): with no delay and no Friday close the live chain resolver "
-                                          "returns the official chain trade for trade; K2 run the verifier's way "
-                                          "reproduces the figures quoted in synthesis_B; the harness's own live "
-                                          "chain keeps the rule's one-position test (see detail)",
+                                          "York close): K2 run this way reproduces the verifiers' figures quoted in "
+                                          "synthesis_B (392 trades, +142.1 R; x1.5 +127.9 R) and the harness's "
+                                          "declared default is that run without the trade still open at the end of "
+                                          "2021; the alternative chain resolver ('rule') returns the official chain "
+                                          "trade for trade when there is no delay and no Friday close, and differs "
+                                          "from the default only by signals at the previous trade's exit minute",
                                   "detail": out_g, **verdict(rows_g), "rows": rows_g}
     proofs["h_stakes"] = proof_h(res, signals)
     proofs["i_guard"] = proof_i()
+    proofs["j_entry_point_rehearsal"] = proof_j(res)
+    proofs["k_moving_the_cut"] = proof_k(res)
     files = {}
     for k, v in proofs.items():
         name = f"proof_{k}.json"

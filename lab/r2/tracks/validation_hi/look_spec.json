@@ -13,6 +13,8 @@
  },
  "modes": ["fp", "stress"],
  "execs": ["lab", "live"],
+ "live_one_position": "entry_bar",
+ "_live_one_position": "entry_bar = the synthesis_B verifiers' 'run as the current hands would' (entry one minute late at market, Friday 16:50 New York close, chain re-simulated, one-position test at the delayed entry bar); alternatives: 'rule' (the rule's own test at its activation bar) or 'lab_chain' (only the lab chain's trades, executed live)",
  "accounts": ["sum", "capped"],
  "official_check": true,
  "sleeves": [

@@ -1,8 +1,8 @@
 {
  "cut": "2022-01-01 00:00:00+00:00",
  "spec": "/home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json",
- "spec_sha256": "418334215bf9ea8f57db768e11992e0e361c9c9fee8b241abe55abe64c98373b",
- "seconds": 71.3,
+ "spec_sha256": "2df1e54958ae31c6cdc60e56764e804290b7fb4fee19508d8849cfcbb60ee10a",
+ "seconds": 219.1,
  "all_ok": true,
  "proofs": {
   "a_official_trades": {
@@ -14,7 +14,7 @@
   },
   "b_K1": {
    "ok": true,
-   "checks": 307,
+   "checks": 309,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_b_K1.json",
    "what": "K1 (brk72_24h_wd ethusd, riskbp skip refitted every 1 January) against synthesis_B sleeve_runs C1 (fp and x1.5), every field; the harness's walk-forward (any CUT) against s1_run.walk_forward"
@@ -28,7 +28,7 @@
   },
   "d_payoff_variants": {
    "ok": true,
-   "checks": 443,
+   "checks": 444,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_d_payoff_variants.json",
    "what": "the seven payoff variants in play (and their references) against results/r2/autopsy/payoff/variants_table.csv (fp and x1.5 columns, common window 2018-02-01..2021-12-31, earlier entries, refusals, years better) and the lens's trials.jsonl (by year, censored trades, H extensions)"
@@ -49,24 +49,38 @@
   },
   "g_live_execution": {
    "ok": true,
-   "checks": 12,
+   "checks": 17,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_g_live_execution.json",
-   "what": "the live execution (entry one minute late at market, Friday 16:50 New York close): with no delay and no Friday close the live chain resolver returns the official chain trade for trade; K2 run the verifier's way reproduces the figures quoted in synthesis_B; the harness's own live chain keeps the rule's one-position test (see detail)"
+   "what": "the live execution (entry one minute late at market, Friday 16:50 New York close): K2 run this way reproduces the verifiers' figures quoted in synthesis_B (392 trades, +142.1 R; x1.5 +127.9 R) and the harness's declared default is that run without the trade still open at the end of 2021; the alternative chain resolver ('rule') returns the official chain trade for trade when there is no delay and no Friday close, and differs from the default only by signals at the previous trade's exit minute"
   },
   "h_stakes": {
    "ok": true,
-   "checks": 64,
+   "checks": 65,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_h_stakes.json",
    "what": "the stake interface (Addendum I hook): stake 1 reproduces P0 in both accounts; a sleeve-year table adds exactly its sleeve-year R; a walk-forward stake refitted every 1 January uses only outcomes known before 1 January minus 7 days and stays within [0, 2]"
   },
   "i_guard": {
    "ok": true,
-   "checks": 22,
+   "checks": 25,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json",
    "what": "the guard of the harness (vhi_guard): CUT rules, refused reads, the access log untouched"
+  },
+  "j_entry_point_rehearsal": {
+   "ok": true,
+   "checks": 7,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_j_entry_point_rehearsal.json",
+   "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process: same numbers as the proofs' run, nothing logged"
+  },
+  "k_moving_the_cut": {
+   "ok": true,
+   "checks": 5,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_k_moving_the_cut.json",
+   "what": "MOVING THE CUT, as the look will: the same spec run by look.py at CUT 2021-01-01 (in sample) must give, for\nevery sleeve, chain, cost mode and execution, exactly the trades of the CUT 2022-01-01 run that entered and\nclosed inside the shorter frame -- the harness's results do not depend on where the frame ends except for the\ntrades it cannot finish. K1's fit for the year starting at that CUT must be the CUT-2022 run's 2021 fold."
   }
  },
  "rehearsal": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json"

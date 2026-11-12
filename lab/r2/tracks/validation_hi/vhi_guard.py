@@ -189,39 +189,38 @@ def reads():
 
 
 def self_test():
-    """The refusals, checked without touching any data (no file is read, nothing is logged)."""
+    """The CUT rules checked on SIMULATED environments (dicts: the process environment is never set) with temporary
+    addendum texts; only resolve_cut is called (it returns a timestamp: nothing is opened, read or logged)."""
+    import tempfile
     out = {}
     env0 = {}
-    for name, cut, env, want in (
-            ("cut_2022_allowed", "2022-01-01", env0, True),
-            ("cut_2021_allowed", "2021-06-30", env0, True),
-            ("cut_2023_without_env_refused", "2023-01-01", env0, False),
-            ("cut_2026_without_env_refused", "2026-01-01", env0, False),
-            ("cut_2026_env_not_a_file_refused", "2026-01-01", {"LOOK_DECLARED": "/nonexistent/addendum.md"}, False),
-            ("cut_2026_01_02_refused_even_with_env", "2026-01-02",
-             {"LOOK_DECLARED": os.path.join(LAB, "PROTOCOL_V3.md")}, False),
-            ("cut_2027_refused_even_with_env", "2027-01-01", {"LOOK_DECLARED": os.path.join(LAB, "PROTOCOL_V3.md")},
-             False)):
-        try:
-            resolve_cut(cut, env)
-            got = True
-        except GuardError:
-            got = False
-        out[name] = {"expected_allowed": want, "allowed": got, "ok": got == want}
-    # a file without the word: this module's own directory holds none; use a temporary text in memory
-    import tempfile
-    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, dir="/tmp") as f:
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as f:
+        f.write("Addendum J (test text): the look is declared here.")
+        yes = f.name
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as f:
         f.write("an addendum that has not been written yet")
-        tmp = f.name
+        no = f.name
     try:
-        try:
-            resolve_cut("2026-01-01", {"LOOK_DECLARED": tmp})
-            got = True
-        except GuardError:
-            got = False
-        out["cut_2026_env_file_without_word_refused"] = {"expected_allowed": False, "allowed": got, "ok": not got}
+        for name, cut, env, want in (
+                ("cut_2022_allowed", "2022-01-01", env0, True),
+                ("cut_2021_allowed", "2021-06-30", env0, True),
+                ("cut_2023_without_env_refused", "2023-01-01", env0, False),
+                ("cut_2026_without_env_refused", "2026-01-01", env0, False),
+                ("cut_2026_env_not_a_file_refused", "2026-01-01", {"LOOK_DECLARED": "/nonexistent/addendum.md"}, False),
+                ("cut_2026_env_file_without_word_refused", "2026-01-01", {"LOOK_DECLARED": no}, False),
+                ("cut_2026_env_file_with_word_allowed (resolve only, nothing opened)", "2026-01-01",
+                 {"LOOK_DECLARED": yes}, True),
+                ("cut_2026_01_02_refused_even_with_declared_file", "2026-01-02", {"LOOK_DECLARED": yes}, False),
+                ("cut_2027_refused_even_with_declared_file", "2027-01-01", {"LOOK_DECLARED": yes}, False)):
+            try:
+                resolve_cut(cut, env)
+                got = True
+            except GuardError:
+                got = False
+            out[name] = {"expected_allowed": want, "allowed": got, "ok": got == want}
     finally:
-        os.unlink(tmp)
+        os.unlink(yes)
+        os.unlink(no)
     for name, path in (("holdout_raw_refused", os.path.join(LAB, "holdout_raw", "x.parquet")),
                        ("data_holdout_refused", os.path.join(LAB, "data", "holdout", "xauusd.parquet")),
                        ("data_file_dated_2026_refused", os.path.join(LAB, "data", "fp", "xauusd_2026_m1.parquet"))):

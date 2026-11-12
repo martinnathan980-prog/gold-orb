@@ -1,0 +1,278 @@
+{
+ "T1": {
+  "2019_a_cut_at_Y0101": {
+   "V05_identical": true,
+   "V05_n_train_cut": 673,
+   "V05_n_train_full": 673,
+   "V05_strict_identical": true,
+   "V05_strict_n_train_cut": 671,
+   "K1_identical": true,
+   "K1_q_hi_cut": 505.8534,
+   "K1_q_hi_full": 505.8534,
+   "K1_n_train_cut": 586,
+   "K1_n_train_full": 586
+  },
+  "2019_b_cut_at_training_cut": {
+   "V05_identical": false,
+   "V05_n_train_cut": 671,
+   "V05_n_train_full": 673,
+   "V05_strict_identical": true,
+   "V05_strict_n_train_cut": 671,
+   "K1_identical": false,
+   "K1_q_hi_cut": 505.6108,
+   "K1_q_hi_full": 505.8534,
+   "K1_n_train_cut": 585,
+   "K1_n_train_full": 586,
+   "V05_stakes_changed_in_year_by_cut_fit": 30,
+   "V05_max_abs_coef_diff": 0.0032120103009035395
+  },
+  "2020_a_cut_at_Y0101": {
+   "V05_identical": true,
+   "V05_n_train_cut": 1182,
+   "V05_n_train_full": 1182,
+   "V05_strict_identical": true,
+   "V05_strict_n_train_cut": 1182,
+   "K1_identical": true,
+   "K1_q_hi_cut": 496.7461,
+   "K1_q_hi_full": 496.7461,
+   "K1_n_train_cut": 1089,
+   "K1_n_train_full": 1089
+  },
+  "2020_b_cut_at_training_cut": {
+   "V05_identical": true,
+   "V05_n_train_cut": 1182,
+   "V05_n_train_full": 1182,
+   "V05_strict_identical": true,
+   "V05_strict_n_train_cut": 1182,
+   "K1_identical": true,
+   "K1_q_hi_cut": 496.7461,
+   "K1_q_hi_full": 496.7461,
+   "K1_n_train_cut": 1089,
+   "K1_n_train_full": 1089
+  },
+  "2021_a_cut_at_Y0101": {
+   "V05_identical": true,
+   "V05_n_train_cut": 1724,
+   "V05_n_train_full": 1724,
+   "V05_strict_identical": true,
+   "V05_strict_n_train_cut": 1724,
+   "K1_identical": true,
+   "K1_q_hi_cut": 465.1178,
+   "K1_q_hi_full": 465.1178,
+   "K1_n_train_cut": 1703,
+   "K1_n_train_full": 1703
+  },
+  "2021_b_cut_at_training_cut": {
+   "V05_identical": true,
+   "V05_n_train_cut": 1724,
+   "V05_n_train_full": 1724,
+   "V05_strict_identical": true,
+   "V05_strict_n_train_cut": 1724,
+   "K1_identical": true,
+   "K1_q_hi_cut": 465.1178,
+   "K1_q_hi_full": 465.1178,
+   "K1_n_train_cut": 1703,
+   "K1_n_train_full": 1703
+  }
+ },
+ "T2": {
+  "decisions": 78,
+  "value_mismatch": 0,
+  "stop_mismatch": 0,
+  "stake_mismatch": 0,
+  "k1_mismatch": 0,
+  "max_abs_diff": 0.0,
+  "negative_control_identical": 0,
+  "examples": [],
+  "per_sleeve": {
+   "brk72_24h_wd__btcusd": {
+    "chain_decisions": 12,
+    "zero_stake_signals": 6,
+    "k1_signals": 0,
+    "value_mismatch": 0,
+    "stake_mismatch": 0
+   },
+   "brk72_24h_wd__ethusd": {
+    "chain_decisions": 12,
+    "zero_stake_signals": 6,
+    "k1_signals": 12,
+    "value_mismatch": 0,
+    "stake_mismatch": 0
+   },
+   "F1_brk_ridge_filter__btcusd": {
+    "chain_decisions": 12,
+    "zero_stake_signals": 0,
+    "k1_signals": 0,
+    "value_mismatch": 0,
+    "stake_mismatch": 0
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "chain_decisions": 12,
+    "zero_stake_signals": 6,
+    "k1_signals": 0,
+    "value_mismatch": 0,
+    "stake_mismatch": 0
+   }
+  },
+  "pass": true
+ },
+ "T1_cut_chain_check": {
+  "2019_a_cut_at_Y0101": {
+   "brk72_24h_wd__btcusd": {
+    "trades_cut_chain": 225,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "brk72_24h_wd__ethusd": {
+    "trades_cut_chain": 124,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__btcusd": {
+    "trades_cut_chain": 209,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "trades_cut_chain": 124,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   }
+  },
+  "2019_b_cut_at_training_cut": {
+   "brk72_24h_wd__btcusd": {
+    "trades_cut_chain": 222,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "brk72_24h_wd__ethusd": {
+    "trades_cut_chain": 121,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__btcusd": {
+    "trades_cut_chain": 206,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "trades_cut_chain": 122,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   }
+  },
+  "2020_a_cut_at_Y0101": {
+   "brk72_24h_wd__btcusd": {
+    "trades_cut_chain": 365,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "brk72_24h_wd__ethusd": {
+    "trades_cut_chain": 243,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__btcusd": {
+    "trades_cut_chain": 344,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "trades_cut_chain": 240,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   }
+  },
+  "2020_b_cut_at_training_cut": {
+   "brk72_24h_wd__btcusd": {
+    "trades_cut_chain": 364,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "brk72_24h_wd__ethusd": {
+    "trades_cut_chain": 240,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__btcusd": {
+    "trades_cut_chain": 342,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "trades_cut_chain": 236,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   }
+  },
+  "2021_a_cut_at_Y0101": {
+   "brk72_24h_wd__btcusd": {
+    "trades_cut_chain": 499,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "brk72_24h_wd__ethusd": {
+    "trades_cut_chain": 373,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__btcusd": {
+    "trades_cut_chain": 484,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "trades_cut_chain": 381,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   }
+  },
+  "2021_b_cut_at_training_cut": {
+   "brk72_24h_wd__btcusd": {
+    "trades_cut_chain": 495,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "brk72_24h_wd__ethusd": {
+    "trades_cut_chain": 371,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__btcusd": {
+    "trades_cut_chain": 480,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   },
+   "F1_brk_ridge_filter__ethusd": {
+    "trades_cut_chain": 378,
+    "not_in_full_chain": 0,
+    "same_entry": true,
+    "same_R": true
+   }
+  }
+ },
+ "sec": 36.5
+}
