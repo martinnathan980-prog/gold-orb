@@ -1,0 +1,3325 @@
+{
+ "written": "2026-11-12T15:30:20Z",
+ "what": "Lead synthesis A of PROTOCOL_V3 Addendum H, lenses path, payoff and entry and their independent attacks (including the supplementary payoff round of the 13:15 UTC clarification, results/r2/autopsy/complement_verdicts.json). In sample only.",
+ "in_sample_discipline": "Frames read with the parquet row filter ts < 2022-01-01; official trades and the lens's stored trades read with entry_time < 2022-01-01 in the same call; the nq leader from the in-sample us100 slice; nothing dated 2022 or later was simulated or looked at; results/val_access.log was not written; synthesis_B.json was not read. The official in-sample rows hold two trades entered on 2021-12-31 (donch4h_stop, orb) whose recorded exits fall in 2022: their R entered only the rule-2 total comparison and they are excluded from every statistic.",
+ "baseline_reproduction_rule2": {
+  "noise30:us100": {
+   "official_n": 1643,
+   "official_total_R": 134.4007,
+   "mine_n": 1643,
+   "mine_total_R": 134.4007,
+   "identical_all": true,
+   "detail_all": "max |dR| 0.00e+00",
+   "censored_in_my_slice": 0,
+   "censored_entry_times": [],
+   "identical_without_censored": true,
+   "detail_without_censored": "max |dR| 0.00e+00",
+   "official_total_R_without_censored": 134.4007,
+   "mine_total_R_without_censored": 134.4007,
+   "refusal_changes_trades": false
+  },
+  "ocm4:us100": {
+   "official_n": 999,
+   "official_total_R": 136.879,
+   "mine_n": 999,
+   "mine_total_R": 136.879,
+   "identical_all": true,
+   "detail_all": "max |dR| 0.00e+00",
+   "censored_in_my_slice": 0,
+   "censored_entry_times": [],
+   "identical_without_censored": true,
+   "detail_without_censored": "max |dR| 0.00e+00",
+   "official_total_R_without_censored": 136.879,
+   "mine_total_R_without_censored": 136.879,
+   "refusal_changes_trades": false
+  },
+  "brk72_24h_wd:ethusd": {
+   "official_n": 519,
+   "official_total_R": 103.6871,
+   "mine_n": 519,
+   "mine_total_R": 103.6871,
+   "identical_all": true,
+   "detail_all": "max |dR| 0.00e+00",
+   "censored_in_my_slice": 0,
+   "censored_entry_times": [],
+   "identical_without_censored": true,
+   "detail_without_censored": "max |dR| 0.00e+00",
+   "official_total_R_without_censored": 103.6871,
+   "mine_total_R_without_censored": 103.6871,
+   "refusal_changes_trades": false
+  },
+  "F1_brk_ridge_filter:ethusd": {
+   "official_n": 517,
+   "official_total_R": 104.4067,
+   "mine_n": 517,
+   "mine_total_R": 104.4067,
+   "identical_all": true,
+   "detail_all": "max |dR| 0.00e+00",
+   "censored_in_my_slice": 0,
+   "censored_entry_times": [],
+   "identical_without_censored": true,
+   "detail_without_censored": "max |dR| 0.00e+00",
+   "official_total_R_without_censored": 104.4067,
+   "mine_total_R_without_censored": 104.4067,
+   "refusal_changes_trades": false
+  },
+  "brk72_24h_wd:btcusd": {
+   "official_n": 645,
+   "official_total_R": 172.8743,
+   "mine_n": 645,
+   "mine_total_R": 172.8743,
+   "identical_all": true,
+   "detail_all": "max |dR| 0.00e+00",
+   "censored_in_my_slice": 0,
+   "censored_entry_times": [],
+   "identical_without_censored": true,
+   "detail_without_censored": "max |dR| 0.00e+00",
+   "official_total_R_without_censored": 172.8743,
+   "mine_total_R_without_censored": 172.8743,
+   "refusal_changes_trades": false
+  },
+  "F1_brk_ridge_filter:btcusd": {
+   "official_n": 631,
+   "official_total_R": 226.3891,
+   "mine_n": 631,
+   "mine_total_R": 226.3891,
+   "identical_all": true,
+   "detail_all": "max |dR| 0.00e+00",
+   "censored_in_my_slice": 0,
+   "censored_entry_times": [],
+   "identical_without_censored": true,
+   "detail_without_censored": "max |dR| 0.00e+00",
+   "official_total_R_without_censored": 226.3891,
+   "mine_total_R_without_censored": 226.3891,
+   "refusal_changes_trades": false
+  },
+  "nq_btc_follow:btcusd": {
+   "official_n": 1063,
+   "official_total_R": 66.346,
+   "mine_n": 1063,
+   "mine_total_R": 66.346,
+   "identical_all": true,
+   "detail_all": "max |dR| 0.00e+00",
+   "censored_in_my_slice": 0,
+   "censored_entry_times": [],
+   "identical_without_censored": true,
+   "detail_without_censored": "max |dR| 0.00e+00",
+   "official_total_R_without_censored": 66.346,
+   "mine_total_R_without_censored": 66.346,
+   "refusal_changes_trades": false
+  },
+  "GOLD_FRI_PM:xauusd": {
+   "official_n": 414,
+   "official_total_R": 13.921,
+   "mine_n": 414,
+   "mine_total_R": 13.921,
+   "identical_all": true,
+   "detail_all": "max |dR| 0.00e+00",
+   "censored_in_my_slice": 0,
+   "censored_entry_times": [],
+   "identical_without_censored": true,
+   "detail_without_censored": "max |dR| 0.00e+00",
+   "official_total_R_without_censored": 13.921,
+   "mine_total_R_without_censored": 13.921,
+   "refusal_changes_trades": false
+  },
+  "donch4h_stop:xauusd": {
+   "official_n": 495,
+   "official_total_R": 84.2352,
+   "mine_n": 495,
+   "mine_total_R": 85.0564,
+   "identical_all": false,
+   "detail_all": "column exit_time differs on 1 trades",
+   "censored_in_my_slice": 1,
+   "censored_entry_times": [
+    "2021-12-31 07:06:00+00:00"
+   ],
+   "identical_without_censored": true,
+   "detail_without_censored": "max |dR| 0.00e+00",
+   "official_total_R_without_censored": 84.3014,
+   "mine_total_R_without_censored": 84.3014,
+   "refusal_changes_trades": false
+  },
+  "orb_asia_2d_buf10:xauusd": {
+   "official_n": 1039,
+   "official_total_R": 230.0653,
+   "mine_n": 1039,
+   "mine_total_R": 232.7801,
+   "identical_all": false,
+   "detail_all": "column exit_time differs on 1 trades",
+   "censored_in_my_slice": 1,
+   "censored_entry_times": [
+    "2021-12-31 07:03:00+00:00"
+   ],
+   "identical_without_censored": true,
+   "detail_without_censored": "max |dR| 0.00e+00",
+   "official_total_R_without_censored": 231.1453,
+   "mine_total_R_without_censored": 231.1453,
+   "refusal_changes_trades": false
+  }
+ },
+ "crosscheck_against_the_lens_stored_trades": {
+  "noise30:us100|ref|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 1643
+  },
+  "noise30:us100|ref|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 1643
+  },
+  "ocm4:us100|ref|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 999
+  },
+  "ocm4:us100|T1|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 720
+  },
+  "ocm4:us100|ref|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 999
+  },
+  "ocm4:us100|T1|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 722
+  },
+  "brk72_24h_wd:ethusd|ref|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 519
+  },
+  "brk72_24h_wd:ethusd|ref|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 521
+  },
+  "F1_brk_ridge_filter:ethusd|ref|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 517
+  },
+  "F1_brk_ridge_filter:ethusd|H2|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 464
+  },
+  "F1_brk_ridge_filter:ethusd|ref|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 519
+  },
+  "F1_brk_ridge_filter:ethusd|H2|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 466
+  },
+  "brk72_24h_wd:btcusd|ref|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 645
+  },
+  "brk72_24h_wd:btcusd|S0.75r|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 664
+  },
+  "brk72_24h_wd:btcusd|ref|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 645
+  },
+  "brk72_24h_wd:btcusd|S0.75r|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 666
+  },
+  "F1_brk_ridge_filter:btcusd|ref|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 631
+  },
+  "F1_brk_ridge_filter:btcusd|ref|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 632
+  },
+  "nq_btc_follow:btcusd|ref|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 1063
+  },
+  "nq_btc_follow:btcusd|ref|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 1063
+  },
+  "GOLD_FRI_PM:xauusd|ref|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 414
+  },
+  "GOLD_FRI_PM:xauusd|ref|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 408
+  },
+  "donch4h_stop:xauusd|ref|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 494
+  },
+  "donch4h_stop:xauusd|S0.75r|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 630
+  },
+  "donch4h_stop:xauusd|ref|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 494
+  },
+  "donch4h_stop:xauusd|S0.75r|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 631
+  },
+  "orb_asia_2d_buf10:xauusd|ref|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 1038
+  },
+  "orb_asia_2d_buf10:xauusd|S0.75r|fp": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 1124
+  },
+  "orb_asia_2d_buf10:xauusd|ref|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 1038
+  },
+  "orb_asia_2d_buf10:xauusd|S0.75r|stress": {
+   "identical": true,
+   "detail": "max |dR| 0.00e+00",
+   "lens_n": 1126
+  }
+ },
+ "trials": {
+  "simulation_runs": 30,
+  "portfolio_assemblies": 26,
+  "trials_jsonl_lines": 56,
+  "declared_budget": "30 simulation runs + 26 assemblies; no re-run was needed",
+  "truncation_checks": "330 (150 inside-trade cuts, 150 after-exit cuts, 30 H2 decision cuts), 0 mismatches; the gold test was run twice (the first draw had only 15 donch trades because every donch exit is a stop or trail; the second draws 30), both with 0 mismatches",
+  "lens_and_verifier_trials_behind_this_synthesis": "path 120 variants, payoff 120, entry 120, plus the verifiers' own declared runs"
+ },
+ "loss_composition_main_fp": [
+  {
+   "sleeve": "noise30:us100",
+   "n": "795",
+   "losers": "481",
+   "loss_sum": "-211.5",
+   "win_rate": "0.395",
+   "avg_win": "0.945",
+   "avg_loss": "-0.44",
+   "stop_losers": "76",
+   "stop_loss_sum": "-76.8",
+   "stop_avg": "-1.011",
+   "share_loss_from_stops": "0.363",
+   "other_losers": "405",
+   "other_avg": "-0.333",
+   "top10pct_winners_share_of_gross_gain": "0.383",
+   "gross_gain": "296.7",
+   "total": "85.2",
+   "worst_trade": "-1.03",
+   "losses_below_minus1_2": "0"
+  },
+  {
+   "sleeve": "ocm4:us100",
+   "n": "492",
+   "losers": "291",
+   "loss_sum": "-262.7",
+   "win_rate": "0.409",
+   "avg_win": "1.575",
+   "avg_loss": "-0.903",
+   "stop_losers": "241",
+   "stop_loss_sum": "-243.5",
+   "stop_avg": "-1.01",
+   "share_loss_from_stops": "0.927",
+   "other_losers": "50",
+   "other_avg": "-0.384",
+   "top10pct_winners_share_of_gross_gain": "0.279",
+   "gross_gain": "316.5",
+   "total": "53.8",
+   "worst_trade": "-1.03",
+   "losses_below_minus1_2": "0"
+  },
+  {
+   "sleeve": "brk72_24h_wd:btcusd",
+   "n": "549",
+   "losers": "300",
+   "loss_sum": "-217.8",
+   "win_rate": "0.454",
+   "avg_win": "1.44",
+   "avg_loss": "-0.726",
+   "stop_losers": "171",
+   "stop_loss_sum": "-172.9",
+   "stop_avg": "-1.011",
+   "share_loss_from_stops": "0.794",
+   "other_losers": "129",
+   "other_avg": "-0.348",
+   "top10pct_winners_share_of_gross_gain": "0.403",
+   "gross_gain": "358.5",
+   "total": "140.7",
+   "worst_trade": "-1.49",
+   "losses_below_minus1_2": "1"
+  },
+  {
+   "sleeve": "brk72_24h_wd:ethusd",
+   "n": "511",
+   "losers": "281",
+   "loss_sum": "-204.0",
+   "win_rate": "0.45",
+   "avg_win": "1.35",
+   "avg_loss": "-0.726",
+   "stop_losers": "153",
+   "stop_loss_sum": "-154.5",
+   "stop_avg": "-1.01",
+   "share_loss_from_stops": "0.757",
+   "other_losers": "128",
+   "other_avg": "-0.387",
+   "top10pct_winners_share_of_gross_gain": "0.343",
+   "gross_gain": "310.6",
+   "total": "106.6",
+   "worst_trade": "-1.11",
+   "losses_below_minus1_2": "0"
+  },
+  {
+   "sleeve": "F1_brk_ridge_filter:btcusd",
+   "n": "545",
+   "losers": "270",
+   "loss_sum": "-196.3",
+   "win_rate": "0.505",
+   "avg_win": "1.397",
+   "avg_loss": "-0.727",
+   "stop_losers": "157",
+   "stop_loss_sum": "-158.5",
+   "stop_avg": "-1.01",
+   "share_loss_from_stops": "0.808",
+   "other_losers": "113",
+   "other_avg": "-0.334",
+   "top10pct_winners_share_of_gross_gain": "0.442",
+   "gross_gain": "384.2",
+   "total": "187.9",
+   "worst_trade": "-1.05",
+   "losses_below_minus1_2": "0"
+  },
+  {
+   "sleeve": "F1_brk_ridge_filter:ethusd",
+   "n": "516",
+   "losers": "260",
+   "loss_sum": "-191.7",
+   "win_rate": "0.496",
+   "avg_win": "1.151",
+   "avg_loss": "-0.737",
+   "stop_losers": "159",
+   "stop_loss_sum": "-160.4",
+   "stop_avg": "-1.009",
+   "share_loss_from_stops": "0.837",
+   "other_losers": "101",
+   "other_avg": "-0.31",
+   "top10pct_winners_share_of_gross_gain": "0.356",
+   "gross_gain": "294.8",
+   "total": "103.0",
+   "worst_trade": "-1.04",
+   "losses_below_minus1_2": "0"
+  },
+  {
+   "sleeve": "nq_btc_follow:btcusd",
+   "n": "943",
+   "losers": "451",
+   "loss_sum": "-168.7",
+   "win_rate": "0.522",
+   "avg_win": "0.456",
+   "avg_loss": "-0.374",
+   "stop_losers": "74",
+   "stop_loss_sum": "-74.9",
+   "stop_avg": "-1.012",
+   "share_loss_from_stops": "0.444",
+   "other_losers": "377",
+   "other_avg": "-0.249",
+   "top10pct_winners_share_of_gross_gain": "0.345",
+   "gross_gain": "224.2",
+   "total": "55.5",
+   "worst_trade": "-1.03",
+   "losses_below_minus1_2": "0"
+  },
+  {
+   "sleeve": "GOLD_FRI_PM:xauusd",
+   "n": "183",
+   "losers": "96",
+   "loss_sum": "-15.3",
+   "win_rate": "0.475",
+   "avg_win": "0.161",
+   "avg_loss": "-0.159",
+   "stop_losers": "0",
+   "stop_loss_sum": "0.0",
+   "stop_avg": "",
+   "share_loss_from_stops": "-0.0",
+   "other_losers": "96",
+   "other_avg": "-0.159",
+   "top10pct_winners_share_of_gross_gain": "0.357",
+   "gross_gain": "14.0",
+   "total": "-1.3",
+   "worst_trade": "-0.64",
+   "losses_below_minus1_2": "0"
+  },
+  {
+   "sleeve": "donch4h_stop:xauusd",
+   "n": "207",
+   "losers": "115",
+   "loss_sum": "-68.2",
+   "win_rate": "0.444",
+   "avg_win": "1.068",
+   "avg_loss": "-0.593",
+   "stop_losers": "115",
+   "stop_loss_sum": "-68.2",
+   "stop_avg": "-0.593",
+   "share_loss_from_stops": "1.0",
+   "other_losers": "0",
+   "other_avg": "",
+   "top10pct_winners_share_of_gross_gain": "0.34",
+   "gross_gain": "98.3",
+   "total": "30.0",
+   "worst_trade": "-1.03",
+   "losses_below_minus1_2": "0"
+  },
+  {
+   "sleeve": "orb_asia_2d_buf10:xauusd",
+   "n": "464",
+   "losers": "319",
+   "loss_sum": "-317.1",
+   "win_rate": "0.312",
+   "avg_win": "2.373",
+   "avg_loss": "-0.994",
+   "stop_losers": "301",
+   "stop_loss_sum": "-311.1",
+   "stop_avg": "-1.034",
+   "share_loss_from_stops": "0.981",
+   "other_losers": "18",
+   "other_avg": "-0.331",
+   "top10pct_winners_share_of_gross_gain": "0.309",
+   "gross_gain": "344.1",
+   "total": "27.1",
+   "worst_trade": "-1.27",
+   "losses_below_minus1_2": "2"
+  },
+  {
+   "sleeve": "ALL",
+   "n": "5205",
+   "losers": "2864",
+   "loss_sum": "-1853.3",
+   "win_rate": "0.45",
+   "avg_win": "1.129",
+   "avg_loss": "-0.647",
+   "stop_losers": "1447",
+   "stop_loss_sum": "-1420.9",
+   "stop_avg": "-0.982",
+   "share_loss_from_stops": "0.767",
+   "other_losers": "1417",
+   "other_avg": "-0.305",
+   "top10pct_winners_share_of_gross_gain": "0.404",
+   "gross_gain": "2641.9",
+   "total": "788.6",
+   "worst_trade": "-1.49",
+   "losses_below_minus1_2": "3"
+  }
+ ],
+ "summary_for_the_user_fr": "R\u00e9ponse : couper tout de suite un trade qui part mal ne rapporte rien sur ces r\u00e8gles ; laisser courir aide un peu, sans preuve solide.\nLes pertes viennent surtout des stops : 77 % de l'argent perdu, \u00e0 environ -1 fois la somme risqu\u00e9e ; pas de grosse perte rare (la pire : -1,5 fois).\nUn trade d\u00e9j\u00e0 \u00e0 mi-chemin de son stop dans ses 2 premi\u00e8res heures rapporte encore +0,08 fois la mise ensuite, en moyenne ; les couper aurait co\u00fbt\u00e9 environ 52 mises en 4 ans.\nUn gagnant sur cinq passe d'abord par la moiti\u00e9 du chemin vers son stop.\nSur 360 variantes test\u00e9es, les meilleures refaites et attaqu\u00e9es par un second analyste : 5 changements gardent un petit effet : laisser courir plus longtemps (ETH, indice US) et un stop un peu plus serr\u00e9 (BTC, or).\nSur 2018-2021, avec ces 5 changements : 21 \u20ac gagn\u00e9s pour 100 \u20ac risqu\u00e9s au lieu de 15 ; \u00e0 secousses \u00e9gales, 18 au lieu de 15.\nMais ces ann\u00e9es ont servi \u00e0 les choisir : sur 2013-2017, \u00e0 secousses \u00e9gales, le rapport gain/secousses ne bouge pas (2,4 avant et apr\u00e8s).\nSur 2022-2025, les r\u00e8gles actuelles font environ 8 \u20ac pour 100 \u20ac risqu\u00e9s ; pour doubler en un mois il en faudrait environ 35 : l'\u00e9cart reste entier.\nProposition : un seul contr\u00f4le sur 2022-2025, \u00e9crit d'avance ; un changement n'est gard\u00e9 que s'il am\u00e9liore le gain \u00e0 secousses \u00e9gales.\nLe plus probable : peu ou aucun ne passe.",
+ "portfolio_in_sample_before": "Ten sleeves unchanged, entries 2018-02-01..2021-12-31, my simulator runs (= the official trades), FP costs: 5,205 trades; expectancy +0.152 R per trade; win rate 45.0 %; average win +1.13 R, average loss -0.65 R; profit factor 1.43; total +788.6 R; worst week -12.5 R; maximum drawdown 29.1 R at 1 R per trade (21.0 R on weekly sums); longest losing run 7 weeks; losing weeks 41.5 %; mean/sd of R per trade 0.108; weekly Sharpe 2.87. Costs x1.5 (5,207 trades): +0.137 R, win rate 44.3 %, PF 1.38, total +711.1 R, worst week -12.7 R, drawdown 30.8 R, run 7 weeks, mean/sd 0.098, weekly Sharpe 2.61. Earlier in-sample years (entries before 2018-02, sleeves that trade then, 2,758 trades, FP): +0.176 R, PF 1.45, total +485.8 R, worst week -8.1 R, drawdown 27.3 R, run 6 weeks, mean/sd 0.114, weekly Sharpe 2.41.",
+ "portfolio_in_sample_after": "Same window with the five kept changes, FP. At a constant stake (1 R per trade at each trade's own stop): 5,102 trades; expectancy +0.212 R; win rate 43.2 %; average win +1.37 R, average loss -0.67 R; PF 1.56; total +1,082.8 R; worst week -15.5 R; maximum drawdown 26.4 R (22.1 R weekly); longest losing run 5 weeks; losing weeks 36.6 %; mean/sd 0.123; weekly Sharpe 3.44. Costs x1.5: +0.197 R, PF 1.51, total +1,002.9 R, worst week -17.0 R, drawdown 27.6 R, run 5 weeks, mean/sd 0.115, weekly Sharpe 3.21. Part of this is size and exposure: with each changed sleeve staked back to its old weekly swing (x0.68 ocm4, x0.75 F1 ETH, x0.77 brk72 BTC, x0.89 donch, x0.76 orb): +0.181 R per trade, average win +1.17 R, average loss -0.57 R, PF 1.56, total +925.2 R, worst week -12.6 R, drawdown 23.2 R (16.7 R weekly), run 4 weeks, losing weeks 35.6 %, mean/sd 0.127, weekly Sharpe 3.48 (x1.5: +0.168 R, PF 1.51, total +855.1 R, worst week -14.1 R, drawdown 24.5 R, run 4 weeks, weekly Sharpe 3.23). Earlier in-sample years, which did not pick the changes (2,770 trades; F1 ETH H2 absent there): at the old swing +0.182 R per trade, total +502.9 R, worst week -7.7 R, drawdown 20.5 R, run 6 weeks, weekly Sharpe 2.40 against 2.41 unchanged; at a constant stake +0.227 R, total +628.1 R, worst week -9.0 R, weekly Sharpe 2.36.",
+ "earned_per_100_risked_before": "15.15 euros earned per 100 euros risked (entries 2018-02..2021, 5,205 trades, FP costs); 13.66 with costs x1.5; 17.61 on the earlier in-sample years (2,758 trades). For reference, the same unchanged rules earned about 8 per 100 on 2022-2025.",
+ "earned_per_100_risked_after": "21.22 per 100 risked at a constant stake (5,102 trades, FP; 19.65 with costs x1.5), part of it from larger positions and longer holds; 18.13 at the old weekly swing (16.75 with x1.5). On the earlier in-sample years: 22.68 at a constant stake, 18.15 at the old swing against 17.61 unchanged, with no gain per unit of swing. Expected out of sample: close to the unchanged rules (about 8 per 100 on 2022-2025); the target needs about 35.",
+ "where_the_losses_come_from": [
+  "Overall (entries 2018-02-01..2021-12-31, ten sleeves, 5,205 trades, FP costs; my simulator runs equal the official trades): 2,864 losing trades (55.0 %) lose 1,853 R and 2,341 winners make +2,642 R, net +788.6 R. Average loss -0.65 R against average win +1.13 R; the best 10 % of winners make 40 % of the gross gain.",
+  "Most of the money lost is full stops: 1,447 losers end on their stop at -0.98 R on average and carry 1,421 R, 77 % of all losses; the other 1,417 losers leave by the clock at -0.31 R on average. The worst trade of the four years is -1.49 R (a time exit at the reopening after the 2018 Christmas closure, beyond the stop) and only 3 of 5,205 trades lost more than 1.2 R: every loser is already cut at about one risk unit; there is no rare big loss to remove.",
+  "By sleeve, share of the loss that comes from full stops (same window, FP): orb_asia 98 % (301 of 319 losers; win rate 31 %, average win +2.37 R), ocm4 93 % (241 of 291), F1 ETH 84 %, F1 BTC 81 %, brk72 BTC 79 %, brk72 ETH 76 %; nq_btc_follow 44 % and noise30 36 %, whose losses are mostly small clock exits (377 of 451 at -0.25 R; 405 of 481 at -0.33 R); donch4h_stop 100 % on its trailing stop, at -0.59 R on average; GOLD_FRI_PM 0 % (stop never touched, average loss -0.16 R, -1.3 R over 183 trades against +15.2 R over 231 trades in 2013-2018/01).",
+  "Losing trades do not look bad at the start (path lens, minute by minute): 27 % of losers had been at least +0.5 R ahead and 9.5 % at least +1 R (ocm4 47 % and 22 %, orb 44 % and 23 %) before falling to the stop; losers reach their best point early (median 23 minutes) and their worst at the end.",
+  "Winners often start badly: 44 % of winners were at -0.25 R or worse at some point, 19 % at -0.5 R or worse and 6 % at -0.75 R (orb 67/40/16 %, ocm4 63/37/14 %), with their worst point early (median 19 minutes). A cut at -0.5 R would also cut about one winner in five.",
+  "The user's first claim does not hold on these rules. Of 665 trades first seen at -0.5 R or worse in their first two hours, the rest of the trade still earned +0.078 R each (t 2.1) and 12 % still ended as winners: cutting them would have cost about 52 R in four years. Only from -0.75 R (147 trades) is the rest about zero (-0.017 R), and cutting would have saved 2.6 R in four years, because the stop is only 0.25 R further. The 45 declared early-cut rules moved the total by -11.3 to +6.3 R (sum -25.7 R); none passed; the earlier years 2013/14-2017 say the same.",
+  "The second claim, letting winners run, holds only partly and mostly as longer exposure. Holding F1 ETH trades that are at least +1 R at the 15:55 exit two more days earned +0.21 R per trade in 2018-2021 (+0.10 to +0.16 after the trial-count correction); the same rule on F1 BTC earns nothing once risk is counted, and extending a random set of trades there earns about two thirds as much (every open trade, more). On ocm4, trailing for up to four days instead of closing at 15:55 earned +0.25 R per trade at a constant stake (mostly longs held in a rising index), but per unit of swing +0.55 of weekly Sharpe in 2018-2021 and +0.006 in 2014-2018. Trailing exits in place of the clock did not qualify on 7 of the 9 sleeves where they were tried (of the two that qualified, nq T1 was refuted and ocm4 T1 is kept with an expected gain near zero); break-even after +1.5 R lowered the expectancy on 6 of the 8 sleeves where it acts; targets and half exits gave small effects (shape study).",
+  "Getting in better does not help: losers come back through the entry price in 95-100 % of cases, but so do 33-91 % of winners; a limit order on a pullback fills the losers and misses the runners (total R lower in 28 of 28 cells); the only entry gain, the gold retest, equals the 1 bp stop slippage the lab assumes."
+ ],
+ "users_claims": {
+  "cut_at_once_a_trade_that_goes_hard_the_wrong_way": "does not pay on these rules (see where_the_losses_come_from[5])",
+  "let_the_winner_run": "pays a little on some sleeves in 2018-2021, mostly as longer exposure; not established per unit of swing on the earlier years (see where_the_losses_come_from[6])"
+ },
+ "keep_rule": {
+  "text": "A change is kept if (1) its verdict is 'confirmed', or 'weakened' and (2) the verifier's own estimate of what is left after its attacks is positive on the yardstick that fits the change, and (3) the verifier does not itself put its best estimate at zero or below. Yardstick: for a change that alters the position size per unit of money risk or the time spent in the market (stop distance, trailing exit, longer hold) the gain per unit of swing (equal weekly swing, or the risk-adjusted figure the verifier reports), because the 13:15 clarification and Addendum G establish that a larger position or a longer exposure raises R per trade and the swings alike and is a stake decision, not a better trade; for other changes (early exits, entries) the gain in R at a constant stake. At most one change per sleeve: the largest remaining total-R gain on that yardstick, using the verifier's numbers after its attacks.",
+  "unverified_candidates": "A qualifier of a lens that no independent verifier attacked has no verdict and cannot be kept (nq_btc_follow T3 and orb_asia_2d_buf10 S0.25n, ranks 1 of the payoff lens's declared ranking for their sleeves, and every lower-ranked qualifier)."
+ },
+ "verdicts_classified": [
+  {
+   "id": "path ocm4:us100|NP|t=50%|y=0.5",
+   "verdict": "weakened",
+   "decision": "dropped",
+   "why": "verifier's best estimate -0.01 to +0.02 R/trade, 'cannot tell apart from zero', gain after selection 0 to +7 R; 2014-2017 -4.55 R (difference between the two blocks p = 0.019); ocm4 carries T1 in any case"
+  },
+  {
+   "id": "path brk72_24h_wd:ethusd|HC|t=25%",
+   "verdict": "refuted",
+   "decision": "dropped",
+   "why": "+0.0116 R/trade, 95 % CI -0.013..+0.035; best of 48 screened cells in 93 % of null draws; BTC twin -8.15 R; one-minute entry delay -2.81 R"
+  },
+  {
+   "id": "path GOLD_FRI_PM:xauusd|NP|t=30m|y=0.25",
+   "verdict": "refuted",
+   "decision": "dropped",
+   "why": "+0.0075 R/trade (p 0.29, best of 12 p 0.43); 2013-2018/01 -17.9 R (t -5.0); whole in-sample +13.9 R -> -2.7 R"
+  },
+  {
+   "id": "path GOLD_FRI_PM:xauusd|NP|t=10%|y=0.25",
+   "verdict": "refuted",
+   "decision": "dropped",
+   "why": "+0.0052 R/trade (p 0.36, best of 12 p 0.52); 2013-2018/01 -20.8 R"
+  },
+  {
+   "id": "payoff F1_brk_ridge_filter:btcusd:H2",
+   "verdict": "weakened",
+   "decision": "dropped",
+   "why": "verifier: about 0 R/trade adjusted for risk (equal per-trade SD 0.342 vs 0.345; equal weekly volatility 184.3 vs 187.9 R), selection-adjusted expectation close to 0; random extensions of the same number of trades give +0.063 R/trade on average"
+  },
+  {
+   "id": "payoff F1_brk_ridge_filter:ethusd:H2",
+   "verdict": "weakened",
+   "decision": "KEPT",
+   "why": "verifier: +0.10 to +0.16 R/trade left after the selection haircut (+35 to +65 R in 2018-2021); per-trade Sharpe 0.147 -> 0.207 (reproduced); the >= 1 R condition matters (placebos weaker); fragile on a handful of multi-day continuations"
+  },
+  {
+   "id": "payoff brk72_24h_wd:btcusd:S0.25n",
+   "verdict": "weakened",
+   "decision": "dropped",
+   "why": "what is left is a 4x position: per unit of position -31 %, -0.038 R/trade at equal per-trade volatility, portfolio weekly Sharpe +2 % at equal sleeve volatility with a CI that includes 0; rests on about ten trades; the sleeve carries S0.75r"
+  },
+  {
+   "id": "payoff brk72_24h_wd:ethusd:S0.5n",
+   "verdict": "weakened",
+   "decision": "dropped",
+   "why": "what is left is a 2x position: SD-matched +0.010 R/trade at FP and -0.004 at x1.5, per-trade Sharpe +0.004 (CI -0.037..+0.043)"
+  },
+  {
+   "id": "payoff donch4h_stop:xauusd:S0.75r",
+   "verdict": "weakened (two verifiers)",
+   "decision": "KEPT",
+   "why": "at equal weekly swing +19.4 R in 2018-02..2021 and +14.7 R over 2013-2021; sleeve weekly Sharpe 0.858 -> 1.412 (2018-21), 1.054 -> 1.237 (2013-2021); honest expectation +0.00 to +0.02 R/trade; earlier years negative; best of 8 p 0.2-0.4"
+  },
+  {
+   "id": "payoff noise30:us100:S0.25",
+   "verdict": "refuted (two verifiers)",
+   "decision": "dropped",
+   "why": "at equal weekly swing -0.0024 R/trade; portfolio weekly Sharpe -1.6 % at equal volatility; staking the unchanged rule more does better"
+  },
+  {
+   "id": "payoff (13:15 round) ocm4:us100:T1",
+   "verdict": "weakened",
+   "decision": "KEPT",
+   "why": "positive left in 2018-21: portfolio weekly Sharpe at equal sleeve SD +0.17 (lab), +0.05 (live program); like-for-like +0.21 R/trade in both 2014-18 and 2018-21; per unit of swing about 0 in 2014-18; best of 10 p 0.30-0.37"
+  },
+  {
+   "id": "payoff (13:15 round) nq_btc_follow:btcusd:T1",
+   "verdict": "refuted",
+   "decision": "dropped",
+   "why": "at equal weekly swing +0.010 R/trade; portfolio weekly Sharpe +0.003; best of 14 p 0.58"
+  },
+  {
+   "id": "payoff (13:15 round) brk72_24h_wd:btcusd:S0.75r",
+   "verdict": "weakened",
+   "decision": "KEPT",
+   "why": "at equal weekly swing +0.025 R/trade (+17.9 R, lab) and +0.004 R/trade (+7.1 R) as the live program would run it; sleeve weekly Sharpe +0.226, portfolio +0.060; studentized best-of-13 p 0.12; earlier months worse"
+  },
+  {
+   "id": "payoff (13:15 round) orb_asia_2d_buf10:xauusd:S0.75r",
+   "verdict": "weakened",
+   "decision": "KEPT",
+   "why": "at equal weekly SD 27.1 -> 53.1 R (lab); neighbours about +27 R at constant stake; sleeve weekly Sharpe +0.31 (neighbours about +0.18), portfolio +0.11 at equal swing; everything in 2020-2021; best of 14 p about 0.7"
+  },
+  {
+   "id": "entry orb_asia_RT30_skip_price",
+   "verdict": "refuted",
+   "decision": "dropped",
+   "why": "+10.2 R chain gain, 90 % interval -13.8..+33.8 R, best of 12 p 0.42; 2013-2018/01 -36.9 R; whole gain equals the assumed 1 bp stop-entry slippage"
+  },
+  {
+   "id": "entry gold_fri_HALF25_dist",
+   "verdict": "refuted",
+   "decision": "dropped",
+   "why": "73 % of the gain is a stake cut; entry part +0.0013 R/trade (p 0.28); halves the sleeve's 2013-2017 profit"
+  },
+  {
+   "id": "entry orb_asia_RT30_mkt_price",
+   "verdict": "weakened",
+   "decision": "dropped",
+   "why": "positive but only an execution-cost effect (+0.0118 R/trade with the hands as they are, +0.0200 in the lab, 0 if the real stop slippage is under 0.14 bp; +9.30 R lab); orb carries S0.75r, whose remaining gain is larger (one change per sleeve); not promoted if S0.75r fails"
+  },
+  {
+   "id": "entry orb_asia_RT120_mkt_price",
+   "verdict": "weakened",
+   "decision": "dropped",
+   "why": "same mechanism, smaller (+4.3 to +4.8 R realistic); one change per sleeve"
+  },
+  {
+   "id": "entry orb_asia_RT300_skip_price",
+   "verdict": "refuted",
+   "decision": "dropped",
+   "why": "+5.71 R (p 0.32, best of 12 p 0.59); 2013-2018/01 -44.5 R; gross -9.9 R"
+  }
+ ],
+ "changes_that_survive": [
+  {
+   "sleeve": "ocm4 us100",
+   "change": "T1: no 15:55 NY exit; trailing stop at 1 daily ATR14 (simple mean) from the best price since the fill, used from the next minute; initial stop unchanged at 0.3 ATR; time cap at 15:55 NY of the entry's NY date + 4 business days; one position at a time.",
+   "effect_in_sample": "My simulator, entries 2018-02..2021, FP: 492 -> 350 trades, +0.109 -> +0.364 R per trade, total +53.8 -> +127.4 R (x1.5: +50.8 -> +125.0 R); sleeve weekly Sharpe 0.89 -> 1.44; at equal weekly swing (stake x0.68) +33.2 R; ten-sleeve weekly Sharpe at equal swing 2.873 -> 3.042. Earlier years 2014-2018/01 (507 -> 370 trades): sleeve weekly Sharpe 1.142 -> 1.148, +3.3 R at equal swing, portfolio 2.406 -> 2.385.",
+   "verdict_of_the_attack": "weakened (13:15 round): like-for-like +0.21 R per trade in both 2014-18 and 2018-21, mostly longs held for days in a rising index; per unit of swing 'nothing demonstrated' (best of 10 p 0.30-0.37); as the live program would run it +0.111 R per trade and +0.05 of portfolio weekly Sharpe. Kept with an expected gain close to zero."
+  },
+  {
+   "sleeve": "F1_brk_ridge_filter ethusd",
+   "change": "H2: a trade still open and at least +1 x its initial risk ahead (bid close for a long, ask close for a short) at the close of the bar before its 15:55 NY exit is held to 15:55 NY two business days later, never past the Friday 23:54 server bar; stop unchanged; one position at a time.",
+   "effect_in_sample": "My simulator, 2018-02..2021, FP: 516 -> 463 trades (100 extended), +0.200 -> +0.412 R per trade, total +103.0 -> +190.6 R (x1.5: +85.9 -> +178.1 R); sleeve weekly Sharpe 1.75 -> 2.43; at equal swing (stake x0.75) +40.1 R, gain in 3 of 4 years (2019 -3.2 R); ten-sleeve weekly Sharpe at equal swing 2.873 -> 3.048. No earlier years (ETH data starts 2018).",
+   "verdict_of_the_attack": "weakened: causal, executable, not an isolated peak, not made by the one-position rule; after the trial-count haircut +0.10 to +0.16 R per trade (+35 to +65 R); rests on a handful of multi-day continuations (capped at +3 R per trade only +0.04 R per trade remains), 2019 flat, three quarters of the gain with each year's ETH direction; the BTC twin gives nothing once risk is counted."
+  },
+  {
+   "sleeve": "brk72_24h_wd btcusd",
+   "change": "S0.75r: initial stop at 0.75 x the rule's distance (3 x ATR24) from the fill, same money risk (a 1.33x position), exits unchanged, one position at a time over all signals.",
+   "effect_in_sample": "My simulator, 2018-02..2021, FP: 549 -> 563 trades, +0.256 -> +0.365 R per trade, total +140.7 -> +205.4 R (x1.5: +135.5 -> +199.4 R); sleeve weekly Sharpe 1.78 -> 2.01; at equal swing (x0.77) +17.9 R, gain in 4 of 4 years; ten-sleeve weekly Sharpe at equal swing 2.873 -> 2.933. Earlier months 2017-05..2018-01 (96 -> 101 trades): sleeve weekly Sharpe 2.51 -> 2.19, -5.0 R at equal swing.",
+   "verdict_of_the_attack": "weakened (13:15 round): about 4/5 of the R gain is leverage; at equal swing +0.025 R per trade in the lab and +0.004 (+7.1 R) as the live program would run it; studentized best-of-13 p 0.12. Kept with an expected gain close to zero."
+  },
+  {
+   "sleeve": "donch4h_stop xauusd",
+   "change": "S0.75r: initial stop and trailing distance at 0.75 x 2 ATR14(4h) = 1.5 ATR; same money risk; entries and the 5-day time exit unchanged; one position at a time over all touched brackets.",
+   "effect_in_sample": "My simulator, 2018-02..2021, FP: 207 -> 251 trades, +0.145 -> +0.222 R per trade, total +30.0 -> +55.8 R (x1.5: +27.3 -> +51.4 R); sleeve weekly Sharpe 0.86 -> 1.41; at equal swing (x0.89) +19.4 R, gain in 4 of 4 years; ten-sleeve weekly Sharpe at equal swing 2.873 -> 2.941. Earlier years 2013-2018/01 (287 -> 379 trades): sleeve weekly Sharpe 1.21 -> 1.11, -4.2 R at equal swing.",
+   "verdict_of_the_attack": "weakened by two verifiers: honest expectation +0.00 to +0.02 R per trade; the gain per unit of swing comes from the tighter trail; best of 8 p 0.2-0.4; negative on the earlier years."
+  },
+  {
+   "sleeve": "orb_asia_2d_buf10 xauusd",
+   "change": "S0.75r: initial stop at 0.75 x the distance from the stop-entry fill to the opposite range level, same money risk, exits unchanged, one position at a time over all signals.",
+   "effect_in_sample": "My simulator, 2018-02..2021, FP: 464 -> 498 trades, +0.058 -> +0.140 R per trade, total +27.1 -> +69.5 R (x1.5: +15.1 -> +52.5 R); sleeve weekly Sharpe 0.32 -> 0.63; at equal swing (x0.76) +26.1 R, gain in 3 of 4 years, almost all of it in 2020-2021 (+25.8 of +26.1 R); ten-sleeve weekly Sharpe at equal swing 2.873 -> 2.980. Earlier years 2013-2018/01 (574 -> 626 trades): sleeve weekly Sharpe 1.50 -> 1.63, +22.5 R at equal swing (on the same orders only +0.01 R per trade; the rest is the one-position chain).",
+   "verdict_of_the_attack": "weakened (13:15 round): 'the direction is real, the size is not'; neighbours give about +27 R at a constant stake and +0.05 to +0.09 of portfolio weekly Sharpe; best of 14 p about 0.7; everything in 2020-2021."
+  }
+ ],
+ "changed_sleeves_detail": {
+  "ocm4:us100": {
+   "change": "T1",
+   "equal_swing_factor": 0.6824,
+   "unchanged_fp_main": {
+    "n_trades": 492,
+    "expectancy_R": 0.1093,
+    "win_rate": 0.4085,
+    "avg_win_R": 1.5747,
+    "avg_loss_R": -0.9029,
+    "profit_factor": 1.205,
+    "total_R": 53.78,
+    "mean_over_sd_per_trade": 0.0733,
+    "weekly_sd_R": 2.1199,
+    "weekly_sharpe": 0.8924,
+    "worst_week_R": -4.03,
+    "max_drawdown_R_trades_exit_order": 15.96,
+    "by_entry_year_total_R": {
+     "2018": 13.96,
+     "2019": 16.22,
+     "2020": 2.7,
+     "2021": 20.9
+    }
+   },
+   "changed_fp_main": {
+    "n_trades": 350,
+    "expectancy_R": 0.3641,
+    "win_rate": 0.2886,
+    "avg_win_R": 3.689,
+    "avg_loss_R": -0.9846,
+    "profit_factor": 1.52,
+    "total_R": 127.43,
+    "mean_over_sd_per_trade": 0.1398,
+    "weekly_sd_R": 3.1065,
+    "weekly_sharpe": 1.443,
+    "worst_week_R": -5.03,
+    "max_drawdown_R_trades_exit_order": 18.55,
+    "by_entry_year_total_R": {
+     "2018": 51.16,
+     "2019": 16.49,
+     "2020": 24.82,
+     "2021": 34.96
+    }
+   },
+   "unchanged_stress_main": {
+    "n_trades": 492,
+    "expectancy_R": 0.1033,
+    "win_rate": 0.4085,
+    "avg_win_R": 1.5677,
+    "avg_loss_R": -0.9083,
+    "profit_factor": 1.192,
+    "total_R": 50.8,
+    "mean_over_sd_per_trade": 0.0693,
+    "weekly_sd_R": 2.1165,
+    "weekly_sharpe": 0.8443,
+    "worst_week_R": -4.04,
+    "max_drawdown_R_trades_exit_order": 16.41,
+    "by_entry_year_total_R": {
+     "2018": 13.27,
+     "2019": 15.33,
+     "2020": 2.12,
+     "2021": 20.07
+    }
+   },
+   "changed_stress_main": {
+    "n_trades": 350,
+    "expectancy_R": 0.3572,
+    "win_rate": 0.2886,
+    "avg_win_R": 3.6795,
+    "avg_loss_R": -0.9904,
+    "profit_factor": 1.507,
+    "total_R": 125.01,
+    "mean_over_sd_per_trade": 0.1372,
+    "weekly_sd_R": 3.1049,
+    "weekly_sharpe": 1.4162,
+    "worst_week_R": -5.04,
+    "max_drawdown_R_trades_exit_order": 18.9,
+    "by_entry_year_total_R": {
+     "2018": 50.6,
+     "2019": 15.75,
+     "2020": 24.36,
+     "2021": 34.3
+    }
+   },
+   "unchanged_fp_early": {
+    "n_trades": 507,
+    "expectancy_R": 0.1639,
+    "win_rate": 0.4162,
+    "avg_win_R": 1.6949,
+    "avg_loss_R": -0.9275,
+    "profit_factor": 1.303,
+    "total_R": 83.1,
+    "mean_over_sd_per_trade": 0.1026,
+    "weekly_sd_R": 2.4513,
+    "weekly_sharpe": 1.1423,
+    "worst_week_R": -5.06,
+    "max_drawdown_R_trades_exit_order": 36.82,
+    "by_entry_year_total_R": {
+     "2014": 34.74,
+     "2015": -16.58,
+     "2016": 38.01,
+     "2017": 29.94,
+     "2018": -3.0
+    }
+   },
+   "changed_fp_early": {
+    "n_trades": 370,
+    "expectancy_R": 0.3423,
+    "win_rate": 0.2541,
+    "avg_win_R": 4.2536,
+    "avg_loss_R": -0.9898,
+    "profit_factor": 1.464,
+    "total_R": 126.65,
+    "mean_over_sd_per_trade": 0.1221,
+    "weekly_sd_R": 3.7178,
+    "weekly_sharpe": 1.148,
+    "worst_week_R": -5.06,
+    "max_drawdown_R_trades_exit_order": 25.53,
+    "by_entry_year_total_R": {
+     "2014": 36.13,
+     "2015": 16.85,
+     "2016": 31.87,
+     "2017": 37.89,
+     "2018": 3.92
+    }
+   },
+   "unchanged_stress_early": {
+    "n_trades": 507,
+    "expectancy_R": 0.1441,
+    "win_rate": 0.4083,
+    "avg_win_R": 1.7031,
+    "avg_loss_R": -0.9316,
+    "profit_factor": 1.261,
+    "total_R": 73.06,
+    "mean_over_sd_per_trade": 0.0903,
+    "weekly_sd_R": 2.4543,
+    "weekly_sharpe": 1.0031,
+    "worst_week_R": -5.09,
+    "max_drawdown_R_trades_exit_order": 37.86,
+    "by_entry_year_total_R": {
+     "2014": 33.54,
+     "2015": -17.5,
+     "2016": 36.85,
+     "2017": 23.27,
+     "2018": -3.1
+    }
+   },
+   "changed_stress_early": {
+    "n_trades": 372,
+    "expectancy_R": 0.3146,
+    "win_rate": 0.25,
+    "avg_win_R": 4.2541,
+    "avg_loss_R": -0.9986,
+    "profit_factor": 1.42,
+    "total_R": 117.02,
+    "mean_over_sd_per_trade": 0.1126,
+    "weekly_sd_R": 3.729,
+    "weekly_sharpe": 1.0574,
+    "worst_week_R": -5.09,
+    "max_drawdown_R_trades_exit_order": 26.08,
+    "by_entry_year_total_R": {
+     "2014": 35.16,
+     "2015": 16.23,
+     "2016": 31.02,
+     "2017": 30.75,
+     "2018": 3.86
+    }
+   },
+   "changed_equal_swing_total_R_fp_main": 86.96,
+   "gain_equal_swing_total_R_fp_main": 33.18,
+   "gain_weekly_sharpe_fp_main": 0.5506,
+   "changed_equal_swing_total_R_fp_early": 86.43,
+   "gain_equal_swing_total_R_fp_early": 3.33,
+   "gain_weekly_sharpe_fp_early": 0.0057,
+   "changed_equal_swing_total_R_stress_main": 85.31,
+   "gain_equal_swing_total_R_stress_main": 34.51,
+   "gain_weekly_sharpe_stress_main": 0.5719,
+   "changed_equal_swing_total_R_stress_early": 79.86,
+   "gain_equal_swing_total_R_stress_early": 6.8,
+   "gain_weekly_sharpe_stress_early": 0.0543
+  },
+  "F1_brk_ridge_filter:ethusd": {
+   "change": "H2",
+   "equal_swing_factor": 0.751,
+   "unchanged_fp_main": {
+    "n_trades": 516,
+    "expectancy_R": 0.1996,
+    "win_rate": 0.4961,
+    "avg_win_R": 1.1514,
+    "avg_loss_R": -0.7375,
+    "profit_factor": 1.537,
+    "total_R": 103.02,
+    "mean_over_sd_per_trade": 0.1474,
+    "weekly_sd_R": 2.0724,
+    "weekly_sharpe": 1.7486,
+    "worst_week_R": -4.03,
+    "max_drawdown_R_trades_exit_order": 15.7,
+    "by_entry_year_total_R": {
+     "2018": 46.8,
+     "2019": 24.69,
+     "2020": 23.95,
+     "2021": 7.59
+    }
+   },
+   "changed_fp_main": {
+    "n_trades": 463,
+    "expectancy_R": 0.4117,
+    "win_rate": 0.473,
+    "avg_win_R": 1.6818,
+    "avg_loss_R": -0.7282,
+    "profit_factor": 2.073,
+    "total_R": 190.63,
+    "mean_over_sd_per_trade": 0.2074,
+    "weekly_sd_R": 2.7596,
+    "weekly_sharpe": 2.43,
+    "worst_week_R": -4.03,
+    "max_drawdown_R_trades_exit_order": 12.74,
+    "by_entry_year_total_R": {
+     "2018": 72.94,
+     "2019": 28.68,
+     "2020": 50.7,
+     "2021": 38.32
+    }
+   },
+   "unchanged_stress_main": {
+    "n_trades": 518,
+    "expectancy_R": 0.1658,
+    "win_rate": 0.4826,
+    "avg_win_R": 1.1396,
+    "avg_loss_R": -0.7425,
+    "profit_factor": 1.432,
+    "total_R": 85.9,
+    "mean_over_sd_per_trade": 0.124,
+    "weekly_sd_R": 2.0503,
+    "weekly_sharpe": 1.4737,
+    "worst_week_R": -4.05,
+    "max_drawdown_R_trades_exit_order": 17.44,
+    "by_entry_year_total_R": {
+     "2018": 39.93,
+     "2019": 20.7,
+     "2020": 20.14,
+     "2021": 5.12
+    }
+   },
+   "changed_stress_main": {
+    "n_trades": 465,
+    "expectancy_R": 0.3831,
+    "win_rate": 0.4602,
+    "avg_win_R": 1.6897,
+    "avg_loss_R": -0.7309,
+    "profit_factor": 1.971,
+    "total_R": 178.14,
+    "mean_over_sd_per_trade": 0.1945,
+    "weekly_sd_R": 2.7427,
+    "weekly_sharpe": 2.2847,
+    "worst_week_R": -4.05,
+    "max_drawdown_R_trades_exit_order": 13.77,
+    "by_entry_year_total_R": {
+     "2018": 69.61,
+     "2019": 25.0,
+     "2020": 47.43,
+     "2021": 36.09
+    }
+   },
+   "changed_equal_swing_total_R_fp_main": 143.16,
+   "gain_equal_swing_total_R_fp_main": 40.14,
+   "gain_weekly_sharpe_fp_main": 0.6814,
+   "changed_equal_swing_total_R_stress_main": 133.78,
+   "gain_equal_swing_total_R_stress_main": 47.88,
+   "gain_weekly_sharpe_stress_main": 0.811
+  },
+  "brk72_24h_wd:btcusd": {
+   "change": "S0.75r",
+   "equal_swing_factor": 0.7718,
+   "unchanged_fp_main": {
+    "n_trades": 549,
+    "expectancy_R": 0.2563,
+    "win_rate": 0.4536,
+    "avg_win_R": 1.4399,
+    "avg_loss_R": -0.7261,
+    "profit_factor": 1.646,
+    "total_R": 140.68,
+    "mean_over_sd_per_trade": 0.1417,
+    "weekly_sd_R": 2.781,
+    "weekly_sharpe": 1.7795,
+    "worst_week_R": -3.18,
+    "max_drawdown_R_trades_exit_order": 8.55,
+    "by_entry_year_total_R": {
+     "2018": 36.16,
+     "2019": 44.43,
+     "2020": 49.05,
+     "2021": 11.04
+    }
+   },
+   "changed_fp_main": {
+    "n_trades": 563,
+    "expectancy_R": 0.3649,
+    "win_rate": 0.4263,
+    "avg_win_R": 1.977,
+    "avg_loss_R": -0.833,
+    "profit_factor": 1.764,
+    "total_R": 205.44,
+    "mean_over_sd_per_trade": 0.1562,
+    "weekly_sd_R": 3.6033,
+    "weekly_sharpe": 2.0056,
+    "worst_week_R": -3.76,
+    "max_drawdown_R_trades_exit_order": 11.81,
+    "by_entry_year_total_R": {
+     "2018": 53.57,
+     "2019": 70.1,
+     "2020": 66.23,
+     "2021": 15.55
+    }
+   },
+   "unchanged_stress_main": {
+    "n_trades": 549,
+    "expectancy_R": 0.2468,
+    "win_rate": 0.4499,
+    "avg_win_R": 1.4425,
+    "avg_loss_R": -0.7311,
+    "profit_factor": 1.614,
+    "total_R": 135.52,
+    "mean_over_sd_per_trade": 0.1366,
+    "weekly_sd_R": 2.7846,
+    "weekly_sharpe": 1.7119,
+    "worst_week_R": -3.2,
+    "max_drawdown_R_trades_exit_order": 8.7,
+    "by_entry_year_total_R": {
+     "2018": 34.4,
+     "2019": 42.8,
+     "2020": 47.98,
+     "2021": 10.34
+    }
+   },
+   "changed_stress_main": {
+    "n_trades": 563,
+    "expectancy_R": 0.3542,
+    "win_rate": 0.4227,
+    "avg_win_R": 1.9815,
+    "avg_loss_R": -0.8375,
+    "profit_factor": 1.733,
+    "total_R": 199.42,
+    "mean_over_sd_per_trade": 0.1517,
+    "weekly_sd_R": 3.6021,
+    "weekly_sharpe": 1.9475,
+    "worst_week_R": -3.79,
+    "max_drawdown_R_trades_exit_order": 11.99,
+    "by_entry_year_total_R": {
+     "2018": 52.38,
+     "2019": 68.29,
+     "2020": 64.86,
+     "2021": 13.88
+    }
+   },
+   "unchanged_fp_early": {
+    "n_trades": 96,
+    "expectancy_R": 0.3353,
+    "win_rate": 0.5312,
+    "avg_win_R": 1.2938,
+    "avg_loss_R": -0.751,
+    "profit_factor": 1.953,
+    "total_R": 32.19,
+    "mean_over_sd_per_trade": 0.2381,
+    "weekly_sd_R": 2.4308,
+    "weekly_sharpe": 2.513,
+    "worst_week_R": -1.77,
+    "max_drawdown_R_trades_exit_order": 3.4,
+    "by_entry_year_total_R": {
+     "2017": 29.47,
+     "2018": 2.72
+    }
+   },
+   "changed_fp_early": {
+    "n_trades": 101,
+    "expectancy_R": 0.3484,
+    "win_rate": 0.4752,
+    "avg_win_R": 1.735,
+    "avg_loss_R": -0.9073,
+    "profit_factor": 1.732,
+    "total_R": 35.19,
+    "mean_over_sd_per_trade": 0.1949,
+    "weekly_sd_R": 3.0491,
+    "weekly_sharpe": 2.1903,
+    "worst_week_R": -4.01,
+    "max_drawdown_R_trades_exit_order": 5.23,
+    "by_entry_year_total_R": {
+     "2017": 34.86,
+     "2018": 0.33
+    }
+   },
+   "unchanged_stress_early": {
+    "n_trades": 96,
+    "expectancy_R": 0.3282,
+    "win_rate": 0.5312,
+    "avg_win_R": 1.2865,
+    "avg_loss_R": -0.7579,
+    "profit_factor": 1.924,
+    "total_R": 31.51,
+    "mean_over_sd_per_trade": 0.2331,
+    "weekly_sd_R": 2.4306,
+    "weekly_sharpe": 2.4598,
+    "worst_week_R": -1.8,
+    "max_drawdown_R_trades_exit_order": 3.44,
+    "by_entry_year_total_R": {
+     "2017": 28.81,
+     "2018": 2.7
+    }
+   },
+   "changed_stress_early": {
+    "n_trades": 103,
+    "expectancy_R": 0.2968,
+    "win_rate": 0.4563,
+    "avg_win_R": 1.7475,
+    "avg_loss_R": -0.9207,
+    "profit_factor": 1.593,
+    "total_R": 30.57,
+    "mean_over_sd_per_trade": 0.1665,
+    "weekly_sd_R": 2.9841,
+    "weekly_sharpe": 1.9442,
+    "worst_week_R": -4.02,
+    "max_drawdown_R_trades_exit_order": 5.27,
+    "by_entry_year_total_R": {
+     "2017": 30.27,
+     "2018": 0.3
+    }
+   },
+   "changed_equal_swing_total_R_fp_main": 158.56,
+   "gain_equal_swing_total_R_fp_main": 17.88,
+   "gain_weekly_sharpe_fp_main": 0.2261,
+   "changed_equal_swing_total_R_fp_early": 27.16,
+   "gain_equal_swing_total_R_fp_early": -5.03,
+   "gain_weekly_sharpe_fp_early": -0.3227,
+   "changed_equal_swing_total_R_stress_main": 153.91,
+   "gain_equal_swing_total_R_stress_main": 18.39,
+   "gain_weekly_sharpe_stress_main": 0.2356,
+   "changed_equal_swing_total_R_stress_early": 23.59,
+   "gain_equal_swing_total_R_stress_early": -7.92,
+   "gain_weekly_sharpe_stress_early": -0.5156
+  },
+  "donch4h_stop:xauusd": {
+   "change": "S0.75r",
+   "equal_swing_factor": 0.886,
+   "unchanged_fp_main": {
+    "n_trades": 207,
+    "expectancy_R": 0.1451,
+    "win_rate": 0.4444,
+    "avg_win_R": 1.0682,
+    "avg_loss_R": -0.5934,
+    "profit_factor": 1.44,
+    "total_R": 30.03,
+    "mean_over_sd_per_trade": 0.1227,
+    "weekly_sd_R": 1.2308,
+    "weekly_sharpe": 0.8584,
+    "worst_week_R": -2.36,
+    "max_drawdown_R_trades_exit_order": 6.22,
+    "by_entry_year_total_R": {
+     "2018": -0.08,
+     "2019": 5.8,
+     "2020": 18.82,
+     "2021": 5.49
+    }
+   },
+   "changed_fp_main": {
+    "n_trades": 251,
+    "expectancy_R": 0.2222,
+    "win_rate": 0.4622,
+    "avg_win_R": 1.1826,
+    "avg_loss_R": -0.6031,
+    "profit_factor": 1.685,
+    "total_R": 55.76,
+    "mean_over_sd_per_trade": 0.181,
+    "weekly_sd_R": 1.3892,
+    "weekly_sharpe": 1.412,
+    "worst_week_R": -3.27,
+    "max_drawdown_R_trades_exit_order": 6.5,
+    "by_entry_year_total_R": {
+     "2018": 8.84,
+     "2019": 11.15,
+     "2020": 21.92,
+     "2021": 13.85
+    }
+   },
+   "unchanged_stress_main": {
+    "n_trades": 207,
+    "expectancy_R": 0.1319,
+    "win_rate": 0.43,
+    "avg_win_R": 1.0912,
+    "avg_loss_R": -0.5916,
+    "profit_factor": 1.391,
+    "total_R": 27.31,
+    "mean_over_sd_per_trade": 0.1117,
+    "weekly_sd_R": 1.2294,
+    "weekly_sharpe": 0.7814,
+    "worst_week_R": -2.38,
+    "max_drawdown_R_trades_exit_order": 6.27,
+    "by_entry_year_total_R": {
+     "2018": -0.9,
+     "2019": 5.18,
+     "2020": 18.29,
+     "2021": 4.75
+    }
+   },
+   "changed_stress_main": {
+    "n_trades": 251,
+    "expectancy_R": 0.2047,
+    "win_rate": 0.4582,
+    "avg_win_R": 1.1753,
+    "avg_loss_R": -0.616,
+    "profit_factor": 1.613,
+    "total_R": 51.39,
+    "mean_over_sd_per_trade": 0.1669,
+    "weekly_sd_R": 1.3853,
+    "weekly_sharpe": 1.3049,
+    "worst_week_R": -3.32,
+    "max_drawdown_R_trades_exit_order": 6.58,
+    "by_entry_year_total_R": {
+     "2018": 7.63,
+     "2019": 10.03,
+     "2020": 20.97,
+     "2021": 12.76
+    }
+   },
+   "unchanged_fp_early": {
+    "n_trades": 287,
+    "expectancy_R": 0.1891,
+    "win_rate": 0.4146,
+    "avg_win_R": 1.2384,
+    "avg_loss_R": -0.5542,
+    "profit_factor": 1.583,
+    "total_R": 54.27,
+    "mean_over_sd_per_trade": 0.1607,
+    "weekly_sd_R": 1.2315,
+    "weekly_sharpe": 1.2082,
+    "worst_week_R": -2.11,
+    "max_drawdown_R_trades_exit_order": 7.39,
+    "by_entry_year_total_R": {
+     "2013": 11.37,
+     "2014": 8.77,
+     "2015": 8.81,
+     "2016": 15.66,
+     "2017": 8.92,
+     "2018": 0.74
+    }
+   },
+   "changed_fp_early": {
+    "n_trades": 379,
+    "expectancy_R": 0.1493,
+    "win_rate": 0.4354,
+    "avg_win_R": 1.1094,
+    "avg_loss_R": -0.591,
+    "profit_factor": 1.447,
+    "total_R": 56.57,
+    "mean_over_sd_per_trade": 0.1259,
+    "weekly_sd_R": 1.403,
+    "weekly_sharpe": 1.1055,
+    "worst_week_R": -2.53,
+    "max_drawdown_R_trades_exit_order": 9.61,
+    "by_entry_year_total_R": {
+     "2013": 13.9,
+     "2014": -0.85,
+     "2015": 18.09,
+     "2016": 14.38,
+     "2017": 7.74,
+     "2018": 3.3
+    }
+   },
+   "unchanged_stress_early": {
+    "n_trades": 287,
+    "expectancy_R": 0.1766,
+    "win_rate": 0.4111,
+    "avg_win_R": 1.2354,
+    "avg_loss_R": -0.5626,
+    "profit_factor": 1.533,
+    "total_R": 50.7,
+    "mean_over_sd_per_trade": 0.1503,
+    "weekly_sd_R": 1.23,
+    "weekly_sharpe": 1.1301,
+    "worst_week_R": -2.16,
+    "max_drawdown_R_trades_exit_order": 7.7,
+    "by_entry_year_total_R": {
+     "2013": 10.76,
+     "2014": 8.05,
+     "2015": 8.15,
+     "2016": 15.06,
+     "2017": 8.0,
+     "2018": 0.67
+    }
+   },
+   "changed_stress_early": {
+    "n_trades": 380,
+    "expectancy_R": 0.1292,
+    "win_rate": 0.4289,
+    "avg_win_R": 1.1051,
+    "avg_loss_R": -0.6038,
+    "profit_factor": 1.375,
+    "total_R": 49.09,
+    "mean_over_sd_per_trade": 0.1091,
+    "weekly_sd_R": 1.4029,
+    "weekly_sharpe": 0.9594,
+    "worst_week_R": -2.62,
+    "max_drawdown_R_trades_exit_order": 10.82,
+    "by_entry_year_total_R": {
+     "2013": 12.88,
+     "2014": -3.24,
+     "2015": 16.99,
+     "2016": 13.32,
+     "2017": 5.99,
+     "2018": 3.15
+    }
+   },
+   "changed_equal_swing_total_R_fp_main": 49.4,
+   "gain_equal_swing_total_R_fp_main": 19.37,
+   "gain_weekly_sharpe_fp_main": 0.5536,
+   "changed_equal_swing_total_R_fp_early": 50.12,
+   "gain_equal_swing_total_R_fp_early": -4.15,
+   "gain_weekly_sharpe_fp_early": -0.1027,
+   "changed_equal_swing_total_R_stress_main": 45.53,
+   "gain_equal_swing_total_R_stress_main": 18.22,
+   "gain_weekly_sharpe_stress_main": 0.5235,
+   "changed_equal_swing_total_R_stress_early": 43.49,
+   "gain_equal_swing_total_R_stress_early": -7.21,
+   "gain_weekly_sharpe_stress_early": -0.1707
+  },
+  "orb_asia_2d_buf10:xauusd": {
+   "change": "S0.75r",
+   "equal_swing_factor": 0.7641,
+   "unchanged_fp_main": {
+    "n_trades": 464,
+    "expectancy_R": 0.0583,
+    "win_rate": 0.3125,
+    "avg_win_R": 2.3732,
+    "avg_loss_R": -0.9939,
+    "profit_factor": 1.085,
+    "total_R": 27.06,
+    "mean_over_sd_per_trade": 0.029,
+    "weekly_sd_R": 2.9832,
+    "weekly_sharpe": 0.3191,
+    "worst_week_R": -4.11,
+    "max_drawdown_R_trades_exit_order": 35.24,
+    "by_entry_year_total_R": {
+     "2018": -26.92,
+     "2019": 18.1,
+     "2020": 38.42,
+     "2021": -2.55
+    }
+   },
+   "changed_fp_main": {
+    "n_trades": 498,
+    "expectancy_R": 0.1396,
+    "win_rate": 0.2651,
+    "avg_win_R": 3.3524,
+    "avg_loss_R": -1.0191,
+    "profit_factor": 1.186,
+    "total_R": 69.54,
+    "mean_over_sd_per_trade": 0.0552,
+    "weekly_sd_R": 3.9043,
+    "weekly_sharpe": 0.6265,
+    "worst_week_R": -5.29,
+    "max_drawdown_R_trades_exit_order": 33.47,
+    "by_entry_year_total_R": {
+     "2018": -22.05,
+     "2019": 10.94,
+     "2020": 75.76,
+     "2021": 4.89
+    }
+   },
+   "unchanged_stress_main": {
+    "n_trades": 464,
+    "expectancy_R": 0.0326,
+    "win_rate": 0.3103,
+    "avg_win_R": 2.3297,
+    "avg_loss_R": -1.0012,
+    "profit_factor": 1.047,
+    "total_R": 15.11,
+    "mean_over_sd_per_trade": 0.0165,
+    "weekly_sd_R": 2.9361,
+    "weekly_sharpe": 0.181,
+    "worst_week_R": -4.16,
+    "max_drawdown_R_trades_exit_order": 38.07,
+    "by_entry_year_total_R": {
+     "2018": -29.57,
+     "2019": 14.5,
+     "2020": 35.54,
+     "2021": -5.35
+    }
+   },
+   "changed_stress_main": {
+    "n_trades": 499,
+    "expectancy_R": 0.1052,
+    "win_rate": 0.2625,
+    "avg_win_R": 3.2948,
+    "avg_loss_R": -1.0302,
+    "profit_factor": 1.138,
+    "total_R": 52.49,
+    "mean_over_sd_per_trade": 0.0424,
+    "weekly_sd_R": 3.8498,
+    "weekly_sharpe": 0.4796,
+    "worst_week_R": -5.42,
+    "max_drawdown_R_trades_exit_order": 36.32,
+    "by_entry_year_total_R": {
+     "2018": -25.6,
+     "2019": 7.43,
+     "2020": 71.48,
+     "2021": -0.82
+    }
+   },
+   "unchanged_fp_early": {
+    "n_trades": 574,
+    "expectancy_R": 0.3556,
+    "win_rate": 0.3554,
+    "avg_win_R": 2.8017,
+    "avg_loss_R": -0.9931,
+    "profit_factor": 1.555,
+    "total_R": 204.09,
+    "mean_over_sd_per_trade": 0.1428,
+    "weekly_sd_R": 3.6965,
+    "weekly_sharpe": 1.4967,
+    "worst_week_R": -5.09,
+    "max_drawdown_R_trades_exit_order": 24.84,
+    "by_entry_year_total_R": {
+     "2012": 2.11,
+     "2013": 103.95,
+     "2014": 41.48,
+     "2015": 21.98,
+     "2016": 18.47,
+     "2017": 10.48,
+     "2018": 5.62
+    }
+   },
+   "changed_fp_early": {
+    "n_trades": 626,
+    "expectancy_R": 0.4737,
+    "win_rate": 0.3051,
+    "avg_win_R": 3.8893,
+    "avg_loss_R": -1.026,
+    "profit_factor": 1.664,
+    "total_R": 296.56,
+    "mean_over_sd_per_trade": 0.148,
+    "weekly_sd_R": 4.9317,
+    "weekly_sharpe": 1.6302,
+    "worst_week_R": -5.15,
+    "max_drawdown_R_trades_exit_order": 19.55,
+    "by_entry_year_total_R": {
+     "2012": -1.02,
+     "2013": 117.44,
+     "2014": 52.16,
+     "2015": 70.23,
+     "2016": 40.96,
+     "2017": 19.27,
+     "2018": -2.49
+    }
+   },
+   "unchanged_stress_early": {
+    "n_trades": 574,
+    "expectancy_R": 0.3237,
+    "win_rate": 0.3554,
+    "avg_win_R": 2.7303,
+    "avg_loss_R": -1.0033,
+    "profit_factor": 1.5,
+    "total_R": 185.78,
+    "mean_over_sd_per_trade": 0.1329,
+    "weekly_sd_R": 3.6154,
+    "weekly_sharpe": 1.393,
+    "worst_week_R": -5.13,
+    "max_drawdown_R_trades_exit_order": 25.89,
+    "by_entry_year_total_R": {
+     "2012": 2.06,
+     "2013": 99.43,
+     "2014": 37.36,
+     "2015": 18.7,
+     "2016": 16.29,
+     "2017": 6.57,
+     "2018": 5.36
+    }
+   },
+   "changed_stress_early": {
+    "n_trades": 627,
+    "expectancy_R": 0.4383,
+    "win_rate": 0.3046,
+    "avg_win_R": 3.8113,
+    "avg_loss_R": -1.0393,
+    "profit_factor": 1.606,
+    "total_R": 274.82,
+    "mean_over_sd_per_trade": 0.1393,
+    "weekly_sd_R": 4.8346,
+    "weekly_sharpe": 1.5411,
+    "worst_week_R": -5.22,
+    "max_drawdown_R_trades_exit_order": 21.01,
+    "by_entry_year_total_R": {
+     "2012": -1.04,
+     "2013": 111.87,
+     "2014": 46.79,
+     "2015": 64.81,
+     "2016": 37.82,
+     "2017": 17.3,
+     "2018": -2.73
+    }
+   },
+   "changed_equal_swing_total_R_fp_main": 53.13,
+   "gain_equal_swing_total_R_fp_main": 26.07,
+   "gain_weekly_sharpe_fp_main": 0.3074,
+   "changed_equal_swing_total_R_fp_early": 226.6,
+   "gain_equal_swing_total_R_fp_early": 22.51,
+   "gain_weekly_sharpe_fp_early": 0.1335,
+   "changed_equal_swing_total_R_stress_main": 40.11,
+   "gain_equal_swing_total_R_stress_main": 25.0,
+   "gain_weekly_sharpe_stress_main": 0.2986,
+   "changed_equal_swing_total_R_stress_early": 209.98,
+   "gain_equal_swing_total_R_stress_early": 24.2,
+   "gain_weekly_sharpe_stress_early": 0.1481
+  }
+ },
+ "truncation_tests": {
+  "brk72_24h_wd:btcusd": {
+   "variant": "S0.75r",
+   "sampled_acting": 15,
+   "sampled_other": 15,
+   "a_tested": 30,
+   "a_identical": 30,
+   "b_tested": 30,
+   "b_identical": 30,
+   "c_tested": 0,
+   "c_identical": 0,
+   "mismatches": 0
+  },
+  "F1_brk_ridge_filter:ethusd": {
+   "variant": "H2",
+   "sampled_acting": 15,
+   "sampled_other": 15,
+   "a_tested": 30,
+   "a_identical": 30,
+   "b_tested": 30,
+   "b_identical": 30,
+   "c_tested": 30,
+   "c_identical": 30,
+   "mismatches": 0
+  },
+  "ocm4:us100": {
+   "variant": "T1",
+   "sampled_acting": 15,
+   "sampled_other": 15,
+   "a_tested": 30,
+   "a_identical": 30,
+   "b_tested": 30,
+   "b_identical": 30,
+   "c_tested": 0,
+   "c_identical": 0,
+   "mismatches": 0
+  },
+  "donch4h_stop:xauusd": {
+   "variant": "S0.75r",
+   "sampled_acting": 15,
+   "sampled_other": 15,
+   "a_tested": 30,
+   "a_identical": 30,
+   "b_tested": 30,
+   "b_identical": 30,
+   "c_tested": 0,
+   "c_identical": 0,
+   "mismatches": 0
+  },
+  "orb_asia_2d_buf10:xauusd": {
+   "variant": "S0.75r",
+   "sampled_acting": 15,
+   "sampled_other": 15,
+   "a_tested": 30,
+   "a_identical": 30,
+   "b_tested": 30,
+   "b_identical": 30,
+   "c_tested": 0,
+   "c_identical": 0,
+   "mismatches": 0
+  }
+ },
+ "portfolio": {
+  "convention": "R = pnl / |fill - initial stop actually used|; constant stake = 1 R per trade at each trade's own stop; equal swing = each changed sleeve's stake x its frozen factor so that its weekly SD of R equals the unchanged sleeve's over 2018-02..2021-12 (FP); weeks = FP server weeks (New York + 7 h, Monday start), R booked at the exit, empty weeks = 0; drawdown on cumulative R in exit order (trade by trade) and on weekly sums; censored year-end trades excluded everywhere",
+  "equal_swing_factors": {
+   "ocm4:us100": 0.682408,
+   "F1_brk_ridge_filter:ethusd": 0.750978,
+   "brk72_24h_wd:btcusd": 0.771793,
+   "donch4h_stop:xauusd": 0.885978,
+   "orb_asia_2d_buf10:xauusd": 0.764081
+  },
+  "main_2018_02_to_2021_12": {
+   "unchanged": {
+    "fp": {
+     "n_trades": 5205,
+     "expectancy_R": 0.1515,
+     "euros_per_100_risked": 15.15,
+     "win_rate": 0.4498,
+     "avg_win_R": 1.1286,
+     "avg_loss_R": -0.6471,
+     "profit_factor": 1.425,
+     "total_R": 788.59,
+     "worst_week_R": -12.54,
+     "max_drawdown_R_trades_exit_order": 29.14,
+     "max_drawdown_R_weekly": 21.03,
+     "longest_losing_run_weeks": 7,
+     "losing_weeks_share": 0.4146,
+     "mean_over_sd_per_trade": 0.108,
+     "weekly_sharpe": 2.8729,
+     "by_entry_year_total_R": {
+      "2018": 232.76,
+      "2019": 178.9,
+      "2020": 270.0,
+      "2021": 106.92
+     },
+     "weeks": 205
+    },
+    "stress": {
+     "n_trades": 5207,
+     "expectancy_R": 0.1366,
+     "euros_per_100_risked": 13.66,
+     "win_rate": 0.4429,
+     "avg_win_R": 1.1272,
+     "avg_loss_R": -0.6509,
+     "profit_factor": 1.377,
+     "total_R": 711.09,
+     "worst_week_R": -12.66,
+     "max_drawdown_R_trades_exit_order": 30.78,
+     "max_drawdown_R_weekly": 22.98,
+     "longest_losing_run_weeks": 7,
+     "losing_weeks_share": 0.4293,
+     "mean_over_sd_per_trade": 0.0979,
+     "weekly_sharpe": 2.61,
+     "by_entry_year_total_R": {
+      "2018": 211.42,
+      "2019": 158.42,
+      "2020": 249.71,
+      "2021": 91.55
+     },
+     "weeks": 205
+    }
+   },
+   "all_five_constant_stake": {
+    "fp": {
+     "n_trades": 5102,
+     "expectancy_R": 0.2122,
+     "euros_per_100_risked": 21.22,
+     "win_rate": 0.4324,
+     "avg_win_R": 1.3712,
+     "avg_loss_R": -0.6706,
+     "profit_factor": 1.558,
+     "total_R": 1082.83,
+     "worst_week_R": -15.45,
+     "max_drawdown_R_trades_exit_order": 26.37,
+     "max_drawdown_R_weekly": 22.05,
+     "longest_losing_run_weeks": 5,
+     "losing_weeks_share": 0.3659,
+     "mean_over_sd_per_trade": 0.1233,
+     "weekly_sharpe": 3.4429,
+     "by_entry_year_total_R": {
+      "2018": 327.29,
+      "2019": 207.02,
+      "2020": 376.49,
+      "2021": 172.03
+     },
+     "weeks": 205
+    },
+    "stress": {
+     "n_trades": 5105,
+     "expectancy_R": 0.1965,
+     "euros_per_100_risked": 19.65,
+     "win_rate": 0.4259,
+     "avg_win_R": 1.3716,
+     "avg_loss_R": -0.6752,
+     "profit_factor": 1.507,
+     "total_R": 1002.9,
+     "worst_week_R": -17.03,
+     "max_drawdown_R_trades_exit_order": 27.63,
+     "max_drawdown_R_weekly": 22.65,
+     "longest_losing_run_weeks": 5,
+     "losing_weeks_share": 0.3902,
+     "mean_over_sd_per_trade": 0.1148,
+     "weekly_sharpe": 3.2079,
+     "by_entry_year_total_R": {
+      "2018": 308.92,
+      "2019": 186.41,
+      "2020": 354.73,
+      "2021": 152.84
+     },
+     "weeks": 205
+    }
+   },
+   "all_five_equal_swing": {
+    "fp": {
+     "n_trades": 5102,
+     "expectancy_R": 0.1813,
+     "euros_per_100_risked": 18.13,
+     "win_rate": 0.4324,
+     "avg_win_R": 1.1725,
+     "avg_loss_R": -0.5736,
+     "profit_factor": 1.557,
+     "total_R": 925.24,
+     "worst_week_R": -12.63,
+     "max_drawdown_R_trades_exit_order": 23.21,
+     "max_drawdown_R_weekly": 16.74,
+     "longest_losing_run_weeks": 4,
+     "losing_weeks_share": 0.3561,
+     "mean_over_sd_per_trade": 0.1271,
+     "weekly_sharpe": 3.4777,
+     "by_entry_year_total_R": {
+      "2018": 284.85,
+      "2019": 174.79,
+      "2020": 320.49,
+      "2021": 145.1
+     },
+     "weeks": 205
+    },
+    "stress": {
+     "n_trades": 5105,
+     "expectancy_R": 0.1675,
+     "euros_per_100_risked": 16.75,
+     "win_rate": 0.4259,
+     "avg_win_R": 1.1725,
+     "avg_loss_R": -0.5779,
+     "profit_factor": 1.505,
+     "total_R": 855.09,
+     "worst_week_R": -14.06,
+     "max_drawdown_R_trades_exit_order": 24.5,
+     "max_drawdown_R_weekly": 17.87,
+     "longest_losing_run_weeks": 4,
+     "losing_weeks_share": 0.3707,
+     "mean_over_sd_per_trade": 0.1181,
+     "weekly_sharpe": 3.2344,
+     "by_entry_year_total_R": {
+      "2018": 268.73,
+      "2019": 156.7,
+      "2020": 301.13,
+      "2021": 128.53
+     },
+     "weeks": 205
+    }
+   }
+  },
+  "early_entries_before_2018_02_not_used_to_pick": {
+   "unchanged": {
+    "fp": {
+     "n_trades": 2758,
+     "expectancy_R": 0.1761,
+     "euros_per_100_risked": 17.61,
+     "win_rate": 0.4184,
+     "avg_win_R": 1.348,
+     "avg_loss_R": -0.667,
+     "profit_factor": 1.454,
+     "total_R": 485.76,
+     "worst_week_R": -8.12,
+     "max_drawdown_R_trades_exit_order": 27.25,
+     "max_drawdown_R_weekly": 24.99,
+     "longest_losing_run_weeks": 6,
+     "losing_weeks_share": 0.4398,
+     "mean_over_sd_per_trade": 0.1143,
+     "weekly_sharpe": 2.406,
+     "by_entry_year_total_R": {
+      "2012": 2.11,
+      "2013": 119.62,
+      "2014": 99.5,
+      "2015": 31.63,
+      "2016": 83.64,
+      "2017": 142.44,
+      "2018": 6.81
+     },
+     "weeks": 266
+    },
+    "stress": {
+     "n_trades": 2755,
+     "expectancy_R": 0.16,
+     "euros_per_100_risked": 16.0,
+     "win_rate": 0.4109,
+     "avg_win_R": 1.3484,
+     "avg_loss_R": -0.6689,
+     "profit_factor": 1.406,
+     "total_R": 440.82,
+     "worst_week_R": -8.23,
+     "max_drawdown_R_trades_exit_order": 29.6,
+     "max_drawdown_R_weekly": 27.3,
+     "longest_losing_run_weeks": 6,
+     "losing_weeks_share": 0.4549,
+     "mean_over_sd_per_trade": 0.1052,
+     "weekly_sharpe": 2.2072,
+     "by_entry_year_total_R": {
+      "2012": 2.06,
+      "2013": 114.4,
+      "2014": 91.39,
+      "2015": 24.44,
+      "2016": 77.35,
+      "2017": 125.3,
+      "2018": 5.88
+     },
+     "weeks": 266
+    }
+   },
+   "all_five_constant_stake": {
+    "fp": {
+     "n_trades": 2770,
+     "expectancy_R": 0.2268,
+     "euros_per_100_risked": 22.68,
+     "win_rate": 0.3852,
+     "avg_win_R": 1.7087,
+     "avg_loss_R": -0.7017,
+     "profit_factor": 1.526,
+     "total_R": 628.15,
+     "worst_week_R": -8.99,
+     "max_drawdown_R_trades_exit_order": 26.92,
+     "max_drawdown_R_weekly": 24.49,
+     "longest_losing_run_weeks": 6,
+     "losing_weeks_share": 0.4286,
+     "mean_over_sd_per_trade": 0.1122,
+     "weekly_sharpe": 2.3647,
+     "by_entry_year_total_R": {
+      "2012": -1.02,
+      "2013": 135.64,
+      "2014": 101.96,
+      "2015": 122.6,
+      "2016": 98.72,
+      "2017": 163.4,
+      "2018": 6.85
+     },
+     "weeks": 266
+    },
+    "stress": {
+     "n_trades": 2773,
+     "expectancy_R": 0.2064,
+     "euros_per_100_risked": 20.64,
+     "win_rate": 0.3772,
+     "avg_win_R": 1.7136,
+     "avg_loss_R": -0.7065,
+     "profit_factor": 1.469,
+     "total_R": 572.34,
+     "worst_week_R": -9.19,
+     "max_drawdown_R_trades_exit_order": 27.98,
+     "max_drawdown_R_weekly": 26.18,
+     "longest_losing_run_weeks": 6,
+     "losing_weeks_share": 0.4474,
+     "mean_over_sd_per_trade": 0.1032,
+     "weekly_sharpe": 2.1876,
+     "by_entry_year_total_R": {
+      "2012": -1.04,
+      "2013": 128.95,
+      "2014": 91.14,
+      "2015": 113.12,
+      "2016": 91.3,
+      "2017": 142.96,
+      "2018": 5.89
+     },
+     "weeks": 266
+    }
+   },
+   "all_five_equal_swing": {
+    "fp": {
+     "n_trades": 2770,
+     "expectancy_R": 0.1815,
+     "euros_per_100_risked": 18.15,
+     "win_rate": 0.3852,
+     "avg_win_R": 1.3875,
+     "avg_loss_R": -0.574,
+     "profit_factor": 1.514,
+     "total_R": 502.87,
+     "worst_week_R": -7.65,
+     "max_drawdown_R_trades_exit_order": 20.54,
+     "max_drawdown_R_weekly": 18.71,
+     "longest_losing_run_weeks": 6,
+     "losing_weeks_share": 0.4286,
+     "mean_over_sd_per_trade": 0.1157,
+     "weekly_sharpe": 2.4007,
+     "by_entry_year_total_R": {
+      "2012": -0.78,
+      "2013": 106.35,
+      "2014": 78.28,
+      "2015": 98.62,
+      "2016": 77.3,
+      "2017": 137.98,
+      "2018": 5.13
+     },
+     "weeks": 266
+    },
+    "stress": {
+     "n_trades": 2773,
+     "expectancy_R": 0.1649,
+     "euros_per_100_risked": 16.49,
+     "win_rate": 0.3772,
+     "avg_win_R": 1.3911,
+     "avg_loss_R": -0.5779,
+     "profit_factor": 1.458,
+     "total_R": 457.16,
+     "worst_week_R": -7.86,
+     "max_drawdown_R_trades_exit_order": 21.9,
+     "max_drawdown_R_weekly": 20.11,
+     "longest_losing_run_weeks": 6,
+     "losing_weeks_share": 0.4436,
+     "mean_over_sd_per_trade": 0.1062,
+     "weekly_sharpe": 2.216,
+     "by_entry_year_total_R": {
+      "2012": -0.79,
+      "2013": 101.09,
+      "2014": 69.31,
+      "2015": 90.74,
+      "2016": 71.01,
+      "2017": 121.52,
+      "2018": 4.28
+     },
+     "weeks": 266
+    }
+   }
+  },
+  "each_change_alone_weekly_sharpe": {
+   "only_ocm4:us100:T1_constant_stake": {
+    "main": 3.1007,
+    "early": 2.3339
+   },
+   "only_ocm4:us100:T1_equal_swing": {
+    "main": 3.0423,
+    "early": 2.385
+   },
+   "only_F1_brk_ridge_filter:ethusd:H2_constant_stake": {
+    "main": 3.0783,
+    "early": 2.4116
+   },
+   "only_F1_brk_ridge_filter:ethusd:H2_equal_swing": {
+    "main": 3.0482,
+    "early": 2.4084
+   },
+   "only_brk72_24h_wd:btcusd:S0.75r_constant_stake": {
+    "main": 2.9409,
+    "early": 2.3854
+   },
+   "only_brk72_24h_wd:btcusd:S0.75r_equal_swing": {
+    "main": 2.9326,
+    "early": 2.3788
+   },
+   "only_donch4h_stop:xauusd:S0.75r_constant_stake": {
+    "main": 2.9457,
+    "early": 2.3772
+   },
+   "only_donch4h_stop:xauusd:S0.75r_equal_swing": {
+    "main": 2.9406,
+    "early": 2.3813
+   },
+   "only_orb_asia_2d_buf10:xauusd:S0.75r_constant_stake": {
+    "main": 2.9026,
+    "early": 2.3794
+   },
+   "only_orb_asia_2d_buf10:xauusd:S0.75r_equal_swing": {
+    "main": 2.9801,
+    "early": 2.4196
+   }
+  },
+  "deltas_vs_unchanged": {
+   "all_five_constant_stake|fp|main": {
+    "n_trades": -103,
+    "expectancy_R": 0.0607,
+    "euros_per_100_risked": 6.07,
+    "win_rate": -0.0174,
+    "avg_win_R": 0.2426,
+    "avg_loss_R": -0.0235,
+    "profit_factor": 0.133,
+    "total_R": 294.24,
+    "worst_week_R": -2.91,
+    "max_drawdown_R_trades_exit_order": -2.77,
+    "max_drawdown_R_weekly": 1.02,
+    "longest_losing_run_weeks": -2,
+    "losing_weeks_share": -0.0487,
+    "mean_over_sd_per_trade": 0.0153,
+    "weekly_sharpe": 0.57
+   },
+   "all_five_constant_stake|fp|early": {
+    "n_trades": 12,
+    "expectancy_R": 0.0507,
+    "euros_per_100_risked": 5.07,
+    "win_rate": -0.0332,
+    "avg_win_R": 0.3607,
+    "avg_loss_R": -0.0347,
+    "profit_factor": 0.072,
+    "total_R": 142.39,
+    "worst_week_R": -0.87,
+    "max_drawdown_R_trades_exit_order": -0.33,
+    "max_drawdown_R_weekly": -0.5,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0112,
+    "mean_over_sd_per_trade": -0.0021,
+    "weekly_sharpe": -0.0413
+   },
+   "all_five_constant_stake|stress|main": {
+    "n_trades": -102,
+    "expectancy_R": 0.0599,
+    "euros_per_100_risked": 5.99,
+    "win_rate": -0.017,
+    "avg_win_R": 0.2444,
+    "avg_loss_R": -0.0243,
+    "profit_factor": 0.13,
+    "total_R": 291.81,
+    "worst_week_R": -4.37,
+    "max_drawdown_R_trades_exit_order": -3.15,
+    "max_drawdown_R_weekly": -0.33,
+    "longest_losing_run_weeks": -2,
+    "losing_weeks_share": -0.0391,
+    "mean_over_sd_per_trade": 0.0169,
+    "weekly_sharpe": 0.5979
+   },
+   "all_five_constant_stake|stress|early": {
+    "n_trades": 18,
+    "expectancy_R": 0.0464,
+    "euros_per_100_risked": 4.64,
+    "win_rate": -0.0337,
+    "avg_win_R": 0.3652,
+    "avg_loss_R": -0.0376,
+    "profit_factor": 0.063,
+    "total_R": 131.52,
+    "worst_week_R": -0.96,
+    "max_drawdown_R_trades_exit_order": -1.62,
+    "max_drawdown_R_weekly": -1.12,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0075,
+    "mean_over_sd_per_trade": -0.002,
+    "weekly_sharpe": -0.0196
+   },
+   "all_five_equal_swing|fp|main": {
+    "n_trades": -103,
+    "expectancy_R": 0.0298,
+    "euros_per_100_risked": 2.98,
+    "win_rate": -0.0174,
+    "avg_win_R": 0.0439,
+    "avg_loss_R": 0.0735,
+    "profit_factor": 0.132,
+    "total_R": 136.65,
+    "worst_week_R": -0.09,
+    "max_drawdown_R_trades_exit_order": -5.93,
+    "max_drawdown_R_weekly": -4.29,
+    "longest_losing_run_weeks": -3,
+    "losing_weeks_share": -0.0585,
+    "mean_over_sd_per_trade": 0.0191,
+    "weekly_sharpe": 0.6048
+   },
+   "all_five_equal_swing|fp|early": {
+    "n_trades": 12,
+    "expectancy_R": 0.0054,
+    "euros_per_100_risked": 0.54,
+    "win_rate": -0.0332,
+    "avg_win_R": 0.0395,
+    "avg_loss_R": 0.093,
+    "profit_factor": 0.06,
+    "total_R": 17.11,
+    "worst_week_R": 0.47,
+    "max_drawdown_R_trades_exit_order": -6.71,
+    "max_drawdown_R_weekly": -6.28,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0112,
+    "mean_over_sd_per_trade": 0.0014,
+    "weekly_sharpe": -0.0053
+   },
+   "all_five_equal_swing|stress|main": {
+    "n_trades": -102,
+    "expectancy_R": 0.0309,
+    "euros_per_100_risked": 3.09,
+    "win_rate": -0.017,
+    "avg_win_R": 0.0453,
+    "avg_loss_R": 0.073,
+    "profit_factor": 0.128,
+    "total_R": 144.0,
+    "worst_week_R": -1.4,
+    "max_drawdown_R_trades_exit_order": -6.28,
+    "max_drawdown_R_weekly": -5.11,
+    "longest_losing_run_weeks": -3,
+    "losing_weeks_share": -0.0586,
+    "mean_over_sd_per_trade": 0.0202,
+    "weekly_sharpe": 0.6244
+   },
+   "all_five_equal_swing|stress|early": {
+    "n_trades": 18,
+    "expectancy_R": 0.0049,
+    "euros_per_100_risked": 0.49,
+    "win_rate": -0.0337,
+    "avg_win_R": 0.0427,
+    "avg_loss_R": 0.091,
+    "profit_factor": 0.052,
+    "total_R": 16.34,
+    "worst_week_R": 0.37,
+    "max_drawdown_R_trades_exit_order": -7.7,
+    "max_drawdown_R_weekly": -7.19,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0113,
+    "mean_over_sd_per_trade": 0.001,
+    "weekly_sharpe": 0.0088
+   },
+   "only_ocm4:us100:T1_constant_stake|fp|main": {
+    "n_trades": -142,
+    "expectancy_R": 0.0188,
+    "euros_per_100_risked": 1.88,
+    "win_rate": -0.0072,
+    "avg_win_R": 0.0753,
+    "avg_loss_R": -0.0034,
+    "profit_factor": 0.045,
+    "total_R": 73.65,
+    "worst_week_R": -1.01,
+    "max_drawdown_R_trades_exit_order": 1.5,
+    "max_drawdown_R_weekly": 0.33,
+    "longest_losing_run_weeks": -3,
+    "losing_weeks_share": 0.0,
+    "mean_over_sd_per_trade": 0.0048,
+    "weekly_sharpe": 0.2278
+   },
+   "only_ocm4:us100:T1_constant_stake|fp|early": {
+    "n_trades": -137,
+    "expectancy_R": 0.0259,
+    "euros_per_100_risked": 2.59,
+    "win_rate": -0.0227,
+    "avg_win_R": 0.1928,
+    "avg_loss_R": -0.0076,
+    "profit_factor": 0.041,
+    "total_R": 43.55,
+    "worst_week_R": -1.04,
+    "max_drawdown_R_trades_exit_order": 1.91,
+    "max_drawdown_R_weekly": 1.38,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0038,
+    "mean_over_sd_per_trade": 0.0001,
+    "weekly_sharpe": -0.0721
+   },
+   "only_ocm4:us100:T1_constant_stake|stress|main": {
+    "n_trades": -142,
+    "expectancy_R": 0.0184,
+    "euros_per_100_risked": 1.84,
+    "win_rate": -0.0074,
+    "avg_win_R": 0.0767,
+    "avg_loss_R": -0.0033,
+    "profit_factor": 0.043,
+    "total_R": 74.21,
+    "worst_week_R": -1.62,
+    "max_drawdown_R_trades_exit_order": 2.39,
+    "max_drawdown_R_weekly": 0.69,
+    "longest_losing_run_weeks": -2,
+    "losing_weeks_share": -0.0098,
+    "mean_over_sd_per_trade": 0.0054,
+    "weekly_sharpe": 0.2314
+   },
+   "only_ocm4:us100:T1_constant_stake|stress|early": {
+    "n_trades": -135,
+    "expectancy_R": 0.025,
+    "euros_per_100_risked": 2.5,
+    "win_rate": -0.0224,
+    "avg_win_R": 0.1933,
+    "avg_loss_R": -0.0082,
+    "profit_factor": 0.041,
+    "total_R": 43.95,
+    "worst_week_R": -1.03,
+    "max_drawdown_R_trades_exit_order": 1.1,
+    "max_drawdown_R_weekly": 0.58,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0037,
+    "mean_over_sd_per_trade": 0.0008,
+    "weekly_sharpe": -0.0437
+   },
+   "only_ocm4:us100:T1_equal_swing|fp|main": {
+    "n_trades": -142,
+    "expectancy_R": 0.0108,
+    "euros_per_100_risked": 1.08,
+    "win_rate": -0.0072,
+    "avg_win_R": 0.0225,
+    "avg_loss_R": 0.0242,
+    "profit_factor": 0.042,
+    "total_R": 33.18,
+    "worst_week_R": 0.22,
+    "max_drawdown_R_trades_exit_order": -0.06,
+    "max_drawdown_R_weekly": -0.59,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0049,
+    "mean_over_sd_per_trade": 0.006,
+    "weekly_sharpe": 0.1694
+   },
+   "only_ocm4:us100:T1_equal_swing|fp|early": {
+    "n_trades": -137,
+    "expectancy_R": 0.0105,
+    "euros_per_100_risked": 1.05,
+    "win_rate": -0.0227,
+    "avg_win_R": 0.0704,
+    "avg_loss_R": 0.0472,
+    "profit_factor": 0.044,
+    "total_R": 3.33,
+    "worst_week_R": -0.72,
+    "max_drawdown_R_trades_exit_order": -2.85,
+    "max_drawdown_R_weekly": -3.05,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0037,
+    "mean_over_sd_per_trade": 0.0032,
+    "weekly_sharpe": -0.021
+   },
+   "only_ocm4:us100:T1_equal_swing|stress|main": {
+    "n_trades": -142,
+    "expectancy_R": 0.0106,
+    "euros_per_100_risked": 1.06,
+    "win_rate": -0.0074,
+    "avg_win_R": 0.0232,
+    "avg_loss_R": 0.0241,
+    "profit_factor": 0.039,
+    "total_R": 34.51,
+    "worst_week_R": -0.98,
+    "max_drawdown_R_trades_exit_order": 0.8,
+    "max_drawdown_R_weekly": -0.26,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0049,
+    "mean_over_sd_per_trade": 0.0061,
+    "weekly_sharpe": 0.1687
+   },
+   "only_ocm4:us100:T1_equal_swing|stress|early": {
+    "n_trades": -135,
+    "expectancy_R": 0.0108,
+    "euros_per_100_risked": 1.08,
+    "win_rate": -0.0224,
+    "avg_win_R": 0.0699,
+    "avg_loss_R": 0.047,
+    "profit_factor": 0.043,
+    "total_R": 6.79,
+    "worst_week_R": -0.71,
+    "max_drawdown_R_trades_exit_order": -3.76,
+    "max_drawdown_R_weekly": -3.95,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0113,
+    "mean_over_sd_per_trade": 0.0039,
+    "weekly_sharpe": 0.0071
+   },
+   "only_F1_brk_ridge_filter:ethusd:H2_constant_stake|fp|main": {
+    "n_trades": -53,
+    "expectancy_R": 0.0186,
+    "euros_per_100_risked": 1.86,
+    "win_rate": -0.0026,
+    "avg_win_R": 0.05,
+    "avg_loss_R": 0.0013,
+    "profit_factor": 0.051,
+    "total_R": 87.62,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": -2.8,
+    "max_drawdown_R_weekly": -3.12,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0146,
+    "mean_over_sd_per_trade": 0.0076,
+    "weekly_sharpe": 0.2054
+   },
+   "only_F1_brk_ridge_filter:ethusd:H2_constant_stake|fp|early": {
+    "n_trades": 0,
+    "expectancy_R": 0.0004,
+    "euros_per_100_risked": 0.04,
+    "win_rate": 0.0,
+    "avg_win_R": 0.001,
+    "avg_loss_R": 0.0,
+    "profit_factor": 0.001,
+    "total_R": 1.06,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": 0.0,
+    "max_drawdown_R_weekly": 0.0,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0,
+    "mean_over_sd_per_trade": 0.0002,
+    "weekly_sharpe": 0.0056
+   },
+   "only_F1_brk_ridge_filter:ethusd:H2_constant_stake|stress|main": {
+    "n_trades": -53,
+    "expectancy_R": 0.0193,
+    "euros_per_100_risked": 1.93,
+    "win_rate": -0.0025,
+    "avg_win_R": 0.0516,
+    "avg_loss_R": 0.0016,
+    "profit_factor": 0.052,
+    "total_R": 92.24,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": -2.74,
+    "max_drawdown_R_weekly": -1.63,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0147,
+    "mean_over_sd_per_trade": 0.0086,
+    "weekly_sharpe": 0.2354
+   },
+   "only_F1_brk_ridge_filter:ethusd:H2_constant_stake|stress|early": {
+    "n_trades": 0,
+    "expectancy_R": 0.0004,
+    "euros_per_100_risked": 0.04,
+    "win_rate": 0.0,
+    "avg_win_R": 0.001,
+    "avg_loss_R": 0.0,
+    "profit_factor": 0.001,
+    "total_R": 1.06,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": 0.0,
+    "max_drawdown_R_weekly": 0.0,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0038,
+    "mean_over_sd_per_trade": 0.0003,
+    "weekly_sharpe": 0.0057
+   },
+   "only_F1_brk_ridge_filter:ethusd:H2_equal_swing|fp|main": {
+    "n_trades": -53,
+    "expectancy_R": 0.0094,
+    "euros_per_100_risked": 0.94,
+    "win_rate": -0.0026,
+    "avg_win_R": 0.0102,
+    "avg_loss_R": 0.0168,
+    "profit_factor": 0.037,
+    "total_R": 40.15,
+    "worst_week_R": -0.01,
+    "max_drawdown_R_trades_exit_order": -3.89,
+    "max_drawdown_R_weekly": -5.18,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0195,
+    "mean_over_sd_per_trade": 0.0056,
+    "weekly_sharpe": 0.1753
+   },
+   "only_F1_brk_ridge_filter:ethusd:H2_equal_swing|fp|early": {
+    "n_trades": 0,
+    "expectancy_R": 0.0002,
+    "euros_per_100_risked": 0.02,
+    "win_rate": 0.0,
+    "avg_win_R": 0.0004,
+    "avg_loss_R": 0.0,
+    "profit_factor": 0.0,
+    "total_R": 0.45,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": 0.0,
+    "max_drawdown_R_weekly": 0.0,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0,
+    "mean_over_sd_per_trade": 0.0001,
+    "weekly_sharpe": 0.0024
+   },
+   "only_F1_brk_ridge_filter:ethusd:H2_equal_swing|stress|main": {
+    "n_trades": -53,
+    "expectancy_R": 0.0107,
+    "euros_per_100_risked": 1.07,
+    "win_rate": -0.0025,
+    "avg_win_R": 0.012,
+    "avg_loss_R": 0.0174,
+    "profit_factor": 0.038,
+    "total_R": 47.88,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": -3.88,
+    "max_drawdown_R_weekly": -4.44,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0195,
+    "mean_over_sd_per_trade": 0.0066,
+    "weekly_sharpe": 0.2036
+   },
+   "only_F1_brk_ridge_filter:ethusd:H2_equal_swing|stress|early": {
+    "n_trades": 0,
+    "expectancy_R": 0.0002,
+    "euros_per_100_risked": 0.02,
+    "win_rate": 0.0,
+    "avg_win_R": 0.0004,
+    "avg_loss_R": 0.0,
+    "profit_factor": 0.0,
+    "total_R": 0.46,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": 0.0,
+    "max_drawdown_R_weekly": 0.0,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0038,
+    "mean_over_sd_per_trade": 0.0001,
+    "weekly_sharpe": 0.0025
+   },
+   "only_brk72_24h_wd:btcusd:S0.75r_constant_stake|fp|main": {
+    "n_trades": 14,
+    "expectancy_R": 0.012,
+    "euros_per_100_risked": 1.2,
+    "win_rate": -0.003,
+    "avg_win_R": 0.054,
+    "avg_loss_R": -0.0126,
+    "profit_factor": 0.023,
+    "total_R": 64.76,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": -1.24,
+    "max_drawdown_R_weekly": -1.89,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0098,
+    "mean_over_sd_per_trade": 0.002,
+    "weekly_sharpe": 0.068
+   },
+   "only_brk72_24h_wd:btcusd:S0.75r_constant_stake|fp|early": {
+    "n_trades": 5,
+    "expectancy_R": 0.0008,
+    "euros_per_100_risked": 0.08,
+    "win_rate": -0.0018,
+    "avg_win_R": 0.0186,
+    "avg_loss_R": -0.0056,
+    "profit_factor": -0.003,
+    "total_R": 3.0,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": 0.0,
+    "max_drawdown_R_weekly": 0.0,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0037,
+    "mean_over_sd_per_trade": -0.0005,
+    "weekly_sharpe": -0.0206
+   },
+   "only_brk72_24h_wd:btcusd:S0.75r_constant_stake|stress|main": {
+    "n_trades": 14,
+    "expectancy_R": 0.0118,
+    "euros_per_100_risked": 1.18,
+    "win_rate": -0.0029,
+    "avg_win_R": 0.0546,
+    "avg_loss_R": -0.0124,
+    "profit_factor": 0.023,
+    "total_R": 63.91,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": -1.6,
+    "max_drawdown_R_weekly": -1.9,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0,
+    "mean_over_sd_per_trade": 0.0025,
+    "weekly_sharpe": 0.0816
+   },
+   "only_brk72_24h_wd:btcusd:S0.75r_constant_stake|stress|early": {
+    "n_trades": 7,
+    "expectancy_R": -0.0007,
+    "euros_per_100_risked": -0.07,
+    "win_rate": -0.0025,
+    "avg_win_R": 0.0194,
+    "avg_loss_R": -0.0062,
+    "profit_factor": -0.007,
+    "total_R": -0.94,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": 0.0,
+    "max_drawdown_R_weekly": 0.0,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0075,
+    "mean_over_sd_per_trade": -0.0014,
+    "weekly_sharpe": -0.0322
+   },
+   "only_brk72_24h_wd:btcusd:S0.75r_equal_swing|fp|main": {
+    "n_trades": 14,
+    "expectancy_R": 0.003,
+    "euros_per_100_risked": 0.3,
+    "win_rate": -0.003,
+    "avg_win_R": 0.0076,
+    "avg_loss_R": 0.0087,
+    "profit_factor": 0.013,
+    "total_R": 17.88,
+    "worst_week_R": 0.68,
+    "max_drawdown_R_trades_exit_order": -1.17,
+    "max_drawdown_R_weekly": -0.48,
+    "longest_losing_run_weeks": -1,
+    "losing_weeks_share": -0.0097,
+    "mean_over_sd_per_trade": 0.0021,
+    "weekly_sharpe": 0.0597
+   },
+   "only_brk72_24h_wd:btcusd:S0.75r_equal_swing|fp|early": {
+    "n_trades": 5,
+    "expectancy_R": -0.0021,
+    "euros_per_100_risked": -0.21,
+    "win_rate": -0.0018,
+    "avg_win_R": 0.0021,
+    "avg_loss_R": 0.0012,
+    "profit_factor": -0.006,
+    "total_R": -5.03,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": 0.0,
+    "max_drawdown_R_weekly": 0.0,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0038,
+    "mean_over_sd_per_trade": -0.0013,
+    "weekly_sharpe": -0.0272
+   },
+   "only_brk72_24h_wd:btcusd:S0.75r_equal_swing|stress|main": {
+    "n_trades": 14,
+    "expectancy_R": 0.0031,
+    "euros_per_100_risked": 0.31,
+    "win_rate": -0.0029,
+    "avg_win_R": 0.0077,
+    "avg_loss_R": 0.0088,
+    "profit_factor": 0.012,
+    "total_R": 18.4,
+    "worst_week_R": 0.68,
+    "max_drawdown_R_trades_exit_order": -1.17,
+    "max_drawdown_R_weekly": -0.52,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0,
+    "mean_over_sd_per_trade": 0.0022,
+    "weekly_sharpe": 0.065
+   },
+   "only_brk72_24h_wd:btcusd:S0.75r_equal_swing|stress|early": {
+    "n_trades": 7,
+    "expectancy_R": -0.0033,
+    "euros_per_100_risked": -0.33,
+    "win_rate": -0.0025,
+    "avg_win_R": 0.0028,
+    "avg_loss_R": 0.001,
+    "profit_factor": -0.009,
+    "total_R": -7.91,
+    "worst_week_R": 0.0,
+    "max_drawdown_R_trades_exit_order": 0.0,
+    "max_drawdown_R_weekly": 0.0,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0,
+    "mean_over_sd_per_trade": -0.002,
+    "weekly_sharpe": -0.0385
+   },
+   "only_donch4h_stop:xauusd:S0.75r_constant_stake|fp|main": {
+    "n_trades": 44,
+    "expectancy_R": 0.0036,
+    "euros_per_100_risked": 0.36,
+    "win_rate": 0.0008,
+    "avg_win_R": 0.005,
+    "avg_loss_R": -0.0001,
+    "profit_factor": 0.011,
+    "total_R": 25.73,
+    "worst_week_R": -0.69,
+    "max_drawdown_R_trades_exit_order": -1.08,
+    "max_drawdown_R_weekly": -1.16,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0049,
+    "mean_over_sd_per_trade": 0.0026,
+    "weekly_sharpe": 0.0728
+   },
+   "only_donch4h_stop:xauusd:S0.75r_constant_stake|fp|early": {
+    "n_trades": 92,
+    "expectancy_R": -0.0049,
+    "euros_per_100_risked": -0.49,
+    "win_rate": 0.0027,
+    "avg_win_R": -0.0219,
+    "avg_loss_R": -0.0016,
+    "profit_factor": -0.012,
+    "total_R": 2.3,
+    "worst_week_R": -0.35,
+    "max_drawdown_R_trades_exit_order": -2.06,
+    "max_drawdown_R_weekly": -2.07,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0151,
+    "mean_over_sd_per_trade": -0.0025,
+    "weekly_sharpe": -0.0288
+   },
+   "only_donch4h_stop:xauusd:S0.75r_constant_stake|stress|main": {
+    "n_trades": 44,
+    "expectancy_R": 0.0034,
+    "euros_per_100_risked": 0.34,
+    "win_rate": 0.0012,
+    "avg_win_R": 0.0037,
+    "avg_loss_R": -0.0007,
+    "profit_factor": 0.01,
+    "total_R": 24.08,
+    "worst_week_R": -0.71,
+    "max_drawdown_R_trades_exit_order": -1.05,
+    "max_drawdown_R_weekly": -1.16,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0,
+    "mean_over_sd_per_trade": 0.0025,
+    "weekly_sharpe": 0.0705
+   },
+   "only_donch4h_stop:xauusd:S0.75r_constant_stake|stress|early": {
+    "n_trades": 93,
+    "expectancy_R": -0.0058,
+    "euros_per_100_risked": -0.58,
+    "win_rate": 0.0024,
+    "avg_win_R": -0.0224,
+    "avg_loss_R": -0.0023,
+    "profit_factor": -0.014,
+    "total_R": -1.61,
+    "worst_week_R": -0.46,
+    "max_drawdown_R_trades_exit_order": -1.89,
+    "max_drawdown_R_weekly": -1.89,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0075,
+    "mean_over_sd_per_trade": -0.0032,
+    "weekly_sharpe": -0.0438
+   },
+   "only_donch4h_stop:xauusd:S0.75r_equal_swing|fp|main": {
+    "n_trades": 44,
+    "expectancy_R": 0.0024,
+    "euros_per_100_risked": 0.24,
+    "win_rate": 0.0008,
+    "avg_win_R": -0.0017,
+    "avg_loss_R": 0.0031,
+    "profit_factor": 0.01,
+    "total_R": 19.37,
+    "worst_week_R": -0.58,
+    "max_drawdown_R_trades_exit_order": -1.4,
+    "max_drawdown_R_weekly": -1.55,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0049,
+    "mean_over_sd_per_trade": 0.0021,
+    "weekly_sharpe": 0.0677
+   },
+   "only_donch4h_stop:xauusd:S0.75r_equal_swing|fp|early": {
+    "n_trades": 92,
+    "expectancy_R": -0.0071,
+    "euros_per_100_risked": -0.71,
+    "win_rate": 0.0027,
+    "avg_win_R": -0.0393,
+    "avg_loss_R": 0.0071,
+    "profit_factor": -0.012,
+    "total_R": -4.15,
+    "worst_week_R": -0.18,
+    "max_drawdown_R_trades_exit_order": -1.36,
+    "max_drawdown_R_weekly": -1.37,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0151,
+    "mean_over_sd_per_trade": -0.003,
+    "weekly_sharpe": -0.0247
+   },
+   "only_donch4h_stop:xauusd:S0.75r_equal_swing|stress|main": {
+    "n_trades": 44,
+    "expectancy_R": 0.0023,
+    "euros_per_100_risked": 0.23,
+    "win_rate": 0.0012,
+    "avg_win_R": -0.0029,
+    "avg_loss_R": 0.0025,
+    "profit_factor": 0.008,
+    "total_R": 18.22,
+    "worst_week_R": -0.6,
+    "max_drawdown_R_trades_exit_order": -1.38,
+    "max_drawdown_R_weekly": -1.22,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0,
+    "mean_over_sd_per_trade": 0.0021,
+    "weekly_sharpe": 0.0651
+   },
+   "only_donch4h_stop:xauusd:S0.75r_equal_swing|stress|early": {
+    "n_trades": 93,
+    "expectancy_R": -0.0077,
+    "euros_per_100_risked": -0.77,
+    "win_rate": 0.0024,
+    "avg_win_R": -0.0398,
+    "avg_loss_R": 0.0067,
+    "profit_factor": -0.014,
+    "total_R": -7.2,
+    "worst_week_R": -0.28,
+    "max_drawdown_R_trades_exit_order": -1.24,
+    "max_drawdown_R_weekly": -1.24,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0075,
+    "mean_over_sd_per_trade": -0.0036,
+    "weekly_sharpe": -0.0389
+   },
+   "only_orb_asia_2d_buf10:xauusd:S0.75r_constant_stake|fp|main": {
+    "n_trades": 34,
+    "expectancy_R": 0.0071,
+    "euros_per_100_risked": 0.71,
+    "win_rate": -0.0054,
+    "avg_win_R": 0.0485,
+    "avg_loss_R": -0.0088,
+    "profit_factor": 0.01,
+    "total_R": 42.48,
+    "worst_week_R": -0.91,
+    "max_drawdown_R_trades_exit_order": 3.01,
+    "max_drawdown_R_weekly": 2.28,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0,
+    "mean_over_sd_per_trade": -0.0012,
+    "weekly_sharpe": 0.0297
+   },
+   "only_orb_asia_2d_buf10:xauusd:S0.75r_constant_stake|fp|early": {
+    "n_trades": 52,
+    "expectancy_R": 0.0297,
+    "euros_per_100_risked": 2.97,
+    "win_rate": -0.0124,
+    "avg_win_R": 0.1655,
+    "avg_loss_R": -0.0213,
+    "profit_factor": 0.049,
+    "total_R": 92.47,
+    "worst_week_R": -0.4,
+    "max_drawdown_R_trades_exit_order": -4.32,
+    "max_drawdown_R_weekly": -5.11,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0188,
+    "mean_over_sd_per_trade": -0.002,
+    "weekly_sharpe": -0.0266
+   },
+   "only_orb_asia_2d_buf10:xauusd:S0.75r_constant_stake|stress|main": {
+    "n_trades": 35,
+    "expectancy_R": 0.0062,
+    "euros_per_100_risked": 0.62,
+    "win_rate": -0.0055,
+    "avg_win_R": 0.0483,
+    "avg_loss_R": -0.0093,
+    "profit_factor": 0.007,
+    "total_R": 37.39,
+    "worst_week_R": -2.15,
+    "max_drawdown_R_trades_exit_order": 3.04,
+    "max_drawdown_R_weekly": 2.29,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": -0.0049,
+    "mean_over_sd_per_trade": -0.001,
+    "weekly_sharpe": 0.0223
+   },
+   "only_orb_asia_2d_buf10:xauusd:S0.75r_constant_stake|stress|early": {
+    "n_trades": 53,
+    "expectancy_R": 0.0287,
+    "euros_per_100_risked": 2.87,
+    "win_rate": -0.0124,
+    "avg_win_R": 0.1685,
+    "avg_loss_R": -0.0224,
+    "profit_factor": 0.048,
+    "total_R": 89.05,
+    "worst_week_R": -0.42,
+    "max_drawdown_R_trades_exit_order": -6.19,
+    "max_drawdown_R_weekly": -6.37,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0301,
+    "mean_over_sd_per_trade": -0.0009,
+    "weekly_sharpe": 0.0009
+   },
+   "only_orb_asia_2d_buf10:xauusd:S0.75r_equal_swing|fp|main": {
+    "n_trades": 34,
+    "expectancy_R": 0.004,
+    "euros_per_100_risked": 0.4,
+    "win_rate": -0.0054,
+    "avg_win_R": 0.0037,
+    "avg_loss_R": 0.0214,
+    "profit_factor": 0.022,
+    "total_R": 26.08,
+    "worst_week_R": 0.31,
+    "max_drawdown_R_trades_exit_order": -1.04,
+    "max_drawdown_R_weekly": -0.55,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0049,
+    "mean_over_sd_per_trade": 0.0033,
+    "weekly_sharpe": 0.1072
+   },
+   "only_orb_asia_2d_buf10:xauusd:S0.75r_equal_swing|fp|early": {
+    "n_trades": 52,
+    "expectancy_R": 0.0048,
+    "euros_per_100_risked": 0.48,
+    "win_rate": -0.0124,
+    "avg_win_R": 0.0119,
+    "avg_loss_R": 0.0418,
+    "profit_factor": 0.033,
+    "total_R": 22.51,
+    "worst_week_R": 0.33,
+    "max_drawdown_R_trades_exit_order": -5.74,
+    "max_drawdown_R_weekly": -6.27,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0226,
+    "mean_over_sd_per_trade": 0.0025,
+    "weekly_sharpe": 0.0136
+   },
+   "only_orb_asia_2d_buf10:xauusd:S0.75r_equal_swing|stress|main": {
+    "n_trades": 35,
+    "expectancy_R": 0.0038,
+    "euros_per_100_risked": 0.38,
+    "win_rate": -0.0055,
+    "avg_win_R": 0.0039,
+    "avg_loss_R": 0.021,
+    "profit_factor": 0.019,
+    "total_R": 25.0,
+    "worst_week_R": -0.92,
+    "max_drawdown_R_trades_exit_order": -1.07,
+    "max_drawdown_R_weekly": 0.28,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0,
+    "mean_over_sd_per_trade": 0.0032,
+    "weekly_sharpe": 0.1002
+   },
+   "only_orb_asia_2d_buf10:xauusd:S0.75r_equal_swing|stress|early": {
+    "n_trades": 53,
+    "expectancy_R": 0.0056,
+    "euros_per_100_risked": 0.56,
+    "win_rate": -0.0124,
+    "avg_win_R": 0.015,
+    "avg_loss_R": 0.0409,
+    "profit_factor": 0.032,
+    "total_R": 24.21,
+    "worst_week_R": 0.32,
+    "max_drawdown_R_trades_exit_order": -7.4,
+    "max_drawdown_R_weekly": -7.61,
+    "longest_losing_run_weeks": 0,
+    "losing_weeks_share": 0.0263,
+    "mean_over_sd_per_trade": 0.0029,
+    "weekly_sharpe": 0.0308
+   }
+  }
+ },
+ "criteria_rehearsal_in_sample": {
+  "ocm4:us100:T1": {
+   "main": {
+    "fp": {
+     "sleeve_weekly_sharpe": [
+      0.8924,
+      1.443
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.8729,
+      3.0423
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      53.78,
+      127.43
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2018": 20.95,
+      "2019": -4.97,
+      "2020": 14.24,
+      "2021": 2.96
+     },
+     "years_positive": "3/4",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "stress": {
+     "sleeve_weekly_sharpe": [
+      0.8443,
+      1.4162
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.61,
+      2.7787
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      50.8,
+      125.01
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2018": 21.26,
+      "2019": -4.58,
+      "2020": 14.5,
+      "2021": 3.34
+     },
+     "years_positive": "3/4",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "V3_holds_with_x1_5": true
+   },
+   "early": {
+    "fp": {
+     "sleeve_weekly_sharpe": [
+      1.1423,
+      1.148
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.406,
+      2.385
+     ],
+     "V1_gain_per_unit_of_swing": false,
+     "total_R_constant_stake": [
+      83.1,
+      126.65
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2014": -10.08,
+      "2015": 28.08,
+      "2016": -16.26,
+      "2017": -4.08,
+      "2018": 5.68
+     },
+     "years_positive": "2/5",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "stress": {
+     "sleeve_weekly_sharpe": [
+      1.0031,
+      1.0574
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.2072,
+      2.2143
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      73.06,
+      117.02
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2014": -9.55,
+      "2015": 28.58,
+      "2016": -15.68,
+      "2017": -2.29,
+      "2018": 5.73
+     },
+     "years_positive": "2/5",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "V3_holds_with_x1_5": true
+   }
+  },
+  "F1_brk_ridge_filter:ethusd:H2": {
+   "main": {
+    "fp": {
+     "sleeve_weekly_sharpe": [
+      1.7486,
+      2.43
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.8729,
+      3.0482
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      103.02,
+      190.63
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2018": 7.98,
+      "2019": -3.15,
+      "2020": 14.12,
+      "2021": 21.19
+     },
+     "years_positive": "3/4",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "stress": {
+     "sleeve_weekly_sharpe": [
+      1.4737,
+      2.2847
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.61,
+      2.8136
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      85.9,
+      178.14
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2018": 12.35,
+      "2019": -1.93,
+      "2020": 15.48,
+      "2021": 21.98
+     },
+     "years_positive": "3/4",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "V3_holds_with_x1_5": true
+   },
+   "early": "no trades in this window"
+  },
+  "brk72_24h_wd:btcusd:S0.75r": {
+   "main": {
+    "fp": {
+     "sleeve_weekly_sharpe": [
+      1.7795,
+      2.0056
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.8729,
+      2.9326
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      140.68,
+      205.44
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2018": 5.18,
+      "2019": 9.67,
+      "2020": 2.07,
+      "2021": 0.96
+     },
+     "years_positive": "4/4",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "stress": {
+     "sleeve_weekly_sharpe": [
+      1.7119,
+      1.9475
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.61,
+      2.675
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      135.52,
+      199.42
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2018": 6.03,
+      "2019": 9.91,
+      "2020": 2.08,
+      "2021": 0.37
+     },
+     "years_positive": "4/4",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "V3_holds_with_x1_5": true
+   },
+   "early": {
+    "fp": {
+     "sleeve_weekly_sharpe": [
+      2.513,
+      2.1903
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.406,
+      2.3788
+     ],
+     "V1_gain_per_unit_of_swing": false,
+     "total_R_constant_stake": [
+      32.19,
+      35.19
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2017": -2.57,
+      "2018": -2.47
+     },
+     "years_positive": "0/2",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "stress": {
+     "sleeve_weekly_sharpe": [
+      2.4598,
+      1.9442
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.2072,
+      2.1687
+     ],
+     "V1_gain_per_unit_of_swing": false,
+     "total_R_constant_stake": [
+      31.51,
+      30.57
+     ],
+     "V2_total_R_not_lower": false,
+     "equal_swing_gain_by_entry_year": {
+      "2017": -5.45,
+      "2018": -2.47
+     },
+     "years_positive": "0/2",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "V3_holds_with_x1_5": false
+   }
+  },
+  "donch4h_stop:xauusd:S0.75r": {
+   "main": {
+    "fp": {
+     "sleeve_weekly_sharpe": [
+      0.8584,
+      1.412
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.8729,
+      2.9406
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      30.03,
+      55.76
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2018": 7.91,
+      "2019": 4.08,
+      "2020": 0.6,
+      "2021": 6.78
+     },
+     "years_positive": "4/4",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "stress": {
+     "sleeve_weekly_sharpe": [
+      0.7814,
+      1.3049
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.61,
+      2.6751
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      27.31,
+      51.39
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2018": 7.66,
+      "2019": 3.71,
+      "2020": 0.29,
+      "2021": 6.56
+     },
+     "years_positive": "4/4",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "V3_holds_with_x1_5": true
+   },
+   "early": {
+    "fp": {
+     "sleeve_weekly_sharpe": [
+      1.2082,
+      1.1055
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.406,
+      2.3813
+     ],
+     "V1_gain_per_unit_of_swing": false,
+     "total_R_constant_stake": [
+      54.27,
+      56.57
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2013": 0.95,
+      "2014": -9.52,
+      "2015": 7.22,
+      "2016": -2.92,
+      "2017": -2.06,
+      "2018": 2.18
+     },
+     "years_positive": "3/6",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "stress": {
+     "sleeve_weekly_sharpe": [
+      1.1301,
+      0.9594
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.2072,
+      2.1683
+     ],
+     "V1_gain_per_unit_of_swing": false,
+     "total_R_constant_stake": [
+      50.7,
+      49.09
+     ],
+     "V2_total_R_not_lower": false,
+     "equal_swing_gain_by_entry_year": {
+      "2013": 0.65,
+      "2014": -10.92,
+      "2015": 6.9,
+      "2016": -3.26,
+      "2017": -2.69,
+      "2018": 2.12
+     },
+     "years_positive": "3/6",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "V3_holds_with_x1_5": false
+   }
+  },
+  "orb_asia_2d_buf10:xauusd:S0.75r": {
+   "main": {
+    "fp": {
+     "sleeve_weekly_sharpe": [
+      0.3191,
+      0.6265
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.8729,
+      2.9801
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      27.06,
+      69.54
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2018": 10.07,
+      "2019": -9.74,
+      "2020": 19.47,
+      "2021": 6.29
+     },
+     "years_positive": "3/4",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "stress": {
+     "sleeve_weekly_sharpe": [
+      0.181,
+      0.4796
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.61,
+      2.7102
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      15.11,
+      52.49
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2018": 10.01,
+      "2019": -8.82,
+      "2020": 19.08,
+      "2021": 4.72
+     },
+     "years_positive": "3/4",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "V3_holds_with_x1_5": true
+   },
+   "early": {
+    "fp": {
+     "sleeve_weekly_sharpe": [
+      1.4967,
+      1.6302
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.406,
+      2.4196
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      204.09,
+      296.56
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2012": -2.89,
+      "2013": -14.22,
+      "2014": -1.63,
+      "2015": 31.68,
+      "2016": 12.83,
+      "2017": 4.24,
+      "2018": -7.52
+     },
+     "years_positive": "3/7",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "stress": {
+     "sleeve_weekly_sharpe": [
+      1.393,
+      1.5411
+     ],
+     "portfolio_weekly_sharpe_equal_swing": [
+      2.2072,
+      2.238
+     ],
+     "V1_gain_per_unit_of_swing": true,
+     "total_R_constant_stake": [
+      185.78,
+      274.82
+     ],
+     "V2_total_R_not_lower": true,
+     "equal_swing_gain_by_entry_year": {
+      "2012": -2.85,
+      "2013": -13.95,
+      "2014": -1.61,
+      "2015": 30.82,
+      "2016": 12.61,
+      "2017": 6.65,
+      "2018": -7.45
+     },
+     "years_positive": "3/7",
+     "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+    },
+    "V3_holds_with_x1_5": true
+   }
+  }
+ },
+ "ideas_that_do_not_work": [
+  "Cutting at once a trade that goes hard the wrong way (the user's rule): 45 declared variants (cut at -0.5 or -0.75 R after 5, 15 or 30 minutes or at 10/25/50 % of the planned life), total R from -11.3 to +6.3 R, sum -25.7 R, none passes; trades at -0.5 R or worse early still earned +0.078 R each on the rest of the trade (665 trades, 2018-2021).",
+  "No-progress exits (leave when not ahead after a fixed time): 40 variants, 27 lower the total (F1 BTC -77 R, F1 ETH -53 R, orb -38 R, nq -32 R); the one non-degenerate pass (ocm4 closed at mid-day unless +0.5 R ahead, +23 R in 2018-2021) loses 4.6 R in 2014-2017 and its verifier puts it at about zero.",
+  "Half cuts when not ahead: the average loss is lower in all 20 variants but the expectancy is lower in 13 (F1 BTC -58 R); the one pass (brk72 ETH at 6 h, +5.9 R) is refuted: best of 48 screened cells in 93 % of null draws, BTC twin -8.2 R, -2.8 R with a one-minute entry delay.",
+  "Much tighter stops at the same money risk (0.25-0.5 x): only a bigger position. noise30 0.25x: +0.245 R per trade but -0.0024 R per trade at equal weekly swing and -1.6 % of portfolio weekly Sharpe (refuted twice); brk72 BTC 0.25x: -0.038 R per trade at equal per-trade swing; brk72 ETH 0.5x: +0.010 R at FP and -0.004 R at x1.5 at equal SD.",
+  "Wider stops (1.5 x): expectancy and total lower on 9 of 10 sleeves.",
+  "Trailing exits in place of the clock on the four crypto breakouts, noise30, orb and GOLD_FRI_PM: none qualifies (lower expectancy, or below the +20 % bar); on nq_btc_follow (T1) refuted: +0.010 R per trade at equal swing, portfolio weekly Sharpe +0.003, best of 14 p 0.58.",
+  "Break-even after +1.5 R: lower on 6 of the 8 sleeves where it acts (orb +0.058 -> -0.019 R per trade); after +1 R: lower on brk72 ETH and F1 ETH, +5.6 % on nq.",
+  "Holding winners longer on F1 BTC (H2): +29 % in R, but about 0 per unit of risk (equal per-trade SD 0.342 vs 0.345 R), and random extensions earn about two thirds of it.",
+  "Pullback limit entries: total R lower in 28 of 28 cells (they fill the losers and miss the runners); waiting for a confirming close: lower in 22 of 28; entering in two halves: lower in 14 of 14; donch retest entries: lower in 12 of 12.",
+  "Gold retest entries (orb): the gain equals the assumed 1 bp stop-entry slippage; the skip forms lose 37-45 R on 2013-2018/01; the market-fallback forms are worth 0 to +0.02 R per trade (not carried: one change per sleeve, and S0.75r has the larger remainder).",
+  "GOLD_FRI_PM: nothing works (0 of 11 payoff variants; the shorter holds destroy its 2013-2018/01 edge, +15.2 R -> -2.7 or -5.6 R, and the half-size entry halves it, +8.3 R)."
+ ],
+ "proposed_validation_look": "Addendum H, synthesis A - declaration of ONE look at 2022-2025 for the five kept changes (written 2026-11-12 before any 2022+ row of these changes is read; to be appended to PROTOCOL_V3.md by the lead and run once, by the lead only). 1. WHAT: exactly five changes, each on its own sleeve, nothing else: (1) ocm4 us100 T1: the 15:55 NY exit removed, trailing stop at 1 x the daily ATR14 (simple mean; = the rule's stop distance / 0.3) from the best bid high (long) / ask low (short) since the fill, updated at each M1 close and used from the next bar, initial stop unchanged at 0.3 ATR, time cap at the open of the first bar at/after 15:55 NY on the entry's NY date + 4 business days; (2) F1_brk_ridge_filter ethusd H2: a trade still open at the close of the bar before its 15:55 NY exit bar and at least +1 x its initial risk ahead there (bid close for a long, ask close for a short) is held to the first bar at/after 15:55 NY on the decision's NY date + 2 business days, never past the Friday 23:54 server bar, stop unchanged; (3) brk72_24h_wd btcusd, (4) donch4h_stop xauusd (stop and trailing distance) and (5) orb_asia_2d_buf10 xauusd, each S0.75r: initial stop at 0.75 x the rule's distance from the fill, same money risk, exits unchanged. All with one position per sleeve over all of the rule's signals and a stop closer than 3 spreads of the fill bar not sent. The other five sleeves are unchanged and enter only the portfolio reading. 2. FROZEN: the functions change_T1, h2_decision, change_H2, change_S, make_variant, refused and censored of lab/r2/tracks/autopsy/synthesis_A/synth.py (sha256 773965bd660c05dfd6a3d441e2c72058e7dc553a7b09817b5896319df97d04c9) and measures() of portfolio.py (sha256 56607d818669a9bc2e4cde14bf67a324a76b9882773f229a11bb89da9549f78c); the rules as lab/r2/recalc.py sleeves() registers them (sha256 8e84d2db1fc90a2b05b640502cc6938b54d9daae9eb46e457215e482e50795d1; strategy files and the F1 model as hashed in results/r2/autopsy/synthesis_A.json); goldlab/sim.py (sha256 8757a9de958061a30cf5a590261fa0688b3373979ae6a65a700c6731269b4430); costs r2/fp_costs.json (sha256 352c2da55e6edca934bad44a2519f437d30a2e5c79f7f887f0f5a267d5cd8eb1) through r2.costs, FP on the stored frame and x1.5 on the spread-x1.5 frame with the orders rebuilt on it; the equal-swing stake factors fixed on 2018-02..2021-12: ocm4 0.682408, F1 ETH 0.750978, brk72 BTC 0.771793, donch 0.885978, orb 0.764081; R = pnl / |fill - initial stop actually used|; weeks = FP server weeks (New York + 7 h, Monday start), R booked at the exit, empty weeks counted as 0; weekly Sharpe = mean / sd x sqrt(52); drawdown on cumulative R in exit order. Frames lab/data/fp/<sym>_m1.parquet read through 2025-12-31 and simulated from their first bar (warm-ups and one-position chains continue from the in-sample years); the nq leader from the same us100 frame. Window: entries 2022-01-01 to 2025-12-31 (entry year for the yearly split); a trade still open when the 2025 data ends is excluded on both sides. 3. CHECK FIRST: the unchanged sleeves recomputed by this pipeline must equal the official recalc trades of 2022-2025 (count, total R, trade by trade); otherwise stop and report. 4. COMPARED: each change against the same sleeve unchanged (same frame, costs and refusal rule), and the ten-sleeve portfolio with that one change at its frozen factor against the unchanged portfolio; then the changes that pass, together, against the unchanged portfolio. 5. A CHANGE PASSES only if all hold: V1 the sleeve's weekly Sharpe is higher with the change AND the ten-sleeve portfolio's weekly Sharpe with the change at its frozen factor is higher (FP); V2 the sleeve's total R at a constant stake (1 R per trade at its own stop) is not lower (FP); V3 V1 and V2 also hold with costs x1.5; V4 the sleeve's gain at equal swing (total R with the change x its factor minus total R unchanged) is positive in at least 3 of the 4 entry years 2022, 2023, 2024, 2025 (FP); V5 the changed sleeve has an expectancy above 0 and a profit factor of at least 1.06 (FP). 6. REPORTED, deciding nothing alone: for the unchanged portfolio, for all five changes and for the passing ones, at a constant stake and at equal swing, FP and x1.5: trades, expectancy in R and euros earned per 100 euros risked, win rate, average win and loss, profit factor, total R, worst week, maximum drawdown, longest run of losing weeks, share of losing weeks, mean/sd of R per trade, weekly Sharpe; every failing change is shown too. 7. AFTER: a passing change goes to the demo account staked at its equal-swing factor and is described as what it is (a longer hold or a tighter stop, part of whose R is size or exposure), never as more R per trade; a failing change is dropped for good: no neighbour, no re-tuning, no substitute on its sleeve (the orb retest entry is not promoted). 'Nothing passes' is a valid outcome. Every 2022+ read goes through goldlab.split.cut(..., 'val', track='autopsy_synthesis_A', label=...) and is logged in results/val_access.log; no second look; the 2026 holdout stays untouched. The live program (entry one minute late, Friday 16:50 NY close-all, two positions per symbol, market orders only) is not part of this look; it is tested on the demo account. 8. SAID IN ADVANCE: the verifiers put what is left at about +0.10 to +0.16 R per trade for F1 ETH H2 and close to zero for the four others. Rehearsed on the earlier in-sample years, which did not pick them, the same criteria pass for 1 of the 4 changes that can be tested there (orb S0.75r, whose equal-swing gain is positive in 3 of the 5 full years 2013-2017; ocm4 T1, brk72 BTC S0.75r and donch S0.75r fail V1), and the four together leave the portfolio's weekly Sharpe unchanged at equal swing (2.41 -> 2.40). The expected outcome is that few or none pass, and with five changes one may pass by chance.",
+ "caveats": [
+  "In sample and optimistic by construction: the five changes were picked on 2018-2021 from about 360 lens variants (plus a post-hoc ranking by per-trade Sharpe in the 13:15 round). On the earlier in-sample years, which did not take part in picking them, the four changes that can be tested there leave the portfolio's weekly Sharpe unchanged at equal swing (2.406 -> 2.401) and lower the equal-swing total in 4 of the 5 full years 2013-2017 (+17.1 R overall, the whole gain from 2015); three of the four fail the declared V1 criterion there.",
+  "Three of the five kept changes (ocm4 T1, brk72 BTC S0.75r, orb S0.75r) come from the supplementary payoff round of the 13:15 clarification (results/r2/autopsy/complement_verdicts.json), not from the relayed JSON; that round chose them by per-trade Sharpe after the lens's table was seen (post hoc, said so in the protocol).",
+  "Qualifiers that no verifier attacked have no verdict and were not kept: nq_btc_follow T3 and orb_asia S0.25n (ranks 1 of the payoff lens's declared ranking) and every lower-ranked qualifier.",
+  "Size and exposure: S0.75r is a 1.33x position at the same money risk; T1 turns ocm4 from an intraday rule into one held up to 4 business days (overnight and weekend gaps; worst T1 trade -3.05 R); H2 adds up to two days to 100 F1 ETH trades (+82 % time in market). The constant-stake figures overstate the gain; the equal-swing figures (stakes x0.68 to x0.89) are the fair comparison and are what the declared look judges.",
+  "The live program differs: entry one minute late, Friday 16:50 NY close-all, two positions per symbol (three sleeves on BTC and three on gold), market orders only. The verifiers' live readings were much smaller (ocm4 T1 +0.111 instead of +0.255 R per trade; brk72 BTC S0.75r +0.004 R per trade at equal swing; the lab orb rule loses its weekend holds).",
+  "Two official in-sample trades entered on 2021-12-31 (donch4h_stop, orb) have recorded exits in 2022; they are excluded from every statistic (their R appears only in the rule-2 total comparison: 84.24 vs 85.06 R and 230.07 vs 232.78 R; without them both totals match exactly).",
+  "Costs are modelled: bid/ask = mid -/+ a half-spread built from the day's median spread (not causal, the same for every run), stop slippage 0.5-2 bp, swaps as annual rates; tighter stops are more exposed to real spread spikes and stop slippage than the model shows.",
+  "The equal-swing factors were fitted on 2018-02..2021-12 FP; they bring each changed sleeve's weekly swing back to the unchanged one's and optimise nothing; the same factors are used for x1.5 and for the earlier years, and are frozen for the look.",
+  "F1 ETH H2, the strongest change, cannot be checked on any earlier year (ETH data starts in 2018); on F1 BTC the same rule gives nothing once risk is counted, so its gain may be ETH's 2018-2021 trends.",
+  "Five changes in one look: with no real effect any one of them can pass by chance; the declared criteria are a conjunction (V1-V5, FP and x1.5) to limit that, and a single pass should still be read with caution.",
+  "Scale: taken at face value the five changes move the portfolio from 15 to 18 euros per 100 risked at equal swing on the years that picked them; the user's target needs about 35 on validation, where the unchanged rules make about 8.",
+  "Addendum I's outcome, appended to PROTOCOL_V3.md by another job during this run, quotes an Addendum H kept set 'K1 + K2 + K3' that is not this synthesis's (synthesis_B.json was not read, for independence); the kept sets must be reconciled before the single look is declared.",
+  "Process: nothing dated 2022 or later was read or simulated; no existing file was modified; I ran no git command that changes anything (the session's own 'Agents' work in progress' commit at 15:20 UTC included my files of that time); NUMBA_CACHE_DIR under /tmp and PYTHONDONTWRITEBYTECODE set."
+ ],
+ "frozen_files_sha256": {
+  "r2/tracks/autopsy/synthesis_A/synth.py": "773965bd660c05dfd6a3d441e2c72058e7dc553a7b09817b5896319df97d04c9",
+  "r2/tracks/autopsy/synthesis_A/portfolio.py": "56607d818669a9bc2e4cde14bf67a324a76b9882773f229a11bb89da9549f78c",
+  "goldlab/sim.py": "8757a9de958061a30cf5a590261fa0688b3373979ae6a65a700c6731269b4430",
+  "goldlab/r2.py": "1d6e172b8d392ec8dd42b1d5764d203bd28813fff5afa818ef1c5a72c9420eab",
+  "goldlab/data.py": "2693d64d1e15f275b1a50395d86308b3db4616a1a26e4e9d20397abe00b20645",
+  "goldlab/split.py": "deee9a188cd7a4f442e35020648debce0e2400dd327567cac13dd7c4e0ab29ec",
+  "r2/recalc.py": "8e84d2db1fc90a2b05b640502cc6938b54d9daae9eb46e457215e482e50795d1",
+  "r2/fp_costs.json": "352c2da55e6edca934bad44a2519f437d30a2e5c79f7f887f0f5a267d5cd8eb1",
+  "r2/tracks/idx_us/strategy.py": "8ed1e0f36d56e7d3ca4d51fdcba357f137957a83400deb28b4695f1c92d5a4c8",
+  "r2/tracks/crypto/strategy.py": "76b7c951b1665e86cc787c99b2c9759415292758705f0f162be0e1a3b9e335ff",
+  "r2/tracks/ml/strategy.py": "0e8baf4d35cccf0bfa83cac5e4c3a095c5f88bd76eedb3f5e5a683184e23a31d",
+  "r2/tracks/ml/models/B1_ridge_full.json": "d191cbbcc2fc4d2cae31182f14f412069a194b69c2a9d9ae6bca0d0f5dee644e",
+  "r2/tracks/leadlag/strategy.py": "4c5dd4710d3371ad6a59ab3d96176efa13d17a10b1ac927573260f0246b4e59d",
+  "r2/tracks/overnight/strategy.py": "344bfe35f11b13c1d955f62a52d938ecc12a6bd82b50347b5651fba568d55f86",
+  "tracks/trend/strategy.py": "9f572600e1bc78b669ab0a0a3db50342cfd69dce2b2ee0718440f78e7c31ab26",
+  "tracks/orb/strategy.py": "2be366337535228364921bad36f552f4bb75a6b1f4e13ff743297d90c4ef257f"
+ },
+ "files": [
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/build_synthesis.py",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/declared.json",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/portfolio.py",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/rehearsal.py",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/synth.py",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/trials.jsonl",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/truncation.py",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/work/<name>__<sym>__<variant>__<mode>.parquet (30 trade files)",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/work/criteria_rehearsal.json",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/work/loss_composition_main_fp.csv",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/work/portfolio.json",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/work/truncation_btcusd.json",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/work/truncation_ethusd.json",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/work/truncation_us100.json",
+  "/home/user/gold-orb/lab/r2/tracks/autopsy/synthesis_A/work/truncation_xauusd.json",
+  "/home/user/gold-orb/lab/results/r2/autopsy/synthesis_A.json"
+ ]
+}

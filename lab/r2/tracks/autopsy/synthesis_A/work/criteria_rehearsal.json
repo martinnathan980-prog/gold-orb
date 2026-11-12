@@ -1,0 +1,480 @@
+{
+ "ocm4:us100:T1": {
+  "main": {
+   "fp": {
+    "sleeve_weekly_sharpe": [
+     0.8924,
+     1.443
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.8729,
+     3.0423
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     53.78,
+     127.43
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2018": 20.95,
+     "2019": -4.97,
+     "2020": 14.24,
+     "2021": 2.96
+    },
+    "years_positive": "3/4",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "stress": {
+    "sleeve_weekly_sharpe": [
+     0.8443,
+     1.4162
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.61,
+     2.7787
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     50.8,
+     125.01
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2018": 21.26,
+     "2019": -4.58,
+     "2020": 14.5,
+     "2021": 3.34
+    },
+    "years_positive": "3/4",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "V3_holds_with_x1_5": true
+  },
+  "early": {
+   "fp": {
+    "sleeve_weekly_sharpe": [
+     1.1423,
+     1.148
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.406,
+     2.385
+    ],
+    "V1_gain_per_unit_of_swing": false,
+    "total_R_constant_stake": [
+     83.1,
+     126.65
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2014": -10.08,
+     "2015": 28.08,
+     "2016": -16.26,
+     "2017": -4.08,
+     "2018": 5.68
+    },
+    "years_positive": "2/5",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "stress": {
+    "sleeve_weekly_sharpe": [
+     1.0031,
+     1.0574
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.2072,
+     2.2143
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     73.06,
+     117.02
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2014": -9.55,
+     "2015": 28.58,
+     "2016": -15.68,
+     "2017": -2.29,
+     "2018": 5.73
+    },
+    "years_positive": "2/5",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "V3_holds_with_x1_5": true
+  }
+ },
+ "F1_brk_ridge_filter:ethusd:H2": {
+  "main": {
+   "fp": {
+    "sleeve_weekly_sharpe": [
+     1.7486,
+     2.43
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.8729,
+     3.0482
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     103.02,
+     190.63
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2018": 7.98,
+     "2019": -3.15,
+     "2020": 14.12,
+     "2021": 21.19
+    },
+    "years_positive": "3/4",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "stress": {
+    "sleeve_weekly_sharpe": [
+     1.4737,
+     2.2847
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.61,
+     2.8136
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     85.9,
+     178.14
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2018": 12.35,
+     "2019": -1.93,
+     "2020": 15.48,
+     "2021": 21.98
+    },
+    "years_positive": "3/4",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "V3_holds_with_x1_5": true
+  },
+  "early": "no trades in this window"
+ },
+ "brk72_24h_wd:btcusd:S0.75r": {
+  "main": {
+   "fp": {
+    "sleeve_weekly_sharpe": [
+     1.7795,
+     2.0056
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.8729,
+     2.9326
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     140.68,
+     205.44
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2018": 5.18,
+     "2019": 9.67,
+     "2020": 2.07,
+     "2021": 0.96
+    },
+    "years_positive": "4/4",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "stress": {
+    "sleeve_weekly_sharpe": [
+     1.7119,
+     1.9475
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.61,
+     2.675
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     135.52,
+     199.42
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2018": 6.03,
+     "2019": 9.91,
+     "2020": 2.08,
+     "2021": 0.37
+    },
+    "years_positive": "4/4",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "V3_holds_with_x1_5": true
+  },
+  "early": {
+   "fp": {
+    "sleeve_weekly_sharpe": [
+     2.513,
+     2.1903
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.406,
+     2.3788
+    ],
+    "V1_gain_per_unit_of_swing": false,
+    "total_R_constant_stake": [
+     32.19,
+     35.19
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2017": -2.57,
+     "2018": -2.47
+    },
+    "years_positive": "0/2",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "stress": {
+    "sleeve_weekly_sharpe": [
+     2.4598,
+     1.9442
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.2072,
+     2.1687
+    ],
+    "V1_gain_per_unit_of_swing": false,
+    "total_R_constant_stake": [
+     31.51,
+     30.57
+    ],
+    "V2_total_R_not_lower": false,
+    "equal_swing_gain_by_entry_year": {
+     "2017": -5.45,
+     "2018": -2.47
+    },
+    "years_positive": "0/2",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "V3_holds_with_x1_5": false
+  }
+ },
+ "donch4h_stop:xauusd:S0.75r": {
+  "main": {
+   "fp": {
+    "sleeve_weekly_sharpe": [
+     0.8584,
+     1.412
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.8729,
+     2.9406
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     30.03,
+     55.76
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2018": 7.91,
+     "2019": 4.08,
+     "2020": 0.6,
+     "2021": 6.78
+    },
+    "years_positive": "4/4",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "stress": {
+    "sleeve_weekly_sharpe": [
+     0.7814,
+     1.3049
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.61,
+     2.6751
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     27.31,
+     51.39
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2018": 7.66,
+     "2019": 3.71,
+     "2020": 0.29,
+     "2021": 6.56
+    },
+    "years_positive": "4/4",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "V3_holds_with_x1_5": true
+  },
+  "early": {
+   "fp": {
+    "sleeve_weekly_sharpe": [
+     1.2082,
+     1.1055
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.406,
+     2.3813
+    ],
+    "V1_gain_per_unit_of_swing": false,
+    "total_R_constant_stake": [
+     54.27,
+     56.57
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2013": 0.95,
+     "2014": -9.52,
+     "2015": 7.22,
+     "2016": -2.92,
+     "2017": -2.06,
+     "2018": 2.18
+    },
+    "years_positive": "3/6",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "stress": {
+    "sleeve_weekly_sharpe": [
+     1.1301,
+     0.9594
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.2072,
+     2.1683
+    ],
+    "V1_gain_per_unit_of_swing": false,
+    "total_R_constant_stake": [
+     50.7,
+     49.09
+    ],
+    "V2_total_R_not_lower": false,
+    "equal_swing_gain_by_entry_year": {
+     "2013": 0.65,
+     "2014": -10.92,
+     "2015": 6.9,
+     "2016": -3.26,
+     "2017": -2.69,
+     "2018": 2.12
+    },
+    "years_positive": "3/6",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "V3_holds_with_x1_5": false
+  }
+ },
+ "orb_asia_2d_buf10:xauusd:S0.75r": {
+  "main": {
+   "fp": {
+    "sleeve_weekly_sharpe": [
+     0.3191,
+     0.6265
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.8729,
+     2.9801
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     27.06,
+     69.54
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2018": 10.07,
+     "2019": -9.74,
+     "2020": 19.47,
+     "2021": 6.29
+    },
+    "years_positive": "3/4",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "stress": {
+    "sleeve_weekly_sharpe": [
+     0.181,
+     0.4796
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.61,
+     2.7102
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     15.11,
+     52.49
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2018": 10.01,
+     "2019": -8.82,
+     "2020": 19.08,
+     "2021": 4.72
+    },
+    "years_positive": "3/4",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "V3_holds_with_x1_5": true
+  },
+  "early": {
+   "fp": {
+    "sleeve_weekly_sharpe": [
+     1.4967,
+     1.6302
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.406,
+     2.4196
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     204.09,
+     296.56
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2012": -2.89,
+     "2013": -14.22,
+     "2014": -1.63,
+     "2015": 31.68,
+     "2016": 12.83,
+     "2017": 4.24,
+     "2018": -7.52
+    },
+    "years_positive": "3/7",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "stress": {
+    "sleeve_weekly_sharpe": [
+     1.393,
+     1.5411
+    ],
+    "portfolio_weekly_sharpe_equal_swing": [
+     2.2072,
+     2.238
+    ],
+    "V1_gain_per_unit_of_swing": true,
+    "total_R_constant_stake": [
+     185.78,
+     274.82
+    ],
+    "V2_total_R_not_lower": true,
+    "equal_swing_gain_by_entry_year": {
+     "2012": -2.85,
+     "2013": -13.95,
+     "2014": -1.61,
+     "2015": 30.82,
+     "2016": 12.61,
+     "2017": 6.65,
+     "2018": -7.45
+    },
+    "years_positive": "3/7",
+    "V5_changed_sleeve_exp_pos_and_pf_1_06": true
+   },
+   "V3_holds_with_x1_5": true
+  }
+ }
+}
