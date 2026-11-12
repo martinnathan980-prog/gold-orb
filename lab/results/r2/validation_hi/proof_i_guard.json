@@ -1,0 +1,389 @@
+{
+ "what": "the guard of the harness (vhi_guard): CUT rules, refused reads, the access log untouched",
+ "reads": [
+  {
+   "path": "data/fp/us100_m1.parquet",
+   "kind": "parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/ocm4__us100.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/ocm4__us100.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/noise30__us100.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/noise30__us100.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "data/fp/xauusd_m1.parquet",
+   "kind": "parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/donch4h_stop__xauusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/donch4h_stop__xauusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/orb_asia_2d_buf10__xauusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/orb_asia_2d_buf10__xauusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/GOLD_FRI_PM__xauusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/GOLD_FRI_PM__xauusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "data/fp/btcusd_m1.parquet",
+   "kind": "parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/brk72_24h_wd__btcusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/brk72_24h_wd__btcusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/F1_brk_ridge_filter__btcusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/F1_brk_ridge_filter__btcusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/nq_btc_follow__btcusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/nq_btc_follow__btcusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "data/fp/ethusd_m1.parquet",
+   "kind": "parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/brk72_24h_wd__ethusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/brk72_24h_wd__ethusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/F1_brk_ridge_filter__ethusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/recalc/trades/F1_brk_ridge_filter__ethusd.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC')), ('exit_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/noise30__us100__fp.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/ocm4__us100__fp.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/brk72_24h_wd__btcusd__fp.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/brk72_24h_wd__ethusd__fp.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/nq_btc_follow__btcusd__fp.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/F1_brk_ridge_filter__btcusd__fp.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/F1_brk_ridge_filter__ethusd__fp.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/GOLD_FRI_PM__xauusd__fp.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/donch4h_stop__xauusd__fp.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/orb_asia_2d_buf10__xauusd__fp.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/noise30__us100__stress.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/ocm4__us100__stress.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/brk72_24h_wd__btcusd__stress.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/brk72_24h_wd__ethusd__stress.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/nq_btc_follow__btcusd__stress.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/F1_brk_ridge_filter__btcusd__stress.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/F1_brk_ridge_filter__ethusd__stress.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/GOLD_FRI_PM__xauusd__stress.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/donch4h_stop__xauusd__stress.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "results/r2/autopsy/cluster/trades_is/orb_asia_2d_buf10__xauusd__stress.parquet",
+   "kind": "parquet",
+   "filters": "[('entry_time', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "data/fp/us100_m1.parquet",
+   "kind": "parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "data/fp/xauusd_m1.parquet",
+   "kind": "parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "data/fp/btcusd_m1.parquet",
+   "kind": "parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  },
+  {
+   "path": "data/fp/ethusd_m1.parquet",
+   "kind": "parquet",
+   "filters": "[('ts', '<', Timestamp('2022-01-01 00:00:00+0000', tz='UTC'))]"
+  }
+ ],
+ "checks": 22,
+ "failed": 0,
+ "ok": true,
+ "failures": [],
+ "rows": [
+  {
+   "field": "guard.cut_2022_allowed",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "guard.cut_2021_allowed",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "guard.cut_2023_without_env_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.cut_2026_without_env_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.cut_2026_env_not_a_file_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.cut_2026_01_02_refused_even_with_env",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.cut_2027_refused_even_with_env",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.cut_2026_env_file_without_word_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.holdout_raw_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.data_holdout_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.data_file_dated_2026_refused",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.frame_with_ts_filter_at_cut",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "guard.frame_without_filter",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "guard.frame_with_filter_after_cut",
+   "expected": false,
+   "got": false,
+   "ok": true
+  },
+  {
+   "field": "refused in process: frame_without_row_filter",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "refused in process: frame_with_filter_after_cut",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "refused in process: official_trades_without_entry_filter",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "refused in process: holdout_dir",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "refused in process: nq_default_leader_loader",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "refused in process: val_access_log_at_cut_2022",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "val_access.log lines with track autopsy_HI_look: before and after the proofs",
+   "expected": [
+    0,
+    0
+   ],
+   "got": [
+    0,
+    0
+   ],
+   "ok": true
+  },
+  {
+   "field": "every frame / official trades read of the run carries a row filter at 2022-01-01",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  }
+ ]
+}

@@ -1,0 +1,65 @@
+{
+ "what": "uncertainty of the pooled 2019-2021 FP weekly Sharpe ratio (paired circular block bootstrap of weeks, blocks of 4, 5,000 draws, seed 157) and sub-windows; diagnostic on variants already simulated",
+ "results": {
+  "V05": {
+   "ratio_157_weeks": 1.0951,
+   "ratio_2019_2020_104_weeks": 1.0411,
+   "ratio_2021_52_weeks": 1.3389,
+   "bootstrap_ratio_p05": 1.0285,
+   "bootstrap_ratio_p50": 1.0973,
+   "bootstrap_ratio_p95": 1.1854,
+   "bootstrap_share_ratio_le_1": 0.0088,
+   "bootstrap_share_ratio_ge_1.10": 0.4824
+  },
+  "V09": {
+   "ratio_157_weeks": 1.1233,
+   "ratio_2019_2020_104_weeks": 1.0765,
+   "ratio_2021_52_weeks": 1.3466,
+   "bootstrap_ratio_p05": 1.0473,
+   "bootstrap_ratio_p50": 1.1259,
+   "bootstrap_ratio_p95": 1.2274,
+   "bootstrap_share_ratio_le_1": 0.003,
+   "bootstrap_share_ratio_ge_1.10": 0.6958
+  },
+  "V30": {
+   "ratio_157_weeks": 1.0846,
+   "ratio_2019_2020_104_weeks": 1.038,
+   "ratio_2021_52_weeks": 1.3056,
+   "bootstrap_ratio_p05": 1.0285,
+   "bootstrap_ratio_p50": 1.0869,
+   "bootstrap_ratio_p95": 1.1651,
+   "bootstrap_share_ratio_le_1": 0.0054,
+   "bootstrap_share_ratio_ge_1.10": 0.3728
+  },
+  "V01": {
+   "ratio_157_weeks": 0.9551,
+   "ratio_2019_2020_104_weeks": 0.9671,
+   "ratio_2021_52_weeks": 0.9059,
+   "bootstrap_ratio_p05": 0.8545,
+   "bootstrap_ratio_p50": 0.9561,
+   "bootstrap_ratio_p95": 1.0586,
+   "bootstrap_share_ratio_le_1": 0.7616,
+   "bootstrap_share_ratio_ge_1.10": 0.0148
+  },
+  "V26": {
+   "ratio_157_weeks": 1.0408,
+   "ratio_2019_2020_104_weeks": 1.0225,
+   "ratio_2021_52_weeks": 1.1163,
+   "bootstrap_ratio_p05": 0.9663,
+   "bootstrap_ratio_p50": 1.0427,
+   "bootstrap_ratio_p95": 1.1324,
+   "bootstrap_share_ratio_le_1": 0.1852,
+   "bootstrap_share_ratio_ge_1.10": 0.1262
+  },
+  "V11": {
+   "ratio_157_weeks": 0.9829,
+   "ratio_2019_2020_104_weeks": 0.9713,
+   "ratio_2021_52_weeks": 1.0297,
+   "bootstrap_ratio_p05": 0.9452,
+   "bootstrap_ratio_p50": 0.9838,
+   "bootstrap_ratio_p95": 1.022,
+   "bootstrap_share_ratio_le_1": 0.7708,
+   "bootstrap_share_ratio_ge_1.10": 0.0002
+  }
+ }
+}

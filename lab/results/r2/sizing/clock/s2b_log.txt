@@ -1,0 +1,20 @@
+after12
+  2014: raw -0.279 (n 161/393) within-sleeve -0.212 negative sleeves 2/2
+  2015: raw -0.018 (n 144/401) within-sleeve -0.080 negative sleeves 2/2
+  2016: raw -0.080 (n 149/384) within-sleeve +0.017 negative sleeves 1/2
+  2017: raw -0.193 (n 211/598) within-sleeve -0.173 negative sleeves 3/4
+  2018: raw -0.060 (n 395/932) within-sleeve -0.087 negative sleeves 3/7
+  2019: raw -0.075 (n 387/847) within-sleeve +0.004 negative sleeves 5/7
+  2020: raw -0.118 (n 421/889) within-sleeve -0.123 negative sleeves 5/7
+  2021: raw -0.017 (n 436/1001) within-sleeve -0.002 negative sleeves 4/7
+  2019-2021 sleeve-years with a negative gap: 14/21
+fri
+  2014: raw -0.032 (n 140/414) within-sleeve -0.008 negative sleeves 2/4
+  2015: raw -0.169 (n 149/396) within-sleeve -0.215 negative sleeves 2/4
+  2016: raw -0.155 (n 140/393) within-sleeve -0.190 negative sleeves 4/4
+  2017: raw -0.120 (n 188/621) within-sleeve -0.113 negative sleeves 5/7
+  2018: raw -0.193 (n 289/1038) within-sleeve -0.203 negative sleeves 7/9
+  2019: raw +0.062 (n 279/955) within-sleeve +0.111 negative sleeves 3/9
+  2020: raw -0.272 (n 277/1033) within-sleeve -0.274 negative sleeves 8/9
+  2021: raw +0.050 (n 321/1116) within-sleeve +0.072 negative sleeves 5/9
+  2019-2021 sleeve-years with a negative gap: 16/27

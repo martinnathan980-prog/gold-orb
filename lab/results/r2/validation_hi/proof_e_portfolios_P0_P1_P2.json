@@ -1,0 +1,6635 @@
+{
+ "what": "the synthesis_B portfolios P0 (ten unchanged), P1 (ten with K1), P2 (ten with K1 + K2 + K3), fp and x1.5, plain sum at 1 R per trade, entries 2018-02-01..2021-12-31, server weeks: every field of synthesis_B.json portfolio.results; and the harness's metrics equal to synthesis_B's own s2_portfolio.metrics (imported) on the same book",
+ "headline": {
+  "P0.fp": {
+   "n": 5205,
+   "exp": 0.1515,
+   "total": 788.59,
+   "worst_week_R": -12.54,
+   "max_dd_R_trade_by_trade": 29.14,
+   "max_dd_R_weekly": 21.03,
+   "longest_losing_run_weeks": 7,
+   "week_mean_over_sd": 0.3984,
+   "weekly_sharpe_annualised": 2.873,
+   "winning_weeks_pct": 58.5
+  },
+  "P0.stress": {
+   "n": 5207,
+   "exp": 0.1366,
+   "total": 711.09,
+   "worst_week_R": -12.66,
+   "max_dd_R_trade_by_trade": 30.78,
+   "max_dd_R_weekly": 22.98,
+   "longest_losing_run_weeks": 7,
+   "week_mean_over_sd": 0.3619,
+   "weekly_sharpe_annualised": 2.61,
+   "winning_weeks_pct": 57.1
+  },
+  "P1.fp": {
+   "n": 5114,
+   "exp": 0.1571,
+   "total": 803.37,
+   "worst_week_R": -11.54,
+   "max_dd_R_trade_by_trade": 27.46,
+   "max_dd_R_weekly": 20.38,
+   "longest_losing_run_weeks": 7,
+   "week_mean_over_sd": 0.4086,
+   "weekly_sharpe_annualised": 2.946,
+   "winning_weeks_pct": 58.0
+  },
+  "P1.stress": {
+   "n": 5116,
+   "exp": 0.142,
+   "total": 726.64,
+   "worst_week_R": -12.3,
+   "max_dd_R_trade_by_trade": 29.44,
+   "max_dd_R_weekly": 23.1,
+   "longest_losing_run_weeks": 7,
+   "week_mean_over_sd": 0.3722,
+   "weekly_sharpe_annualised": 2.684,
+   "winning_weeks_pct": 56.6
+  },
+  "P2.fp": {
+   "n": 5833,
+   "exp": 0.1977,
+   "total": 1153.18,
+   "worst_week_R": -16.87,
+   "max_dd_R_trade_by_trade": 32.08,
+   "max_dd_R_weekly": 29.11,
+   "longest_losing_run_weeks": 4,
+   "week_mean_over_sd": 0.4633,
+   "weekly_sharpe_annualised": 3.341,
+   "winning_weeks_pct": 62.4
+  },
+  "P2.stress": {
+   "n": 5834,
+   "exp": 0.1804,
+   "total": 1052.54,
+   "worst_week_R": -17.09,
+   "max_dd_R_trade_by_trade": 35.51,
+   "max_dd_R_weekly": 32.49,
+   "longest_losing_run_weeks": 5,
+   "week_mean_over_sd": 0.4287,
+   "weekly_sharpe_annualised": 3.091,
+   "winning_weeks_pct": 60.5
+  }
+ },
+ "checks": 1092,
+ "failed": 0,
+ "ok": true,
+ "failures": [],
+ "rows": [
+  {
+   "field": "P0.fp.n",
+   "expected": 5205,
+   "got": 5205,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.exp",
+   "expected": 0.1515,
+   "got": 0.1515,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.eur_per_100_risked",
+   "expected": 15.15,
+   "got": 15.15,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.win",
+   "expected": 0.4498,
+   "got": 0.4498,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.avg_win",
+   "expected": 1.1286,
+   "got": 1.1286,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.avg_loss",
+   "expected": -0.6471,
+   "got": -0.6471,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.pf",
+   "expected": 1.425,
+   "got": 1.425,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.total",
+   "expected": 788.59,
+   "got": 788.59,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.worst_week_R",
+   "expected": -12.54,
+   "got": -12.54,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.max_dd_R_trade_by_trade",
+   "expected": 29.14,
+   "got": 29.14,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.max_dd_R_weekly",
+   "expected": 21.03,
+   "got": 21.03,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.longest_losing_run_weeks",
+   "expected": 7,
+   "got": 7,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.mean_over_sd",
+   "expected": 0.108,
+   "got": 0.108,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.sd",
+   "expected": 1.4029,
+   "got": 1.4029,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.week_mean_over_sd",
+   "expected": 0.3984,
+   "got": 0.3984,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.weekly_sharpe_annualised",
+   "expected": 2.873,
+   "got": 2.873,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.winning_weeks_pct",
+   "expected": 58.5,
+   "got": 58.5,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.worst_day_R",
+   "expected": -7.7,
+   "got": -7.7,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2018.n",
+   "expected": 1224,
+   "got": 1224,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2018.exp",
+   "expected": 0.1902,
+   "got": 0.1902,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2018.total",
+   "expected": 232.76,
+   "got": 232.76,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2018.win",
+   "expected": 0.4453,
+   "got": 0.4453,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2018.avg_loss",
+   "expected": -0.6647,
+   "got": -0.6647,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2018.pf",
+   "expected": 1.516,
+   "got": 1.516,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2019.n",
+   "expected": 1234,
+   "got": 1234,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2019.exp",
+   "expected": 0.145,
+   "got": 0.145,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2019.total",
+   "expected": 178.9,
+   "got": 178.9,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2019.win",
+   "expected": 0.4287,
+   "got": 0.4287,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2019.avg_loss",
+   "expected": -0.6092,
+   "got": -0.6092,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2019.pf",
+   "expected": 1.417,
+   "got": 1.417,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2020.n",
+   "expected": 1310,
+   "got": 1310,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2020.exp",
+   "expected": 0.2061,
+   "got": 0.2061,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2020.total",
+   "expected": 270.0,
+   "got": 270.0,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2020.win",
+   "expected": 0.4695,
+   "got": 0.4695,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2020.avg_loss",
+   "expected": -0.656,
+   "got": -0.656,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2020.pf",
+   "expected": 1.592,
+   "got": 1.592,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2021.n",
+   "expected": 1437,
+   "got": 1437,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2021.exp",
+   "expected": 0.0744,
+   "got": 0.0744,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2021.total",
+   "expected": 106.92,
+   "got": 106.92,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2021.win",
+   "expected": 0.4537,
+   "got": 0.4537,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2021.avg_loss",
+   "expected": -0.6581,
+   "got": -0.6581,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_year.2021.pf",
+   "expected": 1.207,
+   "got": 1.207,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2018_02_2019_12.n",
+   "expected": 2458,
+   "got": 2458,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2018_02_2019_12.exp",
+   "expected": 0.1675,
+   "got": 0.1675,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2018_02_2019_12.total",
+   "expected": 411.67,
+   "got": 411.67,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2018_02_2019_12.win",
+   "expected": 0.4369,
+   "got": 0.4369,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6364,
+   "got": -0.6364,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2018_02_2019_12.pf",
+   "expected": 1.467,
+   "got": 1.467,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.1095,
+   "got": 0.1095,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2020_2021.n",
+   "expected": 2747,
+   "got": 2747,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2020_2021.exp",
+   "expected": 0.1372,
+   "got": 0.1372,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2020_2021.total",
+   "expected": 376.92,
+   "got": 376.92,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2020_2021.win",
+   "expected": 0.4612,
+   "got": 0.4612,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2020_2021.avg_loss",
+   "expected": -0.6571,
+   "got": -0.6571,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2020_2021.pf",
+   "expected": 1.388,
+   "got": 1.388,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.half_2020_2021.mean_over_sd",
+   "expected": 0.1073,
+   "got": 0.1073,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 545,
+   "got": 545,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3448,
+   "got": 0.3448,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 187.92,
+   "got": 187.92,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 516,
+   "got": 516,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1996,
+   "got": 0.1996,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 103.02,
+   "got": 103.02,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 183,
+   "got": 183,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0071,
+   "got": -0.0071,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -1.3,
+   "got": -1.3,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2563,
+   "got": 0.2563,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 140.68,
+   "got": 140.68,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 511,
+   "got": 511,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.2086,
+   "got": 0.2086,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 106.61,
+   "got": 106.61,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1451,
+   "got": 0.1451,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 30.03,
+   "got": 30.03,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.noise30__us100.exp",
+   "expected": 0.1072,
+   "got": 0.1072,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.noise30__us100.total",
+   "expected": 85.24,
+   "got": 85.24,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0589,
+   "got": 0.0589,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 55.54,
+   "got": 55.54,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1093,
+   "got": 0.1093,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.ocm4__us100.total",
+   "expected": 53.78,
+   "got": 53.78,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0583,
+   "got": 0.0583,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 27.06,
+   "got": 27.06,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.n",
+   "expected": 5205,
+   "got": 5205,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.exp",
+   "expected": 0.1515,
+   "got": 0.1515,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.total",
+   "expected": 788.59,
+   "got": 788.59,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.win",
+   "expected": 0.4498,
+   "got": 0.4498,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.avg_win",
+   "expected": 1.1286,
+   "got": 1.1286,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.avg_loss",
+   "expected": -0.6471,
+   "got": -0.6471,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.pf",
+   "expected": 1.425,
+   "got": 1.425,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.sd",
+   "expected": 1.4029,
+   "got": 1.4029,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.mean_over_sd",
+   "expected": 0.108,
+   "got": 0.108,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.eur_per_100_risked",
+   "expected": 15.15,
+   "got": 15.15,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.max_dd_R_trade_by_trade",
+   "expected": 29.14,
+   "got": 29.14,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.max_dd_R_weekly",
+   "expected": 21.03,
+   "got": 21.03,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.worst_week_R",
+   "expected": -12.54,
+   "got": -12.54,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.best_week_R",
+   "expected": 55.12,
+   "got": 55.12,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.weeks",
+   "expected": 205,
+   "got": 205,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.winning_weeks_pct",
+   "expected": 58.5,
+   "got": 58.5,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.losing_weeks_pct",
+   "expected": 41.5,
+   "got": 41.5,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.longest_losing_run_weeks",
+   "expected": 7,
+   "got": 7,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.week_mean_R",
+   "expected": 3.847,
+   "got": 3.847,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.week_sd_R",
+   "expected": 9.656,
+   "got": 9.656,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.week_mean_over_sd",
+   "expected": 0.3984,
+   "got": 0.3984,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.weekly_sharpe_annualised",
+   "expected": 2.873,
+   "got": 2.873,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.worst_day_R",
+   "expected": -7.7,
+   "got": -7.7,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.R_per_year",
+   "expected": 201.4,
+   "got": 201.4,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2018.n",
+   "expected": 1224,
+   "got": 1224,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2018.exp",
+   "expected": 0.1902,
+   "got": 0.1902,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2018.total",
+   "expected": 232.76,
+   "got": 232.76,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2018.win",
+   "expected": 0.4453,
+   "got": 0.4453,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2018.avg_loss",
+   "expected": -0.6647,
+   "got": -0.6647,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2018.pf",
+   "expected": 1.516,
+   "got": 1.516,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2019.n",
+   "expected": 1234,
+   "got": 1234,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2019.exp",
+   "expected": 0.145,
+   "got": 0.145,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2019.total",
+   "expected": 178.9,
+   "got": 178.9,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2019.win",
+   "expected": 0.4287,
+   "got": 0.4287,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2019.avg_loss",
+   "expected": -0.6092,
+   "got": -0.6092,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2019.pf",
+   "expected": 1.417,
+   "got": 1.417,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2020.n",
+   "expected": 1310,
+   "got": 1310,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2020.exp",
+   "expected": 0.2061,
+   "got": 0.2061,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2020.total",
+   "expected": 270.0,
+   "got": 270.0,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2020.win",
+   "expected": 0.4695,
+   "got": 0.4695,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2020.avg_loss",
+   "expected": -0.656,
+   "got": -0.656,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2020.pf",
+   "expected": 1.592,
+   "got": 1.592,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2021.n",
+   "expected": 1437,
+   "got": 1437,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2021.exp",
+   "expected": 0.0744,
+   "got": 0.0744,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2021.total",
+   "expected": 106.92,
+   "got": 106.92,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2021.win",
+   "expected": 0.4537,
+   "got": 0.4537,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2021.avg_loss",
+   "expected": -0.6581,
+   "got": -0.6581,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_year.2021.pf",
+   "expected": 1.207,
+   "got": 1.207,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.n",
+   "expected": 2458,
+   "got": 2458,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.exp",
+   "expected": 0.1675,
+   "got": 0.1675,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.total",
+   "expected": 411.67,
+   "got": 411.67,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.win",
+   "expected": 0.4369,
+   "got": 0.4369,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6364,
+   "got": -0.6364,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.pf",
+   "expected": 1.467,
+   "got": 1.467,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.1095,
+   "got": 0.1095,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2020_2021.n",
+   "expected": 2747,
+   "got": 2747,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2020_2021.exp",
+   "expected": 0.1372,
+   "got": 0.1372,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2020_2021.total",
+   "expected": 376.92,
+   "got": 376.92,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2020_2021.win",
+   "expected": 0.4612,
+   "got": 0.4612,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2020_2021.avg_loss",
+   "expected": -0.6571,
+   "got": -0.6571,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2020_2021.pf",
+   "expected": 1.388,
+   "got": 1.388,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.half_2020_2021.mean_over_sd",
+   "expected": 0.1073,
+   "got": 0.1073,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 545,
+   "got": 545,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3448,
+   "got": 0.3448,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 187.92,
+   "got": 187.92,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 516,
+   "got": 516,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1996,
+   "got": 0.1996,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 103.02,
+   "got": 103.02,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 183,
+   "got": 183,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0071,
+   "got": -0.0071,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -1.3,
+   "got": -1.3,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2563,
+   "got": 0.2563,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 140.68,
+   "got": 140.68,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 511,
+   "got": 511,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.2086,
+   "got": 0.2086,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 106.61,
+   "got": 106.61,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1451,
+   "got": 0.1451,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 30.03,
+   "got": 30.03,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.exp",
+   "expected": 0.1072,
+   "got": 0.1072,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.total",
+   "expected": 85.24,
+   "got": 85.24,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0589,
+   "got": 0.0589,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 55.54,
+   "got": 55.54,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1093,
+   "got": 0.1093,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.total",
+   "expected": 53.78,
+   "got": 53.78,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0583,
+   "got": 0.0583,
+   "ok": true
+  },
+  {
+   "field": "P0.fp.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 27.06,
+   "got": 27.06,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.n",
+   "expected": 5207,
+   "got": 5207,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.exp",
+   "expected": 0.1366,
+   "got": 0.1366,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.eur_per_100_risked",
+   "expected": 13.66,
+   "got": 13.66,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.win",
+   "expected": 0.4429,
+   "got": 0.4429,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.avg_win",
+   "expected": 1.1272,
+   "got": 1.1272,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.avg_loss",
+   "expected": -0.6509,
+   "got": -0.6509,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.pf",
+   "expected": 1.377,
+   "got": 1.377,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.total",
+   "expected": 711.09,
+   "got": 711.09,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.worst_week_R",
+   "expected": -12.66,
+   "got": -12.66,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.max_dd_R_trade_by_trade",
+   "expected": 30.78,
+   "got": 30.78,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.max_dd_R_weekly",
+   "expected": 22.98,
+   "got": 22.98,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.longest_losing_run_weeks",
+   "expected": 7,
+   "got": 7,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.mean_over_sd",
+   "expected": 0.0979,
+   "got": 0.0979,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.sd",
+   "expected": 1.3947,
+   "got": 1.3947,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.week_mean_over_sd",
+   "expected": 0.3619,
+   "got": 0.3619,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.weekly_sharpe_annualised",
+   "expected": 2.61,
+   "got": 2.61,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.winning_weeks_pct",
+   "expected": 57.1,
+   "got": 57.1,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.worst_day_R",
+   "expected": -7.77,
+   "got": -7.77,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2018.n",
+   "expected": 1224,
+   "got": 1224,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2018.exp",
+   "expected": 0.1727,
+   "got": 0.1727,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2018.total",
+   "expected": 211.42,
+   "got": 211.42,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2018.win",
+   "expected": 0.4355,
+   "got": 0.4355,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2018.avg_loss",
+   "expected": -0.6667,
+   "got": -0.6667,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2018.pf",
+   "expected": 1.459,
+   "got": 1.459,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2019.n",
+   "expected": 1235,
+   "got": 1235,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2019.exp",
+   "expected": 0.1283,
+   "got": 0.1283,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2019.total",
+   "expected": 158.42,
+   "got": 158.42,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2019.win",
+   "expected": 0.4186,
+   "got": 0.4186,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2019.avg_loss",
+   "expected": -0.6127,
+   "got": -0.6127,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2019.pf",
+   "expected": 1.36,
+   "got": 1.36,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2020.n",
+   "expected": 1312,
+   "got": 1312,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2020.exp",
+   "expected": 0.1903,
+   "got": 0.1903,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2020.total",
+   "expected": 249.71,
+   "got": 249.71,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2020.win",
+   "expected": 0.4649,
+   "got": 0.4649,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2020.avg_loss",
+   "expected": -0.6626,
+   "got": -0.6626,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2020.pf",
+   "expected": 1.537,
+   "got": 1.537,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2021.n",
+   "expected": 1436,
+   "got": 1436,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2021.exp",
+   "expected": 0.0638,
+   "got": 0.0638,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2021.total",
+   "expected": 91.55,
+   "got": 91.55,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2021.win",
+   "expected": 0.4499,
+   "got": 0.4499,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2021.avg_loss",
+   "expected": -0.6613,
+   "got": -0.6613,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_year.2021.pf",
+   "expected": 1.175,
+   "got": 1.175,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2018_02_2019_12.n",
+   "expected": 2459,
+   "got": 2459,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2018_02_2019_12.exp",
+   "expected": 0.1504,
+   "got": 0.1504,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2018_02_2019_12.total",
+   "expected": 369.84,
+   "got": 369.84,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2018_02_2019_12.win",
+   "expected": 0.427,
+   "got": 0.427,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6392,
+   "got": -0.6392,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2018_02_2019_12.pf",
+   "expected": 1.411,
+   "got": 1.411,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.0988,
+   "got": 0.0988,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2020_2021.n",
+   "expected": 2748,
+   "got": 2748,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2020_2021.exp",
+   "expected": 0.1242,
+   "got": 0.1242,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2020_2021.total",
+   "expected": 341.26,
+   "got": 341.26,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2020_2021.win",
+   "expected": 0.4571,
+   "got": 0.4571,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2020_2021.avg_loss",
+   "expected": -0.6619,
+   "got": -0.6619,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2020_2021.pf",
+   "expected": 1.346,
+   "got": 1.346,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.half_2020_2021.mean_over_sd",
+   "expected": 0.0978,
+   "got": 0.0978,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 546,
+   "got": 546,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3316,
+   "got": 0.3316,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 181.05,
+   "got": 181.05,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 518,
+   "got": 518,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1658,
+   "got": 0.1658,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 85.9,
+   "got": 85.9,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 180,
+   "got": 180,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0122,
+   "got": -0.0122,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -2.19,
+   "got": -2.19,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2468,
+   "got": 0.2468,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 135.52,
+   "got": 135.52,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 513,
+   "got": 513,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.1875,
+   "got": 0.1875,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 96.2,
+   "got": 96.2,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1319,
+   "got": 0.1319,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 27.31,
+   "got": 27.31,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.noise30__us100.exp",
+   "expected": 0.1007,
+   "got": 0.1007,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.noise30__us100.total",
+   "expected": 80.05,
+   "got": 80.05,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0438,
+   "got": 0.0438,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 41.35,
+   "got": 41.35,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1033,
+   "got": 0.1033,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.ocm4__us100.total",
+   "expected": 50.8,
+   "got": 50.8,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0326,
+   "got": 0.0326,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 15.11,
+   "got": 15.11,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.n",
+   "expected": 5207,
+   "got": 5207,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.exp",
+   "expected": 0.1366,
+   "got": 0.1366,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.total",
+   "expected": 711.09,
+   "got": 711.09,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.win",
+   "expected": 0.4429,
+   "got": 0.4429,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.avg_win",
+   "expected": 1.1272,
+   "got": 1.1272,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.avg_loss",
+   "expected": -0.6509,
+   "got": -0.6509,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.pf",
+   "expected": 1.377,
+   "got": 1.377,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.sd",
+   "expected": 1.3947,
+   "got": 1.3947,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.mean_over_sd",
+   "expected": 0.0979,
+   "got": 0.0979,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.eur_per_100_risked",
+   "expected": 13.66,
+   "got": 13.66,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.max_dd_R_trade_by_trade",
+   "expected": 30.78,
+   "got": 30.78,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.max_dd_R_weekly",
+   "expected": 22.98,
+   "got": 22.98,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.worst_week_R",
+   "expected": -12.66,
+   "got": -12.66,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.best_week_R",
+   "expected": 54.63,
+   "got": 54.63,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.weeks",
+   "expected": 205,
+   "got": 205,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.winning_weeks_pct",
+   "expected": 57.1,
+   "got": 57.1,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.losing_weeks_pct",
+   "expected": 42.9,
+   "got": 42.9,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.longest_losing_run_weeks",
+   "expected": 7,
+   "got": 7,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.week_mean_R",
+   "expected": 3.469,
+   "got": 3.469,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.week_sd_R",
+   "expected": 9.584,
+   "got": 9.584,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.week_mean_over_sd",
+   "expected": 0.3619,
+   "got": 0.3619,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.weekly_sharpe_annualised",
+   "expected": 2.61,
+   "got": 2.61,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.worst_day_R",
+   "expected": -7.77,
+   "got": -7.77,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.R_per_year",
+   "expected": 181.6,
+   "got": 181.6,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2018.n",
+   "expected": 1224,
+   "got": 1224,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2018.exp",
+   "expected": 0.1727,
+   "got": 0.1727,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2018.total",
+   "expected": 211.42,
+   "got": 211.42,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2018.win",
+   "expected": 0.4355,
+   "got": 0.4355,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2018.avg_loss",
+   "expected": -0.6667,
+   "got": -0.6667,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2018.pf",
+   "expected": 1.459,
+   "got": 1.459,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2019.n",
+   "expected": 1235,
+   "got": 1235,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2019.exp",
+   "expected": 0.1283,
+   "got": 0.1283,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2019.total",
+   "expected": 158.42,
+   "got": 158.42,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2019.win",
+   "expected": 0.4186,
+   "got": 0.4186,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2019.avg_loss",
+   "expected": -0.6127,
+   "got": -0.6127,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2019.pf",
+   "expected": 1.36,
+   "got": 1.36,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2020.n",
+   "expected": 1312,
+   "got": 1312,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2020.exp",
+   "expected": 0.1903,
+   "got": 0.1903,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2020.total",
+   "expected": 249.71,
+   "got": 249.71,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2020.win",
+   "expected": 0.4649,
+   "got": 0.4649,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2020.avg_loss",
+   "expected": -0.6626,
+   "got": -0.6626,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2020.pf",
+   "expected": 1.537,
+   "got": 1.537,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2021.n",
+   "expected": 1436,
+   "got": 1436,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2021.exp",
+   "expected": 0.0638,
+   "got": 0.0638,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2021.total",
+   "expected": 91.55,
+   "got": 91.55,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2021.win",
+   "expected": 0.4499,
+   "got": 0.4499,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2021.avg_loss",
+   "expected": -0.6613,
+   "got": -0.6613,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_year.2021.pf",
+   "expected": 1.175,
+   "got": 1.175,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.n",
+   "expected": 2459,
+   "got": 2459,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.exp",
+   "expected": 0.1504,
+   "got": 0.1504,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.total",
+   "expected": 369.84,
+   "got": 369.84,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.win",
+   "expected": 0.427,
+   "got": 0.427,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6392,
+   "got": -0.6392,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.pf",
+   "expected": 1.411,
+   "got": 1.411,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.0988,
+   "got": 0.0988,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2020_2021.n",
+   "expected": 2748,
+   "got": 2748,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2020_2021.exp",
+   "expected": 0.1242,
+   "got": 0.1242,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2020_2021.total",
+   "expected": 341.26,
+   "got": 341.26,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2020_2021.win",
+   "expected": 0.4571,
+   "got": 0.4571,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2020_2021.avg_loss",
+   "expected": -0.6619,
+   "got": -0.6619,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2020_2021.pf",
+   "expected": 1.346,
+   "got": 1.346,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.half_2020_2021.mean_over_sd",
+   "expected": 0.0978,
+   "got": 0.0978,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 546,
+   "got": 546,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3316,
+   "got": 0.3316,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 181.05,
+   "got": 181.05,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 518,
+   "got": 518,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1658,
+   "got": 0.1658,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 85.9,
+   "got": 85.9,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 180,
+   "got": 180,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0122,
+   "got": -0.0122,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -2.19,
+   "got": -2.19,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2468,
+   "got": 0.2468,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 135.52,
+   "got": 135.52,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 513,
+   "got": 513,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.1875,
+   "got": 0.1875,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 96.2,
+   "got": 96.2,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1319,
+   "got": 0.1319,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 27.31,
+   "got": 27.31,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.exp",
+   "expected": 0.1007,
+   "got": 0.1007,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.total",
+   "expected": 80.05,
+   "got": 80.05,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0438,
+   "got": 0.0438,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 41.35,
+   "got": 41.35,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1033,
+   "got": 0.1033,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.total",
+   "expected": 50.8,
+   "got": 50.8,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0326,
+   "got": 0.0326,
+   "ok": true
+  },
+  {
+   "field": "P0.stress.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 15.11,
+   "got": 15.11,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.n",
+   "expected": 5114,
+   "got": 5114,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.exp",
+   "expected": 0.1571,
+   "got": 0.1571,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.eur_per_100_risked",
+   "expected": 15.71,
+   "got": 15.71,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.win",
+   "expected": 0.4527,
+   "got": 0.4527,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.avg_win",
+   "expected": 1.1289,
+   "got": 1.1289,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.avg_loss",
+   "expected": -0.6467,
+   "got": -0.6467,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.pf",
+   "expected": 1.444,
+   "got": 1.444,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.total",
+   "expected": 803.37,
+   "got": 803.37,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.worst_week_R",
+   "expected": -11.54,
+   "got": -11.54,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.max_dd_R_trade_by_trade",
+   "expected": 27.46,
+   "got": 27.46,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.max_dd_R_weekly",
+   "expected": 20.38,
+   "got": 20.38,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.longest_losing_run_weeks",
+   "expected": 7,
+   "got": 7,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.mean_over_sd",
+   "expected": 0.1116,
+   "got": 0.1116,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.sd",
+   "expected": 1.4081,
+   "got": 1.4081,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.week_mean_over_sd",
+   "expected": 0.4086,
+   "got": 0.4086,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.weekly_sharpe_annualised",
+   "expected": 2.946,
+   "got": 2.946,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.winning_weeks_pct",
+   "expected": 58.0,
+   "got": 58.0,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.worst_day_R",
+   "expected": -7.7,
+   "got": -7.7,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2018.n",
+   "expected": 1224,
+   "got": 1224,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2018.exp",
+   "expected": 0.1902,
+   "got": 0.1902,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2018.total",
+   "expected": 232.76,
+   "got": 232.76,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2018.win",
+   "expected": 0.4453,
+   "got": 0.4453,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2018.avg_loss",
+   "expected": -0.6647,
+   "got": -0.6647,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2018.pf",
+   "expected": 1.516,
+   "got": 1.516,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2019.n",
+   "expected": 1208,
+   "got": 1208,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2019.exp",
+   "expected": 0.1525,
+   "got": 0.1525,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2019.total",
+   "expected": 184.22,
+   "got": 184.22,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2019.win",
+   "expected": 0.4329,
+   "got": 0.4329,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2019.avg_loss",
+   "expected": -0.6101,
+   "got": -0.6101,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2019.pf",
+   "expected": 1.441,
+   "got": 1.441,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2020.n",
+   "expected": 1296,
+   "got": 1296,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2020.exp",
+   "expected": 0.2071,
+   "got": 0.2071,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2020.total",
+   "expected": 268.4,
+   "got": 268.4,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2020.win",
+   "expected": 0.4707,
+   "got": 0.4707,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2020.avg_loss",
+   "expected": -0.656,
+   "got": -0.656,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2020.pf",
+   "expected": 1.596,
+   "got": 1.596,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2021.n",
+   "expected": 1386,
+   "got": 1386,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2021.exp",
+   "expected": 0.0851,
+   "got": 0.0851,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2021.total",
+   "expected": 117.99,
+   "got": 117.99,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2021.win",
+   "expected": 0.4596,
+   "got": 0.4596,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2021.avg_loss",
+   "expected": -0.6553,
+   "got": -0.6553,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_year.2021.pf",
+   "expected": 1.24,
+   "got": 1.24,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2018_02_2019_12.n",
+   "expected": 2432,
+   "got": 2432,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2018_02_2019_12.exp",
+   "expected": 0.1715,
+   "got": 0.1715,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2018_02_2019_12.total",
+   "expected": 416.98,
+   "got": 416.98,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2018_02_2019_12.win",
+   "expected": 0.4391,
+   "got": 0.4391,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6373,
+   "got": -0.6373,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2018_02_2019_12.pf",
+   "expected": 1.48,
+   "got": 1.48,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.1117,
+   "got": 0.1117,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2020_2021.n",
+   "expected": 2682,
+   "got": 2682,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2020_2021.exp",
+   "expected": 0.1441,
+   "got": 0.1441,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2020_2021.total",
+   "expected": 386.39,
+   "got": 386.39,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2020_2021.win",
+   "expected": 0.465,
+   "got": 0.465,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2020_2021.avg_loss",
+   "expected": -0.6556,
+   "got": -0.6556,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2020_2021.pf",
+   "expected": 1.411,
+   "got": 1.411,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.half_2020_2021.mean_over_sd",
+   "expected": 0.1124,
+   "got": 0.1124,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 545,
+   "got": 545,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3448,
+   "got": 0.3448,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 187.92,
+   "got": 187.92,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 516,
+   "got": 516,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1996,
+   "got": 0.1996,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 103.02,
+   "got": 103.02,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 183,
+   "got": 183,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0071,
+   "got": -0.0071,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -1.3,
+   "got": -1.3,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2563,
+   "got": 0.2563,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 140.68,
+   "got": 140.68,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 420,
+   "got": 420,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.289,
+   "got": 0.289,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 121.39,
+   "got": 121.39,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1451,
+   "got": 0.1451,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 30.03,
+   "got": 30.03,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.noise30__us100.exp",
+   "expected": 0.1072,
+   "got": 0.1072,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.noise30__us100.total",
+   "expected": 85.24,
+   "got": 85.24,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0589,
+   "got": 0.0589,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 55.54,
+   "got": 55.54,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1093,
+   "got": 0.1093,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.ocm4__us100.total",
+   "expected": 53.78,
+   "got": 53.78,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0583,
+   "got": 0.0583,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 27.06,
+   "got": 27.06,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.n",
+   "expected": 5114,
+   "got": 5114,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.exp",
+   "expected": 0.1571,
+   "got": 0.1571,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.total",
+   "expected": 803.37,
+   "got": 803.37,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.win",
+   "expected": 0.4527,
+   "got": 0.4527,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.avg_win",
+   "expected": 1.1289,
+   "got": 1.1289,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.avg_loss",
+   "expected": -0.6467,
+   "got": -0.6467,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.pf",
+   "expected": 1.444,
+   "got": 1.444,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.sd",
+   "expected": 1.4081,
+   "got": 1.4081,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.mean_over_sd",
+   "expected": 0.1116,
+   "got": 0.1116,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.eur_per_100_risked",
+   "expected": 15.71,
+   "got": 15.71,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.max_dd_R_trade_by_trade",
+   "expected": 27.46,
+   "got": 27.46,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.max_dd_R_weekly",
+   "expected": 20.38,
+   "got": 20.38,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.worst_week_R",
+   "expected": -11.54,
+   "got": -11.54,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.best_week_R",
+   "expected": 55.12,
+   "got": 55.12,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.weeks",
+   "expected": 205,
+   "got": 205,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.winning_weeks_pct",
+   "expected": 58.0,
+   "got": 58.0,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.losing_weeks_pct",
+   "expected": 42.0,
+   "got": 42.0,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.longest_losing_run_weeks",
+   "expected": 7,
+   "got": 7,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.week_mean_R",
+   "expected": 3.919,
+   "got": 3.919,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.week_sd_R",
+   "expected": 9.592,
+   "got": 9.592,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.week_mean_over_sd",
+   "expected": 0.4086,
+   "got": 0.4086,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.weekly_sharpe_annualised",
+   "expected": 2.946,
+   "got": 2.946,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.worst_day_R",
+   "expected": -7.7,
+   "got": -7.7,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.R_per_year",
+   "expected": 205.2,
+   "got": 205.2,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2018.n",
+   "expected": 1224,
+   "got": 1224,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2018.exp",
+   "expected": 0.1902,
+   "got": 0.1902,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2018.total",
+   "expected": 232.76,
+   "got": 232.76,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2018.win",
+   "expected": 0.4453,
+   "got": 0.4453,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2018.avg_loss",
+   "expected": -0.6647,
+   "got": -0.6647,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2018.pf",
+   "expected": 1.516,
+   "got": 1.516,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2019.n",
+   "expected": 1208,
+   "got": 1208,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2019.exp",
+   "expected": 0.1525,
+   "got": 0.1525,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2019.total",
+   "expected": 184.22,
+   "got": 184.22,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2019.win",
+   "expected": 0.4329,
+   "got": 0.4329,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2019.avg_loss",
+   "expected": -0.6101,
+   "got": -0.6101,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2019.pf",
+   "expected": 1.441,
+   "got": 1.441,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2020.n",
+   "expected": 1296,
+   "got": 1296,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2020.exp",
+   "expected": 0.2071,
+   "got": 0.2071,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2020.total",
+   "expected": 268.4,
+   "got": 268.4,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2020.win",
+   "expected": 0.4707,
+   "got": 0.4707,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2020.avg_loss",
+   "expected": -0.656,
+   "got": -0.656,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2020.pf",
+   "expected": 1.596,
+   "got": 1.596,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2021.n",
+   "expected": 1386,
+   "got": 1386,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2021.exp",
+   "expected": 0.0851,
+   "got": 0.0851,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2021.total",
+   "expected": 117.99,
+   "got": 117.99,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2021.win",
+   "expected": 0.4596,
+   "got": 0.4596,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2021.avg_loss",
+   "expected": -0.6553,
+   "got": -0.6553,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_year.2021.pf",
+   "expected": 1.24,
+   "got": 1.24,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.n",
+   "expected": 2432,
+   "got": 2432,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.exp",
+   "expected": 0.1715,
+   "got": 0.1715,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.total",
+   "expected": 416.98,
+   "got": 416.98,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.win",
+   "expected": 0.4391,
+   "got": 0.4391,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6373,
+   "got": -0.6373,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.pf",
+   "expected": 1.48,
+   "got": 1.48,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.1117,
+   "got": 0.1117,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2020_2021.n",
+   "expected": 2682,
+   "got": 2682,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2020_2021.exp",
+   "expected": 0.1441,
+   "got": 0.1441,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2020_2021.total",
+   "expected": 386.39,
+   "got": 386.39,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2020_2021.win",
+   "expected": 0.465,
+   "got": 0.465,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2020_2021.avg_loss",
+   "expected": -0.6556,
+   "got": -0.6556,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2020_2021.pf",
+   "expected": 1.411,
+   "got": 1.411,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.half_2020_2021.mean_over_sd",
+   "expected": 0.1124,
+   "got": 0.1124,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 545,
+   "got": 545,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3448,
+   "got": 0.3448,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 187.92,
+   "got": 187.92,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 516,
+   "got": 516,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1996,
+   "got": 0.1996,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 103.02,
+   "got": 103.02,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 183,
+   "got": 183,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0071,
+   "got": -0.0071,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -1.3,
+   "got": -1.3,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2563,
+   "got": 0.2563,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 140.68,
+   "got": 140.68,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 420,
+   "got": 420,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.289,
+   "got": 0.289,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 121.39,
+   "got": 121.39,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1451,
+   "got": 0.1451,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 30.03,
+   "got": 30.03,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.exp",
+   "expected": 0.1072,
+   "got": 0.1072,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.total",
+   "expected": 85.24,
+   "got": 85.24,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0589,
+   "got": 0.0589,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 55.54,
+   "got": 55.54,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1093,
+   "got": 0.1093,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.total",
+   "expected": 53.78,
+   "got": 53.78,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0583,
+   "got": 0.0583,
+   "ok": true
+  },
+  {
+   "field": "P1.fp.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 27.06,
+   "got": 27.06,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.n",
+   "expected": 5116,
+   "got": 5116,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.exp",
+   "expected": 0.142,
+   "got": 0.142,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.eur_per_100_risked",
+   "expected": 14.2,
+   "got": 14.2,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.win",
+   "expected": 0.4457,
+   "got": 0.4457,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.avg_win",
+   "expected": 1.1277,
+   "got": 1.1277,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.avg_loss",
+   "expected": -0.6504,
+   "got": -0.6504,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.pf",
+   "expected": 1.394,
+   "got": 1.394,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.total",
+   "expected": 726.64,
+   "got": 726.64,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.worst_week_R",
+   "expected": -12.3,
+   "got": -12.3,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.max_dd_R_trade_by_trade",
+   "expected": 29.44,
+   "got": 29.44,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.max_dd_R_weekly",
+   "expected": 23.1,
+   "got": 23.1,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.longest_losing_run_weeks",
+   "expected": 7,
+   "got": 7,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.mean_over_sd",
+   "expected": 0.1015,
+   "got": 0.1015,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.sd",
+   "expected": 1.3999,
+   "got": 1.3999,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.week_mean_over_sd",
+   "expected": 0.3722,
+   "got": 0.3722,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.weekly_sharpe_annualised",
+   "expected": 2.684,
+   "got": 2.684,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.winning_weeks_pct",
+   "expected": 56.6,
+   "got": 56.6,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.worst_day_R",
+   "expected": -7.77,
+   "got": -7.77,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2018.n",
+   "expected": 1224,
+   "got": 1224,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2018.exp",
+   "expected": 0.1727,
+   "got": 0.1727,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2018.total",
+   "expected": 211.42,
+   "got": 211.42,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2018.win",
+   "expected": 0.4355,
+   "got": 0.4355,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2018.avg_loss",
+   "expected": -0.6667,
+   "got": -0.6667,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2018.pf",
+   "expected": 1.459,
+   "got": 1.459,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2019.n",
+   "expected": 1209,
+   "got": 1209,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2019.exp",
+   "expected": 0.1356,
+   "got": 0.1356,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2019.total",
+   "expected": 163.98,
+   "got": 163.98,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2019.win",
+   "expected": 0.4227,
+   "got": 0.4227,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2019.avg_loss",
+   "expected": -0.6135,
+   "got": -0.6135,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2019.pf",
+   "expected": 1.383,
+   "got": 1.383,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2020.n",
+   "expected": 1298,
+   "got": 1298,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2020.exp",
+   "expected": 0.1912,
+   "got": 0.1912,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2020.total",
+   "expected": 248.23,
+   "got": 248.23,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2020.win",
+   "expected": 0.4661,
+   "got": 0.4661,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2020.avg_loss",
+   "expected": -0.6626,
+   "got": -0.6626,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2020.pf",
+   "expected": 1.541,
+   "got": 1.541,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2021.n",
+   "expected": 1385,
+   "got": 1385,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2021.exp",
+   "expected": 0.0744,
+   "got": 0.0744,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2021.total",
+   "expected": 103.01,
+   "got": 103.01,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2021.win",
+   "expected": 0.4556,
+   "got": 0.4556,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2021.avg_loss",
+   "expected": -0.6584,
+   "got": -0.6584,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_year.2021.pf",
+   "expected": 1.207,
+   "got": 1.207,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2018_02_2019_12.n",
+   "expected": 2433,
+   "got": 2433,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2018_02_2019_12.exp",
+   "expected": 0.1543,
+   "got": 0.1543,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2018_02_2019_12.total",
+   "expected": 375.4,
+   "got": 375.4,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2018_02_2019_12.win",
+   "expected": 0.4291,
+   "got": 0.4291,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6399,
+   "got": -0.6399,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2018_02_2019_12.pf",
+   "expected": 1.422,
+   "got": 1.422,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.101,
+   "got": 0.101,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2020_2021.n",
+   "expected": 2683,
+   "got": 2683,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2020_2021.exp",
+   "expected": 0.1309,
+   "got": 0.1309,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2020_2021.total",
+   "expected": 351.24,
+   "got": 351.24,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2020_2021.win",
+   "expected": 0.4607,
+   "got": 0.4607,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2020_2021.avg_loss",
+   "expected": -0.6604,
+   "got": -0.6604,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2020_2021.pf",
+   "expected": 1.368,
+   "got": 1.368,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.half_2020_2021.mean_over_sd",
+   "expected": 0.1028,
+   "got": 0.1028,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 546,
+   "got": 546,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3316,
+   "got": 0.3316,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 181.05,
+   "got": 181.05,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 518,
+   "got": 518,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1658,
+   "got": 0.1658,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 85.9,
+   "got": 85.9,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 180,
+   "got": 180,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0122,
+   "got": -0.0122,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -2.19,
+   "got": -2.19,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2468,
+   "got": 0.2468,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 135.52,
+   "got": 135.52,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 422,
+   "got": 422,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.2648,
+   "got": 0.2648,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 111.75,
+   "got": 111.75,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1319,
+   "got": 0.1319,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 27.31,
+   "got": 27.31,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.noise30__us100.exp",
+   "expected": 0.1007,
+   "got": 0.1007,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.noise30__us100.total",
+   "expected": 80.05,
+   "got": 80.05,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0438,
+   "got": 0.0438,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 41.35,
+   "got": 41.35,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1033,
+   "got": 0.1033,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.ocm4__us100.total",
+   "expected": 50.8,
+   "got": 50.8,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0326,
+   "got": 0.0326,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 15.11,
+   "got": 15.11,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.n",
+   "expected": 5116,
+   "got": 5116,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.exp",
+   "expected": 0.142,
+   "got": 0.142,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.total",
+   "expected": 726.64,
+   "got": 726.64,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.win",
+   "expected": 0.4457,
+   "got": 0.4457,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.avg_win",
+   "expected": 1.1277,
+   "got": 1.1277,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.avg_loss",
+   "expected": -0.6504,
+   "got": -0.6504,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.pf",
+   "expected": 1.394,
+   "got": 1.394,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.sd",
+   "expected": 1.3999,
+   "got": 1.3999,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.mean_over_sd",
+   "expected": 0.1015,
+   "got": 0.1015,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.eur_per_100_risked",
+   "expected": 14.2,
+   "got": 14.2,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.max_dd_R_trade_by_trade",
+   "expected": 29.44,
+   "got": 29.44,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.max_dd_R_weekly",
+   "expected": 23.1,
+   "got": 23.1,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.worst_week_R",
+   "expected": -12.3,
+   "got": -12.3,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.best_week_R",
+   "expected": 54.63,
+   "got": 54.63,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.weeks",
+   "expected": 205,
+   "got": 205,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.winning_weeks_pct",
+   "expected": 56.6,
+   "got": 56.6,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.losing_weeks_pct",
+   "expected": 43.4,
+   "got": 43.4,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.longest_losing_run_weeks",
+   "expected": 7,
+   "got": 7,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.week_mean_R",
+   "expected": 3.545,
+   "got": 3.545,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.week_sd_R",
+   "expected": 9.522,
+   "got": 9.522,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.week_mean_over_sd",
+   "expected": 0.3722,
+   "got": 0.3722,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.weekly_sharpe_annualised",
+   "expected": 2.684,
+   "got": 2.684,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.worst_day_R",
+   "expected": -7.77,
+   "got": -7.77,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.R_per_year",
+   "expected": 185.6,
+   "got": 185.6,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2018.n",
+   "expected": 1224,
+   "got": 1224,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2018.exp",
+   "expected": 0.1727,
+   "got": 0.1727,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2018.total",
+   "expected": 211.42,
+   "got": 211.42,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2018.win",
+   "expected": 0.4355,
+   "got": 0.4355,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2018.avg_loss",
+   "expected": -0.6667,
+   "got": -0.6667,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2018.pf",
+   "expected": 1.459,
+   "got": 1.459,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2019.n",
+   "expected": 1209,
+   "got": 1209,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2019.exp",
+   "expected": 0.1356,
+   "got": 0.1356,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2019.total",
+   "expected": 163.98,
+   "got": 163.98,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2019.win",
+   "expected": 0.4227,
+   "got": 0.4227,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2019.avg_loss",
+   "expected": -0.6135,
+   "got": -0.6135,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2019.pf",
+   "expected": 1.383,
+   "got": 1.383,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2020.n",
+   "expected": 1298,
+   "got": 1298,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2020.exp",
+   "expected": 0.1912,
+   "got": 0.1912,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2020.total",
+   "expected": 248.23,
+   "got": 248.23,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2020.win",
+   "expected": 0.4661,
+   "got": 0.4661,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2020.avg_loss",
+   "expected": -0.6626,
+   "got": -0.6626,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2020.pf",
+   "expected": 1.541,
+   "got": 1.541,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2021.n",
+   "expected": 1385,
+   "got": 1385,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2021.exp",
+   "expected": 0.0744,
+   "got": 0.0744,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2021.total",
+   "expected": 103.01,
+   "got": 103.01,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2021.win",
+   "expected": 0.4556,
+   "got": 0.4556,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2021.avg_loss",
+   "expected": -0.6584,
+   "got": -0.6584,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_year.2021.pf",
+   "expected": 1.207,
+   "got": 1.207,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.n",
+   "expected": 2433,
+   "got": 2433,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.exp",
+   "expected": 0.1543,
+   "got": 0.1543,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.total",
+   "expected": 375.4,
+   "got": 375.4,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.win",
+   "expected": 0.4291,
+   "got": 0.4291,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6399,
+   "got": -0.6399,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.pf",
+   "expected": 1.422,
+   "got": 1.422,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.101,
+   "got": 0.101,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2020_2021.n",
+   "expected": 2683,
+   "got": 2683,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2020_2021.exp",
+   "expected": 0.1309,
+   "got": 0.1309,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2020_2021.total",
+   "expected": 351.24,
+   "got": 351.24,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2020_2021.win",
+   "expected": 0.4607,
+   "got": 0.4607,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2020_2021.avg_loss",
+   "expected": -0.6604,
+   "got": -0.6604,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2020_2021.pf",
+   "expected": 1.368,
+   "got": 1.368,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.half_2020_2021.mean_over_sd",
+   "expected": 0.1028,
+   "got": 0.1028,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 546,
+   "got": 546,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3316,
+   "got": 0.3316,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 181.05,
+   "got": 181.05,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 518,
+   "got": 518,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1658,
+   "got": 0.1658,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 85.9,
+   "got": 85.9,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 180,
+   "got": 180,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0122,
+   "got": -0.0122,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -2.19,
+   "got": -2.19,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2468,
+   "got": 0.2468,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 135.52,
+   "got": 135.52,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 422,
+   "got": 422,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.2648,
+   "got": 0.2648,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 111.75,
+   "got": 111.75,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1319,
+   "got": 0.1319,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 27.31,
+   "got": 27.31,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.exp",
+   "expected": 0.1007,
+   "got": 0.1007,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.total",
+   "expected": 80.05,
+   "got": 80.05,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0438,
+   "got": 0.0438,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 41.35,
+   "got": 41.35,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1033,
+   "got": 0.1033,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.total",
+   "expected": 50.8,
+   "got": 50.8,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0326,
+   "got": 0.0326,
+   "ok": true
+  },
+  {
+   "field": "P1.stress.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 15.11,
+   "got": 15.11,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.n",
+   "expected": 5833,
+   "got": 5833,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.exp",
+   "expected": 0.1977,
+   "got": 0.1977,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.eur_per_100_risked",
+   "expected": 19.77,
+   "got": 19.77,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.win",
+   "expected": 0.4456,
+   "got": 0.4456,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.avg_win",
+   "expected": 1.3055,
+   "got": 1.3055,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.avg_loss",
+   "expected": -0.6926,
+   "got": -0.6926,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.pf",
+   "expected": 1.515,
+   "got": 1.515,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.total",
+   "expected": 1153.18,
+   "got": 1153.18,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.worst_week_R",
+   "expected": -16.87,
+   "got": -16.87,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.max_dd_R_trade_by_trade",
+   "expected": 32.08,
+   "got": 32.08,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.max_dd_R_weekly",
+   "expected": 29.11,
+   "got": 29.11,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.longest_losing_run_weeks",
+   "expected": 4,
+   "got": 4,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.mean_over_sd",
+   "expected": 0.1225,
+   "got": 0.1225,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.sd",
+   "expected": 1.6134,
+   "got": 1.6134,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.week_mean_over_sd",
+   "expected": 0.4633,
+   "got": 0.4633,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.weekly_sharpe_annualised",
+   "expected": 3.341,
+   "got": 3.341,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.winning_weeks_pct",
+   "expected": 62.4,
+   "got": 62.4,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.worst_day_R",
+   "expected": -9.03,
+   "got": -9.03,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2018.n",
+   "expected": 1376,
+   "got": 1376,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2018.exp",
+   "expected": 0.2887,
+   "got": 0.2887,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2018.total",
+   "expected": 397.26,
+   "got": 397.26,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2018.win",
+   "expected": 0.4506,
+   "got": 0.4506,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2018.avg_loss",
+   "expected": -0.6981,
+   "got": -0.6981,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2018.pf",
+   "expected": 1.753,
+   "got": 1.753,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2019.n",
+   "expected": 1382,
+   "got": 1382,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2019.exp",
+   "expected": 0.2073,
+   "got": 0.2073,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2019.total",
+   "expected": 286.44,
+   "got": 286.44,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2019.win",
+   "expected": 0.4334,
+   "got": 0.4334,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2019.avg_loss",
+   "expected": -0.6609,
+   "got": -0.6609,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2019.pf",
+   "expected": 1.554,
+   "got": 1.554,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2020.n",
+   "expected": 1494,
+   "got": 1494,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2020.exp",
+   "expected": 0.2226,
+   "got": 0.2226,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2020.total",
+   "expected": 332.54,
+   "got": 332.54,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2020.win",
+   "expected": 0.4538,
+   "got": 0.4538,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2020.avg_loss",
+   "expected": -0.7092,
+   "got": -0.7092,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2020.pf",
+   "expected": 1.575,
+   "got": 1.575,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2021.n",
+   "expected": 1581,
+   "got": 1581,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2021.exp",
+   "expected": 0.0866,
+   "got": 0.0866,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2021.total",
+   "expected": 136.94,
+   "got": 136.94,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2021.win",
+   "expected": 0.444,
+   "got": 0.444,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2021.avg_loss",
+   "expected": -0.7007,
+   "got": -0.7007,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_year.2021.pf",
+   "expected": 1.222,
+   "got": 1.222,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2018_02_2019_12.n",
+   "expected": 2758,
+   "got": 2758,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2018_02_2019_12.exp",
+   "expected": 0.2479,
+   "got": 0.2479,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2018_02_2019_12.total",
+   "expected": 683.7,
+   "got": 683.7,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2018_02_2019_12.win",
+   "expected": 0.442,
+   "got": 0.442,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6792,
+   "got": -0.6792,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2018_02_2019_12.pf",
+   "expected": 1.654,
+   "got": 1.654,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.1386,
+   "got": 0.1386,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2020_2021.n",
+   "expected": 3075,
+   "got": 3075,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2020_2021.exp",
+   "expected": 0.1527,
+   "got": 0.1527,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2020_2021.total",
+   "expected": 469.48,
+   "got": 469.48,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2020_2021.win",
+   "expected": 0.4488,
+   "got": 0.4488,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2020_2021.avg_loss",
+   "expected": -0.7048,
+   "got": -0.7048,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2020_2021.pf",
+   "expected": 1.393,
+   "got": 1.393,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.half_2020_2021.mean_over_sd",
+   "expected": 0.1063,
+   "got": 0.1063,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 545,
+   "got": 545,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3448,
+   "got": 0.3448,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 187.92,
+   "got": 187.92,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 516,
+   "got": 516,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1996,
+   "got": 0.1996,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 103.02,
+   "got": 103.02,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 183,
+   "got": 183,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0071,
+   "got": -0.0071,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -1.3,
+   "got": -1.3,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.n",
+   "expected": 375,
+   "got": 375,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.exp",
+   "expected": 0.5182,
+   "got": 0.5182,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.total",
+   "expected": 194.34,
+   "got": 194.34,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.n",
+   "expected": 344,
+   "got": 344,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.exp",
+   "expected": 0.4519,
+   "got": 0.4519,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.total",
+   "expected": 155.47,
+   "got": 155.47,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2563,
+   "got": 0.2563,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 140.68,
+   "got": 140.68,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 420,
+   "got": 420,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.289,
+   "got": 0.289,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 121.39,
+   "got": 121.39,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1451,
+   "got": 0.1451,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 30.03,
+   "got": 30.03,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.noise30__us100.exp",
+   "expected": 0.1072,
+   "got": 0.1072,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.noise30__us100.total",
+   "expected": 85.24,
+   "got": 85.24,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0589,
+   "got": 0.0589,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 55.54,
+   "got": 55.54,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1093,
+   "got": 0.1093,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.ocm4__us100.total",
+   "expected": 53.78,
+   "got": 53.78,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0583,
+   "got": 0.0583,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 27.06,
+   "got": 27.06,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.n",
+   "expected": 5833,
+   "got": 5833,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.exp",
+   "expected": 0.1977,
+   "got": 0.1977,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.total",
+   "expected": 1153.18,
+   "got": 1153.18,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.win",
+   "expected": 0.4456,
+   "got": 0.4456,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.avg_win",
+   "expected": 1.3055,
+   "got": 1.3055,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.avg_loss",
+   "expected": -0.6926,
+   "got": -0.6926,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.pf",
+   "expected": 1.515,
+   "got": 1.515,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.sd",
+   "expected": 1.6134,
+   "got": 1.6134,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.mean_over_sd",
+   "expected": 0.1225,
+   "got": 0.1225,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.eur_per_100_risked",
+   "expected": 19.77,
+   "got": 19.77,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.max_dd_R_trade_by_trade",
+   "expected": 32.08,
+   "got": 32.08,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.max_dd_R_weekly",
+   "expected": 29.11,
+   "got": 29.11,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.worst_week_R",
+   "expected": -16.87,
+   "got": -16.87,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.best_week_R",
+   "expected": 68.52,
+   "got": 68.52,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.weeks",
+   "expected": 205,
+   "got": 205,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.winning_weeks_pct",
+   "expected": 62.4,
+   "got": 62.4,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.losing_weeks_pct",
+   "expected": 37.6,
+   "got": 37.6,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.longest_losing_run_weeks",
+   "expected": 4,
+   "got": 4,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.week_mean_R",
+   "expected": 5.625,
+   "got": 5.625,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.week_sd_R",
+   "expected": 12.141,
+   "got": 12.141,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.week_mean_over_sd",
+   "expected": 0.4633,
+   "got": 0.4633,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.weekly_sharpe_annualised",
+   "expected": 3.341,
+   "got": 3.341,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.worst_day_R",
+   "expected": -9.03,
+   "got": -9.03,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.R_per_year",
+   "expected": 294.5,
+   "got": 294.5,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2018.n",
+   "expected": 1376,
+   "got": 1376,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2018.exp",
+   "expected": 0.2887,
+   "got": 0.2887,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2018.total",
+   "expected": 397.26,
+   "got": 397.26,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2018.win",
+   "expected": 0.4506,
+   "got": 0.4506,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2018.avg_loss",
+   "expected": -0.6981,
+   "got": -0.6981,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2018.pf",
+   "expected": 1.753,
+   "got": 1.753,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2019.n",
+   "expected": 1382,
+   "got": 1382,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2019.exp",
+   "expected": 0.2073,
+   "got": 0.2073,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2019.total",
+   "expected": 286.44,
+   "got": 286.44,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2019.win",
+   "expected": 0.4334,
+   "got": 0.4334,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2019.avg_loss",
+   "expected": -0.6609,
+   "got": -0.6609,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2019.pf",
+   "expected": 1.554,
+   "got": 1.554,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2020.n",
+   "expected": 1494,
+   "got": 1494,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2020.exp",
+   "expected": 0.2226,
+   "got": 0.2226,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2020.total",
+   "expected": 332.54,
+   "got": 332.54,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2020.win",
+   "expected": 0.4538,
+   "got": 0.4538,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2020.avg_loss",
+   "expected": -0.7092,
+   "got": -0.7092,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2020.pf",
+   "expected": 1.575,
+   "got": 1.575,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2021.n",
+   "expected": 1581,
+   "got": 1581,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2021.exp",
+   "expected": 0.0866,
+   "got": 0.0866,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2021.total",
+   "expected": 136.94,
+   "got": 136.94,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2021.win",
+   "expected": 0.444,
+   "got": 0.444,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2021.avg_loss",
+   "expected": -0.7007,
+   "got": -0.7007,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_year.2021.pf",
+   "expected": 1.222,
+   "got": 1.222,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.n",
+   "expected": 2758,
+   "got": 2758,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.exp",
+   "expected": 0.2479,
+   "got": 0.2479,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.total",
+   "expected": 683.7,
+   "got": 683.7,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.win",
+   "expected": 0.442,
+   "got": 0.442,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6792,
+   "got": -0.6792,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.pf",
+   "expected": 1.654,
+   "got": 1.654,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.1386,
+   "got": 0.1386,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2020_2021.n",
+   "expected": 3075,
+   "got": 3075,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2020_2021.exp",
+   "expected": 0.1527,
+   "got": 0.1527,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2020_2021.total",
+   "expected": 469.48,
+   "got": 469.48,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2020_2021.win",
+   "expected": 0.4488,
+   "got": 0.4488,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2020_2021.avg_loss",
+   "expected": -0.7048,
+   "got": -0.7048,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2020_2021.pf",
+   "expected": 1.393,
+   "got": 1.393,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.half_2020_2021.mean_over_sd",
+   "expected": 0.1063,
+   "got": 0.1063,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 545,
+   "got": 545,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3448,
+   "got": 0.3448,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 187.92,
+   "got": 187.92,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 516,
+   "got": 516,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1996,
+   "got": 0.1996,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 103.02,
+   "got": 103.02,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 183,
+   "got": 183,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0071,
+   "got": -0.0071,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -1.3,
+   "got": -1.3,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.n",
+   "expected": 375,
+   "got": 375,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.exp",
+   "expected": 0.5182,
+   "got": 0.5182,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.total",
+   "expected": 194.34,
+   "got": 194.34,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.n",
+   "expected": 344,
+   "got": 344,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.exp",
+   "expected": 0.4519,
+   "got": 0.4519,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.total",
+   "expected": 155.47,
+   "got": 155.47,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2563,
+   "got": 0.2563,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 140.68,
+   "got": 140.68,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 420,
+   "got": 420,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.289,
+   "got": 0.289,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 121.39,
+   "got": 121.39,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1451,
+   "got": 0.1451,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 30.03,
+   "got": 30.03,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.exp",
+   "expected": 0.1072,
+   "got": 0.1072,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.total",
+   "expected": 85.24,
+   "got": 85.24,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0589,
+   "got": 0.0589,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 55.54,
+   "got": 55.54,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1093,
+   "got": 0.1093,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.total",
+   "expected": 53.78,
+   "got": 53.78,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0583,
+   "got": 0.0583,
+   "ok": true
+  },
+  {
+   "field": "P2.fp.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 27.06,
+   "got": 27.06,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.n",
+   "expected": 5834,
+   "got": 5834,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.exp",
+   "expected": 0.1804,
+   "got": 0.1804,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.eur_per_100_risked",
+   "expected": 18.04,
+   "got": 18.04,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.win",
+   "expected": 0.439,
+   "got": 0.439,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.avg_win",
+   "expected": 1.2991,
+   "got": 1.2991,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.avg_loss",
+   "expected": -0.6949,
+   "got": -0.6949,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.pf",
+   "expected": 1.463,
+   "got": 1.463,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.total",
+   "expected": 1052.54,
+   "got": 1052.54,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.worst_week_R",
+   "expected": -17.09,
+   "got": -17.09,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.max_dd_R_trade_by_trade",
+   "expected": 35.51,
+   "got": 35.51,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.max_dd_R_weekly",
+   "expected": 32.49,
+   "got": 32.49,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.longest_losing_run_weeks",
+   "expected": 5,
+   "got": 5,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.mean_over_sd",
+   "expected": 0.1132,
+   "got": 0.1132,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.sd",
+   "expected": 1.5937,
+   "got": 1.5937,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.week_mean_over_sd",
+   "expected": 0.4287,
+   "got": 0.4287,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.weekly_sharpe_annualised",
+   "expected": 3.091,
+   "got": 3.091,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.winning_weeks_pct",
+   "expected": 60.5,
+   "got": 60.5,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.worst_day_R",
+   "expected": -8.99,
+   "got": -8.99,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2018.n",
+   "expected": 1376,
+   "got": 1376,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2018.exp",
+   "expected": 0.2678,
+   "got": 0.2678,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2018.total",
+   "expected": 368.45,
+   "got": 368.45,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2018.win",
+   "expected": 0.4411,
+   "got": 0.4411,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2018.avg_loss",
+   "expected": -0.6988,
+   "got": -0.6988,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2018.pf",
+   "expected": 1.686,
+   "got": 1.686,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2019.n",
+   "expected": 1383,
+   "got": 1383,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2019.exp",
+   "expected": 0.1874,
+   "got": 0.1874,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2019.total",
+   "expected": 259.18,
+   "got": 259.18,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2019.win",
+   "expected": 0.4237,
+   "got": 0.4237,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2019.avg_loss",
+   "expected": -0.6625,
+   "got": -0.6625,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2019.pf",
+   "expected": 1.491,
+   "got": 1.491,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2020.n",
+   "expected": 1496,
+   "got": 1496,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2020.exp",
+   "expected": 0.2045,
+   "got": 0.2045,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2020.total",
+   "expected": 305.95,
+   "got": 305.95,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2020.win",
+   "expected": 0.4499,
+   "got": 0.4499,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2020.avg_loss",
+   "expected": -0.7148,
+   "got": -0.7148,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2020.pf",
+   "expected": 1.52,
+   "got": 1.52,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2021.n",
+   "expected": 1579,
+   "got": 1579,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2021.exp",
+   "expected": 0.0753,
+   "got": 0.0753,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2021.total",
+   "expected": 118.96,
+   "got": 118.96,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2021.win",
+   "expected": 0.4402,
+   "got": 0.4402,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2021.avg_loss",
+   "expected": -0.7023,
+   "got": -0.7023,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_year.2021.pf",
+   "expected": 1.192,
+   "got": 1.192,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2018_02_2019_12.n",
+   "expected": 2759,
+   "got": 2759,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2018_02_2019_12.exp",
+   "expected": 0.2275,
+   "got": 0.2275,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2018_02_2019_12.total",
+   "expected": 627.63,
+   "got": 627.63,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2018_02_2019_12.win",
+   "expected": 0.4324,
+   "got": 0.4324,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6803,
+   "got": -0.6803,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2018_02_2019_12.pf",
+   "expected": 1.589,
+   "got": 1.589,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.1287,
+   "got": 0.1287,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2020_2021.n",
+   "expected": 3075,
+   "got": 3075,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2020_2021.exp",
+   "expected": 0.1382,
+   "got": 0.1382,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2020_2021.total",
+   "expected": 424.91,
+   "got": 424.91,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2020_2021.win",
+   "expected": 0.4449,
+   "got": 0.4449,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2020_2021.avg_loss",
+   "expected": -0.7084,
+   "got": -0.7084,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2020_2021.pf",
+   "expected": 1.351,
+   "got": 1.351,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.half_2020_2021.mean_over_sd",
+   "expected": 0.0974,
+   "got": 0.0974,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 546,
+   "got": 546,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3316,
+   "got": 0.3316,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 181.05,
+   "got": 181.05,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 518,
+   "got": 518,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1658,
+   "got": 0.1658,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 85.9,
+   "got": 85.9,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 180,
+   "got": 180,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0122,
+   "got": -0.0122,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -2.19,
+   "got": -2.19,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.n",
+   "expected": 374,
+   "got": 374,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.exp",
+   "expected": 0.4963,
+   "got": 0.4963,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.total",
+   "expected": 185.62,
+   "got": 185.62,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.n",
+   "expected": 344,
+   "got": 344,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.exp",
+   "expected": 0.4078,
+   "got": 0.4078,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.total",
+   "expected": 140.29,
+   "got": 140.29,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2468,
+   "got": 0.2468,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 135.52,
+   "got": 135.52,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 422,
+   "got": 422,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.2648,
+   "got": 0.2648,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 111.75,
+   "got": 111.75,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1319,
+   "got": 0.1319,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 27.31,
+   "got": 27.31,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.noise30__us100.exp",
+   "expected": 0.1007,
+   "got": 0.1007,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.noise30__us100.total",
+   "expected": 80.05,
+   "got": 80.05,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0438,
+   "got": 0.0438,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 41.35,
+   "got": 41.35,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1033,
+   "got": 0.1033,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.ocm4__us100.total",
+   "expected": 50.8,
+   "got": 50.8,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0326,
+   "got": 0.0326,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 15.11,
+   "got": 15.11,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.n",
+   "expected": 5834,
+   "got": 5834,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.exp",
+   "expected": 0.1804,
+   "got": 0.1804,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.total",
+   "expected": 1052.54,
+   "got": 1052.54,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.win",
+   "expected": 0.439,
+   "got": 0.439,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.avg_win",
+   "expected": 1.2991,
+   "got": 1.2991,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.avg_loss",
+   "expected": -0.6949,
+   "got": -0.6949,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.pf",
+   "expected": 1.463,
+   "got": 1.463,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.sd",
+   "expected": 1.5937,
+   "got": 1.5937,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.mean_over_sd",
+   "expected": 0.1132,
+   "got": 0.1132,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.eur_per_100_risked",
+   "expected": 18.04,
+   "got": 18.04,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.max_dd_R_trade_by_trade",
+   "expected": 35.51,
+   "got": 35.51,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.max_dd_R_weekly",
+   "expected": 32.49,
+   "got": 32.49,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.worst_week_R",
+   "expected": -17.09,
+   "got": -17.09,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.best_week_R",
+   "expected": 67.59,
+   "got": 67.59,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.weeks",
+   "expected": 205,
+   "got": 205,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.winning_weeks_pct",
+   "expected": 60.5,
+   "got": 60.5,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.losing_weeks_pct",
+   "expected": 39.5,
+   "got": 39.5,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.longest_losing_run_weeks",
+   "expected": 5,
+   "got": 5,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.week_mean_R",
+   "expected": 5.134,
+   "got": 5.134,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.week_sd_R",
+   "expected": 11.977,
+   "got": 11.977,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.week_mean_over_sd",
+   "expected": 0.4287,
+   "got": 0.4287,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.weekly_sharpe_annualised",
+   "expected": 3.091,
+   "got": 3.091,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.worst_day_R",
+   "expected": -8.99,
+   "got": -8.99,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.R_per_year",
+   "expected": 268.8,
+   "got": 268.8,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2018.n",
+   "expected": 1376,
+   "got": 1376,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2018.exp",
+   "expected": 0.2678,
+   "got": 0.2678,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2018.total",
+   "expected": 368.45,
+   "got": 368.45,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2018.win",
+   "expected": 0.4411,
+   "got": 0.4411,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2018.avg_loss",
+   "expected": -0.6988,
+   "got": -0.6988,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2018.pf",
+   "expected": 1.686,
+   "got": 1.686,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2019.n",
+   "expected": 1383,
+   "got": 1383,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2019.exp",
+   "expected": 0.1874,
+   "got": 0.1874,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2019.total",
+   "expected": 259.18,
+   "got": 259.18,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2019.win",
+   "expected": 0.4237,
+   "got": 0.4237,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2019.avg_loss",
+   "expected": -0.6625,
+   "got": -0.6625,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2019.pf",
+   "expected": 1.491,
+   "got": 1.491,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2020.n",
+   "expected": 1496,
+   "got": 1496,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2020.exp",
+   "expected": 0.2045,
+   "got": 0.2045,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2020.total",
+   "expected": 305.95,
+   "got": 305.95,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2020.win",
+   "expected": 0.4499,
+   "got": 0.4499,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2020.avg_loss",
+   "expected": -0.7148,
+   "got": -0.7148,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2020.pf",
+   "expected": 1.52,
+   "got": 1.52,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2021.n",
+   "expected": 1579,
+   "got": 1579,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2021.exp",
+   "expected": 0.0753,
+   "got": 0.0753,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2021.total",
+   "expected": 118.96,
+   "got": 118.96,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2021.win",
+   "expected": 0.4402,
+   "got": 0.4402,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2021.avg_loss",
+   "expected": -0.7023,
+   "got": -0.7023,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_year.2021.pf",
+   "expected": 1.192,
+   "got": 1.192,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.n",
+   "expected": 2759,
+   "got": 2759,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.exp",
+   "expected": 0.2275,
+   "got": 0.2275,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.total",
+   "expected": 627.63,
+   "got": 627.63,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.win",
+   "expected": 0.4324,
+   "got": 0.4324,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.avg_loss",
+   "expected": -0.6803,
+   "got": -0.6803,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.pf",
+   "expected": 1.589,
+   "got": 1.589,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2018_02_2019_12.mean_over_sd",
+   "expected": 0.1287,
+   "got": 0.1287,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2020_2021.n",
+   "expected": 3075,
+   "got": 3075,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2020_2021.exp",
+   "expected": 0.1382,
+   "got": 0.1382,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2020_2021.total",
+   "expected": 424.91,
+   "got": 424.91,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2020_2021.win",
+   "expected": 0.4449,
+   "got": 0.4449,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2020_2021.avg_loss",
+   "expected": -0.7084,
+   "got": -0.7084,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2020_2021.pf",
+   "expected": 1.351,
+   "got": 1.351,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.half_2020_2021.mean_over_sd",
+   "expected": 0.0974,
+   "got": 0.0974,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.n",
+   "expected": 546,
+   "got": 546,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.exp",
+   "expected": 0.3316,
+   "got": 0.3316,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__btcusd.total",
+   "expected": 181.05,
+   "got": 181.05,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.n",
+   "expected": 518,
+   "got": 518,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.exp",
+   "expected": 0.1658,
+   "got": 0.1658,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.F1_brk_ridge_filter__ethusd.total",
+   "expected": 85.9,
+   "got": 85.9,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.n",
+   "expected": 180,
+   "got": 180,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.exp",
+   "expected": -0.0122,
+   "got": -0.0122,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.GOLD_FRI_PM__xauusd.total",
+   "expected": -2.19,
+   "got": -2.19,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.n",
+   "expected": 374,
+   "got": 374,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.exp",
+   "expected": 0.4963,
+   "got": 0.4963,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__btcusd.total",
+   "expected": 185.62,
+   "got": 185.62,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.n",
+   "expected": 344,
+   "got": 344,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.exp",
+   "expected": 0.4078,
+   "got": 0.4078,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.NEW_orb_asia_2d_buf10__ethusd.total",
+   "expected": 140.29,
+   "got": 140.29,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.n",
+   "expected": 549,
+   "got": 549,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.exp",
+   "expected": 0.2468,
+   "got": 0.2468,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__btcusd.total",
+   "expected": 135.52,
+   "got": 135.52,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.n",
+   "expected": 422,
+   "got": 422,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.exp",
+   "expected": 0.2648,
+   "got": 0.2648,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.brk72_24h_wd__ethusd.total",
+   "expected": 111.75,
+   "got": 111.75,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.n",
+   "expected": 207,
+   "got": 207,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.exp",
+   "expected": 0.1319,
+   "got": 0.1319,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.donch4h_stop__xauusd.total",
+   "expected": 27.31,
+   "got": 27.31,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.n",
+   "expected": 795,
+   "got": 795,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.exp",
+   "expected": 0.1007,
+   "got": 0.1007,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.noise30__us100.total",
+   "expected": 80.05,
+   "got": 80.05,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.n",
+   "expected": 943,
+   "got": 943,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.exp",
+   "expected": 0.0438,
+   "got": 0.0438,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.nq_btc_follow__btcusd.total",
+   "expected": 41.35,
+   "got": 41.35,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.n",
+   "expected": 492,
+   "got": 492,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.exp",
+   "expected": 0.1033,
+   "got": 0.1033,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.ocm4__us100.total",
+   "expected": 50.8,
+   "got": 50.8,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.n",
+   "expected": 464,
+   "got": 464,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.exp",
+   "expected": 0.0326,
+   "got": 0.0326,
+   "ok": true
+  },
+  {
+   "field": "P2.stress.vs_s2_portfolio_metrics.by_sleeve.orb_asia_2d_buf10__xauusd.total",
+   "expected": 15.11,
+   "got": 15.11,
+   "ok": true
+  }
+ ]
+}

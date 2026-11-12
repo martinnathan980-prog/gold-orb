@@ -1,0 +1,166 @@
+{
+ "what": "2018 fold, reported apart, judges nothing (Addendum I)",
+ "weeks": "server weeks with Thursday in 2018",
+ "results": {
+  "fp": {
+   "V01": {
+    "weeks": 52,
+    "sharpe_ref": 3.2496,
+    "sharpe_var": 3.3207,
+    "ratio": 1.0219,
+    "total_ref": 244.65,
+    "total_var_equal_swing": 250.0,
+    "k": 1.0929,
+    "zero_signals_2018": 558
+   },
+   "V05": {
+    "weeks": 52,
+    "sharpe_ref": 3.2496,
+    "sharpe_var": 3.0684,
+    "ratio": 0.9442,
+    "total_ref": 244.65,
+    "total_var_equal_swing": 231.01,
+    "k": 0.8138,
+    "zero_signals_2018": 0
+   },
+   "V30": {
+    "weeks": 52,
+    "sharpe_ref": 3.2496,
+    "sharpe_var": 3.0684,
+    "ratio": 0.9442,
+    "total_ref": 244.65,
+    "total_var_equal_swing": 231.01,
+    "k": 0.8138,
+    "zero_signals_2018": 0
+   },
+   "V11": {
+    "weeks": 52,
+    "sharpe_ref": 3.2496,
+    "sharpe_var": 3.1612,
+    "ratio": 0.9728,
+    "total_ref": 244.65,
+    "total_var_equal_swing": 238.0,
+    "k": 0.8299
+   },
+   "fits": {
+    "V05_btc_pooled": {
+     "descriptors": [
+      "riskbp",
+      "al1",
+      "vol",
+      "prev",
+      "cushion",
+      "trig"
+     ],
+     "beta": [
+      -0.08122162045725681,
+      -0.08192837799556782,
+      -0.049685799032697424,
+      0.07989305295236576,
+      0.04797613309673158,
+      -0.03356792670592647
+     ],
+     "n_train": 157,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": 0.0760938924034498,
+      "F1_brk_ridge_filter__btcusd": 0.43985336120503055
+     },
+     "b_lo": -0.03299616104361961,
+     "b_hi": 0.07985492887939956
+    },
+    "V01": {
+     "ocm4__us100": "cushion",
+     "noise30__us100": "riskbp",
+     "donch4h_stop__xauusd": "prev",
+     "orb_asia_2d_buf10__xauusd": "vol",
+     "GOLD_FRI_PM__xauusd": "rel2",
+     "brk72_24h_wd__btcusd": "al1",
+     "brk72_24h_wd__ethusd": null,
+     "F1_brk_ridge_filter__btcusd": "prev",
+     "F1_brk_ridge_filter__ethusd": null,
+     "nq_btc_follow__btcusd": "prev"
+    }
+   }
+  },
+  "stress": {
+   "V01": {
+    "weeks": 52,
+    "sharpe_ref": 2.9632,
+    "sharpe_var": 2.7566,
+    "ratio": 0.9303,
+    "total_ref": 222.38,
+    "total_var_equal_swing": 206.88,
+    "k": 0.8546,
+    "zero_signals_2018": 562
+   },
+   "V05": {
+    "weeks": 52,
+    "sharpe_ref": 2.9632,
+    "sharpe_var": 2.8268,
+    "ratio": 0.9539,
+    "total_ref": 222.38,
+    "total_var_equal_swing": 212.14,
+    "k": 0.8129,
+    "zero_signals_2018": 0
+   },
+   "V30": {
+    "weeks": 52,
+    "sharpe_ref": 2.9632,
+    "sharpe_var": 2.8268,
+    "ratio": 0.9539,
+    "total_ref": 222.38,
+    "total_var_equal_swing": 212.14,
+    "k": 0.8129,
+    "zero_signals_2018": 0
+   },
+   "V11": {
+    "weeks": 52,
+    "sharpe_ref": 2.9632,
+    "sharpe_var": 2.8842,
+    "ratio": 0.9733,
+    "total_ref": 222.38,
+    "total_var_equal_swing": 216.45,
+    "k": 0.8308
+   },
+   "fits": {
+    "V05_btc_pooled": {
+     "descriptors": [
+      "riskbp",
+      "al1",
+      "vol",
+      "prev",
+      "cushion",
+      "trig"
+     ],
+     "beta": [
+      -0.07965495024743764,
+      -0.08221517580099336,
+      -0.048969431064724435,
+      0.08014329201588889,
+      0.048470698102046836,
+      -0.03374878609108827
+     ],
+     "n_train": 157,
+     "m_lo": {
+      "brk72_24h_wd__btcusd": 0.07173178311474104,
+      "F1_brk_ridge_filter__btcusd": 0.42961363259056085
+     },
+     "b_lo": -0.03337621614200241,
+     "b_hi": 0.07933377604052994
+    },
+    "V01": {
+     "ocm4__us100": "cushion",
+     "noise30__us100": "riskbp",
+     "donch4h_stop__xauusd": "prev",
+     "orb_asia_2d_buf10__xauusd": "vol",
+     "GOLD_FRI_PM__xauusd": "riskbp",
+     "brk72_24h_wd__btcusd": "al1",
+     "brk72_24h_wd__ethusd": null,
+     "F1_brk_ridge_filter__btcusd": "vol",
+     "F1_brk_ridge_filter__ethusd": null,
+     "nq_btc_follow__btcusd": "vol"
+    }
+   }
+  }
+ }
+}

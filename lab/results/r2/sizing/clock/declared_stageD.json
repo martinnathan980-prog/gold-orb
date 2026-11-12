@@ -1,0 +1,20 @@
+{
+ "written": "2026-11-12T14:08:21+00:00",
+ "status": "written after stage A (all failed), stage C/C2 (bounds and their null) and the Part 1 decomposition; BEFORE these three were computed",
+ "what": "POST HOC, INFORMATION ONLY: the optimistic readings. X1/X3 apply as fixed stakes the clock cells the autopsy found by scanning 2018-2021 (the years that judge here); X2 fits a declared rule on every in-sample year including the out-of-fold ones. None can be a candidate (selected on the judging years; no walk-forward). Trials 13, 14, 15: the budget is then spent.",
+ "variants": [
+  {
+   "id": "X1_autopsy_half",
+   "rule": "fixed multiplier 0.5 (no fit) for: every fill at or after 12:00 New York (all sleeves but GOLD_FRI_PM, which stays untouched as declared); nq_btc_follow fills from 09:30 to 09:47 New York (decisions 09:30-09:46); Friday fills (server weekday) of ocm4 and of the five crypto sleeves; a trade in several cells gets 0.5; everything else 1"
+  },
+  {
+   "id": "X2_infold_HDhalf",
+   "rule": "the rule of P8_HDhalf (worst hour band and worst weekday at 0.5 when their training mean <= +0.02 R) fitted ONCE on every reference chain trade closed before 2021-12-25 (including 2019-2021) and applied to every year: in-fold, look-ahead by construction"
+  },
+  {
+   "id": "X3_autopsy_skip",
+   "rule": "X1 with multiplier 0 (orders removed, chains re-simulated one position at a time with the 3-spread refusal)"
+  }
+ ],
+ "reading": "if even these optimistic readings fail (a) at equal weekly swing, the clock effects of the autopsy are not worth a stake rule; if they pass, it says only how much the in-sample scan flatters, since the walk-forward versions failed"
+}

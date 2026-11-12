@@ -1,0 +1,8 @@
+{
+ "written": "2026-11-12, AFTER V01-V28 were evaluated (part2.json) and BEFORE V29-V30 were run. POST HOC: motivated by the result that the pooled crypto ridge (V05-V09) is the only family that rises out of fold (V05 x1.095, just under the +10 % bar). Information only: neither variant can become a candidate, whatever its numbers.",
+ "budget": "V29 and V30 use the last 2 of the 30 (V01-V30 = 30; the reference V00 not counted). Nothing else will be run.",
+ "variants": [
+  {"id": "V30", "family": "ii (post hoc)", "rule": "V05 with the nozero mapping: the 'lo' tercile of the pooled score always gets 0.5 (never 0), so no crypto signal is removed and no chain is re-simulated. Question: how much of V05's change comes from the removals (0) and how much from the sizes."},
+  {"id": "V29", "family": "control (post hoc)", "rule": "null of the V30 procedure: 200 draws (seed 2029); in each draw, for each of the four crypto breakouts, the whole descriptor vector of its baseline chain trades is permuted among the trades of the same fold year (training years and applied years alike); the V30 procedure (per-sleeve standardisation, within-sleeve demeaning, screening of 6, ridge alpha = 1 x n, pooled split q = 1/3, stakes 0.5 / 1 / 1.5) is refitted every fold; reports the distribution of the pooled 2019-2021 FP Sharpe ratio to the reference and the share of draws at or above V30's own ratio."}
+ ]
+}

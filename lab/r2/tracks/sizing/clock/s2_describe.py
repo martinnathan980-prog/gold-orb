@@ -111,15 +111,20 @@ def persistence(wf_all):
     res = {}
     for dim in ("H", "D", "FD"):
         rows = []
+        seen = set()
         for k, d in wf_all.items():
             w = d.get(dim)
             if not w:
                 continue
+            unit = C.FAMILY[k] if dim == "FD" else k          # a family fold is counted once, not once per member
+            if unit in seen:
+                continue
+            seen.add(unit)
             for Y in C.OOF:
                 r = w[Y]
                 if not r["acts"]:
                     continue
-                rows.append((k, Y, r))
+                rows.append((unit, Y, r))
         def agg(nm, sign):
             diffs, hits, ws, n_used = [], 0, [], 0
             for k, Y, r in rows:

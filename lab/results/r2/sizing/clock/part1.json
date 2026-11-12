@@ -11708,23 +11708,23 @@
    "n_spearman": 27
   },
   "FD": {
-   "sleeve_folds": 27,
+   "sleeve_folds": 9,
    "worst_cell": {
-    "folds": 27,
-    "folds_in_expected_direction": 14,
-    "mean_diff_year_cell_minus_rest_R": -0.0024,
-    "median_diff": -0.0143,
-    "trade_weighted_diff": -0.0552
+    "folds": 9,
+    "folds_in_expected_direction": 4,
+    "mean_diff_year_cell_minus_rest_R": 0.0539,
+    "median_diff": 0.0282,
+    "trade_weighted_diff": -0.0134
    },
    "best_cell": {
-    "folds": 27,
-    "folds_in_expected_direction": 11,
-    "mean_diff_year_cell_minus_rest_R": -0.1478,
+    "folds": 9,
+    "folds_in_expected_direction": 4,
+    "mean_diff_year_cell_minus_rest_R": -0.1995,
     "median_diff": -0.0615,
-    "trade_weighted_diff": -0.0675
+    "trade_weighted_diff": -0.0858
    },
-   "mean_spearman_train_vs_next_year": -0.137,
-   "n_spearman": 27
+   "mean_spearman_train_vs_next_year": -0.189,
+   "n_spearman": 9
   }
  },
  "portfolio_cuts": {

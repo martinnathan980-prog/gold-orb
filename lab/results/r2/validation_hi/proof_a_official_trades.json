@@ -1,0 +1,857 @@
+{
+ "what": "the ten official sleeves rebuilt from the cut frames (FP costs, one position, no refusal, as r2/recalc.py) against results/r2/recalc/trades read with entry_time < CUT (counts) and entry_time, exit_time < CUT (results); targets from synthesis_B first_check_rule2. The official rows still open at the cut (one donch4h_stop, one orb_asia_2d_buf10 gold trade, closed in 2022 officially) are counted, never read; their in-frame twins close at the last bar.",
+ "per_sleeve": {
+  "ocm4__us100": {
+   "n_mine": 999,
+   "n_official": 999,
+   "official_open_at_cut": 0,
+   "official_closed_before_cut": 999,
+   "matched_closed": 999,
+   "mine_not_in_official_closed": 0,
+   "those_open_at_frame_end_in_mine": true,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "totR_mine_all": 136.879,
+   "totR_mine_on_rows_closed_before_cut": 136.878974,
+   "totR_official_closed_before_cut": 136.878974,
+   "reproduced": true
+  },
+  "noise30__us100": {
+   "n_mine": 1643,
+   "n_official": 1643,
+   "official_open_at_cut": 0,
+   "official_closed_before_cut": 1643,
+   "matched_closed": 1643,
+   "mine_not_in_official_closed": 0,
+   "those_open_at_frame_end_in_mine": true,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "totR_mine_all": 134.401,
+   "totR_mine_on_rows_closed_before_cut": 134.40073,
+   "totR_official_closed_before_cut": 134.40073,
+   "reproduced": true
+  },
+  "donch4h_stop__xauusd": {
+   "n_mine": 495,
+   "n_official": 495,
+   "official_open_at_cut": 1,
+   "official_closed_before_cut": 494,
+   "matched_closed": 494,
+   "mine_not_in_official_closed": 1,
+   "those_open_at_frame_end_in_mine": true,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "totR_mine_all": 85.056,
+   "totR_mine_on_rows_closed_before_cut": 84.301414,
+   "totR_official_closed_before_cut": 84.301414,
+   "reproduced": true
+  },
+  "orb_asia_2d_buf10__xauusd": {
+   "n_mine": 1039,
+   "n_official": 1039,
+   "official_open_at_cut": 1,
+   "official_closed_before_cut": 1038,
+   "matched_closed": 1038,
+   "mine_not_in_official_closed": 1,
+   "those_open_at_frame_end_in_mine": true,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "totR_mine_all": 232.78,
+   "totR_mine_on_rows_closed_before_cut": 231.145314,
+   "totR_official_closed_before_cut": 231.145314,
+   "reproduced": true
+  },
+  "GOLD_FRI_PM__xauusd": {
+   "n_mine": 414,
+   "n_official": 414,
+   "official_open_at_cut": 0,
+   "official_closed_before_cut": 414,
+   "matched_closed": 414,
+   "mine_not_in_official_closed": 0,
+   "those_open_at_frame_end_in_mine": true,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "totR_mine_all": 13.921,
+   "totR_mine_on_rows_closed_before_cut": 13.92101,
+   "totR_official_closed_before_cut": 13.92101,
+   "reproduced": true
+  },
+  "brk72_24h_wd__btcusd": {
+   "n_mine": 645,
+   "n_official": 645,
+   "official_open_at_cut": 0,
+   "official_closed_before_cut": 645,
+   "matched_closed": 645,
+   "mine_not_in_official_closed": 0,
+   "those_open_at_frame_end_in_mine": true,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "totR_mine_all": 172.874,
+   "totR_mine_on_rows_closed_before_cut": 172.874279,
+   "totR_official_closed_before_cut": 172.874279,
+   "reproduced": true
+  },
+  "brk72_24h_wd__ethusd": {
+   "n_mine": 519,
+   "n_official": 519,
+   "official_open_at_cut": 0,
+   "official_closed_before_cut": 519,
+   "matched_closed": 519,
+   "mine_not_in_official_closed": 0,
+   "those_open_at_frame_end_in_mine": true,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "totR_mine_all": 103.687,
+   "totR_mine_on_rows_closed_before_cut": 103.68708,
+   "totR_official_closed_before_cut": 103.68708,
+   "reproduced": true
+  },
+  "F1_brk_ridge_filter__btcusd": {
+   "n_mine": 631,
+   "n_official": 631,
+   "official_open_at_cut": 0,
+   "official_closed_before_cut": 631,
+   "matched_closed": 631,
+   "mine_not_in_official_closed": 0,
+   "those_open_at_frame_end_in_mine": true,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "totR_mine_all": 226.389,
+   "totR_mine_on_rows_closed_before_cut": 226.389065,
+   "totR_official_closed_before_cut": 226.389065,
+   "reproduced": true
+  },
+  "F1_brk_ridge_filter__ethusd": {
+   "n_mine": 517,
+   "n_official": 517,
+   "official_open_at_cut": 0,
+   "official_closed_before_cut": 517,
+   "matched_closed": 517,
+   "mine_not_in_official_closed": 0,
+   "those_open_at_frame_end_in_mine": true,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "totR_mine_all": 104.407,
+   "totR_mine_on_rows_closed_before_cut": 104.406706,
+   "totR_official_closed_before_cut": 104.406706,
+   "reproduced": true
+  },
+  "nq_btc_follow__btcusd": {
+   "n_mine": 1063,
+   "n_official": 1063,
+   "official_open_at_cut": 0,
+   "official_closed_before_cut": 1063,
+   "matched_closed": 1063,
+   "mine_not_in_official_closed": 0,
+   "those_open_at_frame_end_in_mine": true,
+   "rows_differing": 0,
+   "max_abs_R_diff_matched": 0.0,
+   "totR_mine_all": 66.346,
+   "totR_mine_on_rows_closed_before_cut": 66.345962,
+   "totR_official_closed_before_cut": 66.345962,
+   "reproduced": true
+  }
+ },
+ "checks": 116,
+ "failed": 0,
+ "ok": true,
+ "failures": [],
+ "rows": [
+  {
+   "field": "ocm4__us100.n_mine",
+   "expected": 999,
+   "got": 999,
+   "ok": true
+  },
+  {
+   "field": "ocm4__us100.n_official",
+   "expected": 999,
+   "got": 999,
+   "ok": true
+  },
+  {
+   "field": "ocm4__us100.totR_mine_all",
+   "expected": 136.879,
+   "got": 136.879,
+   "ok": true
+  },
+  {
+   "field": "ocm4__us100.official_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "ocm4__us100.rows_differing",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "ocm4__us100.reproduced",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "ocm4__us100.mine_not_in_official_closed",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "ocm4__us100.those_open_at_frame_end_in_mine",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "ocm4__us100.totR_official_closed_before_cut",
+   "expected": 136.879,
+   "got": 136.878974,
+   "ok": true
+  },
+  {
+   "field": "ocm4__us100.totR_mine_on_rows_closed_before_cut",
+   "expected": 136.879,
+   "got": 136.878974,
+   "ok": true
+  },
+  {
+   "field": "ocm4__us100.synthesis_B_rows_differing_equals_rows_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "ocm4__us100.totals_on_rows_closed_before_cut_mine_equals_official",
+   "expected": 136.878974,
+   "got": 136.878974,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.n_mine",
+   "expected": 1643,
+   "got": 1643,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.n_official",
+   "expected": 1643,
+   "got": 1643,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.totR_mine_all",
+   "expected": 134.401,
+   "got": 134.401,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.official_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.rows_differing",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.reproduced",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.mine_not_in_official_closed",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.those_open_at_frame_end_in_mine",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.totR_official_closed_before_cut",
+   "expected": 134.401,
+   "got": 134.40073,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.totR_mine_on_rows_closed_before_cut",
+   "expected": 134.401,
+   "got": 134.40073,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.synthesis_B_rows_differing_equals_rows_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "noise30__us100.totals_on_rows_closed_before_cut_mine_equals_official",
+   "expected": 134.40073,
+   "got": 134.40073,
+   "ok": true
+  },
+  {
+   "field": "donch4h_stop__xauusd.n_mine",
+   "expected": 495,
+   "got": 495,
+   "ok": true
+  },
+  {
+   "field": "donch4h_stop__xauusd.n_official",
+   "expected": 495,
+   "got": 495,
+   "ok": true
+  },
+  {
+   "field": "donch4h_stop__xauusd.totR_mine_all",
+   "expected": 85.056,
+   "got": 85.056,
+   "ok": true
+  },
+  {
+   "field": "donch4h_stop__xauusd.official_open_at_cut",
+   "expected": 1,
+   "got": 1,
+   "ok": true
+  },
+  {
+   "field": "donch4h_stop__xauusd.rows_differing",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "donch4h_stop__xauusd.reproduced",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "donch4h_stop__xauusd.mine_not_in_official_closed",
+   "expected": 1,
+   "got": 1,
+   "ok": true
+  },
+  {
+   "field": "donch4h_stop__xauusd.those_open_at_frame_end_in_mine",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "donch4h_stop__xauusd.synthesis_B_rows_differing_equals_rows_open_at_cut",
+   "expected": 1,
+   "got": 1,
+   "ok": true
+  },
+  {
+   "field": "donch4h_stop__xauusd.totals_on_rows_closed_before_cut_mine_equals_official",
+   "expected": 84.301414,
+   "got": 84.301414,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__xauusd.n_mine",
+   "expected": 1039,
+   "got": 1039,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__xauusd.n_official",
+   "expected": 1039,
+   "got": 1039,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__xauusd.totR_mine_all",
+   "expected": 232.78,
+   "got": 232.78,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__xauusd.official_open_at_cut",
+   "expected": 1,
+   "got": 1,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__xauusd.rows_differing",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__xauusd.reproduced",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__xauusd.mine_not_in_official_closed",
+   "expected": 1,
+   "got": 1,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__xauusd.those_open_at_frame_end_in_mine",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__xauusd.synthesis_B_rows_differing_equals_rows_open_at_cut",
+   "expected": 1,
+   "got": 1,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__xauusd.totals_on_rows_closed_before_cut_mine_equals_official",
+   "expected": 231.145314,
+   "got": 231.145314,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.n_mine",
+   "expected": 414,
+   "got": 414,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.n_official",
+   "expected": 414,
+   "got": 414,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.totR_mine_all",
+   "expected": 13.921,
+   "got": 13.921,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.official_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.rows_differing",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.reproduced",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.mine_not_in_official_closed",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.those_open_at_frame_end_in_mine",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.totR_official_closed_before_cut",
+   "expected": 13.921,
+   "got": 13.92101,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.totR_mine_on_rows_closed_before_cut",
+   "expected": 13.921,
+   "got": 13.92101,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.synthesis_B_rows_differing_equals_rows_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "GOLD_FRI_PM__xauusd.totals_on_rows_closed_before_cut_mine_equals_official",
+   "expected": 13.92101,
+   "got": 13.92101,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.n_mine",
+   "expected": 645,
+   "got": 645,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.n_official",
+   "expected": 645,
+   "got": 645,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.totR_mine_all",
+   "expected": 172.874,
+   "got": 172.874,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.official_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.rows_differing",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.reproduced",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.mine_not_in_official_closed",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.those_open_at_frame_end_in_mine",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.totR_official_closed_before_cut",
+   "expected": 172.874,
+   "got": 172.874279,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.totR_mine_on_rows_closed_before_cut",
+   "expected": 172.874,
+   "got": 172.874279,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.synthesis_B_rows_differing_equals_rows_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__btcusd.totals_on_rows_closed_before_cut_mine_equals_official",
+   "expected": 172.874279,
+   "got": 172.874279,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.n_mine",
+   "expected": 519,
+   "got": 519,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.n_official",
+   "expected": 519,
+   "got": 519,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.totR_mine_all",
+   "expected": 103.687,
+   "got": 103.687,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.official_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.rows_differing",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.reproduced",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.mine_not_in_official_closed",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.those_open_at_frame_end_in_mine",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.totR_official_closed_before_cut",
+   "expected": 103.687,
+   "got": 103.68708,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.totR_mine_on_rows_closed_before_cut",
+   "expected": 103.687,
+   "got": 103.68708,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.synthesis_B_rows_differing_equals_rows_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "brk72_24h_wd__ethusd.totals_on_rows_closed_before_cut_mine_equals_official",
+   "expected": 103.68708,
+   "got": 103.68708,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.n_mine",
+   "expected": 631,
+   "got": 631,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.n_official",
+   "expected": 631,
+   "got": 631,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.totR_mine_all",
+   "expected": 226.389,
+   "got": 226.389,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.official_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.rows_differing",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.reproduced",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.mine_not_in_official_closed",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.those_open_at_frame_end_in_mine",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.totR_official_closed_before_cut",
+   "expected": 226.389,
+   "got": 226.389065,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.totR_mine_on_rows_closed_before_cut",
+   "expected": 226.389,
+   "got": 226.389065,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.synthesis_B_rows_differing_equals_rows_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__btcusd.totals_on_rows_closed_before_cut_mine_equals_official",
+   "expected": 226.389065,
+   "got": 226.389065,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.n_mine",
+   "expected": 517,
+   "got": 517,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.n_official",
+   "expected": 517,
+   "got": 517,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.totR_mine_all",
+   "expected": 104.407,
+   "got": 104.407,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.official_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.rows_differing",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.reproduced",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.mine_not_in_official_closed",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.those_open_at_frame_end_in_mine",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.totR_official_closed_before_cut",
+   "expected": 104.407,
+   "got": 104.406706,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.totR_mine_on_rows_closed_before_cut",
+   "expected": 104.407,
+   "got": 104.406706,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.synthesis_B_rows_differing_equals_rows_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "F1_brk_ridge_filter__ethusd.totals_on_rows_closed_before_cut_mine_equals_official",
+   "expected": 104.406706,
+   "got": 104.406706,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.n_mine",
+   "expected": 1063,
+   "got": 1063,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.n_official",
+   "expected": 1063,
+   "got": 1063,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.totR_mine_all",
+   "expected": 66.346,
+   "got": 66.346,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.official_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.rows_differing",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.reproduced",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.mine_not_in_official_closed",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.those_open_at_frame_end_in_mine",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.totR_official_closed_before_cut",
+   "expected": 66.346,
+   "got": 66.345962,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.totR_mine_on_rows_closed_before_cut",
+   "expected": 66.346,
+   "got": 66.345962,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.synthesis_B_rows_differing_equals_rows_open_at_cut",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "nq_btc_follow__btcusd.totals_on_rows_closed_before_cut_mine_equals_official",
+   "expected": 66.345962,
+   "got": 66.345962,
+   "ok": true
+  }
+ ]
+}

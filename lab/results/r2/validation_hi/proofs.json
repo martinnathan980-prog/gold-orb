@@ -1,0 +1,73 @@
+{
+ "cut": "2022-01-01 00:00:00+00:00",
+ "spec": "/home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json",
+ "spec_sha256": "418334215bf9ea8f57db768e11992e0e361c9c9fee8b241abe55abe64c98373b",
+ "seconds": 71.3,
+ "all_ok": true,
+ "proofs": {
+  "a_official_trades": {
+   "ok": true,
+   "checks": 116,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_a_official_trades.json",
+   "what": "the ten official sleeves rebuilt from the cut frames (FP costs, one position, no refusal, as r2/recalc.py) against results/r2/recalc/trades read with entry_time < CUT (counts) and entry_time, exit_time < CUT (results); targets from synthesis_B first_check_rule2. The official rows still open at the cut (one donch4h_stop, one orb_asia_2d_buf10 gold trade, closed in 2022 officially) are counted, never read; their in-frame twins close at the last bar."
+  },
+  "b_K1": {
+   "ok": true,
+   "checks": 307,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_b_K1.json",
+   "what": "K1 (brk72_24h_wd ethusd, riskbp skip refitted every 1 January) against synthesis_B sleeve_runs C1 (fp and x1.5), every field; the harness's walk-forward (any CUT) against s1_run.walk_forward"
+  },
+  "c_K2_K3": {
+   "ok": true,
+   "checks": 230,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_c_K2_K3.json",
+   "what": "K2 and K3: the frozen gold orb_asia_2d_buf10 on ethusd and btcusd as new sleeves, against synthesis_B sleeve_runs N1 / N2 (fp and x1.5; the trade still open at the end of 2021 dropped)"
+  },
+  "d_payoff_variants": {
+   "ok": true,
+   "checks": 443,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_d_payoff_variants.json",
+   "what": "the seven payoff variants in play (and their references) against results/r2/autopsy/payoff/variants_table.csv (fp and x1.5 columns, common window 2018-02-01..2021-12-31, earlier entries, refusals, years better) and the lens's trials.jsonl (by year, censored trades, H extensions)"
+  },
+  "e_portfolios_P0_P1_P2": {
+   "ok": true,
+   "checks": 1092,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_e_portfolios_P0_P1_P2.json",
+   "what": "the synthesis_B portfolios P0 (ten unchanged), P1 (ten with K1), P2 (ten with K1 + K2 + K3), fp and x1.5, plain sum at 1 R per trade, entries 2018-02-01..2021-12-31, server weeks: every field of synthesis_B.json portfolio.results; and the harness's metrics equal to synthesis_B's own s2_portfolio.metrics (imported) on the same book"
+  },
+  "f_capped_account": {
+   "ok": true,
+   "checks": 16,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_f_capped_account.json",
+   "what": "the capped account (6 positions, 2 per market; stake 0 takes no slot): identical to the cluster lens's run_engine on the harness's own P0 / P2 books, and on the cluster lens's own trades it reproduces engine_check.json and r2/tracks/stake/account.py (1e9 EUR account, no lot / margin effect)"
+  },
+  "g_live_execution": {
+   "ok": true,
+   "checks": 12,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_g_live_execution.json",
+   "what": "the live execution (entry one minute late at market, Friday 16:50 New York close): with no delay and no Friday close the live chain resolver returns the official chain trade for trade; K2 run the verifier's way reproduces the figures quoted in synthesis_B; the harness's own live chain keeps the rule's one-position test (see detail)"
+  },
+  "h_stakes": {
+   "ok": true,
+   "checks": 64,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_h_stakes.json",
+   "what": "the stake interface (Addendum I hook): stake 1 reproduces P0 in both accounts; a sleeve-year table adds exactly its sleeve-year R; a walk-forward stake refitted every 1 January uses only outcomes known before 1 January minus 7 days and stays within [0, 2]"
+  },
+  "i_guard": {
+   "ok": true,
+   "checks": 22,
+   "failed": 0,
+   "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json",
+   "what": "the guard of the harness (vhi_guard): CUT rules, refused reads, the access log untouched"
+  }
+ },
+ "rehearsal": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal_in_sample.json"
+}

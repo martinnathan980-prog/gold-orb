@@ -1,0 +1,1695 @@
+{
+ "what": "K2 and K3: the frozen gold orb_asia_2d_buf10 on ethusd and btcusd as new sleeves, against synthesis_B sleeve_runs N1 / N2 (fp and x1.5; the trade still open at the end of 2021 dropped)",
+ "detail": {
+  "orb_asia_2d_buf10__ethusd.fp": {
+   "orders": 643,
+   "refused_3spreads": 0,
+   "boundary_dropped": 1,
+   "window": {
+    "n": 344,
+    "exp": 0.4519,
+    "total": 155.47,
+    "win": 0.4128,
+    "avg_win": 2.4843,
+    "avg_loss": -0.9768,
+    "pf": 1.788,
+    "sd": 2.3389,
+    "mean_over_sd": 0.1932
+   },
+   "by_year": {
+    "2018": {
+     "n": 71,
+     "exp": 0.9992,
+     "total": 70.94,
+     "win": 0.507,
+     "avg_win": 2.937,
+     "avg_loss": -0.9939,
+     "pf": 3.039,
+     "sd": 2.8443,
+     "mean_over_sd": 0.3513
+    },
+    "2019": {
+     "n": 80,
+     "exp": 0.4241,
+     "total": 33.93,
+     "win": 0.475,
+     "avg_win": 1.9881,
+     "avg_loss": -0.991,
+     "pf": 1.815,
+     "sd": 2.1316,
+     "mean_over_sd": 0.199
+    },
+    "2020": {
+     "n": 97,
+     "exp": 0.3303,
+     "total": 32.04,
+     "win": 0.3711,
+     "avg_win": 2.5961,
+     "avg_loss": -1.007,
+     "pf": 1.522,
+     "sd": 2.2894,
+     "mean_over_sd": 0.1443
+    },
+    "2021": {
+     "n": 96,
+     "exp": 0.1934,
+     "total": 18.56,
+     "win": 0.3333,
+     "avg_win": 2.4386,
+     "avg_loss": -0.9292,
+     "pf": 1.312,
+     "sd": 2.0994,
+     "mean_over_sd": 0.0921
+    }
+   },
+   "early": {
+    "n": 9,
+    "exp": -0.1168,
+    "total": -1.05,
+    "win": 0.3333,
+    "avg_win": 1.6731,
+    "avg_loss": -1.0117,
+    "pf": 0.827,
+    "sd": 1.614,
+    "mean_over_sd": -0.0724
+   }
+  },
+  "orb_asia_2d_buf10__ethusd.stress": {
+   "orders": 643,
+   "refused_3spreads": 0,
+   "boundary_dropped": 1,
+   "window": {
+    "n": 344,
+    "exp": 0.4078,
+    "total": 140.29,
+    "win": 0.4041,
+    "avg_win": 2.4328,
+    "avg_loss": -0.9652,
+    "pf": 1.709,
+    "sd": 2.2604,
+    "mean_over_sd": 0.1804
+   },
+   "by_year": {
+    "2018": {
+     "n": 71,
+     "exp": 0.9384,
+     "total": 66.63,
+     "win": 0.493,
+     "avg_win": 2.9005,
+     "avg_loss": -0.9692,
+     "pf": 2.91,
+     "sd": 2.7484,
+     "mean_over_sd": 0.3414
+    },
+    "2019": {
+     "n": 80,
+     "exp": 0.3759,
+     "total": 30.08,
+     "win": 0.4625,
+     "avg_win": 1.9408,
+     "avg_loss": -0.9705,
+     "pf": 1.721,
+     "sd": 2.0495,
+     "mean_over_sd": 0.1834
+    },
+    "2020": {
+     "n": 97,
+     "exp": 0.2884,
+     "total": 27.98,
+     "win": 0.3711,
+     "avg_win": 2.4878,
+     "avg_loss": -1.0095,
+     "pf": 1.454,
+     "sd": 2.2147,
+     "mean_over_sd": 0.1302
+    },
+    "2021": {
+     "n": 96,
+     "exp": 0.1626,
+     "total": 15.61,
+     "win": 0.3229,
+     "avg_win": 2.4281,
+     "avg_loss": -0.9179,
+     "pf": 1.262,
+     "sd": 2.0358,
+     "mean_over_sd": 0.0799
+    }
+   },
+   "early": {
+    "n": 9,
+    "exp": -0.1297,
+    "total": -1.17,
+    "win": 0.3333,
+    "avg_win": 1.6368,
+    "avg_loss": -1.0129,
+    "pf": 0.808,
+    "sd": 1.5926,
+    "mean_over_sd": -0.0814
+   }
+  },
+  "orb_asia_2d_buf10__btcusd.fp": {
+   "orders": 785,
+   "refused_3spreads": 0,
+   "boundary_dropped": 1,
+   "window": {
+    "n": 375,
+    "exp": 0.5182,
+    "total": 194.34,
+    "win": 0.3787,
+    "avg_win": 3.0053,
+    "avg_loss": -0.9975,
+    "pf": 1.836,
+    "sd": 2.878,
+    "mean_over_sd": 0.1801
+   },
+   "by_year": {
+    "2018": {
+     "n": 81,
+     "exp": 1.1549,
+     "total": 93.55,
+     "win": 0.4815,
+     "avg_win": 3.4666,
+     "avg_loss": -0.9916,
+     "pf": 3.246,
+     "sd": 3.4073,
+     "mean_over_sd": 0.339
+    },
+    "2019": {
+     "n": 94,
+     "exp": 0.7266,
+     "total": 68.3,
+     "win": 0.4043,
+     "avg_win": 3.3212,
+     "avg_loss": -1.0341,
+     "pf": 2.179,
+     "sd": 3.4291,
+     "mean_over_sd": 0.2119
+    },
+    "2020": {
+     "n": 101,
+     "exp": 0.3178,
+     "total": 32.1,
+     "win": 0.3168,
+     "avg_win": 3.106,
+     "avg_loss": -0.9753,
+     "pf": 1.477,
+     "sd": 2.5548,
+     "mean_over_sd": 0.1244
+    },
+    "2021": {
+     "n": 99,
+     "exp": 0.004,
+     "total": 0.39,
+     "win": 0.3333,
+     "avg_win": 1.9987,
+     "avg_loss": -0.9934,
+     "pf": 1.006,
+     "sd": 1.9045,
+     "mean_over_sd": 0.0021
+    }
+   },
+   "early": {
+    "n": 67,
+    "exp": 0.8651,
+    "total": 57.96,
+    "win": 0.4328,
+    "avg_win": 3.2759,
+    "avg_loss": -0.9748,
+    "pf": 2.565,
+    "sd": 3.2847,
+    "mean_over_sd": 0.2634
+   }
+  },
+  "orb_asia_2d_buf10__btcusd.stress": {
+   "orders": 783,
+   "refused_3spreads": 0,
+   "boundary_dropped": 1,
+   "window": {
+    "n": 374,
+    "exp": 0.4963,
+    "total": 185.62,
+    "win": 0.3797,
+    "avg_win": 2.9424,
+    "avg_loss": -1.0009,
+    "pf": 1.799,
+    "sd": 2.8251,
+    "mean_over_sd": 0.1757
+   },
+   "by_year": {
+    "2018": {
+     "n": 81,
+     "exp": 1.1161,
+     "total": 90.41,
+     "win": 0.4815,
+     "avg_win": 3.39,
+     "avg_loss": -0.9953,
+     "pf": 3.163,
+     "sd": 3.3369,
+     "mean_over_sd": 0.3345
+    },
+    "2019": {
+     "n": 94,
+     "exp": 0.6928,
+     "total": 65.13,
+     "win": 0.4043,
+     "avg_win": 3.2428,
+     "avg_loss": -1.0375,
+     "pf": 2.121,
+     "sd": 3.3568,
+     "mean_over_sd": 0.2064
+    },
+    "2020": {
+     "n": 101,
+     "exp": 0.2944,
+     "total": 29.74,
+     "win": 0.3168,
+     "avg_win": 3.041,
+     "avg_loss": -0.9793,
+     "pf": 1.44,
+     "sd": 2.5078,
+     "mean_over_sd": 0.1174
+    },
+    "2021": {
+     "n": 98,
+     "exp": 0.0035,
+     "total": 0.35,
+     "win": 0.3367,
+     "avg_win": 1.972,
+     "avg_loss": -0.9958,
+     "pf": 1.005,
+     "sd": 1.8908,
+     "mean_over_sd": 0.0019
+    }
+   },
+   "early": {
+    "n": 67,
+    "exp": 0.8231,
+    "total": 55.15,
+    "win": 0.4328,
+    "avg_win": 3.1854,
+    "avg_loss": -0.9797,
+    "pf": 2.481,
+    "sd": 3.1908,
+    "mean_over_sd": 0.258
+   }
+  }
+ },
+ "checks": 230,
+ "failed": 0,
+ "ok": true,
+ "failures": [],
+ "rows": [
+  {
+   "field": "task: orb_asia_2d_buf10__btcusd FP 2018-02..2021-12 375 trades +194.3 R",
+   "expected": [
+    375,
+    194.3
+   ],
+   "got": [
+    375,
+    194.3
+   ],
+   "ok": true
+  },
+  {
+   "field": "task: orb_asia_2d_buf10__ethusd FP 2018-02..2021-12 344 trades +155.5 R",
+   "expected": [
+    344,
+    155.5
+   ],
+   "got": [
+    344,
+    155.5
+   ],
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.orders",
+   "expected": 643,
+   "got": 643,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.refused_3spreads",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.boundary_dropped",
+   "expected": 1,
+   "got": 1,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.window.n",
+   "expected": 344,
+   "got": 344,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.window.exp",
+   "expected": 0.4519,
+   "got": 0.4519,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.window.total",
+   "expected": 155.47,
+   "got": 155.47,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.window.win",
+   "expected": 0.4128,
+   "got": 0.4128,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.window.avg_win",
+   "expected": 2.4843,
+   "got": 2.4843,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.window.avg_loss",
+   "expected": -0.9768,
+   "got": -0.9768,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.window.pf",
+   "expected": 1.788,
+   "got": 1.788,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.window.sd",
+   "expected": 2.3389,
+   "got": 2.3389,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.window.mean_over_sd",
+   "expected": 0.1932,
+   "got": 0.1932,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2018.n",
+   "expected": 71,
+   "got": 71,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2018.exp",
+   "expected": 0.9992,
+   "got": 0.9992,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2018.total",
+   "expected": 70.94,
+   "got": 70.94,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2018.win",
+   "expected": 0.507,
+   "got": 0.507,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2018.avg_win",
+   "expected": 2.937,
+   "got": 2.937,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2018.avg_loss",
+   "expected": -0.9939,
+   "got": -0.9939,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2018.pf",
+   "expected": 3.039,
+   "got": 3.039,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2018.sd",
+   "expected": 2.8443,
+   "got": 2.8443,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2018.mean_over_sd",
+   "expected": 0.3513,
+   "got": 0.3513,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2019.n",
+   "expected": 80,
+   "got": 80,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2019.exp",
+   "expected": 0.4241,
+   "got": 0.4241,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2019.total",
+   "expected": 33.93,
+   "got": 33.93,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2019.win",
+   "expected": 0.475,
+   "got": 0.475,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2019.avg_win",
+   "expected": 1.9881,
+   "got": 1.9881,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2019.avg_loss",
+   "expected": -0.991,
+   "got": -0.991,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2019.pf",
+   "expected": 1.815,
+   "got": 1.815,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2019.sd",
+   "expected": 2.1316,
+   "got": 2.1316,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2019.mean_over_sd",
+   "expected": 0.199,
+   "got": 0.199,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2020.n",
+   "expected": 97,
+   "got": 97,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2020.exp",
+   "expected": 0.3303,
+   "got": 0.3303,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2020.total",
+   "expected": 32.04,
+   "got": 32.04,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2020.win",
+   "expected": 0.3711,
+   "got": 0.3711,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2020.avg_win",
+   "expected": 2.5961,
+   "got": 2.5961,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2020.avg_loss",
+   "expected": -1.007,
+   "got": -1.007,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2020.pf",
+   "expected": 1.522,
+   "got": 1.522,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2020.sd",
+   "expected": 2.2894,
+   "got": 2.2894,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2020.mean_over_sd",
+   "expected": 0.1443,
+   "got": 0.1443,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2021.n",
+   "expected": 96,
+   "got": 96,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2021.exp",
+   "expected": 0.1934,
+   "got": 0.1934,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2021.total",
+   "expected": 18.56,
+   "got": 18.56,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2021.win",
+   "expected": 0.3333,
+   "got": 0.3333,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2021.avg_win",
+   "expected": 2.4386,
+   "got": 2.4386,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2021.avg_loss",
+   "expected": -0.9292,
+   "got": -0.9292,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2021.pf",
+   "expected": 1.312,
+   "got": 1.312,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2021.sd",
+   "expected": 2.0994,
+   "got": 2.0994,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.by_year.2021.mean_over_sd",
+   "expected": 0.0921,
+   "got": 0.0921,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.early.n",
+   "expected": 9,
+   "got": 9,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.early.exp",
+   "expected": -0.1168,
+   "got": -0.1168,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.early.total",
+   "expected": -1.05,
+   "got": -1.05,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.early.win",
+   "expected": 0.3333,
+   "got": 0.3333,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.early.avg_win",
+   "expected": 1.6731,
+   "got": 1.6731,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.early.avg_loss",
+   "expected": -1.0117,
+   "got": -1.0117,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.early.pf",
+   "expected": 0.827,
+   "got": 0.827,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.early.sd",
+   "expected": 1.614,
+   "got": 1.614,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.fp.early.mean_over_sd",
+   "expected": -0.0724,
+   "got": -0.0724,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.orders",
+   "expected": 643,
+   "got": 643,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.refused_3spreads",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.boundary_dropped",
+   "expected": 1,
+   "got": 1,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.window.n",
+   "expected": 344,
+   "got": 344,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.window.exp",
+   "expected": 0.4078,
+   "got": 0.4078,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.window.total",
+   "expected": 140.29,
+   "got": 140.29,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.window.win",
+   "expected": 0.4041,
+   "got": 0.4041,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.window.avg_win",
+   "expected": 2.4328,
+   "got": 2.4328,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.window.avg_loss",
+   "expected": -0.9652,
+   "got": -0.9652,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.window.pf",
+   "expected": 1.709,
+   "got": 1.709,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.window.sd",
+   "expected": 2.2604,
+   "got": 2.2604,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.window.mean_over_sd",
+   "expected": 0.1804,
+   "got": 0.1804,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2018.n",
+   "expected": 71,
+   "got": 71,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2018.exp",
+   "expected": 0.9384,
+   "got": 0.9384,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2018.total",
+   "expected": 66.63,
+   "got": 66.63,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2018.win",
+   "expected": 0.493,
+   "got": 0.493,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2018.avg_win",
+   "expected": 2.9005,
+   "got": 2.9005,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2018.avg_loss",
+   "expected": -0.9692,
+   "got": -0.9692,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2018.pf",
+   "expected": 2.91,
+   "got": 2.91,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2018.sd",
+   "expected": 2.7484,
+   "got": 2.7484,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2018.mean_over_sd",
+   "expected": 0.3414,
+   "got": 0.3414,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2019.n",
+   "expected": 80,
+   "got": 80,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2019.exp",
+   "expected": 0.3759,
+   "got": 0.3759,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2019.total",
+   "expected": 30.08,
+   "got": 30.08,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2019.win",
+   "expected": 0.4625,
+   "got": 0.4625,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2019.avg_win",
+   "expected": 1.9408,
+   "got": 1.9408,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2019.avg_loss",
+   "expected": -0.9705,
+   "got": -0.9705,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2019.pf",
+   "expected": 1.721,
+   "got": 1.721,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2019.sd",
+   "expected": 2.0495,
+   "got": 2.0495,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2019.mean_over_sd",
+   "expected": 0.1834,
+   "got": 0.1834,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2020.n",
+   "expected": 97,
+   "got": 97,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2020.exp",
+   "expected": 0.2884,
+   "got": 0.2884,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2020.total",
+   "expected": 27.98,
+   "got": 27.98,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2020.win",
+   "expected": 0.3711,
+   "got": 0.3711,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2020.avg_win",
+   "expected": 2.4878,
+   "got": 2.4878,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2020.avg_loss",
+   "expected": -1.0095,
+   "got": -1.0095,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2020.pf",
+   "expected": 1.454,
+   "got": 1.454,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2020.sd",
+   "expected": 2.2147,
+   "got": 2.2147,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2020.mean_over_sd",
+   "expected": 0.1302,
+   "got": 0.1302,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2021.n",
+   "expected": 96,
+   "got": 96,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2021.exp",
+   "expected": 0.1626,
+   "got": 0.1626,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2021.total",
+   "expected": 15.61,
+   "got": 15.61,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2021.win",
+   "expected": 0.3229,
+   "got": 0.3229,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2021.avg_win",
+   "expected": 2.4281,
+   "got": 2.4281,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2021.avg_loss",
+   "expected": -0.9179,
+   "got": -0.9179,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2021.pf",
+   "expected": 1.262,
+   "got": 1.262,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2021.sd",
+   "expected": 2.0358,
+   "got": 2.0358,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.by_year.2021.mean_over_sd",
+   "expected": 0.0799,
+   "got": 0.0799,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.early.n",
+   "expected": 9,
+   "got": 9,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.early.exp",
+   "expected": -0.1297,
+   "got": -0.1297,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.early.total",
+   "expected": -1.17,
+   "got": -1.17,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.early.win",
+   "expected": 0.3333,
+   "got": 0.3333,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.early.avg_win",
+   "expected": 1.6368,
+   "got": 1.6368,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.early.avg_loss",
+   "expected": -1.0129,
+   "got": -1.0129,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.early.pf",
+   "expected": 0.808,
+   "got": 0.808,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.early.sd",
+   "expected": 1.5926,
+   "got": 1.5926,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__ethusd.stress.early.mean_over_sd",
+   "expected": -0.0814,
+   "got": -0.0814,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.orders",
+   "expected": 785,
+   "got": 785,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.refused_3spreads",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.boundary_dropped",
+   "expected": 1,
+   "got": 1,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.window.n",
+   "expected": 375,
+   "got": 375,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.window.exp",
+   "expected": 0.5182,
+   "got": 0.5182,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.window.total",
+   "expected": 194.34,
+   "got": 194.34,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.window.win",
+   "expected": 0.3787,
+   "got": 0.3787,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.window.avg_win",
+   "expected": 3.0053,
+   "got": 3.0053,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.window.avg_loss",
+   "expected": -0.9975,
+   "got": -0.9975,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.window.pf",
+   "expected": 1.836,
+   "got": 1.836,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.window.sd",
+   "expected": 2.878,
+   "got": 2.878,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.window.mean_over_sd",
+   "expected": 0.1801,
+   "got": 0.1801,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2018.n",
+   "expected": 81,
+   "got": 81,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2018.exp",
+   "expected": 1.1549,
+   "got": 1.1549,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2018.total",
+   "expected": 93.55,
+   "got": 93.55,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2018.win",
+   "expected": 0.4815,
+   "got": 0.4815,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2018.avg_win",
+   "expected": 3.4666,
+   "got": 3.4666,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2018.avg_loss",
+   "expected": -0.9916,
+   "got": -0.9916,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2018.pf",
+   "expected": 3.246,
+   "got": 3.246,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2018.sd",
+   "expected": 3.4073,
+   "got": 3.4073,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2018.mean_over_sd",
+   "expected": 0.339,
+   "got": 0.339,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2019.n",
+   "expected": 94,
+   "got": 94,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2019.exp",
+   "expected": 0.7266,
+   "got": 0.7266,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2019.total",
+   "expected": 68.3,
+   "got": 68.3,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2019.win",
+   "expected": 0.4043,
+   "got": 0.4043,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2019.avg_win",
+   "expected": 3.3212,
+   "got": 3.3212,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2019.avg_loss",
+   "expected": -1.0341,
+   "got": -1.0341,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2019.pf",
+   "expected": 2.179,
+   "got": 2.179,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2019.sd",
+   "expected": 3.4291,
+   "got": 3.4291,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2019.mean_over_sd",
+   "expected": 0.2119,
+   "got": 0.2119,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2020.n",
+   "expected": 101,
+   "got": 101,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2020.exp",
+   "expected": 0.3178,
+   "got": 0.3178,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2020.total",
+   "expected": 32.1,
+   "got": 32.1,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2020.win",
+   "expected": 0.3168,
+   "got": 0.3168,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2020.avg_win",
+   "expected": 3.106,
+   "got": 3.106,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2020.avg_loss",
+   "expected": -0.9753,
+   "got": -0.9753,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2020.pf",
+   "expected": 1.477,
+   "got": 1.477,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2020.sd",
+   "expected": 2.5548,
+   "got": 2.5548,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2020.mean_over_sd",
+   "expected": 0.1244,
+   "got": 0.1244,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2021.n",
+   "expected": 99,
+   "got": 99,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2021.exp",
+   "expected": 0.004,
+   "got": 0.004,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2021.total",
+   "expected": 0.39,
+   "got": 0.39,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2021.win",
+   "expected": 0.3333,
+   "got": 0.3333,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2021.avg_win",
+   "expected": 1.9987,
+   "got": 1.9987,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2021.avg_loss",
+   "expected": -0.9934,
+   "got": -0.9934,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2021.pf",
+   "expected": 1.006,
+   "got": 1.006,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2021.sd",
+   "expected": 1.9045,
+   "got": 1.9045,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.by_year.2021.mean_over_sd",
+   "expected": 0.0021,
+   "got": 0.0021,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.early.n",
+   "expected": 67,
+   "got": 67,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.early.exp",
+   "expected": 0.8651,
+   "got": 0.8651,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.early.total",
+   "expected": 57.96,
+   "got": 57.96,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.early.win",
+   "expected": 0.4328,
+   "got": 0.4328,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.early.avg_win",
+   "expected": 3.2759,
+   "got": 3.2759,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.early.avg_loss",
+   "expected": -0.9748,
+   "got": -0.9748,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.early.pf",
+   "expected": 2.565,
+   "got": 2.565,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.early.sd",
+   "expected": 3.2847,
+   "got": 3.2847,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.fp.early.mean_over_sd",
+   "expected": 0.2634,
+   "got": 0.2634,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.orders",
+   "expected": 783,
+   "got": 783,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.refused_3spreads",
+   "expected": 0,
+   "got": 0,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.boundary_dropped",
+   "expected": 1,
+   "got": 1,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.window.n",
+   "expected": 374,
+   "got": 374,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.window.exp",
+   "expected": 0.4963,
+   "got": 0.4963,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.window.total",
+   "expected": 185.62,
+   "got": 185.62,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.window.win",
+   "expected": 0.3797,
+   "got": 0.3797,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.window.avg_win",
+   "expected": 2.9424,
+   "got": 2.9424,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.window.avg_loss",
+   "expected": -1.0009,
+   "got": -1.0009,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.window.pf",
+   "expected": 1.799,
+   "got": 1.799,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.window.sd",
+   "expected": 2.8251,
+   "got": 2.8251,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.window.mean_over_sd",
+   "expected": 0.1757,
+   "got": 0.1757,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2018.n",
+   "expected": 81,
+   "got": 81,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2018.exp",
+   "expected": 1.1161,
+   "got": 1.1161,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2018.total",
+   "expected": 90.41,
+   "got": 90.41,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2018.win",
+   "expected": 0.4815,
+   "got": 0.4815,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2018.avg_win",
+   "expected": 3.39,
+   "got": 3.39,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2018.avg_loss",
+   "expected": -0.9953,
+   "got": -0.9953,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2018.pf",
+   "expected": 3.163,
+   "got": 3.163,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2018.sd",
+   "expected": 3.3369,
+   "got": 3.3369,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2018.mean_over_sd",
+   "expected": 0.3345,
+   "got": 0.3345,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2019.n",
+   "expected": 94,
+   "got": 94,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2019.exp",
+   "expected": 0.6928,
+   "got": 0.6928,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2019.total",
+   "expected": 65.13,
+   "got": 65.13,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2019.win",
+   "expected": 0.4043,
+   "got": 0.4043,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2019.avg_win",
+   "expected": 3.2428,
+   "got": 3.2428,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2019.avg_loss",
+   "expected": -1.0375,
+   "got": -1.0375,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2019.pf",
+   "expected": 2.121,
+   "got": 2.121,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2019.sd",
+   "expected": 3.3568,
+   "got": 3.3568,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2019.mean_over_sd",
+   "expected": 0.2064,
+   "got": 0.2064,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2020.n",
+   "expected": 101,
+   "got": 101,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2020.exp",
+   "expected": 0.2944,
+   "got": 0.2944,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2020.total",
+   "expected": 29.74,
+   "got": 29.74,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2020.win",
+   "expected": 0.3168,
+   "got": 0.3168,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2020.avg_win",
+   "expected": 3.041,
+   "got": 3.041,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2020.avg_loss",
+   "expected": -0.9793,
+   "got": -0.9793,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2020.pf",
+   "expected": 1.44,
+   "got": 1.44,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2020.sd",
+   "expected": 2.5078,
+   "got": 2.5078,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2020.mean_over_sd",
+   "expected": 0.1174,
+   "got": 0.1174,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2021.n",
+   "expected": 98,
+   "got": 98,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2021.exp",
+   "expected": 0.0035,
+   "got": 0.0035,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2021.total",
+   "expected": 0.35,
+   "got": 0.35,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2021.win",
+   "expected": 0.3367,
+   "got": 0.3367,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2021.avg_win",
+   "expected": 1.972,
+   "got": 1.972,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2021.avg_loss",
+   "expected": -0.9958,
+   "got": -0.9958,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2021.pf",
+   "expected": 1.005,
+   "got": 1.005,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2021.sd",
+   "expected": 1.8908,
+   "got": 1.8908,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.by_year.2021.mean_over_sd",
+   "expected": 0.0019,
+   "got": 0.0019,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.early.n",
+   "expected": 67,
+   "got": 67,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.early.exp",
+   "expected": 0.8231,
+   "got": 0.8231,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.early.total",
+   "expected": 55.15,
+   "got": 55.15,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.early.win",
+   "expected": 0.4328,
+   "got": 0.4328,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.early.avg_win",
+   "expected": 3.1854,
+   "got": 3.1854,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.early.avg_loss",
+   "expected": -0.9797,
+   "got": -0.9797,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.early.pf",
+   "expected": 2.481,
+   "got": 2.481,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.early.sd",
+   "expected": 3.1908,
+   "got": 3.1908,
+   "ok": true
+  },
+  {
+   "field": "orb_asia_2d_buf10__btcusd.stress.early.mean_over_sd",
+   "expected": 0.258,
+   "got": 0.258,
+   "ok": true
+  }
+ ]
+}

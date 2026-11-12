@@ -1,0 +1,12 @@
+{
+ "written": "2026-11-12T14:04:59+00:00",
+ "status": "written after O1/O2 (bounds x1.179 hour bands, x1.381 weekdays, fp, 2019-2021, equal swing) and before this null was computed",
+ "variants": [
+  {
+   "id": "N1_oracle_null",
+   "kind": "diagnostic null of O1 and O2 (judges nothing); counted as ONE trial (12 of 15)",
+   "rule": "within each sleeve and each year 2019-2021, the hour-band (resp. weekday) labels of the chain trades are permuted at random (cell sizes kept), the perfect-foresight multipliers of O1 (resp. O2) recomputed on the permuted labels, and the pooled fp weekly Sharpe ratio at equal swing recorded; 500 permutations per dimension, numpy seed 20261112",
+   "reading": "share of permutations whose ratio reaches the real O1 / O2 ratio = how unusual the real clock structure of the out-of-fold years is; the null median = the part of the bound that any labelling would give (noise of the year)"
+  }
+ ]
+}

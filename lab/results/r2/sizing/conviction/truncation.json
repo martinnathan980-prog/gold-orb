@@ -1,0 +1,41 @@
+{
+ "tested": 210,
+ "value_mismatch": 0,
+ "stake_mismatch_V05": 0,
+ "stake_mismatch_V30": 0,
+ "fit_mismatch": 0,
+ "max_abs_diff": 0.0,
+ "examples": [],
+ "per_sleeve": {
+  "brk72_24h_wd__btcusd": {
+   "n_random_chain": 30,
+   "n_zero_stake": 30,
+   "value_mismatch": 0,
+   "stake_mismatch": 0,
+   "negative_control_leaky_price_identical": "0/60"
+  },
+  "F1_brk_ridge_filter__btcusd": {
+   "n_random_chain": 30,
+   "n_zero_stake": 0,
+   "value_mismatch": 0,
+   "stake_mismatch": 0,
+   "negative_control_leaky_price_identical": "0/30"
+  },
+  "brk72_24h_wd__ethusd": {
+   "n_random_chain": 30,
+   "n_zero_stake": 30,
+   "value_mismatch": 0,
+   "stake_mismatch": 0,
+   "negative_control_leaky_price_identical": "0/60"
+  },
+  "F1_brk_ridge_filter__ethusd": {
+   "n_random_chain": 30,
+   "n_zero_stake": 30,
+   "value_mismatch": 0,
+   "stake_mismatch": 0,
+   "negative_control_leaky_price_identical": "0/60"
+  }
+ },
+ "negative_control": {},
+ "pass": true
+}

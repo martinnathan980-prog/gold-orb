@@ -1,0 +1,2 @@
+H {'real_ratio': 1.1795, 'null_mean': 1.2211, 'null_p05': 1.1417, 'null_p50': 1.2198, 'null_p95': 1.3058, 'share_null_at_or_above_real': 0.796}
+D {'real_ratio': 1.3814, 'null_mean': 1.4123, 'null_p05': 1.3163, 'null_p50': 1.4103, 'null_p95': 1.5187, 'share_null_at_or_above_real': 0.676}

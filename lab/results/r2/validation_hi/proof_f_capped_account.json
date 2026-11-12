@@ -1,0 +1,169 @@
+{
+ "what": "the capped account (6 positions, 2 per market; stake 0 takes no slot): identical to the cluster lens's run_engine on the harness's own P0 / P2 books, and on the cluster lens's own trades it reproduces engine_check.json and r2/tracks/stake/account.py (1e9 EUR account, no lot / margin effect)",
+ "detail": {
+  "P0.fp": {
+   "offered_whole_frame": 7963,
+   "taken_whole_frame": 7566,
+   "taken_window": 4877,
+   "total_R_window": 793.4,
+   "cap_skips_window": 328
+  },
+  "P0.stress": {
+   "offered_whole_frame": 7962,
+   "taken_whole_frame": 7567,
+   "taken_window": 4880,
+   "total_R_window": 719.215,
+   "cap_skips_window": 327
+  },
+  "P2.fp": {
+   "offered_whole_frame": 8667,
+   "taken_whole_frame": 7564,
+   "taken_window": 4869,
+   "total_R_window": 981.109,
+   "cap_skips_window": 964
+  },
+  "P2.stress": {
+   "offered_whole_frame": 8665,
+   "taken_whole_frame": 7561,
+   "taken_window": 4869,
+   "total_R_window": 896.706,
+   "cap_skips_window": 965
+  },
+  "cluster_trades.fp": {
+   "engine_check": {
+    "n_taken": 4878,
+    "total_R": 795.672,
+    "worst_day": -7.009,
+    "worst_week": -12.541,
+    "max_dd": 29.792
+   },
+   "harness": {
+    "n_taken": 4878,
+    "total_R": 795.672
+   },
+   "account_py": {
+    "n_taken": 4878,
+    "position_cap_skips": 329
+   }
+  },
+  "cluster_trades.stress": {
+   "engine_check": {
+    "n_taken": 4881,
+    "total_R": 721.407,
+    "worst_day": -7.109,
+    "worst_week": -12.66,
+    "max_dd": 31.309
+   },
+   "harness": {
+    "n_taken": 4881,
+    "total_R": 721.407
+   },
+   "account_py": {
+    "n_taken": 4881,
+    "position_cap_skips": 328
+   }
+  }
+ },
+ "checks": 16,
+ "failed": 0,
+ "ok": true,
+ "failures": [],
+ "rows": [
+  {
+   "field": "P0.fp: capped account == cluster run_engine (same trades taken)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "P0.stress: capped account == cluster run_engine (same trades taken)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "P2.fp: capped account == cluster run_engine (same trades taken)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "P2.stress: capped account == cluster run_engine (same trades taken)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "cluster_trades.fp.capped_common.n_taken",
+   "expected": 4878,
+   "got": 4878,
+   "ok": true
+  },
+  {
+   "field": "cluster_trades.fp.capped_common.total_R",
+   "expected": 795.672,
+   "got": 795.672,
+   "ok": true
+  },
+  {
+   "field": "cluster_trades.fp.capped_skips_common",
+   "expected": 329,
+   "got": 329,
+   "ok": true
+  },
+  {
+   "field": "cluster_trades.fp: harness capped account == cluster engine trade by trade",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "account_py.fp.common_window.n_taken",
+   "expected": 4878,
+   "got": 4878,
+   "ok": true
+  },
+  {
+   "field": "account_py.fp.common_window.position_cap_skips",
+   "expected": 329,
+   "got": 329,
+   "ok": true
+  },
+  {
+   "field": "cluster_trades.stress.capped_common.n_taken",
+   "expected": 4881,
+   "got": 4881,
+   "ok": true
+  },
+  {
+   "field": "cluster_trades.stress.capped_common.total_R",
+   "expected": 721.407,
+   "got": 721.407,
+   "ok": true
+  },
+  {
+   "field": "cluster_trades.stress.capped_skips_common",
+   "expected": 328,
+   "got": 328,
+   "ok": true
+  },
+  {
+   "field": "cluster_trades.stress: harness capped account == cluster engine trade by trade",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "account_py.stress.common_window.n_taken",
+   "expected": 4881,
+   "got": 4881,
+   "ok": true
+  },
+  {
+   "field": "account_py.stress.common_window.position_cap_skips",
+   "expected": 328,
+   "got": 328,
+   "ok": true
+  }
+ ]
+}

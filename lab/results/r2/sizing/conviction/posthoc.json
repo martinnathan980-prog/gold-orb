@@ -1,0 +1,451 @@
+{
+ "V30": {
+  "fp": {
+   "scale_k": 0.927,
+   "pooled": {
+    "weeks": 157,
+    "sharpe": 2.9789,
+    "mean_w": 3.8419,
+    "sd_w": 9.3004,
+    "total_R": 603.18,
+    "losing_weeks_pct": 41.4,
+    "worst_week": -12.1,
+    "longest_losing_weeks": 6,
+    "trades": 3985,
+    "losing_trades_per_month": 60.78,
+    "mean_stake": 0.9202,
+    "sharpe_ratio_vs_ref": 1.0846
+   },
+   "pooled_ref": {
+    "weeks": 157,
+    "sharpe": 2.7466,
+    "mean_w": 3.5424,
+    "sd_w": 9.3004,
+    "total_R": 556.16,
+    "losing_weeks_pct": 44.59,
+    "worst_week": -12.54,
+    "longest_losing_weeks": 7,
+    "trades": 3985,
+    "losing_trades_per_month": 60.78,
+    "mean_stake": 1.0
+   },
+   "by_year": {
+    "2019": {
+     "variant": {
+      "weeks": 52,
+      "sharpe": 2.4307,
+      "mean_w": 3.4422,
+      "sd_w": 10.2118,
+      "total_R": 178.99,
+      "losing_weeks_pct": 51.92,
+      "worst_week": -9.7,
+      "longest_losing_weeks": 5,
+      "trades": 1224,
+      "losing_trades_per_month": 58.42,
+      "mean_stake": 0.9398,
+      "sharpe_ratio_vs_ref": 1.013
+     },
+     "ref": {
+      "weeks": 52,
+      "sharpe": 2.3995,
+      "mean_w": 3.436,
+      "sd_w": 10.3257,
+      "total_R": 178.67,
+      "losing_weeks_pct": 50.0,
+      "worst_week": -9.07,
+      "longest_losing_weeks": 5,
+      "trades": 1224,
+      "losing_trades_per_month": 58.42,
+      "mean_stake": 1.0
+     }
+    },
+    "2020": {
+     "variant": {
+      "weeks": 53,
+      "sharpe": 3.8812,
+      "mean_w": 5.6443,
+      "sd_w": 10.4869,
+      "total_R": 299.15,
+      "losing_weeks_pct": 35.85,
+      "worst_week": -12.1,
+      "longest_losing_weeks": 3,
+      "trades": 1324,
+      "losing_trades_per_month": 58.5,
+      "mean_stake": 0.9368,
+      "sharpe_ratio_vs_ref": 1.0449
+     },
+     "ref": {
+      "weeks": 53,
+      "sharpe": 3.7143,
+      "mean_w": 5.1051,
+      "sd_w": 9.9112,
+      "total_R": 270.57,
+      "losing_weeks_pct": 39.62,
+      "worst_week": -10.97,
+      "longest_losing_weeks": 3,
+      "trades": 1324,
+      "losing_trades_per_month": 58.5,
+      "mean_stake": 1.0
+     }
+    },
+    "2021": {
+     "variant": {
+      "weeks": 52,
+      "sharpe": 2.6592,
+      "mean_w": 2.4047,
+      "sd_w": 6.5209,
+      "total_R": 125.04,
+      "losing_weeks_pct": 36.54,
+      "worst_week": -10.21,
+      "longest_losing_weeks": 6,
+      "trades": 1437,
+      "losing_trades_per_month": 65.42,
+      "mean_stake": 0.8883,
+      "sharpe_ratio_vs_ref": 1.3056
+     },
+     "ref": {
+      "weeks": 52,
+      "sharpe": 2.0367,
+      "mean_w": 2.0562,
+      "sd_w": 7.28,
+      "total_R": 106.92,
+      "losing_weeks_pct": 44.23,
+      "worst_week": -12.54,
+      "longest_losing_weeks": 7,
+      "trades": 1437,
+      "losing_trades_per_month": 65.42,
+      "mean_stake": 1.0
+     }
+    }
+   },
+   "years_up": 3,
+   "stake_profile_oof": {
+    "0.5": 521,
+    "1.0": 2997,
+    "1.5": 463
+   },
+   "per_sleeve_oof": {
+    "ocm4__us100": {
+     "n": 377,
+     "n_ref": 377,
+     "stakes": 377.0,
+     "R_at_stake": 39.82,
+     "R_ref": 39.82,
+     "mean_R_unit": 0.1056,
+     "mean_R_ref": 0.1056
+    },
+    "noise30__us100": {
+     "n": 609,
+     "n_ref": 609,
+     "stakes": 609.0,
+     "R_at_stake": 44.65,
+     "R_ref": 44.65,
+     "mean_R_unit": 0.0733,
+     "mean_R_ref": 0.0733
+    },
+    "donch4h_stop__xauusd": {
+     "n": 158,
+     "n_ref": 158,
+     "stakes": 158.0,
+     "R_at_stake": 30.11,
+     "R_ref": 30.11,
+     "mean_R_unit": 0.1906,
+     "mean_R_ref": 0.1906
+    },
+    "orb_asia_2d_buf10__xauusd": {
+     "n": 348,
+     "n_ref": 348,
+     "stakes": 348.0,
+     "R_at_stake": 53.98,
+     "R_ref": 53.98,
+     "mean_R_unit": 0.1551,
+     "mean_R_ref": 0.1551
+    },
+    "GOLD_FRI_PM__xauusd": {
+     "n": 139,
+     "n_ref": 139,
+     "stakes": 139.0,
+     "R_at_stake": -1.63,
+     "R_ref": -1.63,
+     "mean_R_unit": -0.0117,
+     "mean_R_ref": -0.0117
+    },
+    "brk72_24h_wd__btcusd": {
+     "n": 420,
+     "n_ref": 420,
+     "stakes": 441.5,
+     "R_at_stake": 149.22,
+     "R_ref": 104.52,
+     "mean_R_unit": 0.2489,
+     "mean_R_ref": 0.2489
+    },
+    "brk72_24h_wd__ethusd": {
+     "n": 395,
+     "n_ref": 395,
+     "stakes": 381.5,
+     "R_at_stake": 69.16,
+     "R_ref": 49.08,
+     "mean_R_unit": 0.1243,
+     "mean_R_ref": 0.1243
+    },
+    "F1_brk_ridge_filter__btcusd": {
+     "n": 422,
+     "n_ref": 422,
+     "stakes": 416.5,
+     "R_at_stake": 135.83,
+     "R_ref": 115.53,
+     "mean_R_unit": 0.2738,
+     "mean_R_ref": 0.2738
+    },
+    "F1_brk_ridge_filter__ethusd": {
+     "n": 393,
+     "n_ref": 393,
+     "stakes": 361.5,
+     "R_at_stake": 65.7,
+     "R_ref": 56.22,
+     "mean_R_unit": 0.1431,
+     "mean_R_ref": 0.1431
+    },
+    "nq_btc_follow__btcusd": {
+     "n": 720,
+     "n_ref": 720,
+     "stakes": 720.0,
+     "R_at_stake": 63.54,
+     "R_ref": 63.54,
+     "mean_R_unit": 0.0883,
+     "mean_R_ref": 0.0883
+    }
+   }
+  },
+  "stress": {
+   "scale_k": 0.929,
+   "pooled": {
+    "weeks": 157,
+    "sharpe": 2.7246,
+    "mean_w": 3.4824,
+    "sd_w": 9.2168,
+    "total_R": 546.74,
+    "losing_weeks_pct": 43.95,
+    "worst_week": -13.91,
+    "longest_losing_weeks": 6,
+    "trades": 3987,
+    "losing_trades_per_month": 61.47,
+    "mean_stake": 0.9234,
+    "sharpe_ratio_vs_ref": 1.0936
+   },
+   "pooled_ref": {
+    "weeks": 157,
+    "sharpe": 2.4915,
+    "mean_w": 3.1845,
+    "sd_w": 9.2168,
+    "total_R": 499.97,
+    "losing_weeks_pct": 46.5,
+    "worst_week": -12.66,
+    "longest_losing_weeks": 7,
+    "trades": 3987,
+    "losing_trades_per_month": 61.47,
+    "mean_stake": 1.0
+   },
+   "by_year": {
+    "2019": {
+     "variant": {
+      "weeks": 52,
+      "sharpe": 2.171,
+      "mean_w": 3.0334,
+      "sd_w": 10.0754,
+      "total_R": 157.74,
+      "losing_weeks_pct": 55.77,
+      "worst_week": -10.19,
+      "longest_losing_weeks": 5,
+      "trades": 1225,
+      "losing_trades_per_month": 59.5,
+      "mean_stake": 0.9396,
+      "sharpe_ratio_vs_ref": 1.013
+     },
+     "ref": {
+      "weeks": 52,
+      "sharpe": 2.1431,
+      "mean_w": 3.0455,
+      "sd_w": 10.2476,
+      "total_R": 158.36,
+      "losing_weeks_pct": 55.77,
+      "worst_week": -9.37,
+      "longest_losing_weeks": 5,
+      "trades": 1225,
+      "losing_trades_per_month": 59.5,
+      "mean_stake": 1.0
+     }
+    },
+    "2020": {
+     "variant": {
+      "weeks": 53,
+      "sharpe": 3.6609,
+      "mean_w": 5.2789,
+      "sd_w": 10.3981,
+      "total_R": 279.78,
+      "losing_weeks_pct": 37.74,
+      "worst_week": -13.91,
+      "longest_losing_weeks": 3,
+      "trades": 1326,
+      "losing_trades_per_month": 59.08,
+      "mean_stake": 0.9444,
+      "sharpe_ratio_vs_ref": 1.0548
+     },
+     "ref": {
+      "weeks": 53,
+      "sharpe": 3.4708,
+      "mean_w": 4.718,
+      "sd_w": 9.8023,
+      "total_R": 250.05,
+      "losing_weeks_pct": 39.62,
+      "worst_week": -12.3,
+      "longest_losing_weeks": 3,
+      "trades": 1326,
+      "losing_trades_per_month": 59.08,
+      "mean_stake": 1.0
+     }
+    },
+    "2021": {
+     "variant": {
+      "weeks": 52,
+      "sharpe": 2.321,
+      "mean_w": 2.1004,
+      "sd_w": 6.5257,
+      "total_R": 109.22,
+      "losing_weeks_pct": 38.46,
+      "worst_week": -10.35,
+      "longest_losing_weeks": 6,
+      "trades": 1436,
+      "losing_trades_per_month": 65.83,
+      "mean_stake": 0.8901,
+      "sharpe_ratio_vs_ref": 1.3226
+     },
+     "ref": {
+      "weeks": 52,
+      "sharpe": 1.7549,
+      "mean_w": 1.7606,
+      "sd_w": 7.2342,
+      "total_R": 91.55,
+      "losing_weeks_pct": 44.23,
+      "worst_week": -12.66,
+      "longest_losing_weeks": 7,
+      "trades": 1436,
+      "losing_trades_per_month": 65.83,
+      "mean_stake": 1.0
+     }
+    }
+   },
+   "years_up": 3,
+   "stake_profile_oof": {
+    "0.5": 524,
+    "1.0": 2983,
+    "1.5": 476
+   },
+   "per_sleeve_oof": {
+    "ocm4__us100": {
+     "n": 377,
+     "n_ref": 377,
+     "stakes": 377.0,
+     "R_at_stake": 37.53,
+     "R_ref": 37.53,
+     "mean_R_unit": 0.0995,
+     "mean_R_ref": 0.0995
+    },
+    "noise30__us100": {
+     "n": 609,
+     "n_ref": 609,
+     "stakes": 609.0,
+     "R_at_stake": 40.77,
+     "R_ref": 40.77,
+     "mean_R_unit": 0.0669,
+     "mean_R_ref": 0.0669
+    },
+    "donch4h_stop__xauusd": {
+     "n": 158,
+     "n_ref": 158,
+     "stakes": 158.0,
+     "R_at_stake": 28.22,
+     "R_ref": 28.22,
+     "mean_R_unit": 0.1786,
+     "mean_R_ref": 0.1786
+    },
+    "orb_asia_2d_buf10__xauusd": {
+     "n": 348,
+     "n_ref": 348,
+     "stakes": 348.0,
+     "R_at_stake": 44.68,
+     "R_ref": 44.68,
+     "mean_R_unit": 0.1284,
+     "mean_R_ref": 0.1284
+    },
+    "GOLD_FRI_PM__xauusd": {
+     "n": 137,
+     "n_ref": 137,
+     "stakes": 137.0,
+     "R_at_stake": -2.25,
+     "R_ref": -2.25,
+     "mean_R_unit": -0.0164,
+     "mean_R_ref": -0.0164
+    },
+    "brk72_24h_wd__btcusd": {
+     "n": 420,
+     "n_ref": 420,
+     "stakes": 442.5,
+     "R_at_stake": 140.36,
+     "R_ref": 101.12,
+     "mean_R_unit": 0.2408,
+     "mean_R_ref": 0.2408
+    },
+    "brk72_24h_wd__ethusd": {
+     "n": 397,
+     "n_ref": 397,
+     "stakes": 386.0,
+     "R_at_stake": 61.18,
+     "R_ref": 40.86,
+     "mean_R_unit": 0.1029,
+     "mean_R_ref": 0.1029
+    },
+    "F1_brk_ridge_filter__btcusd": {
+     "n": 423,
+     "n_ref": 423,
+     "stakes": 421.0,
+     "R_at_stake": 131.33,
+     "R_ref": 110.13,
+     "mean_R_unit": 0.2603,
+     "mean_R_ref": 0.2603
+    },
+    "F1_brk_ridge_filter__ethusd": {
+     "n": 394,
+     "n_ref": 394,
+     "stakes": 360.5,
+     "R_at_stake": 53.79,
+     "R_ref": 45.97,
+     "mean_R_unit": 0.1167,
+     "mean_R_ref": 0.1167
+    },
+    "nq_btc_follow__btcusd": {
+     "n": 720,
+     "n_ref": 720,
+     "stakes": 720.0,
+     "R_at_stake": 52.66,
+     "R_ref": 52.66,
+     "mean_R_unit": 0.0731,
+     "mean_R_ref": 0.0731
+    }
+   }
+  }
+ },
+ "V29": {
+  "draws": 200,
+  "seed": 2029,
+  "of": "V30",
+  "own_ratio": 1.0846,
+  "null_mean": 0.9748,
+  "null_p05": 0.9193,
+  "null_p50": 0.9774,
+  "null_p95": 1.0225,
+  "null_max": 1.0869,
+  "share_at_or_above_own": 0.005,
+  "share_at_or_above_1.10": 0.0
+ }
+}

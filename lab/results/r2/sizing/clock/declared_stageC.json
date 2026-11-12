@@ -1,0 +1,18 @@
+{
+ "written": "2026-11-12T14:04:05+00:00",
+ "status": "written AFTER stage A (all 9 primaries failed (a)-(c); stage B therefore not run, as declared) and AFTER Part 1, BEFORE these two diagnostics were computed",
+ "what": "two DIAGNOSTIC bounds, not rules: they use the out-of-fold outcomes themselves, cannot be candidates and judge nothing; counted in the budget of 15 (trials 10 and 11)",
+ "variants": [
+  {
+   "id": "O1_Horacle",
+   "rule": "for each sleeve with hour bands and each year Y in 2019-2021: multiplier of band b = clip(mean R of the sleeve chain trades of band b in Y / mean R of all its trades in Y, 0, 2) when that sleeve-year mean is > 0, else 1; the chain is not re-simulated (multiplier 0 kept as a zero stake)",
+   "purpose": "upper bound of what clock stakes on hour bands could add with perfect foresight (includes the noise of the year itself)"
+  },
+  {
+   "id": "O2_Doracle",
+   "rule": "the same with weekdays",
+   "purpose": "upper bound for weekday stakes"
+  }
+ ],
+ "reading_fixed_now": "if the bound at equal weekly swing is below +10 % pooled 2019-2021 (fp), no walk-forward clock stake of this family can meet criterion (a) and the remaining budget is not spent on clock rules; if it is above, the gap between bound and walk-forward is the price of not knowing the year in advance"
+}

@@ -1,0 +1,436 @@
+{
+ "what": "the stake interface (Addendum I hook): stake 1 reproduces P0 in both accounts; a sleeve-year table adds exactly its sleeve-year R; a walk-forward stake refitted every 1 January uses only outcomes known before 1 January minus 7 days and stays within [0, 2]",
+ "detail": {
+  "wf_terciles_example": {
+   "fits": {
+    "2018": null,
+    "2019": {
+     "q_lo": 338.85707193594635,
+     "q_hi": 505.6108013430013,
+     "n_train": 585,
+     "last_outcome_used": "2018-12-24 19:20:00+00:00"
+    },
+    "2020": {
+     "q_lo": 366.79529754217765,
+     "q_hi": 496.746149123687,
+     "n_train": 1089,
+     "last_outcome_used": "2019-12-23 17:22:00+00:00"
+    },
+    "2021": {
+     "q_lo": 336.00955674975177,
+     "q_hi": 465.117814010543,
+     "n_train": 1703,
+     "last_outcome_used": "2020-12-24 23:00:00+00:00"
+    }
+   },
+   "stakes_mean_by_year": {
+    "2018": 1.0,
+    "2019": 1.0126,
+    "2020": 1.2423,
+    "2021": 0.9384
+   },
+   "equal_swing_vs_P0_2019_2021": {
+    "scale_k": 0.9739,
+    "sharpe_ratio": 1.034,
+    "years_up": 3
+   },
+   "note": "a mechanics example of the stake interface, not a candidate (not declared, not judged)"
+  },
+  "generic_signal_table_vs_K1_table": {
+   "orders": 2355,
+   "max_abs_riskbp_diff": 1.3642420526593924e-12,
+   "orders_with_riskbp_diff_over_1bp": 0,
+   "labels_identical": true
+  }
+ },
+ "checks": 64,
+ "failed": 0,
+ "ok": true,
+ "failures": [],
+ "rows": [
+  {
+   "field": "const_1.sum.n",
+   "expected": 5205,
+   "got": 5205,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.total",
+   "expected": 788.59,
+   "got": 788.59,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.exp",
+   "expected": 0.1515,
+   "got": 0.1515,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.worst_week_R",
+   "expected": -12.54,
+   "got": -12.54,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.max_dd_R_weekly",
+   "expected": 21.03,
+   "got": 21.03,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.weekly_sharpe_annualised",
+   "expected": 2.873,
+   "got": 2.873,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2018.n",
+   "expected": 1224,
+   "got": 1224,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2018.exp",
+   "expected": 0.1902,
+   "got": 0.1902,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2018.total",
+   "expected": 232.76,
+   "got": 232.76,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2018.win",
+   "expected": 0.4453,
+   "got": 0.4453,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2018.avg_loss",
+   "expected": -0.6647,
+   "got": -0.6647,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2018.pf",
+   "expected": 1.516,
+   "got": 1.516,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2019.n",
+   "expected": 1234,
+   "got": 1234,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2019.exp",
+   "expected": 0.145,
+   "got": 0.145,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2019.total",
+   "expected": 178.9,
+   "got": 178.9,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2019.win",
+   "expected": 0.4287,
+   "got": 0.4287,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2019.avg_loss",
+   "expected": -0.6092,
+   "got": -0.6092,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2019.pf",
+   "expected": 1.417,
+   "got": 1.417,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2020.n",
+   "expected": 1310,
+   "got": 1310,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2020.exp",
+   "expected": 0.2061,
+   "got": 0.2061,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2020.total",
+   "expected": 270.0,
+   "got": 270.0,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2020.win",
+   "expected": 0.4695,
+   "got": 0.4695,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2020.avg_loss",
+   "expected": -0.656,
+   "got": -0.656,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2020.pf",
+   "expected": 1.592,
+   "got": 1.592,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2021.n",
+   "expected": 1437,
+   "got": 1437,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2021.exp",
+   "expected": 0.0744,
+   "got": 0.0744,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2021.total",
+   "expected": 106.92,
+   "got": 106.92,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2021.win",
+   "expected": 0.4537,
+   "got": 0.4537,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2021.avg_loss",
+   "expected": -0.6581,
+   "got": -0.6581,
+   "ok": true
+  },
+  {
+   "field": "const_1.sum.by_year.2021.pf",
+   "expected": 1.207,
+   "got": 1.207,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.n",
+   "expected": 4877,
+   "got": 4877,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.total",
+   "expected": 793.4,
+   "got": 793.4,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.exp",
+   "expected": 0.1627,
+   "got": 0.1627,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.worst_week_R",
+   "expected": -12.54,
+   "got": -12.54,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.max_dd_R_weekly",
+   "expected": 22.96,
+   "got": 22.96,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.weekly_sharpe_annualised",
+   "expected": 2.905,
+   "got": 2.905,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2018.n",
+   "expected": 1148,
+   "got": 1148,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2018.exp",
+   "expected": 0.2154,
+   "got": 0.2154,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2018.total",
+   "expected": 247.25,
+   "got": 247.25,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2018.win",
+   "expected": 0.4503,
+   "got": 0.4503,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2018.avg_loss",
+   "expected": -0.6744,
+   "got": -0.6744,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2018.pf",
+   "expected": 1.581,
+   "got": 1.581,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2019.n",
+   "expected": 1162,
+   "got": 1162,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2019.exp",
+   "expected": 0.1656,
+   "got": 0.1656,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2019.total",
+   "expected": 192.43,
+   "got": 192.43,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2019.win",
+   "expected": 0.4372,
+   "got": 0.4372,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2019.avg_loss",
+   "expected": -0.6204,
+   "got": -0.6204,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2019.pf",
+   "expected": 1.474,
+   "got": 1.474,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2020.n",
+   "expected": 1218,
+   "got": 1218,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2020.exp",
+   "expected": 0.2139,
+   "got": 0.2139,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2020.total",
+   "expected": 260.59,
+   "got": 260.59,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2020.win",
+   "expected": 0.4647,
+   "got": 0.4647,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2020.avg_loss",
+   "expected": -0.6693,
+   "got": -0.6693,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2020.pf",
+   "expected": 1.597,
+   "got": 1.597,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2021.n",
+   "expected": 1349,
+   "got": 1349,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2021.exp",
+   "expected": 0.069,
+   "got": 0.069,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2021.total",
+   "expected": 93.13,
+   "got": 93.13,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2021.win",
+   "expected": 0.4477,
+   "got": 0.4477,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2021.avg_loss",
+   "expected": -0.6709,
+   "got": -0.6709,
+   "ok": true
+  },
+  {
+   "field": "const_1.capped.by_year.2021.pf",
+   "expected": 1.186,
+   "got": 1.186,
+   "ok": true
+  },
+  {
+   "field": "sleeve_year {2020: 2} on noise30: P0 total + noise30's 2020 R",
+   "expected": 809.6,
+   "got": 809.6,
+   "ok": true
+  },
+  {
+   "field": "wf_terciles riskbp brk72 ethusd: every yearly fit uses only outcomes known before 1 January minus 7 days",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "wf_terciles stakes within [0, 2]",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "generic signal table labels (each order alone) identical to synthesis_B's K1 table",
+   "expected": true,
+   "got": true,
+   "ok": true
+  }
+ ]
+}

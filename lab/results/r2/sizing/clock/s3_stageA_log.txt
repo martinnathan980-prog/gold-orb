@@ -1,0 +1,14 @@
+resimulated us100 [3s]
+resimulated xauusd [6s]
+resimulated btcusd [9s]
+resimulated ethusd [10s]
+P1_H0       fp Sharpe 2.745 -> 2.685 (x0.978, years up 1, k 1.002) total@eq 555.8 -> 543.6 | stress x0.986 | by year [(2019, 2.3952, 2.4045), (2020, 3.7066, 3.5426), (2021, 2.0367, 2.011)] | 2018 info x0.994 | abc False
+P2_Hhalf    fp Sharpe 2.745 -> 2.716 (x0.989, years up 1, k 1.001) total@eq 555.8 -> 549.9 | stress x0.993 | by year [(2019, 2.3952, 2.3982), (2020, 3.7066, 3.6282), (2021, 2.0367, 2.0249)] | 2018 info x0.998 | abc False
+P3_D0       fp Sharpe 2.745 -> 2.639 (x0.961, years up 1, k 1.046) total@eq 555.8 -> 534.3 | stress x0.969 | by year [(2019, 2.3952, 2.0772), (2020, 3.7066, 3.8938), (2021, 2.0367, 1.8337)] | 2018 info x1.035 | abc False
+P4_Dhalf    fp Sharpe 2.745 -> 2.731 (x0.995, years up 1, k 1.028) total@eq 555.8 -> 553.0 | stress x0.998 | by year [(2019, 2.3952, 2.3275), (2020, 3.7066, 3.8146), (2021, 2.0367, 1.9462)] | 2018 info x1.019 | abc False
+P5_Hbest    fp Sharpe 2.745 -> 2.719 (x0.991, years up 1, k 0.979) total@eq 555.8 -> 550.6 | stress x0.988 | by year [(2019, 2.3952, 2.3482), (2020, 3.7066, 3.7201), (2021, 2.0367, 1.9693)] | 2018 info x0.991 | abc False
+P6_Dbest    fp Sharpe 2.745 -> 2.699 (x0.983, years up 1, k 0.949) total@eq 555.8 -> 546.4 | stress x0.982 | by year [(2019, 2.3952, 2.2797), (2020, 3.7066, 3.733), (2021, 2.0367, 1.9564)] | 2018 info x1.006 | abc False
+P7_HD0      fp Sharpe 2.745 -> 2.562 (x0.933, years up 0, k 1.044) total@eq 555.8 -> 518.8 | stress x0.952 | by year [(2019, 2.3952, 2.0437), (2020, 3.7066, 3.7047), (2021, 2.0367, 1.8372)] | 2018 info x1.031 | abc False
+P8_HDhalf   fp Sharpe 2.745 -> 2.694 (x0.981, years up 1, k 1.028) total@eq 555.8 -> 545.5 | stress x0.990 | by year [(2019, 2.3952, 2.3085), (2020, 3.7066, 3.7261), (2021, 2.0367, 1.9491)] | 2018 info x1.017 | abc False
+P9_FDhalf   fp Sharpe 2.745 -> 2.745 (x1.000, years up 0, k 1.000) total@eq 555.8 -> 555.8 | stress x0.996 | by year [(2019, 2.3952, 2.3952), (2020, 3.7066, 3.7066), (2021, 2.0367, 2.0367)] | 2018 info x1.000 | abc False
+done [13s]
