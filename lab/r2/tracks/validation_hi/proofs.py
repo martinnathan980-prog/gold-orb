@@ -28,20 +28,30 @@ plus the harness's own checks:
     (i) the guard: review F1 (the declaration bound to the spec: PROTOCOL_V3.md as it stands is refused), A1 (only
         the protocol's real path is accepted: proofs.json, the rehearsal JSON, proof_i_guard.json and copies of them
         in /tmp, the scratchpad, the harness folder and lab/results/ are refused although their text quotes the
-        track and the spec's sha256 -- checked again after those files are written), F2 (run once, fixed output
-        path, second access), F3 / A2 / A3 (the hardened read guard: probes refused before any byte is read, the
-        holdout paths and lab/ CSVs through open() included); no line written to val_access.log; every read of the
-        run with its filter
+        track and the spec's sha256 -- checked again after those files are written), fix 1 (A1 made atomic: the
+        file opened once must be the protocol, st_dev and st_ino; deterministic symlink races, with a STAND-IN text
+        for the protocol, are refused), fix 2 (a look CUT other than the end of the look window, 2026-01-01, is
+        refused before anything is logged), F2 (run once, fixed output path, second access), F3 / A2 / A3 and fix 4
+        (the hardened read guard: probes refused before any byte is read, the holdout paths and lab/ CSVs through
+        open() included, tokenize.open and tarfile.open now too, on absent paths), fix 5 (synthesis A's frozen
+        files: a difference refuses a look before anything is logged); look.py's main() end to end in CHILD
+        processes with vhi_run replaced by a stub and the access log and the look folder redirected into the
+        scratch folder (no look-CUT run of look.py ever has the real val_access.log as its log); val_access.log
+        unchanged (line count and sha256); every read of the run with its filter
     (j) look.py --cut 2022-01-01 with the spec AS IT STANDS (changes_in_look = K1, K2, K3 and synthesis A's five), in
-        its own process: equal to the proofs' run on everything both contain, nothing logged; A5: its meta records
-        the sha256 of every harness, lens and strategy file it imported (equal to the files, and to synthesis A's
-        frozen hashes)
+        its own process: equal to the proofs' run on everything both contain, nothing logged, exit status 0; A5: its
+        meta records the sha256 of every harness, lens and strategy file it imported (equal to the files, and to
+        synthesis A's frozen hashes); fix 5: its meta records synthesis A's frozen files check, made before the run;
+        fix 3: look.py exits 3 after writing its output when the check first fails (a reduced in-sample spec with
+        one official GOLD_FRI_PM row changed in memory, output in the scratch folder)
     (k) moving the CUT: look.py at CUT 2021-01-01 (every change) against the CUT 2022 run
     (l) review F10: the verdicts block, synthesis_B's declared criteria computed mechanically, every value equal to
         the run's own statistics and to synthesis_B's published figures
     (m) synthesis A's criteria V1-V5 (verdicts) and its report (res["synthesis_A"]) against synthesis A's published
         in-sample rehearsal of its own criteria, its changed sleeves, its frozen equal-swing factors and its
-        portfolios; the check first ("stop and report") reported and gating synthesis A's verdicts
+        portfolios; the check first ("stop and report") reported and gating synthesis A's verdicts; fix 5: the check
+        first shows every '@payoff' reference against its P0 sleeve (identical in sample; a difference simulated on
+        a copy gives one WARNING line with its counts, not a failure)
 
     env -u LOOK_DECLARED NUMBA_CACHE_DIR=/tmp/numba_validation_hi PYTHONDONTWRITEBYTECODE=1 \\
         python3 lab/r2/tracks/validation_hi/proofs.py
@@ -86,7 +96,15 @@ def hi_lines():
     return sub, len(G.prior_look_lines())
 
 
+def log_state():
+    """[line count, sha256] of the real results/val_access.log: the proofs never change it."""
+    with open(G.VAL_LOG, "rb") as f:
+        raw = f.read()
+    return [raw.count(b"\n"), hashlib.sha256(raw).hexdigest()]
+
+
 LOG_BEFORE = hi_lines()
+LOG_STATE_BEFORE = log_state()
 SPEC_SHA = hashlib.sha256(open(SPEC, "rb").read()).hexdigest()
 cut = G.open_run(CUT, "proofs_in_sample")
 assert not G.is_look(cut)
@@ -1000,16 +1018,19 @@ def proof_h(res, signals):
 
 # ------------------------------------------------------------------------------------------------- (i)
 def plan_tests():
-    """F1 / A1 / F2 on look.plan (pure: nothing is opened, read or logged beyond the declared text and the access log).
-    The temporary declaration quotes the sha256 of a DUMMY spec, never the real one. A1 refuses it (it is not the
-    protocol); to exercise the F2 rules behind the declaration, vhi_guard.DECLARED_PATH is pointed at the temporary
-    text for those plan() calls only (restored in `finally`; open_run is never called meanwhile)."""
+    """F1 / A1 / F2 / fix 1 / fix 2 / fix 5 on look.plan (pure: nothing is opened, read or logged beyond the declared
+    text, the access log, synthesis_A.json, a copy of it and the files it froze). The temporary declaration quotes the
+    sha256 of a DUMMY spec (with a look window ending 2026-01-01), never the real one. A1 refuses it (it is not the
+    protocol); to exercise the rules behind the declaration, vhi_guard.DECLARED_PATH is pointed at the temporary text
+    for those plan() calls only, and vhi_guard.SYNTH_A_JSON at an altered copy of synthesis_A.json for two of them
+    (both restored in `finally`; open_run is never called meanwhile)."""
     import importlib.util
     sp = importlib.util.spec_from_file_location("vhi_look_entry", os.path.join(HERE, "look.py"))
     LK = importlib.util.module_from_spec(sp)
     sp.loader.exec_module(LK)
     raw_real = open(SPEC, "rb").read()
-    raw = json.dumps({"name": "vhi_proof_dummy_spec"}).encode()
+    raw = json.dumps({"name": "vhi_proof_dummy_spec", "windows": {"look": {"eval": ["2022-01-01", "2026-01-01"]}}}).encode()
+    raw_nowin = json.dumps({"name": "vhi_proof_dummy_spec_without_a_look_window"}).encode()
     sha = hashlib.sha256(raw).hexdigest()
     tmp = tempfile.mkdtemp(prefix="vhi_plan_")
     decl = os.path.join(tmp, "addendum_test.md")
@@ -1023,20 +1044,30 @@ def plan_tests():
     os.makedirs(lookd)
     os.makedirs(lookd2)
     open(os.path.join(lookd2, "vhi_proof_dummy_spec__cut2026-01-01.started"), "w").close()
+    sa_bad = os.path.join(tmp, "synthesis_A_portfolio_sha_changed.json")       # portfolio.py's frozen sha256 changed
+    with open(SYNTH_A, "rb") as f:
+        sa_raw = f.read()
+    with open(sa_bad, "wb") as f:
+        f.write(sa_raw.replace(L.SYNTH_A_PORTFOLIO_SHA256.encode(),
+                               hashlib.sha256(b"vhi proofs: not portfolio.py").hexdigest().encode()))
     env = {"LOOK_DECLARED": decl}
     rows, out = [], {}
 
-    def attempt(name, want_ok, **kw):
+    def attempt(name, want_ok, why_has=None, **kw):
+        """look.plan(**kw); returns the plan (a dict) when it is allowed, its refusal message otherwise."""
         try:
             p = LK.plan(**kw)
-            got, why = True, {k: p[k] for k in ("out", "marker", "label", "stem", "is_look")}
+            got, why = True, p
+            out[name] = {k: p[k] for k in ("out", "marker", "label", "stem", "is_look")}
         except G.GuardError as e:
-            got, why = False, str(e)[:300]
-        rows.append({"field": f"plan: {name}", "expected": want_ok, "got": got, "ok": got == want_ok})
-        out[name] = why
+            got, why = False, str(e)[:400]
+            out[name] = why
+        ok = got == want_ok and (why_has is None or (isinstance(why, str) and why_has in why))
+        rows.append({"field": f"plan: {name}", "expected": want_ok, "got": got, "ok": ok,
+                     **({"why": why} if isinstance(why, str) else {})})
         return why
 
-    saved_decl = G.DECLARED_PATH
+    saved_decl, saved_sa = G.DECLARED_PATH, G.SYNTH_A_JSON
     try:
         attempt("the real spec with LOOK_DECLARED = PROTOCOL_V3.md as it stands: refused (F1)", False,
                 cut="2026-01-01", raw=raw_real, env={"LOOK_DECLARED": PROTOCOL})
@@ -1077,8 +1108,47 @@ def plan_tests():
         attempt("a rehearsal with --second-access: refused", False, cut="2022-01-01", raw=raw, env={}, second_access="x")
         attempt("CUT 2026-01-02 with a declaration quoting the spec's sha256: refused", False, cut="2026-01-02", raw=raw,
                 env=env, log_path=log0, look_dir=lookd)
+        # ---- fix 2: a look CUT other than the end of the spec's look window, the declaration valid: refused first
+        for c_ in ("2024-01-01", "2025-12-31"):
+            attempt(f"fix 2: a look at CUT {c_} (inside the look window, not its end), the declaration valid: refused "
+                    "before the declared file is read and before anything is logged", False,
+                    why_has="end of the spec's look window", cut=c_, raw=raw, env=env, log_path=log0, look_dir=lookd)
+        attempt("fix 2: a look of a spec without a look window: refused", False, why_has="no look window",
+                cut="2026-01-01", raw=raw_nowin, env=env, log_path=log0, look_dir=lookd)
+        # ---- fix 1: the declaration plan records is the read it judged (one read, from the same open file)
+        d = p.get("declaration") if isinstance(p, dict) else None
+        d = d or {}
+        decl_sha = hashlib.sha256(open(decl, "rb").read()).hexdigest()
+        okd = (d.get("accepted") is True and d.get("same_file_as_the_protocol") is True and d.get("sha256") == decl_sha
+               and d.get("real_path") == os.path.realpath(decl) and (d.get("identity") or {}).get("same") is True)
+        rows.append({"field": "fix 1: plan records the declaration it judged (read once, from the open file that is the "
+                              "protocol stand-in): accepted, the same file (st_dev, st_ino), its sha256 = the text's",
+                     "expected": True, "got": bool(okd), "ok": bool(okd), "identity": d.get("identity")})
+        # ---- fix 5: synthesis A's frozen files, recorded by plan; a difference refuses a look, not a rehearsal
+        fz = p.get("frozen_check") if isinstance(p, dict) else None
+        fz = fz or {}
+        okf = fz.get("ok") is True and sorted(fz.get("files") or {}) == sorted(G.FROZEN_REQUIRED) \
+            and all(v.get("same") for v in (fz.get("files") or {}).values())
+        rows.append({"field": "fix 5: plan records synthesis A's frozen files check: ok, the 15 files the look uses each "
+                              "equal to its frozen sha256", "expected": True, "got": bool(okf), "ok": bool(okf),
+                     "synthesis_A_json_sha256": fz.get("synthesis_A_json_sha256")})
+        G.SYNTH_A_JSON = sa_bad
+        attempt("fix 5: a look of the dummy spec, the declaration valid, with a copy of synthesis_A.json whose frozen "
+                "sha256 of portfolio.py differs: refused before anything is logged", False, why_has="frozen",
+                cut="2026-01-01", raw=raw, env=env, log_path=log0, look_dir=lookd)
+        pr_ = attempt("fix 5: a rehearsal (CUT 2022-01-01) with the same copy: not refused (in sample the check is "
+                      "recorded)", True, cut="2022-01-01", raw=raw, env={}, out_arg=os.path.join(tmp, "rehearsal_2.json"))
+        G.SYNTH_A_JSON = saved_sa
+        fzr = pr_.get("frozen_check") if isinstance(pr_, dict) else None
+        fzr = fzr or {}
+        port = "r2/tracks/autopsy/synthesis_A/portfolio.py"
+        okr = fzr.get("ok") is False and (fzr.get("files") or {}).get(port, {}).get("same") is False \
+            and any(port in x for x in fzr.get("problems") or [])
+        rows.append({"field": "fix 5: ... and that rehearsal's plan records the problem (ok false, portfolio.py named)",
+                     "expected": True, "got": bool(okr), "ok": bool(okr), "problems": (fzr.get("problems") or [])[:3]})
     finally:
         G.DECLARED_PATH = saved_decl
+        G.SYNTH_A_JSON = saved_sa
         for d_ in (lookd, lookd2):
             for fn in os.listdir(d_):
                 os.unlink(os.path.join(d_, fn))
@@ -1086,13 +1156,150 @@ def plan_tests():
         for fn in os.listdir(tmp):
             os.unlink(os.path.join(tmp, fn))
         os.rmdir(tmp)
-    rows.append({"field": "A1: vhi_guard.DECLARED_PATH is the protocol again after the plan tests", "expected": PROTOCOL,
-                 "got": G.DECLARED_PATH, "ok": G.DECLARED_PATH == PROTOCOL == "/home/user/gold-orb/lab/PROTOCOL_V3.md"})
+    rows.append({"field": "A1: vhi_guard.DECLARED_PATH is the protocol again after the plan tests (and SYNTH_A_JSON is "
+                          "synthesis_A.json again)", "expected": [PROTOCOL, SYNTH_A],
+                 "got": [G.DECLARED_PATH, G.SYNTH_A_JSON],
+                 "ok": G.DECLARED_PATH == PROTOCOL == "/home/user/gold-orb/lab/PROTOCOL_V3.md" and G.SYNTH_A_JSON == SYNTH_A})
     # the real access log and look directory: the look has never run
     prior, started = G.check_run_once()
     rows.append({"field": "the real val_access.log has no autopsy_HI_look line and results/r2/validation_hi/look/ "
                           "no '.started' marker (check_run_once passes)", "expected": [0, 0],
                  "got": [len(prior), len(started)], "ok": len(prior) == 0 and len(started) == 0})
+    return rows, out
+
+
+def race_probes():
+    """Fix 1 (A1 made atomic), in this process and pure: resolve_cut_declared on environment dicts (the process
+    environment is never set), with vhi_guard.DECLARED_PATH pointed at a STAND-IN text for the protocol (it declares a
+    dummy spec; restored in `finally`; the real protocol is never used here). The races are deterministic: the path
+    rule (vhi_guard.declared_path_check) is wrapped so that something is swapped right after its first call -- the
+    link given as LOOK_DECLARED, which pointed to the stand-in when the path rule ran, is re-pointed to a harness
+    output (the reviewer's race); or the stand-in's own entry is replaced by a link; or a directory of its path is.
+    Each is now REFUSED (A1, atomic): the file opened once is not the protocol (st_dev, st_ino), and its text is not
+    read. Controls: the stand-in by its path and a link to it without a race are accepted."""
+    import shutil
+    base = os.path.join(SCRATCH, "vhi_race_probes")
+    shutil.rmtree(base, ignore_errors=True)
+    os.makedirs(base)
+    dummy = json.dumps({"name": "vhi_proof_race_dummy", "windows": {"look": {"eval": ["2022-01-01", "2026-01-01"]}}})
+    dsha = hashlib.sha256(dummy.encode()).hexdigest()
+    rows, out = [], {}
+    saved_path, saved_fn = G.DECLARED_PATH, G.declared_path_check
+
+    def text(p, what):
+        with open(p, "w") as f:
+            f.write(f"{what} (a test text of proofs.py, never the protocol): the look {G.TRACK} is declared; spec "
+                    f"sha256 {dsha}.\n")
+
+    def setup(case):
+        d = os.path.join(base, case)
+        os.makedirs(d)
+        stand = os.path.join(d, "protocol_stand_in.md")
+        text(stand, "Stand-in for the protocol")
+        fake = os.path.join(d, "harness_output_stand_in.json")       # quotes the track and the sha: content rule passes
+        with open(fake, "w") as f:
+            json.dump({"what": "a stand-in for a harness output (a test file of proofs.py)", "track": G.TRACK,
+                       "spec_sha256": dsha}, f)
+        link = os.path.join(d, "link_to_the_protocol_stand_in.md")
+        os.symlink(stand, link)
+        G.DECLARED_PATH = os.path.realpath(stand)
+        assert G.DECLARED_PATH != PROTOCOL
+        return d, stand, fake, link
+
+    def repoint(link, target):                                        # atomic re-point of a link (rename over it)
+        tmp = link + ".new"
+        os.symlink(target, tmp)
+        os.replace(tmp, link)
+
+    def racing(after):
+        """The path rule, wrapped: `after()` runs right after its first call (before the file is opened)."""
+        fired = []
+
+        def w(path):
+            r = saved_fn(path)
+            if not fired:
+                fired.append(True)
+                after()
+            return r
+        return w
+
+    def attempt(name, want, env_path, sha, wrapper=None, why_has=None):
+        G.declared_path_check = wrapper or saved_fn
+        try:
+            _, d = G.resolve_cut_declared("2026-01-01", {"LOOK_DECLARED": env_path}, spec_sha=sha)
+            got, why = True, None
+        except G.GuardError as e:
+            got, why, d = False, str(e), None
+        finally:
+            G.declared_path_check = saved_fn
+        ok = got == want and (why_has is None or (why is not None and why_has in why))
+        rows.append({"field": f"A1 atomic (fix 1): {name}", "expected": want, "got": got, "ok": bool(ok),
+                     "why": (why or "")[:400]})
+        out[name] = {"accepted": got, "why": why, "identity": (d or {}).get("identity")}
+        return got
+
+    try:
+        d, stand, fake, link = setup("controls")
+        attempt("control: the protocol stand-in by its own path: accepted", True, stand, dsha)
+        attempt("control: a link to the protocol stand-in, no race: accepted (a link to the protocol is allowed; judged "
+                "on the protocol's text)", True, link, dsha)
+        attempt("control: the harness-output stand-in by its own path: refused by the path rule (A1)", False, fake,
+                dsha, why_has="(A1)")
+        dc = G.declaration_check(fake, dsha)
+        rows.append({"field": "A1 atomic (fix 1): control: the harness-output stand-in's own text passes the content rule "
+                              "(so in the races below only A1 can refuse it)", "expected": True, "got": dc["ok"],
+                     "ok": dc["ok"] is True})
+        # the reviewer's race: a link to the protocol when the path rule runs, re-pointed to a harness output after it
+        d, stand, fake, link = setup("race_link_repointed_to_a_harness_output")
+        attempt("RACE: LOOK_DECLARED = a link that points to the protocol stand-in when the path rule runs and is "
+                "re-pointed to a harness output right after it: REFUSED, the harness output's text not read", False,
+                link, dsha, racing(lambda: repoint(link, fake)), why_has="(A1, atomic)")
+        moved = os.path.realpath(link) == os.path.realpath(fake)
+        by_name = G.declaration_check(link, dsha)["ok"]               # what a read by name (the old code) would see
+        rows.append({"field": "A1 atomic (fix 1): ... the race did happen (the link now points to the harness output), "
+                              "and the old logic (the path rule, then the path opened again by name) would have read a "
+                              "text that passes the content rule, i.e. accepted it", "expected": [True, True],
+                     "got": [moved, by_name], "ok": moved and by_name is True})
+        # the same race onto the real proofs.json, which quotes the track and this spec's sha256 (the reviewer's case)
+        pj = os.path.join(OUT, "proofs.json")
+        if os.path.exists(pj):
+            d, stand, fake, link = setup("race_link_repointed_to_proofs_json")
+            content_alone = G.declaration_check(pj, SPEC_SHA)["ok"]
+            attempt("RACE: the same, re-pointed to results/r2/validation_hi/proofs.json, with this spec's sha256: "
+                    "REFUSED, proofs.json not read", False, link, SPEC_SHA, racing(lambda: repoint(link, pj)),
+                    why_has="(A1, atomic)")
+            rows.append({"field": "A1 atomic (fix 1): ... proofs.json's text alone passes the content rule for this spec "
+                                  "(only A1 refuses it)", "expected": True, "got": content_alone,
+                         "ok": content_alone is True})
+        # the protocol's own entry replaced by a link right after the path rule: os.stat follows it, os.lstat does not
+        d, stand, fake, link = setup("race_protocol_entry_replaced_by_a_link")
+        attempt("RACE: LOOK_DECLARED = the protocol stand-in's own path, whose entry is replaced by a link to the harness "
+                "output right after the path rule: REFUSED (os.lstat: the protocol's entry is not a regular file)",
+                False, stand, dsha, racing(lambda: repoint(stand, fake)), why_has="(A1, atomic)")
+        # a directory of the protocol's path replaced by a link to another directory holding a file of the same name
+        d = os.path.join(base, "race_directory_replaced_by_a_link")
+        os.makedirs(os.path.join(d, "real"))
+        os.makedirs(os.path.join(d, "other"))
+        stand = os.path.join(d, "real", "PROTOCOL_STAND_IN.md")
+        text(stand, "Stand-in for the protocol")
+        text(os.path.join(d, "other", "PROTOCOL_STAND_IN.md"), "Another file with the protocol stand-in's name")
+        G.DECLARED_PATH = os.path.realpath(stand)
+
+        def swap_dir():
+            os.rename(os.path.join(d, "real"), os.path.join(d, "real_moved"))
+            os.symlink(os.path.join(d, "other"), os.path.join(d, "real"))
+        attempt("RACE: a directory of the protocol stand-in's path replaced by a link to another directory holding a "
+                "file of the same name, right after the path rule: REFUSED (the protocol's path has a linked "
+                "component; os.stat and os.lstat both follow it)", False, stand, dsha, racing(swap_dir),
+                why_has="(A1, atomic)")
+    finally:
+        G.declared_path_check = saved_fn
+        G.DECLARED_PATH = saved_path
+        shutil.rmtree(base, ignore_errors=True)
+    rows.append({"field": "A1 atomic (fix 1): vhi_guard.DECLARED_PATH and the path rule are restored after the race "
+                          "probes; their test files are deleted", "expected": [PROTOCOL, True, False],
+                 "got": [G.DECLARED_PATH, G.declared_path_check is saved_fn, os.path.exists(base)],
+                 "ok": G.DECLARED_PATH == PROTOCOL and G.declared_path_check is saved_fn and not os.path.exists(base)})
     return rows, out
 
 
@@ -1102,15 +1309,32 @@ def _open_close(path, mode="r"):
     f.close()
 
 
+def _open_run_look_redirected():
+    """vhi_guard.open_run of a look in this process, with the access log and the look folder pointed at a scratch
+    folder for the call (restored in `finally`): it must be refused (no LOOK_DECLARED; one CUT per process) before
+    anything is logged."""
+    scr = os.path.join(SCRATCH, "vhi_open_run_probe")
+    os.makedirs(scr, exist_ok=True)
+    saved = G.VAL_LOG, G.LOOK_DIR
+    G.VAL_LOG, G.LOOK_DIR = os.path.join(scr, "val_access_scratch.log"), os.path.join(scr, "look")
+    try:
+        G.open_run("2026-01-01", "should_not_be_written", spec_sha=SPEC_SHA,
+                   marker=os.path.join(G.LOOK_DIR, "never.started"))
+    finally:
+        G.VAL_LOG, G.LOOK_DIR = saved
+
+
 def guard_probes():
-    """F3, A2, A3: reads the hardened guard must refuse inside this very process (each raises before any byte is
-    read). Probes of sensitive files either use a path that does not exist (a failing guard then raises
+    """F3, A2, A3, fix 4: reads the hardened guard must refuse inside this very process (each raises before any byte
+    is read). Probes of sensitive files either use a path that does not exist (a failing guard then raises
     FileNotFoundError, which counts as NOT refused, and nothing is read) or only open and close a handle; the
     numpy / pyarrow CSV probes read a harmless one-line CSV written for the purpose under lab/results/r2/validation_hi/
-    (deleted afterwards)."""
+    (deleted afterwards). The fix 4 probes (tokenize.open, tarfile.open 'r:', numpy.fromfile) use absent paths only."""
     import bz2
     import csv
     import gzip
+    import tarfile
+    import tokenize
     import pyarrow.csv as pacsv
     import pyarrow.json as pajson
     FR = os.path.join(LAB, "data", "fp", "ethusd_m1.parquet")
@@ -1165,9 +1389,8 @@ def guard_probes():
         "nq_default_leader_loader": lambda: L.registry()["rules"]["nq_btc_follow"][1].__globals__["_LEADERS"].clear()
         or L.registry()["rules"]["nq_btc_follow"][1].__globals__["_leader"]("us100"),
         "val_access_log_at_cut_2022": lambda: G.log_access("should_not_be_written"),
-        "open_run of a look in this process (no LOOK_DECLARED; one CUT per process)":
-            lambda: G.open_run("2026-01-01", "should_not_be_written", spec_sha=SPEC_SHA,
-                               marker=os.path.join(G.LOOK_DIR, "never.started")),
+        "open_run of a look in this process (no LOOK_DECLARED; one CUT per process; the access log and the look "
+        "folder pointed at the scratch folder for the call)": _open_run_look_redirected,
         # ---- A2: a 'holdout' component under lab/, and results/holdout_run.log, at every CUT, every reader
         "A2 open() of results/holdout/holdout_stdout.txt (opened and closed if it passed, nothing read)":
             lambda: _open_close(os.path.join(HO, "holdout_stdout.txt")),
@@ -1206,6 +1429,19 @@ def guard_probes():
         "A3 pyarrow.csv.read_csv of a lab CSV off the allowlist (the harmless one)": lambda: pacsv.read_csv(HARMLESS),
         "A3 pyarrow.csv.open_csv of a lab CSV off the allowlist (the harmless one)": lambda: pacsv.open_csv(HARMLESS),
         "A3 pyarrow.csv.read_csv of a buffer": lambda: pacsv.read_csv(io.BytesIO(b"a\n1\n")),
+        # ---- fix 4: modules that captured the builtin open at their import, now pointed at the guarded open (absent
+        # paths only: a failing guard raises FileNotFoundError, counted as NOT refused, and nothing is read)
+        "fix 4 tokenize.open of a path under results/holdout/ (absent)":
+            lambda: tokenize.open(os.path.join(HO, "__vhi_absent__.py")),
+        "fix 4 tokenize.open of a lab CSV (absent)": lambda: tokenize.open(ABSENT_CSV),
+        "fix 4 tarfile.open(..., 'r:') of a path under results/holdout/ (absent)":
+            lambda: tarfile.open(os.path.join(HO, "__vhi_absent__.tar"), "r:"),
+        "fix 4 tarfile.open(..., 'r:') of a path under lab/data/ (absent)":
+            lambda: tarfile.open(os.path.join(LAB, "data", "__vhi_absent__.tar"), "r:"),
+        "fix 4 tarfile.open(..., 'r:') of a lab CSV name (absent)": lambda: tarfile.open(ABSENT_CSV, "r:"),
+        "fix 4 numpy.fromfile of a path under results/holdout/ (absent; numpy 2.5 opens a path with builtins.open)":
+            lambda: np.fromfile(os.path.join(HO, "__vhi_absent__.bin")),
+        "fix 4 numpy.fromfile of a lab CSV (absent)": lambda: np.fromfile(ABSENT_CSV),
     }
     controls = {
         "A3 open() of the allowlisted results/r2/autopsy/payoff/variants_table.csv is allowed":
@@ -1229,9 +1465,12 @@ def guard_probes():
                 refused, why = False, f"NOT REFUSED BY THE GUARD: {e!r}"[:200]
             rows.append({"field": f"refused in process: {name}", "expected": True, "got": refused, "ok": refused,
                          "why": why})
-        nothing = len(G.reads()) == n0 and not os.path.exists(os.path.join(G.LOOK_DIR, "never.started"))
-        rows.append({"field": "the refused probes recorded no read and wrote no marker", "expected": True,
-                     "got": nothing, "ok": nothing})
+        scr_probe = os.path.join(SCRATCH, "vhi_open_run_probe")
+        nothing = (len(G.reads()) == n0 and not os.path.exists(os.path.join(G.LOOK_DIR, "never.started"))
+                   and not os.path.exists(os.path.join(scr_probe, "look", "never.started"))
+                   and not os.path.exists(os.path.join(scr_probe, "val_access_scratch.log")))
+        rows.append({"field": "the refused probes recorded no read, logged nothing and wrote no marker (real and scratch "
+                              "folders)", "expected": True, "got": nothing, "ok": nothing})
         for name, fn in controls.items():
             try:
                 fn()
@@ -1248,11 +1487,12 @@ def guard_probes():
     from numpy.lib import _datasource as npds
     installed = all(getattr(f, "__vhi_guarded__", False) for f in (
         pd.read_parquet, pd.read_csv, pq.read_table, pqc.read_table, pq.read_pandas, pads.dataset, open, io.open,
-        npds._file_openers._file_openers[None], bz2._builtin_open, pacsv.read_csv, pacsv.open_csv, pajson.read_json))
+        npds._file_openers._file_openers[None], bz2._builtin_open, tokenize._builtin_open, tarfile.bltn_open,
+        pacsv.read_csv, pacsv.open_csv, pajson.read_json))
     rows.append({"field": "the guard wraps pandas.read_parquet / read_csv, pyarrow.parquet(.core).read_table, read_pandas, "
                           "pyarrow.dataset.dataset, builtins.open and io.open, numpy's file opener, bz2's open, "
-                          "pyarrow.csv.read_csv / open_csv and pyarrow.json.read_json", "expected": True,
-                 "got": installed, "ok": installed})
+                          "tokenize's and tarfile's captured open (fix 4), pyarrow.csv.read_csv / open_csv and "
+                          "pyarrow.json.read_json", "expected": True, "got": installed, "ok": installed})
     return rows
 
 
@@ -1330,6 +1570,217 @@ def declared_file_probes(stage):
     return rows, out
 
 
+ENTRY_CHILD = r'''
+import sys
+sys.dont_write_bytecode = True
+"""A child process of proofs.py (proof i): look.py's main() end to end with vhi_run replaced by a STUB (its run_spec
+only records that it was reached, then exits 97), and the access log and the look folder redirected into a scratch
+folder (vhi_guard.VAL_LOG, vhi_guard.LOOK_DIR). Nothing real can run: the stub has no data code.
+argv: <harness folder> <scratch folder> <options as JSON>: {"case": name, "argv": look.py's arguments,
+  "declared_path": a stand-in text for the protocol (vhi_guard.DECLARED_PATH is pointed at it; absent = unchanged),
+  "synth_a_json": a copy of synthesis_A.json (vhi_guard.SYNTH_A_JSON), "race": [link, target] (the link is re-pointed
+  to the target right after the first call of the path rule)}"""
+import importlib.util
+import json
+import os
+import types
+
+HERE, SCR, OPT = sys.argv[1], sys.argv[2], json.loads(sys.argv[3])
+CASE = OPT["case"]
+PROTOCOL = "/home/user/gold-orb/lab/PROTOCOL_V3.md"
+sys.path.insert(0, HERE)
+stub = types.ModuleType("vhi_run")
+
+
+def run_spec(spec, cut, progress=print):
+    with open(os.path.join(SCR, f"RUN_SPEC_REACHED_{CASE}"), "a") as f:
+        f.write(json.dumps({"cut": str(cut), "spec": spec.get("name")}) + "\n")
+    raise SystemExit(97)
+
+
+stub.run_spec = run_spec
+sys.modules["vhi_run"] = stub
+import vhi_guard as G  # noqa: E402
+
+real_log = os.path.realpath(G.VAL_LOG)
+G.VAL_LOG = os.path.join(SCR, "val_access_scratch.log")
+G.LOOK_DIR = os.path.join(SCR, "look")
+assert os.path.realpath(G.VAL_LOG) != real_log
+assert os.path.realpath(G.VAL_LOG).startswith(os.path.realpath(SCR) + os.sep)
+assert os.path.realpath(os.environ.get("LOOK_DECLARED") or "/") != PROTOCOL
+if OPT.get("declared_path"):
+    G.DECLARED_PATH = os.path.realpath(OPT["declared_path"])
+    assert G.DECLARED_PATH != PROTOCOL
+if OPT.get("synth_a_json"):
+    G.SYNTH_A_JSON = OPT["synth_a_json"]
+if OPT.get("race"):
+    link, target = OPT["race"]
+    orig = G.declared_path_check
+    fired = []
+
+    def racing(path):
+        r = orig(path)
+        if not fired:
+            fired.append(True)
+            os.symlink(target, link + ".new")
+            os.replace(link + ".new", link)
+        return r
+
+    G.declared_path_check = racing
+sp = importlib.util.spec_from_file_location("vhi_look_entry_child", os.path.join(HERE, "look.py"))
+LK = importlib.util.module_from_spec(sp)
+sp.loader.exec_module(LK)
+assert LK.G is G and LK.G.VAL_LOG == G.VAL_LOG
+sys.argv = ["look.py"] + OPT["argv"]
+rep = {"case": CASE, "argv": OPT["argv"], "LOOK_DECLARED": os.environ.get("LOOK_DECLARED"),
+       "DECLARED_PATH": G.DECLARED_PATH, "message": None}
+try:
+    LK.main()
+    rep["exit"] = 0
+except SystemExit as e:
+    if isinstance(e.code, int) or e.code is None:
+        rep["exit"] = e.code or 0
+    else:
+        rep["exit"], rep["message"] = 1, str(e.code)
+except Exception as e:  # noqa: BLE001 -- recorded: the parent's row then fails
+    rep["exit"], rep["message"] = "exception", repr(e)[:500]
+rep["guard_installed"] = G._STATE["installed"]
+rep["logged"] = G._STATE["logged"]
+rep["marker"] = G._STATE["marker"]
+rep["log_lines"] = open(G.VAL_LOG).read().splitlines() if os.path.exists(G.VAL_LOG) else []
+rep["markers"] = sorted(os.listdir(G.LOOK_DIR)) if os.path.isdir(G.LOOK_DIR) else []
+rep["run_spec_reached"] = os.path.exists(os.path.join(SCR, f"RUN_SPEC_REACHED_{CASE}"))
+with open(os.path.join(SCR, f"report_{CASE}.json"), "w") as f:
+    json.dump(rep, f, indent=1, default=str)
+'''
+
+
+def entry_probes():
+    """look.py's main() end to end in CHILD processes (ENTRY_CHILD, run with python3 -I): vhi_run replaced by a stub
+    (no data code), the access log and the look folder redirected into the scratch folder, and LOOK_DECLARED either
+    unset or set IN THE CHILD ONLY to a STAND-IN text for the protocol (vhi_guard.DECLARED_PATH pointed at it in the
+    child; the stand-in declares a dummy spec whose look window ends 2026-01-01), or to a link to it. Never the
+    protocol. Fix 2: --cut 2024-01-01 and 2025-12-31 are refused with nothing logged and no marker; fix 5: a copy of
+    synthesis_A.json with another frozen sha256 refuses the look before anything is logged; fix 1: the symlink race
+    end to end; the positive control (the gates open in order up to the stub: one scratch log line, the marker, the
+    guard), run once and a second access; and the look without a declaration or after 2026-01-01 (these two ran as
+    plain look.py commands before; they now run with the log redirected too). The real val_access.log is compared
+    before and after (line count and sha256)."""
+    import shutil
+    import subprocess
+    base = os.path.join(SCRATCH, "vhi_entry_probes")
+    shutil.rmtree(base, ignore_errors=True)
+    os.makedirs(base)
+    raw = json.dumps({"name": "vhi_proof_entry_dummy", "windows": {"look": {"eval": ["2022-01-01", "2026-01-01"]}}}).encode()
+    spec_d = os.path.join(base, "dummy_spec.json")
+    with open(spec_d, "wb") as f:
+        f.write(raw)
+    dsha = hashlib.sha256(raw).hexdigest()
+    stand = os.path.join(base, "protocol_stand_in.md")
+    with open(stand, "w") as f:
+        f.write(f"Stand-in for the protocol (a test text of proofs.py, never the protocol): the look {G.TRACK} is "
+                f"declared; spec sha256 {dsha}.\n")
+    fake = os.path.join(base, "harness_output_stand_in.json")
+    with open(fake, "w") as f:
+        json.dump({"what": "a stand-in for a harness output (a test file of proofs.py)", "track": G.TRACK,
+                   "spec_sha256": dsha}, f)
+    link = os.path.join(base, "link_to_the_protocol_stand_in.md")
+    os.symlink(stand, link)
+    sa_bad = os.path.join(base, "synthesis_A_portfolio_sha_changed.json")
+    with open(SYNTH_A, "rb") as f:
+        sa_raw = f.read()
+    with open(sa_bad, "wb") as f:
+        f.write(sa_raw.replace(L.SYNTH_A_PORTFOLIO_SHA256.encode(),
+                               hashlib.sha256(b"vhi proofs: not portfolio.py").hexdigest().encode()))
+    for p_ in (stand, link, fake):
+        assert os.path.realpath(p_) != PROTOCOL
+    log0 = log_state()
+    env0 = {k: v for k, v in os.environ.items() if k != "LOOK_DECLARED"}
+    rows, out = [], {}
+
+    def child(case, argv, look_declared=None, folder=None, **opt):
+        scr = os.path.join(base, folder or case)
+        os.makedirs(scr, exist_ok=True)
+        env = dict(env0)
+        if look_declared:
+            assert os.path.realpath(look_declared) != PROTOCOL
+            env["LOOK_DECLARED"] = look_declared
+        o = dict(opt, argv=argv, case=case)
+        p = subprocess.run([sys.executable, "-I", "-c", ENTRY_CHILD, HERE, scr, json.dumps(o)], env=env,
+                           capture_output=True, text=True, timeout=600, cwd=scr)
+        try:
+            with open(os.path.join(scr, f"report_{case}.json")) as f:
+                rep = json.load(f)
+        except (OSError, ValueError) as e:
+            rep = {"error": repr(e), "stderr": p.stderr[-1500:]}
+        rep["child_returncode"] = p.returncode
+        out[case] = rep
+        return rep
+
+    def row(name, ok, rep=None, **kw):
+        rows.append({"field": f"entry (child process, vhi_run stubbed, scratch log and look folder): {name}",
+                     "expected": True, "got": bool(ok), "ok": bool(ok),
+                     **({"message": (rep.get("message") or "")[:400], "exit": rep.get("exit")} if rep else {}), **kw})
+
+    def refused(rep, has):
+        msg = rep.get("message") or ""
+        return (rep.get("exit") == 1 and msg.startswith("REFUSED") and has in msg and not rep.get("log_lines")
+                and not rep.get("markers") and not rep.get("run_spec_reached") and not rep.get("guard_installed")
+                and not rep.get("logged"))
+
+    SI = {"declared_path": stand}
+    dummy = ["--spec", spec_d]
+    for c_ in ("2024-01-01", "2025-12-31"):
+        r = child(f"cut_{c_}", ["--cut", c_] + dummy, look_declared=stand, **SI)
+        row(f"fix 2: --cut {c_} with a valid declaration (the stand-in): REFUSED (not the end of the spec's look "
+            "window), nothing logged, no marker, the guard not installed, run_spec not reached",
+            refused(r, "end of the spec's look window"), r)
+    r = child("frozen_mismatch", ["--cut", "2026-01-01"] + dummy, look_declared=stand, synth_a_json=sa_bad, **SI)
+    row("fix 5: --cut 2026-01-01 with a valid declaration but a copy of synthesis_A.json whose frozen sha256 of "
+        "portfolio.py differs: REFUSED before anything is logged, no marker", refused(r, "frozen"), r)
+    r = child("race", ["--cut", "2026-01-01"] + dummy, look_declared=link, race=[link, fake], **SI)
+    moved = os.path.realpath(link) == os.path.realpath(fake)
+    row("fix 1: LOOK_DECLARED = a link to the stand-in, re-pointed to a harness output right after the path rule: "
+        "REFUSED (A1, atomic), nothing logged, no marker", refused(r, "(A1, atomic)") and moved, r, race_happened=moved)
+    r1 = child("positive", ["--cut", "2026-01-01"] + dummy, look_declared=stand, folder="positive", **SI)
+    lines1 = r1.get("log_lines") or []
+    lab1 = f"look:vhi_proof_entry_dummy:{dsha[:12]}"
+    ok1 = (r1.get("exit") == 97 and r1.get("run_spec_reached") is True and r1.get("guard_installed") is True
+           and r1.get("logged") is True and len(lines1) == 1 and json.loads(lines1[0]).get("track") == G.TRACK
+           and json.loads(lines1[0]).get("label") == lab1
+           and r1.get("markers") == ["vhi_proof_entry_dummy__cut2026-01-01.started"])
+    row("positive control: --cut 2026-01-01 with the stand-in: one line in the scratch log (track autopsy_HI_look, the "
+        "spec's label), then the '.started' marker, then the read guard, then run_spec (the stub)", ok1, r1,
+        log_lines=lines1, markers=r1.get("markers"))
+    r2 = child("again", ["--cut", "2026-01-01"] + dummy, look_declared=stand, folder="positive", **SI)
+    row("run once: the same command again: REFUSED, still one line in the scratch log",
+        r2.get("exit") == 1 and "run once" in (r2.get("message") or "") and len(r2.get("log_lines") or []) == 1
+        and not r2.get("run_spec_reached") and not r2.get("logged"), r2)
+    why2 = "proof i: the first access stopped at the stub"
+    r3 = child("second", ["--cut", "2026-01-01", "--second-access", why2] + dummy, look_declared=stand,
+               folder="positive", **SI)
+    lines3 = r3.get("log_lines") or []
+    ok3 = (r3.get("exit") == 97 and r3.get("run_spec_reached") is True and len(lines3) == 2
+           and json.loads(lines3[1]).get("label") == f"{lab1}:second_access:{why2}"
+           and r3.get("markers") == ["vhi_proof_entry_dummy__cut2026-01-01.started",
+                                     "vhi_proof_entry_dummy__cut2026-01-01__access2.started"])
+    row("a second access with its reason: a second scratch log line whose label carries the reason, the marker "
+        "__access2, run_spec reached", ok3, r3, log_lines=lines3, markers=r3.get("markers"))
+    r = child("no_declaration", ["--cut", "2026-01-01"])
+    row("look.py --cut 2026-01-01 (the real spec) without LOOK_DECLARED: REFUSED, nothing logged",
+        refused(r, "LOOK_DECLARED"), r)
+    r = child("cut_after_the_holdout_boundary", ["--cut", "2026-01-02"])  # no file name may carry the year: guard rule
+    row("look.py --cut 2026-01-02: REFUSED (the 2026 holdout)", refused(r, "2026 holdout"), r)
+    r = child("cut_2024-01-01_no_declaration", ["--cut", "2024-01-01"])
+    row("look.py --cut 2024-01-01 (the real spec) without LOOK_DECLARED: REFUSED by the look-window rule first, "
+        "nothing logged", refused(r, "end of the spec's look window"), r)
+    log1 = log_state()
+    row("the real val_access.log is unchanged by the child processes (line count and sha256)", log0 == log1,
+        before=log0, after=log1)
+    row("no '.started' marker in the real results/r2/validation_hi/look/", not G.started_markers())
+    return rows, out
+
+
 def proof_i():
     rows = []
     st = G.self_test(spec_sha=SPEC_SHA, protocol=PROTOCOL)
@@ -1348,25 +1799,21 @@ def proof_i():
     rows += pr
     a1_rows, a1_out = declared_file_probes("before_write")
     rows += a1_rows
+    rc_rows, rc_out = race_probes()
+    rows += rc_rows
     rows += guard_probes()
-    # the entry point itself, asked for the look without a declared addendum: refused before anything is read
-    import subprocess
-    env = {k: v for k, v in os.environ.items() if k != "LOOK_DECLARED"}
-    p = subprocess.run([sys.executable, os.path.join(HERE, "look.py"), "--cut", "2026-01-01"], env=env,
-                       capture_output=True, text=True, timeout=600, cwd="/tmp")
-    refused_cli = p.returncode != 0 and "REFUSED" in (p.stdout + p.stderr)
-    rows.append({"field": "look.py --cut 2026-01-01 without LOOK_DECLARED: refused (exit code, message)",
-                 "expected": True, "got": refused_cli, "ok": refused_cli,
-                 "message": (p.stdout + p.stderr).strip()[-300:]})
-    p2 = subprocess.run([sys.executable, os.path.join(HERE, "look.py"), "--cut", "2026-01-02"], env=env,
-                        capture_output=True, text=True, timeout=600, cwd="/tmp")
-    refused_cli2 = p2.returncode != 0 and "REFUSED" in (p2.stdout + p2.stderr)
-    rows.append({"field": "look.py --cut 2026-01-02: refused (after the 2026 boundary)", "expected": True,
-                 "got": refused_cli2, "ok": refused_cli2, "message": (p2.stdout + p2.stderr).strip()[-300:]})
+    # the entry point itself, end to end in child processes (stubbed run, the access log and the look folder in the
+    # scratch folder): the look without a declaration, after 2026-01-01, at a mistyped CUT, with a frozen file
+    # changed, raced, and the positive control
+    en_rows, en_out = entry_probes()
+    rows += en_rows
     after = hi_lines()
     rows.append({"field": "val_access.log lines mentioning / with track autopsy_HI_look: before and after the proofs",
                  "expected": [[0, 0], [0, 0]], "got": [list(LOG_BEFORE), list(after)],
                  "ok": tuple(LOG_BEFORE) == (0, 0) and tuple(after) == (0, 0)})
+    st_now = log_state()
+    rows.append({"field": "val_access.log is unchanged since the proofs started: [line count, sha256]",
+                 "expected": LOG_STATE_BEFORE, "got": st_now, "ok": st_now == LOG_STATE_BEFORE})
     started = G.started_markers()
     rows.append({"field": "no '.started' marker in results/r2/validation_hi/look/", "expected": [], "got": started,
                  "ok": not started})
@@ -1388,12 +1835,17 @@ def proof_i():
     return {"what": "the guard of the harness (vhi_guard): F1 the declaration bound to the spec (PROTOCOL_V3.md as it "
                     "stands refused), A1 only the protocol's real path accepted as LOOK_DECLARED (the harness's "
                     "outputs and copies of them refused, also once they quote this run's spec sha256: rows "
-                    "'A1 (after_write)', added after those files are written), F2 run once / fixed output / second "
-                    "access, F3 / A2 / A3 the hardened read guard (probes refused before any byte is read: the "
-                    "holdout component rule and lab/ CSVs through open() included), CUT rules, the access log "
-                    "untouched, every read of the process with its filter",
-            "plan_tests": pout, "A1_before_write": a1_out, "opens_under_lab": opens, "reads": rd, **verdict(rows),
-            "rows": rows}
+                    "'A1 (after_write)', added after those files are written), fix 1 A1 made atomic (the file opened "
+                    "once must be the protocol: st_dev, st_ino; deterministic symlink races with a stand-in for the "
+                    "protocol refused), fix 2 a look CUT other than the end of the look window refused before "
+                    "anything is logged, F2 run once / fixed output / second access, F3 / A2 / A3 and fix 4 the "
+                    "hardened read guard (probes refused before any byte is read: the holdout component rule, lab/ "
+                    "CSVs through open(), tokenize.open, tarfile.open 'r:' and numpy.fromfile included), fix 5 "
+                    "synthesis A's frozen files (a difference refuses a look before anything is logged), look.py end "
+                    "to end in child processes with the access log redirected, CUT rules, the access log untouched "
+                    "(line count and sha256), every read of the process with its filter",
+            "plan_tests": pout, "A1_before_write": a1_out, "race_probes": rc_out, "entry_probes": en_out,
+            "opens_under_lab": opens, "reads": rd, **verdict(rows), "rows": rows}
 
 
 # ------------------------------------------------------------------------------------------------- (j)
@@ -1415,20 +1867,129 @@ CODE_EXPECTED = (["r2/tracks/validation_hi/" + f for f in ("look.py", "vhi_guard
                     "tracks/orb/strategy.py", "r2/recalc.py", "goldlab/sim.py", "goldlab/r2.py"])
 
 
+EXIT_CHILD = r'''
+import sys
+sys.dont_write_bytecode = True
+"""A child process of proofs.py (proof j, fix 3): the REAL look.py main() at the in-sample CUT 2022-01-01 (a rehearsal:
+nothing is logged; the access log and the look folder are pointed at the scratch folder anyway) on a reduced spec,
+with ONE official GOLD_FRI_PM row changed IN MEMORY (vhi_data.official_closed wrapped: R + 0.5 on its last in-sample
+row), so that synthesis A's check first fails. No file is changed; the output goes to --out in the scratch folder.
+argv: <harness folder> <spec> <out>"""
+import importlib.util
+import os
+
+HERE, SPEC_PATH, OUT_PATH = sys.argv[1], sys.argv[2], sys.argv[3]
+sys.path.insert(0, HERE)
+import vhi_guard as G  # noqa: E402
+
+G.VAL_LOG = os.path.join(os.path.dirname(OUT_PATH), "val_access_scratch.log")
+G.LOOK_DIR = os.path.join(os.path.dirname(OUT_PATH), "look")
+import vhi_data as D  # noqa: E402
+
+_orig = D.official_closed
+
+
+def changed_in_memory(name, sym):
+    t = _orig(name, sym)
+    if name == "GOLD_FRI_PM" and len(t):
+        t = t.copy()
+        t.loc[t.index[-1], "R"] = t.loc[t.index[-1], "R"] + 0.5
+        print(f"[proof j child] the official GOLD_FRI_PM row of {t.entry_time.iloc[-1]} is changed in memory "
+              "(R + 0.5)", flush=True)
+    return t
+
+
+D.official_closed = changed_in_memory
+sp = importlib.util.spec_from_file_location("vhi_look_exit_child", os.path.join(HERE, "look.py"))
+LK = importlib.util.module_from_spec(sp)
+sp.loader.exec_module(LK)
+sys.argv = ["look.py", "--cut", "2022-01-01", "--spec", SPEC_PATH, "--out", OUT_PATH]
+LK.main()
+'''
+XAU_SLEEVES = ["donch4h_stop__xauusd", "orb_asia_2d_buf10__xauusd", "GOLD_FRI_PM__xauusd",
+               "orb_asia_2d_buf10__xauusd@payoff", "orb_asia_2d_buf10__xauusd+S0.75r"]
+
+
+def exit_code_probe():
+    """Fix 3: look.py exits with status 3 (look.EXIT_CHECK_FIRST_FAILED) AFTER writing its output when the check first
+    failed. A reduced in-sample spec built in memory from look_spec.json (the three xauusd sleeves of P0, synthesis A's
+    orb S0.75r change with its '@payoff' reference and its criterion; lab execution only) runs through the real
+    look.py main() at CUT 2022-01-01 in a child process (EXIT_CHILD) with one official GOLD_FRI_PM row changed in
+    memory; the seven other sleeves of the ten are missing too. Output in the scratch folder."""
+    import shutil
+    import subprocess
+    base = os.path.join(SCRATCH, "vhi_exit_code_probe")
+    shutil.rmtree(base, ignore_errors=True)
+    os.makedirs(base)
+    spec = json.load(open(SPEC))
+    spec.update(name="vhi_proof_exit_code", changes_in_look=["orbxau_S0.75r"], execs=["lab"], accounts=["sum"],
+                sleeves=[s for s in spec["sleeves"] if s["key"] in XAU_SLEEVES],
+                portfolios={"P0": {"sleeves": XAU_SLEEVES[:3]},
+                            "P0|orbxau_S0.75r": {"replace": {"orb_asia_2d_buf10__xauusd":
+                                                             "orb_asia_2d_buf10__xauusd+S0.75r"}}},
+                comparisons=[{"name": "orbxau_S0.75r_vs_P0", "ref": "P0", "var": "P0|orbxau_S0.75r"}],
+                sleeve_comparisons=[{"name": "orbxau_S0.75r", "ref": "orb_asia_2d_buf10__xauusd@payoff",
+                                     "var": "orb_asia_2d_buf10__xauusd+S0.75r"}],
+                criteria={"orbxau_S0.75r": spec["criteria"]["orbxau_S0.75r"]})
+    sp = os.path.join(base, "reduced_spec.json")
+    with open(sp, "w") as f:
+        json.dump(spec, f, indent=1)
+    outp = os.path.join(base, "vhi_proof_exit_code__cut2022-01-01.json")
+    env = {k: v for k, v in os.environ.items() if k != "LOOK_DECLARED"}
+    t0 = time.time()
+    p = subprocess.run([sys.executable, "-I", "-c", EXIT_CHILD, HERE, sp, outp], env=env, capture_output=True,
+                       text=True, timeout=3000, cwd=base)
+    rows = [{"field": "fix 3: look.py (the real main, CUT 2022-01-01, the reduced spec, one official GOLD_FRI_PM row "
+                      "changed in memory) exits with status 3 when the check first failed", "expected": 3,
+             "got": p.returncode, "ok": p.returncode == 3, "stderr_tail": p.stderr.strip()[-400:]}]
+    try:
+        with open(outp) as f:
+            o = json.load(f, parse_constant=lambda c: None)
+    except (OSError, ValueError) as e:
+        o = {"error": repr(e)}
+    cf = o.get("check_first") or {}
+    gold = (cf.get("sleeves") or {}).get("GOLD_FRI_PM__xauusd") or {}
+    missing = sorted(set(RUN.TEN_KEYS) - {"donch4h_stop__xauusd", "orb_asia_2d_buf10__xauusd", "GOLD_FRI_PM__xauusd"})
+    okw = (next(iter(o), None) == "check_first" and cf.get("passed") is False
+           and str(cf.get("status", "")).startswith("FAILED -- STOP AND REPORT")
+           and "GOLD_FRI_PM__xauusd" in (cf.get("failed_or_missing") or []) and gold.get("reproduced") is False
+           and (gold.get("window") or {}).get("rows_differing") == 1
+           and all(k in (cf.get("failed_or_missing") or []) for k in missing))
+    rows.append({"field": "fix 3: ... the output was written before the exit: its first key is the check first, FAILED "
+                          "-- STOP AND REPORT, naming GOLD_FRI_PM (1 window row differing) and the 7 missing sleeves",
+                 "expected": True, "got": bool(okw), "ok": bool(okw), "status": str(cf.get("status", ""))[:300]})
+    v = (o.get("verdicts") or {}).get("orbxau_S0.75r") or {}
+    okv = v.get("adopted") is None and v.get("stopped_by_check_first") is True and isinstance(v.get("adopted_if_judged"),
+                                                                                              bool)
+    rows.append({"field": "fix 3: ... synthesis A's orb S0.75r verdict is not judged (adopted null, stopped by the check "
+                          "first)", "expected": True, "got": bool(okv), "ok": bool(okv)})
+    loud_ = "CHECK FIRST FAILED" in p.stderr and "written " + outp in p.stdout and "!!!" in p.stdout
+    rows.append({"field": "fix 3: ... stdout says 'written <output>' and shows the '!!!' banner; stderr says 'CHECK FIRST "
+                          "FAILED'", "expected": True, "got": bool(loud_), "ok": bool(loud_)})
+    nolog = not os.path.exists(os.path.join(base, "val_access_scratch.log")) and not os.path.exists(os.path.join(base,
+                                                                                                                 "look"))
+    rows.append({"field": "fix 3: ... nothing logged and no marker (an in-sample run)", "expected": True, "got": nolog,
+                 "ok": nolog})
+    return rows, {"spec": sp, "output": outp, "returncode": p.returncode, "seconds": round(time.time() - t0, 1),
+                  "stdout_tail": p.stdout.strip()[-1200:], "stderr_tail": p.stderr.strip()[-600:]}
+
+
 def proof_j(res, sa):
     """The single command of the look, run at CUT 2022-01-01 (a rehearsal: nothing logged) with the spec AS IT STANDS
     (its list changes_in_look: K1, K2, K3 and synthesis A's five), in its own process: it runs exactly the ten, K1,
     K2, K3, the five changed sleeves and their references, and their portfolios / comparisons / verdicts; every
     number it shares with the proofs' run (every change) is equal; the check first and synthesis A's block are in its
-    output; A5: its meta records the sha256 of every harness, lens and strategy file it imported."""
+    output; A5: its meta records the sha256 of every harness, lens and strategy file it imported; fix 5: its meta
+    records synthesis A's frozen files check; fix 3: it exits 0 (the check first passed), and the reduced spec whose
+    check first fails exits 3 after writing its output."""
     import subprocess
     env = {k: v for k, v in os.environ.items() if k != "LOOK_DECLARED"}
     out = os.path.join(OUT, "rehearsal", "autopsy_HI_look__cut2022-01-01.json")
     t0 = time.time()
     p = subprocess.run([sys.executable, os.path.join(HERE, "look.py"), "--cut", "2022-01-01", "--spec", SPEC],
                        env=env, capture_output=True, text=True, timeout=3000, cwd="/tmp")
-    rows = [{"field": "look.py --cut 2022-01-01 exits 0", "expected": 0, "got": p.returncode, "ok": p.returncode == 0,
-             "stderr_tail": p.stderr.strip()[-500:]}]
+    rows = [{"field": "look.py --cut 2022-01-01 exits 0 (fix 3: status 0 when the check first passed)", "expected": 0,
+             "got": p.returncode, "ok": p.returncode == 0, "stderr_tail": p.stderr.strip()[-500:]}]
     detail = {}
     if p.returncode == 0:
         with open(out) as f:
@@ -1465,11 +2026,41 @@ def proof_j(res, sa):
         rows.append({"field": "look.py rehearsal == proofs run: official check of the ten", "expected": True,
                      "got": same_off, "ok": same_off})
         cf = theirs.get("check_first") or {}
+        mcf = mine.get("check_first") or {}
+        refs_t, refs_m = cf.get("payoff_references") or {}, mcf.get("payoff_references") or {}
+
+        def core(x):                                     # the check first without its '@payoff' references
+            return {k: v for k, v in x.items() if k != "payoff_references"}
+        same_cf = core(cf) == core(mcf) and bool(refs_t) and all(refs_t[k] == refs_m.get(k) for k in refs_t)
         rows.append({"field": "the check first (synthesis A) is the FIRST key of the rehearsal's output, computed and "
-                              "passed, equal to the proofs run's", "expected": ["check_first", True, True, True],
-                     "got": [next(iter(theirs)), cf.get("computed"), cf.get("passed"), cf == mine.get("check_first")],
+                              "passed, equal to the proofs run's (its '@payoff' references: the rehearsal's five, each "
+                              "equal to the proofs run's)", "expected": ["check_first", True, True, True],
+                     "got": [next(iter(theirs)), cf.get("computed"), cf.get("passed"), same_cf],
                      "ok": next(iter(theirs)) == "check_first" and cf.get("computed") is True and cf.get("passed") is True
-                     and cf == mine.get("check_first")})
+                     and same_cf})
+        want_refs = sorted(k for k in SA_SLEEVES if k.endswith("@payoff"))
+        allid = bool(refs_t) and all(v.get("identical") is True for runs in refs_t.values() for v in runs.values())
+        rows.append({"field": "fix 5: the rehearsal's check first lists synthesis A's five '@payoff' references, each "
+                              "identical to its P0 sleeve inside the window (lab and live, FP and x1.5): no WARNING line "
+                              "in the check first or in look.py's output",
+                     "expected": [want_refs, True, [], False],
+                     "got": [sorted(refs_t), allid, cf.get("warnings"), "WARNING" in p.stdout],
+                     "ok": sorted(refs_t) == want_refs and allid and cf.get("warnings") == [] and "WARNING" not in p.stdout})
+        fzm = theirs["meta"].get("frozen_files_check") or {}
+        fzf = fzm.get("files") or {}
+        files_ok = sorted(fzf) == sorted(G.FROZEN_REQUIRED) and all(v.get("same") for v in fzf.values())
+        quoted_ok = files_ok and all(fzf[f].get("quoted_in_the_text") for f in G.FROZEN_TEXT_QUOTED)
+        nu = (fzm.get("not_used_by_the_look") or {}).get("r2/tracks/autopsy/synthesis_A/synth.py") or {}
+        rows.append({"field": "fix 5: the rehearsal's meta records synthesis A's frozen files check, made before the run "
+                              "(recorded, not refused, at an in-sample CUT): ok, the 15 files the look uses each equal to "
+                              "its frozen sha256 in synthesis_A.json, the 4 the proposed_validation_look text names "
+                              "quoted there, synth.py recorded (not used by the look); no check at open_run (not a look)",
+                     "expected": [True, True, True, True, None],
+                     "got": [fzm.get("ok"), files_ok, quoted_ok, nu.get("same"),
+                             theirs["meta"].get("frozen_files_check_at_open_run")],
+                     "ok": fzm.get("ok") is True and files_ok and quoted_ok and nu.get("same") is True
+                     and theirs["meta"].get("frozen_files_check_at_open_run") is None,
+                     "synthesis_A_json_sha256": fzm.get("synthesis_A_json_sha256")})
         same_sa = theirs.get("synthesis_A") == mine.get("synthesis_A") and theirs["synthesis_A"].get("changes") == SA_IDS \
             and not theirs["synthesis_A"].get("error")
         rows.append({"field": "look.py rehearsal == proofs run: synthesis A's block (the passing changes together, item "
@@ -1512,12 +2103,19 @@ def proof_j(res, sa):
                      "ok": not badr and not csvr, "parquet_reads": len(pqr)})
         detail = {"changes": ch, "check_first": theirs.get("check_first"), "verdicts": theirs["verdicts"],
                   "synthesis_A": theirs.get("synthesis_A"), "reads": rd, "code_sha256": code,
-                  "files_opened_sha256": theirs["meta"].get("files_opened_sha256")}
+                  "files_opened_sha256": theirs["meta"].get("files_opened_sha256"),
+                  "frozen_files_check": theirs["meta"].get("frozen_files_check")}
+    secs = round(time.time() - t0, 1)
+    ex_rows, ex_out = exit_code_probe()                 # fix 3 (a second, smaller look.py run, after the rehearsal)
+    rows += ex_rows
+    detail["exit_code_probe"] = ex_out
     return {"what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process with the spec "
                     "as it stands (changes_in_look K1, K2, K3 and synthesis A's five): the right sleeves, portfolios "
                     "and verdicts, the check first and synthesis A's block, the same numbers as the proofs' run, "
-                    "nothing logged, the imported code's sha256 recorded (A5)", "output": out,
-            "seconds": round(time.time() - t0, 1), "detail": detail, **verdict(rows), "rows": rows}
+                    "nothing logged, exit status 0, the imported code's sha256 recorded (A5), synthesis A's frozen "
+                    "files check recorded (fix 5); fix 3: a reduced in-sample spec whose check first fails exits 3 "
+                    "after writing its output", "output": out,
+            "seconds": secs, "detail": detail, **verdict(rows), "rows": rows}
 
 
 # ------------------------------------------------------------------------------------------------- (k)
@@ -1871,6 +2469,27 @@ def proof_m(res, sa):
     cf_missing = RUN.check_first(res["_spec"], dict(res, official={k: v for k, v in res["official"].items() if k != k0}))
     add("a check first with a sleeve missing is not passed", got=cf_missing["passed"], exp=False,
         ok=cf_missing["passed"] is False)
+    # fix 5: the '@payoff' references shown in the check first (a warning, never a failure)
+    prf = cf.get("payoff_references") or {}
+    allid = bool(prf) and all(v.get("identical") is True for runs in prf.values() for v in runs.values())
+    add("fix 5: the check first shows every '@payoff' reference of the run against its P0 sleeve inside the window "
+        "(FP and x1.5, lab and live, with the counts): in sample all identical, so no WARNING line",
+        got=[sorted(prf), allid, cf.get("warnings")], exp=[sorted(res["payoff_reference_vs_sB"]), True, []],
+        ok=sorted(prf) == sorted(res["payoff_reference_vs_sB"]) and allid and cf.get("warnings") == [])
+    fake_w = dict(res)
+    prw = copy.deepcopy(res["payoff_reference_vs_sB"])
+    r0 = "orb_asia_2d_buf10__xauusd@payoff"
+    v0 = prw[r0]["fp/lab"]
+    v0.update(identical=False, n_payoff_reference=v0["n_payoff_reference"] - 2, matched=v0["matched"] - 2, only_in_sB=2)
+    fake_w["payoff_reference_vs_sB"] = prw
+    cf_w = RUN.check_first(res["_spec"], fake_w)
+    w0 = (cf_w.get("warnings") or [""])[0]
+    okw = (cf_w["passed"] is True and len(cf_w["warnings"]) == 1 and w0.startswith("WARNING") and r0 in w0
+           and "fp/lab" in w0 and "2 only in the P0 sleeve" in w0 and "WARNING" in cf_w["status"]
+           and cf_w["status"].startswith("PASSED"))
+    add("fix 5: an '@payoff' reference that is not identical (simulated on a copy: 2 trades only in the P0 sleeve, fp/lab) "
+        "gives ONE WARNING line with the counts, named in the status; the check first still passes", got=bool(okw),
+        exp=True, ok=okw, warning=w0[:400])
     out["verdicts"] = {c: RUN.canonical(V[c]) for c in SA_IDS}
     out["synthesis_A"] = RUN.canonical({k: v for k, v in S.items() if k != "report_item_6"})
     out["check_first"] = cf
@@ -1946,6 +2565,9 @@ def main():
     # A1, once more now that proofs.json, proof_i_guard.json and the rehearsals quote this run's spec sha256: refused
     # by the path rule (their content alone would pass); the rows are added to proof i and every file is rewritten
     a1_rows, a1_out = declared_file_probes("after_write")
+    st_end = log_state()
+    a1_rows.append({"field": "val_access.log is unchanged at the end of the proofs: [line count, sha256]",
+                    "expected": LOG_STATE_BEFORE, "got": st_end, "ok": st_end == LOG_STATE_BEFORE})
     pi = proofs["i_guard"]
     pi["rows"] += a1_rows
     pi["A1_after_write"] = a1_out

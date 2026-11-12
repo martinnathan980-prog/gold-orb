@@ -35,6 +35,7 @@ input double InpEthMktBps   = 0.7;                  // Paper twin, ether: market
 input double InpEthStopBps  = 2.0;                  // Paper twin, ether: stop fills (bp)
 input int    InpWarmupDays  = 20;                   // M1 history read at start (>= 7 days for 73 hour bars over a weekend)
 input bool   InpDebugHours  = false;                // Journal every hour bar and every evaluation
+input bool   InpRebuildChain = true;                // No saved state: replay the history through the paper engine first
 input string InpJournal     = "spike_journal.csv";  // Journal file (MQL5\Files)
 
 CTrade   g_trade;
@@ -132,7 +133,7 @@ bool StartModule(CBrk72 &m, const string sym, const string code, const double mk
       Print("SpikeRobot: unknown symbol ", sym);
       return false;
      }
-   m.Init(sym, code, mkt_bps, stop_bps, InpWarmupDays, InpDebugHours);
+   m.Init(sym, code, mkt_bps, stop_bps, InpWarmupDays, InpDebugHours, InpRebuildChain);
    LoadTicket(code, ticket, ticket_bar);
    BrkAction a;
    ZeroMemory(a);

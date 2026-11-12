@@ -1,0 +1,123 @@
+{
+ "what": "Pictures 7, 8, 9 (1 % start) and 8b, 9b (2 % start) redrawn from growth.json; engineer report and independent review (workflow wf_f0acc809-d4d)",
+ "drawn": {
+  "files": [
+   "/home/user/gold-orb/lab/r2/tracks/stake/plan_charts.py",
+   "/home/user/gold-orb/lab/results/r2/stake/images/7_echelle_des_departs.png",
+   "/home/user/gold-orb/lab/results/r2/stake/images/8_compte_plan_conseille.png",
+   "/home/user/gold-orb/lab/results/r2/stake/images/9_risque_plan_conseille.png",
+   "/home/user/gold-orb/lab/results/r2/stake/images/8b_compte_depart_2.png",
+   "/home/user/gold-orb/lab/results/r2/stake/images/9b_risque_depart_2.png",
+   "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/old_images/"
+  ],
+  "numbers": "All read from lab/results/r2/stake/growth.json by plan_charts.py; every key and value is printed on stdout when it runs. Keys are under resampled/<plan>/<case>/. Plans A05S, F1S, F2S, F3S, FS = starts of 0,5 / 1 / 2 / 3 / 5 %. Euros are rounded half up to the nearest 10 EUR, with U+202F as thousands separator and U+2212 as minus. Percents are rounded half up; values below 1 keep one decimal.\n\nPICTURE 7 (case 0.5 unless stated)\n- Gain after 1 year, at_12_months/gain_median: 1245 / 2644 / 3242 / 3251 / 3358, shown as +1 250 / +2 640 / +3 240 / +3 250 * / +3 360 €.\n- Worst fall of the first year, typical (falls/fall_first_52_weeks_pct/median and falls/fall_first_52_weeks_eur/median): 9.2 / 16.7 / 24.4 / 29.4 / 42.5 % and 932.9 / 1590.5 / 1820.5 / 1840.2 / 1922.4 €, shown as −9 % (930 €), −17 % (1 590 €), −24 % (1 820 €), −29 % (1 840 €), −43 % (1 920 €).\n- Same, one time in ten (/p90): 14.0 / 25.5 / 37.9 / 42.3 / 59.1 % and 1600.9 / 2852.7 / 3108.2 / 3127.2 / 3218.2 €, shown as −14 % (1 600 €), −26 % (2 850 €), −38 % (3 110 €), −42 % (3 130 €), −59 % (3 220 €).\n- Losing half in 3 years, shares_of_paths_pct/fall_of_50_pct_or_more: case 0.5 = 0 / 0 / 0.4 / 2.5 / 23.7, shown as 0 / 0 / 0,4 / 3 / 24 %; case -0.5 = 0 / 0.5 / 11.5 / 21.9 / 65.3, shown as 0 / 0,5 / 12 / 22 / 65 %.\n- Gain after 3 years, at_36_months/gain_median: 14617 / 16257 / 16987 / 17262 / 17228, shown as +14 620 / +16 260 / +16 990 / +17 260 / +17 230 €. at_36_months/paid_in_median = 36000, shown as '36 000 € versés'.\n- Footer: 9 € = F3S minus F2S at_12_months/gain_median. The rule winner F3S is computed with the pre-run rule (fall_of_50_pct_or_more ≤ 5 in cases 1.0 and 0.5, then the highest 12-month median).\n- Stop footer from stopped/<plan>: stop_at_fall_of_reference 0.25 (shown as 75 %), armed_once_paid_in 12000 (A05S: 0); payment_eur 1000 gives '12e versement'. schedules/*/risk_pct[-1] = 0.5 gives 'jusqu'à 0,5 %'.\n\nPICTURES 8 (F1S) and 8b (F2S), cases 1.0 / 0.5 / 0.0 / -0.5\n- at_36_months/gain_median: F1S 40873 / 16257 / −2010 / −3564, shown as +40 870 / +16 260 / −2 010 / −3 560 €. F2S 43793 / 16987 / −1968 / −3605, shown as +43 790 / +16 990 / −1 970 / −3 610 €. These equal the end labels, gain_percentiles_by_month/50[36].\n- at_36_months/gain_p10: F1S 22528 / 2180 / −5232 / −5895, shown as +22 530 / +2 180 / −5 230 / −5 900 €. F2S 24091 / 2132 / −4927 / −5509, shown as +24 090 / +2 130 / −4 930 / −5 510 €.\n- at_36_months/in_loss_pct: F1S 0.1 / 7.2 / 61.5 / 97.5 and F2S 0.1 / 7.4 / 62.2 / 98.2, shown as 0,1 / 7 / 62 / 98 fois sur 100.\n- stopped/paths_pct: F1S 0.2 / 7.2 / 52.8 / 93.4, shown as 0,2 / 7 / 53 / 93. F2S 0.2 / 8.2 / 55.9 / 95.2, shown as 0,2 / 8 / 56 / 95.\n- stopped/median_month, shown when 50 % or more are stopped: F1S 20 and 13, F2S 18 and 11 ('au bout de N mois environ').\n- at_36_months/paid_in_median, shown for the same cases: F1S 35 000 and 14 000 €, F2S 33 000 and 12 000 €.\n- Lines: sample_paths/balance minus sample_paths/paid_in (40 paths each) and gain_percentiles_by_month/50.\n- Stopped paths found and marked (paid-in at month 36 below paid_by_month[36] = 36000, then frozen): F1S 0 / 3 / 22 / 38, F2S 0 / 3 / 21 / 39.\n- One y range for all 8 panels: data −7 342 to +99 671, axis −20 000 to 110 000 €.\n- Dotted line at month 11 = 12th payment (armed_once_paid_in / payment_eur).\n\nPICTURES 9 (F1S) and 9b (F2S)\n- Rule: schedules/F1 = thresholds [12000], risk [1.0, 0.5]; schedules/F2 = [6000, 12000], [2.0, 1.0, 0.5]. Both are listed in keyed_on_max_of_balance_and_paid.\n- Time panel: resampled/<plan>/0.5/percentiles_by_month/10, /50 and /90 for months 0 to 14 (balance), and paid_by_month for months 0 to 14 (staircase). The balance is drawn with the payment_eur jump at each payment.\n- Risk zones come from the thresholds and the payment that reaches them (6th and 12th). The arming line is at the 12th payment. The stop text uses stopped/<plan>: 0.25 shown as 75 %, 12000 shown as 12 000 €.\n- Not printed: the middle path first reaches 12 000 € at month end 10 (both plans) and 6 000 € at month end 5 (F2S).\n\nCONSISTENCY WITH PICTURE 12 (which rounds to 100 €): F1S +2 640 / +16 260, −17 % (1 590 €), −26 % (2 850 €); F2S +3 240 / +16 990, −24 % (1 820 €), −38 % (3 110 €). Worthless, losing half: 0,5 % and 12 %. All round to picture 12's figures.",
+  "defects_fixed": [
+   {
+    "defect": "7: rounding to two digits showed 3,242 as +3 200 and 3,251 as +3 300 (a 9 EUR tie shown as 100 EUR), and FS 3,358 as +3 400.",
+    "fix": "Every euro amount is rounded half up to the nearest 10 EUR: +3 240 / +3 250 / +3 360 € (A05S 1,245 shows +1 250 €). The new pictures use the same rule."
+   },
+   {
+    "defect": "7: the footer 'Arret de securite a -25 % dans tous les plans' sat under falls of 20-59 % and suggested losses capped at 25 %. The stop is armed only after 12,000 EUR paid in and measures 25 % of the reference capital, not of the high.",
+    "fix": "The footer now states the rule as growth.py codes it (ref = max(ref + payment, balance after it); stop when the closed balance <= 75 % of ref, checked once paid >= 12,000). In French: at 0,5 % it exists from the start; for the other starts only from the 12th payment (12 000 € paid). It then stops the robot for good if the balance falls to 75 % of the reference = money paid in + best gain seen at a payment. Last sentence: 'Il ne limite donc pas les baisses a -25 %'."
+   },
+   {
+    "defect": "7: 'moitie du papier' was said only in small grey print. The subtitle 'presque jamais -50 %' and the 50 % row hid 2.1 % (covers costs) and 11.5 % (worthless) at 2 %. The row gave no time span and no reference.",
+    "fix": "'Si le robot fait la moitie du papier' sits right under the title at 13.5 pt bold, with 'Simulation sur les trades de 2022 a 2025, aucun trade reel' at 10.5 pt. The 'presque jamais' subtitle is gone. The row is now 'Perdre la moitie du compte en 3 ans: une baisse de 50 % ou plus depuis le plus haut, versements mis a part', with the half-paper case and the worthless case side by side on one 0-100 % scale (2 %: 0,4 % vs 12 %; 3 %: 3 % vs 22 %; 5 %: 24 % vs 65 %). The falls row now covers the whole first year, typical and one time in ten, in % and €."
+   },
+   {
+    "defect": "7: Python's round-half-even printing gave 2.5 % as '2 %', 6.5 % as '-6 %' and 40.5 % as '-40 %'.",
+    "fix": "Every percent uses Decimal ROUND_HALF_UP (tested: 2.5 gives 3, 6.5 gives 7, 40.5 gives 41). On the picture: F3S 2.5 shows 3 %, F1S 25.5 shows -26 %, FS 42.5 shows -43 %, 11.5 shows 12 %. Values below 1 keep one decimal (0,4 %, 0,5 %) instead of '0' or '< 1 %'."
+   },
+   {
+    "defect": "7: the green 'mon conseil' band came from the tie-break added after the run; the declared rule's winner (3 %) was not marked.",
+    "fix": "The green band is now on 1 % (F1S, advised since the review), with the legend '1 % = mon conseil : les baisses restent proches de ce que tu acceptes'. The 3 % one-year gain carries an asterisk. The footer reads: 'La regle fixee avant le test classait 3 % premier : 9 EUR de plus que 2 % sur le gain apres 1 an. C'est une egalite, dans le bruit de la simulation.' The winner and the 9 EUR are computed from growth.json with the pre-run rule, not typed by hand."
+   },
+   {
+    "defect": "8: 'le cas le plus probable' was the month-by-month median of gains plus the typical money paid in. Half the paths do worse, and no real path follows that smooth line.",
+    "fix": "The thick line is now the month-by-month median of the GAIN (gain_percentiles_by_month/50), named exactly 'la trajectoire du milieu (la moitie font moins bien)'. The footer says it joins the middle gain month by month and that no account follows it exactly."
+   },
+   {
+    "defect": "8, worthless panel: the dashed 'verse 12 000 EUR' line was the median paid in, so thin lines above it looked like gains though none of the 40 paths was in gain. 4 lines ran off the top (y-limit from the 92nd percentile).",
+    "fix": "Each path is plotted as its own balance minus its own paid-in. There is no paid-in line any more; instead a zero line and a lightly tinted 'perte' zone. The worthless median (-3 560 €) sits under zero. The y range is computed from every plotted line of both plans, so no line leaves the frame."
+   },
+   {
+    "defect": "8, half panel: two flat lines from about month 12 were robots killed by the -25 % stop although they were working, and nothing explained them.",
+    "fix": "Every drawn path that the stop ended is found (paid-in below 36 000 at month 36, then frozen) and gets an orange dot at the first month after the stop. Legend: 'robot arrete par la securite : ensuite son trait reste plat'. A dotted line marks the 12th payment ('la securite s'arme'). Each panel prints the share of robots stopped (half paper: 7 fois sur 100 at 1 %, 8 at 2 %)."
+   },
+   {
+    "defect": "8: no panel between half and worthless (the robot that only covers its costs), and each panel had its own scale (120 k, 80 k, 27 k EUR).",
+    "fix": "Four panels: comme sur le papier, la moitie du papier, couvre juste ses frais (case '0.0', present for both plans) and ne vaut rien. All four share one y scale, also shared between 8 (1 %) and 8b (2 %), and the header says so."
+   },
+   {
+    "defect": "9: the x-axis 'taille du compte' was wrong (the thresholds read the larger of balance and money paid in, so the risk falls after 5 and 11 months even if the account never grows). The stop line, which depends on money paid in, was drawn on that axis. The picture never said what the -25 % is measured from, and the one-way staircase hid that the risk can go back up.",
+    "fix": "Top panel: x-axis 'le plus grand des deux : ton solde ou l'argent que tu as verse', with 'le pourcentage s'applique ensuite a ton solde'. Bottom panel, over time at half paper: median balance, 10-90 % band and the paid-in staircase on one euro axis, with risk zones. 1 % holds while both balance and paid-in are under 12 000 €; for the 2 % start, 2 % holds under 6 000 € before the 6th payment. The subtitle says the payments alone bring 1 % by the 6th payment and 0,5 % by the 12th. The stop is drawn on the time axis at the 12th payment, never on an euro axis. A text block explains what it measures from. The risk going back up is stated and pointed at with arrows. While doing this I also fixed my own draft: month-end balances drawn against the exact staircase made the middle path look below what was paid in; the balance now gets the 1 000 € jump at each payment."
+   }
+  ],
+  "not_fixed": [
+   "The review's figure 'the risk returns to 2 % in about 10 % (9.8 %) of paths' cannot be checked from growth.json. The code allows it: growth._risk key 1 reads max(balance, money paid in) at every entry, so the risk goes back up when the balance falls back under a threshold before the payments reach it. But growth.json only keeps month-end percentiles and 40 month-end sample paths. At month ends the return shows in 0 of 40 F2S half-paper paths (1 of 40 for F1S in the covers-costs case), which fits dips shorter than a month that only week-end data (not stored) would show. Pictures 9/9b therefore state the mechanism with arrows and print no percentage; checking it would mean running the engine again, which was not allowed.",
+   "Picture 7's 50 % row shows only 'moitie du papier' and 'ne vaut rien', as asked. The covers-costs figures (F2S 2.1 %, F1S 0 %) are not on picture 7; picture 12 has them.",
+   "Because 8/8b use one shared scale (-20 000 to 110 000 €), the 'couvre juste ses frais' and 'ne vaut rien' panels are thin bands just under zero (losses of about 2 000 to 3 600 €). The loss tint, zero line and printed numbers make it readable, but it is visually small.",
+   "Review 'left_out' items not drawn, since they were message points rather than picture defects: losing runs in the first year, the euro cost of stops on working robots, the hands 1.11 details (6 % daily lock, 50 % equity stop, Friday closure), minimum lots, and 'wait a year' on the balance seen. Only the hands' limitation got one footer line in 8/8b/9/9b ('Le robot actuel ne sait pas encore faire seul ces paliers ni cet arret.', picture 12's wording without its 'ce sera ajoute' promise).",
+   "Approximations in 9/9b: the time panel uses month-end values (recorded up to a week before each payment) plus the 1 000 € payment jump. After month 11 the balance percentiles include the few stopped paths, which receive no payment (a negligible share at half paper).",
+   "The stop months in 8/8b come from stopped/median_month, which counts months since the start (11 = at the 12th payment); they are worded 'au bout de N mois environ'.",
+   "Old pictures 7/8/9 were overwritten in place. They are still in git, with copies in the scratchpad folder old_images. No git command was run; growth.json and growth_charts.py were not touched."
+  ]
+ },
+ "review": {
+  "verdict": "good",
+  "numbers_checked": 121,
+  "numbers_wrong": 0,
+  "issues": [
+   {
+    "picture": "7, 8, 8b, 9, 9b (lab/r2/tracks/stake/plan_charts.py lines 51, 446, 451, 505)",
+    "issue": "Typed-in amounts use a plain ASCII space (0x20) between the thousands, not U+202F. This affects the footer DETAIL '... 1 000 € versés par mois.' on all five pictures and the 8/8b subtitle '(1 000 € par mois)', where the gap is visibly wider than in the computed amounts. It also affects '2 000 trajectoires' on lines 451 and 505. The style rule asks for U+202F in euro amounts, and the engineer's report says every euro amount uses it. Fix: build these strings with eur(1000) and NNBSP.",
+    "severity": "minor"
+   },
+   {
+    "picture": "7_echelle_des_departs.png",
+    "issue": "Both gain rows show only the middle value, so all five bars read as gains. At half paper about 1 path in 6 is still in loss after one year (at_12_months/in_loss_pct: F1S 15.7 %, F2S 14.3 %; gain_p10 from -396 EUR for 0.5 % to -746 EUR for 5 %). The falls row and the 50 % row do show downside, and the spec did not ask the gain rows to carry it. A one-line note under 'Gain après 1 an' would make the worst cases visible there too, e.g. 'une fois sur dix : en perte de 400 à 750 €'.",
+    "severity": "minor"
+   },
+   {
+    "picture": "8_compte_plan_conseille.png, 8b_compte_depart_2.png",
+    "issue": "All 8 panels share one y scale (-20 000 to 110 000 €), as the spec asks. As a result the 'couvre juste ses frais' and 'ne vaut rien' panels are a thin strip just under zero. A -3 560 € loss (about a quarter of the 14 000 € paid in) takes about 3 % of the panel height and looks negligible next to the paper case. The numbers are printed and the engineer flagged this. Printing the loss against the money paid in (e.g. '-3 560 € sur 14 000 € versés') would make it readable.",
+    "severity": "minor"
+   },
+   {
+    "picture": "8_compte_plan_conseille.png, 8b_compte_depart_2.png (half-paper and covers-costs panels)",
+    "issue": "The stopped robots are now marked, but nothing says what the stop costs a robot that works, so 'robot arrêté par la sécurité' can read as protection only. growth.json has the same plans without the stop (F1, F2). At half paper the share in loss after 3 years is 7.2 % with the stop against 3.0 % without (F2S 7.4 % vs F2 2.6 %). If the robot covers its costs, the median is -2 010 € with the stop against +594 € without, although the one-in-ten case is better (-5 230 € against -7 630 €). The engineer listed this as a message point. Adding 'même s'il marchait' to the stop legend, or a footer line, would close it.",
+    "severity": "minor"
+   },
+   {
+    "picture": "7_echelle_des_departs.png",
+    "issue": "Picture 7 shows the same risk steps and stop as 8 and 9, but lacks their footer line 'Le robot actuel ne sait pas encore faire seul ces paliers ni cet arrêt.' The stop rule and its key warning 'Il ne limite donc pas les baisses à -25 %' sit in the smallest grey footer print (9 pt INK2), while 9 and 9b give the same rule in 10 pt black body text.",
+    "severity": "minor"
+   },
+   {
+    "picture": "all five",
+    "issue": "No picture says that 2022-2025 are the years that validated the rules, which flatters any sizing. PROTOCOL_V3 Addendum G says this is 'to be said with every figure: past, on paper, same years as the validation'. No picture says what 'papier' or 'la moitié du papier' means either: each rule's average gain per trade as in 2022-2025, or halved. Picture 12 defines 'papier'. The spec only asked for 'simulation 2022-2025, aucun trade réel', so this can go in the footer or in the message sent with the pictures.",
+    "severity": "minor"
+   },
+   {
+    "picture": "7_echelle_des_departs.png",
+    "issue": "The advice legend '1 % = mon conseil : les baisses restent proches de ce que tu acceptes' uses the spec's wording. It holds at half paper: first-year fall 17 % typical and 26 % one time in ten, against the user's 10-20 %. It does not hold if the robot only covers its costs (23 % / 33 %) or is worthless (30 % / 40 %). Phrased as a plain statement it can read as a promise. A qualifier such as 'restent les plus proches' or 'dans ce cas' would avoid that.",
+    "severity": "minor"
+   },
+   {
+    "picture": "8_compte_plan_conseille.png, 8b_compte_depart_2.png",
+    "issue": "Cosmetic. In 8's covers-costs panel, the near-opaque box behind the end label '-2 010 €' (zorder 7) hides the lower half of two stop dots near months 32-34. Sample path 23 is stopped in its last month, so its dot falls at month 36 and is clipped to a half dot by the right edge of the frame. In 8b's worthless panel the '-3 610 €' box covers the end of the bottom axis line. No text is hidden.",
+    "severity": "minor"
+   },
+   {
+    "picture": "9_risque_plan_conseille.png, 9b_risque_depart_2.png",
+    "issue": "Cosmetic. At month 11 the orange right edge of the 1 % zone runs along the grey dotted 'la sécurité s'arme' line, so that line reads as a two-colour dashed line.",
+    "severity": "minor"
+   },
+   {
+    "picture": "9_risque_plan_conseille.png, 9b_risque_depart_2.png",
+    "issue": "'combien tu risques par trade' is exact, but up to 6 trades can be open at once (account.py LIMITS max_positions=6). At the 2 % start up to 12 % of the balance can be at risk at the same time, 6 % at 1 %. One footer line would help a user who fears losing streaks. This goes beyond the spec.",
+    "severity": "minor"
+   }
+  ]
+ }
+}

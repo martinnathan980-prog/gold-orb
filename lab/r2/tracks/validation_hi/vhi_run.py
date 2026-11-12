@@ -13,7 +13,9 @@ SPEC (JSON; see look_spec.json):
     accounts      ["sum", "capped"]
     official_check  true: the ten unchanged sleeves rebuilt and compared row by row with results/r2/recalc/trades,
                   on the whole frame and on the judged window (synthesis A's CHECK FIRST: res["check_first"], the
-                  first key of the output; a failure is printed loudly and synthesis A's changes are then not judged)
+                  first key of the output; a failure is printed loudly and synthesis A's changes are then not judged;
+                  an '@payoff' reference not identical to its P0 sleeve inside the window is a WARNING line there,
+                  with its counts, not a failure)
     sleeves       [{key, rule, sym, convention, change {kind, id, ...}, base, refuse, every_signal, signals}]
     portfolios    {name: {"sleeves": [keys], "stakes": {key: stake spec with an "id"}}} (or relative to P0)
     comparisons   [{"name", "ref", "var"}]                 portfolio vs portfolio (same mode / exec / account), the
@@ -285,11 +287,41 @@ def official_check(name, sym, m1, leader, W=None):
     return res
 
 
+def payoff_reference_warnings(res):
+    """The '@payoff' references in the check first: for each '<sleeve>@payoff' reference (synthesis A's unchanged
+    sleeve, with the payoff lens's 3-spread refusal) and each run (mode/exec), the counts of
+    res['payoff_reference_vs_sB'] inside the judged window, and one WARNING line for each run where the reference is
+    not identical to its P0 sleeve '<sleeve>' (a warning, not a failure: the refusal is expected to remove a few
+    trades). Returns (counts, warning lines)."""
+    keys = ("identical", "n_payoff_reference", "n_sB", "matched", "only_in_payoff_reference", "only_in_sB",
+            "matched_differing", "R_payoff_reference", "R_sB")
+    refs, warns = {}, []
+    for ref, runs in (res.get("payoff_reference_vs_sB") or {}).items():
+        k0 = ref[:-len("@payoff")]
+        refs[ref] = {}
+        for r, v in runs.items():
+            info = (((res.get("sleeves") or {}).get(ref) or {}).get("runs", {}).get(r) or {}).get("info") or {}
+            row = {k: v.get(k) for k in keys}
+            row["orders_refused_by_the_3_spread_rule_whole_frame"] = info.get("reference_refused_orders")
+            refs[ref][r] = row
+            if not v.get("identical"):
+                warns.append(f"WARNING (check first; a warning, not a failure): {ref} {r} is not identical to its P0 "
+                             f"sleeve {k0} inside the judged window: {row['n_payoff_reference']} trades against "
+                             f"{row['n_sB']}; {row['only_in_payoff_reference']} only in the reference, "
+                             f"{row['only_in_sB']} only in the P0 sleeve, {row['matched_differing']} matched but "
+                             f"different; total R {row['R_payoff_reference']} against {row['R_sB']}; orders refused by "
+                             f"the 3-spread rule on the whole frame: "
+                             f"{row['orders_refused_by_the_3_spread_rule_whole_frame']}")
+    return refs, warns
+
+
 def check_first(spec, res):
     """synthesis A's '3. CHECK FIRST' (the harness's official check): every one of the ten unchanged sleeves rebuilt
     by this pipeline equals the official recalc trades, on the whole frame and on the judged window (count, total R,
     trade by trade); otherwise synthesis A says 'stop and report': its changes are then not judged (verdicts
-    adopted = null), and the failure is written at the top of the output."""
+    adopted = null), and the failure is written at the top of the output. Shown beside it, never a failure
+    ('payoff_references', 'warnings'): every '<sleeve>@payoff' reference against its P0 sleeve inside the judged
+    window, with a WARNING line and the counts for each run where they are not identical."""
     want = set(TEN_KEYS)
     got = res.get("official") or {}
     rows = {k: {"reproduced": bool(v.get("reproduced")), "whole_frame": bool(v.get("reproduced_whole_frame")),
@@ -306,8 +338,12 @@ def check_first(spec, res):
         "FAILED -- STOP AND REPORT (synthesis A, 3. CHECK FIRST): the unchanged sleeves recomputed by this pipeline do "
         f"not equal the official recalc trades: {', '.join(failed) or 'the check was not computed'}. synthesis A's "
         "changes are NOT judged (verdicts adopted = null); every other number of this run is unverified.")
+    refs, warns = payoff_reference_warnings(res)
+    if warns:
+        status += (f" -- {len(warns)} WARNING line(s): an '@payoff' reference is not identical to its P0 sleeve inside "
+                   "the window (see 'warnings'; a warning, not a failure)")
     return {"what": check_first.__doc__.strip(), "computed": computed, "passed": ok, "status": status,
-            "failed_or_missing": failed, "sleeves": rows}
+            "failed_or_missing": failed, "sleeves": rows, "payoff_references": refs, "warnings": warns}
 
 
 def loud(progress, lines):
@@ -505,12 +541,14 @@ def run_spec(spec, cut, progress=print):
         gc.collect()
     res["_trades"] = trades
     res["_signals"] = signals
+    res["payoff_reference_vs_sB"] = payoff_reference_vs_sB(spec, trades, W, modes, execs)
     res["check_first"] = check_first(spec, res)
     if not res["check_first"]["passed"]:
         loud(progress, [res["check_first"]["status"]])
     else:
         progress(f"== check first: {res['check_first']['status']}")
-    res["payoff_reference_vs_sB"] = payoff_reference_vs_sB(spec, trades, W, modes, execs)
+    for w in res["check_first"]["warnings"]:
+        progress(w)
     # ------------------------------------------------------------------------------------------- portfolios
     a, b = W["eval"]
     meta = {s["key"]: {"sym": s["sym"], "tie": f"{s['rule']}_{s['sym']}"} for s in sleeves}

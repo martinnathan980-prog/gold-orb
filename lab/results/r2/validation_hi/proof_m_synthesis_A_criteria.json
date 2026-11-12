@@ -1297,7 +1297,7 @@
    }
   },
   "check_first": {
-   "what": "synthesis A's '3. CHECK FIRST' (the harness's official check): every one of the ten unchanged sleeves rebuilt\nby this pipeline equals the official recalc trades, on the whole frame and on the judged window (count, total R,\ntrade by trade); otherwise synthesis A says 'stop and report': its changes are then not judged (verdicts\nadopted = null), and the failure is written at the top of the output.",
+   "what": "synthesis A's '3. CHECK FIRST' (the harness's official check): every one of the ten unchanged sleeves rebuilt\nby this pipeline equals the official recalc trades, on the whole frame and on the judged window (count, total R,\ntrade by trade); otherwise synthesis A says 'stop and report': its changes are then not judged (verdicts\nadopted = null), and the failure is written at the top of the output. Shown beside it, never a failure\n('payoff_references', 'warnings'): every '<sleeve>@payoff' reference against its P0 sleeve inside the judged\nwindow, with a WARNING line and the counts for each run where they are not identical.",
    "computed": true,
    "passed": true,
    "status": "PASSED: the ten unchanged sleeves rebuilt by the harness equal the official recalc trades (whole frame and judged window: count, total R, trade by trade)",
@@ -1433,10 +1433,363 @@
       "reproduced": true
      }
     }
-   }
+   },
+   "payoff_references": {
+    "F1_brk_ridge_filter__ethusd@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 516,
+      "n_sB": 516,
+      "matched": 516,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 103.017,
+      "R_sB": 103.017,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 514,
+      "n_sB": 514,
+      "matched": 514,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 96.384,
+      "R_sB": 96.384,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 518,
+      "n_sB": 518,
+      "matched": 518,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 85.899,
+      "R_sB": 85.899,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 1
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 517,
+      "n_sB": 517,
+      "matched": 517,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 77.597,
+      "R_sB": 77.597,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 1
+     }
+    },
+    "ocm4__us100@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 492,
+      "n_sB": 492,
+      "matched": 492,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 53.78,
+      "R_sB": 53.78,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 492,
+      "n_sB": 492,
+      "matched": 492,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 51.605,
+      "R_sB": 51.605,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 492,
+      "n_sB": 492,
+      "matched": 492,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 50.8,
+      "R_sB": 50.8,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 492,
+      "n_sB": 492,
+      "matched": 492,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 48.096,
+      "R_sB": 48.096,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     }
+    },
+    "donch4h_stop__xauusd@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 207,
+      "n_sB": 207,
+      "matched": 207,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 30.033,
+      "R_sB": 30.033,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 240,
+      "n_sB": 240,
+      "matched": 240,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 19.185,
+      "R_sB": 19.185,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 207,
+      "n_sB": 207,
+      "matched": 207,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 27.311,
+      "R_sB": 27.311,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 241,
+      "n_sB": 241,
+      "matched": 241,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 16.133,
+      "R_sB": 16.133,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     }
+    },
+    "nq_btc_follow__btcusd@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 943,
+      "n_sB": 943,
+      "matched": 943,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 55.543,
+      "R_sB": 55.543,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 949,
+      "n_sB": 949,
+      "matched": 949,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 45.768,
+      "R_sB": 45.768,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 943,
+      "n_sB": 943,
+      "matched": 943,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 41.35,
+      "R_sB": 41.35,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 949,
+      "n_sB": 949,
+      "matched": 949,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 27.064,
+      "R_sB": 27.064,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     }
+    },
+    "noise30__us100@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 795,
+      "n_sB": 795,
+      "matched": 795,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 85.235,
+      "R_sB": 85.235,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 794,
+      "n_sB": 794,
+      "matched": 794,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 79.71,
+      "R_sB": 79.71,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 795,
+      "n_sB": 795,
+      "matched": 795,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 80.051,
+      "R_sB": 80.051,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 794,
+      "n_sB": 794,
+      "matched": 794,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 74.246,
+      "R_sB": 74.246,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     }
+    },
+    "brk72_24h_wd__btcusd@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 549,
+      "n_sB": 549,
+      "matched": 549,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 140.684,
+      "R_sB": 140.684,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 558,
+      "n_sB": 558,
+      "matched": 558,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 132.239,
+      "R_sB": 132.239,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 549,
+      "n_sB": 549,
+      "matched": 549,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 135.516,
+      "R_sB": 135.516,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 558,
+      "n_sB": 558,
+      "matched": 558,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 127.999,
+      "R_sB": 127.999,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     }
+    },
+    "orb_asia_2d_buf10__xauusd@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 464,
+      "n_sB": 464,
+      "matched": 464,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 27.059,
+      "R_sB": 27.059,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 510,
+      "n_sB": 510,
+      "matched": 510,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": -21.762,
+      "R_sB": -21.762,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 464,
+      "n_sB": 464,
+      "matched": 464,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 15.11,
+      "R_sB": 15.11,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 508,
+      "n_sB": 508,
+      "matched": 508,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": -28.389,
+      "R_sB": -28.389,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     }
+    }
+   },
+   "warnings": []
   }
  },
- "checks": 574,
+ "checks": 576,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -5477,6 +5830,43 @@
    "expected": false,
    "got": false,
    "ok": true
+  },
+  {
+   "field": "fix 5: the check first shows every '@payoff' reference of the run against its P0 sleeve inside the window (FP and x1.5, lab and live, with the counts): in sample all identical, so no WARNING line",
+   "expected": [
+    [
+     "F1_brk_ridge_filter__ethusd@payoff",
+     "brk72_24h_wd__btcusd@payoff",
+     "donch4h_stop__xauusd@payoff",
+     "noise30__us100@payoff",
+     "nq_btc_follow__btcusd@payoff",
+     "ocm4__us100@payoff",
+     "orb_asia_2d_buf10__xauusd@payoff"
+    ],
+    true,
+    []
+   ],
+   "got": [
+    [
+     "F1_brk_ridge_filter__ethusd@payoff",
+     "brk72_24h_wd__btcusd@payoff",
+     "donch4h_stop__xauusd@payoff",
+     "noise30__us100@payoff",
+     "nq_btc_follow__btcusd@payoff",
+     "ocm4__us100@payoff",
+     "orb_asia_2d_buf10__xauusd@payoff"
+    ],
+    true,
+    []
+   ],
+   "ok": true
+  },
+  {
+   "field": "fix 5: an '@payoff' reference that is not identical (simulated on a copy: 2 trades only in the P0 sleeve, fp/lab) gives ONE WARNING line with the counts, named in the status; the check first still passes",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "warning": "WARNING (check first; a warning, not a failure): orb_asia_2d_buf10__xauusd@payoff fp/lab is not identical to its P0 sleeve orb_asia_2d_buf10__xauusd inside the judged window: 462 trades against 464; 0 only in the reference, 2 only in the P0 sleeve, 0 matched but different; total R 27.059 against 27.059; orders refused by the 3-spread rule on the whole frame: 0"
   }
  ]
 }

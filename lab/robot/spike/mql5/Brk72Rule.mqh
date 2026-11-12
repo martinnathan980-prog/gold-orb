@@ -72,6 +72,7 @@ public:
    double   point;
    int      digits;
    bool     debug_hours;         // journal every hour bar (HB) and every evaluation (EV)
+   bool     rebuild_chain;       // no saved state: replay the history through the paper engine (the chain the lab would have)
    bool     quiet;               // no journal while the history is rebuilt
    // ---- hour bars
    BrkHour  hb[];
@@ -96,8 +97,9 @@ public:
    double   pos_fill, pos_stop, pos_atr;
 
    void Init(const string symbol, const string sleeve, const double slip_mkt_bps, const double slip_stop_bps,
-             const int warm_days, const bool dbg)
+             const int warm_days, const bool dbg, const bool rebuild)
      {
+      rebuild_chain = rebuild;
       sym = symbol;
       code = sleeve;
       n_chan = 72;
@@ -352,12 +354,24 @@ public:
       if(CopyRates(sym, PERIOD_M1, 0, 1, cur) != 1) return false;
       datetime upto = cur[0].time;
       MqlRates r[];
-      int n = CopyRates(sym, PERIOD_M1, upto - warmup_days * 86400, upto - 1, r);
+      int n = CopyRates(sym, PERIOD_M1, (datetime)(upto - warmup_days * 86400), (datetime)(upto - 1), r);   // by date range
       if(n < 0) return false;                             // history not available yet (e.g. just after a restart)
       bool restored = RestoreState();
       datetime lc = last_closed, cb = cur_bar;
       started = true;
       int i = 0;
+      if(!restored && rebuild_chain)                      // no saved state (first start, VPS migration): rebuild the chain
+        {
+         for(; i < n; i++)
+           {
+            if(r[i].time >= upto) break;
+            AtOpen(r[i].time, r[i].open, r[i].spread, false, act);
+            AtClose(r[i]);
+           }
+         act.close_now = false;                           // nothing real to close: the robot was not running
+         cur_bar = 0;
+         return true;
+        }
       quiet = true;
       for(; i < n; i++)
         {
@@ -400,7 +414,7 @@ public:
       // bars that closed since the last call (normally one: the bar that was forming)
       MqlRates r[];
       datetime from = (last_closed > 0) ? last_closed + 60 : cur_bar;      // no history at all: from the first bar seen
-      int n = (from > 0 && from < t0) ? CopyRates(sym, PERIOD_M1, from, t0 - 1, r) : 0;
+      int n = (from > 0 && from < t0) ? CopyRates(sym, PERIOD_M1, (datetime)from, (datetime)(t0 - 1), r) : 0;
       bool seen = (cur_bar == 0 || cur_bar <= last_closed);
       for(int i = 0; i < n; i++)
          if(r[i].time == cur_bar) seen = true;

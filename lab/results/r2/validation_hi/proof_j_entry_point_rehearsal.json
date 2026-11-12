@@ -1,7 +1,7 @@
 {
- "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process with the spec as it stands (changes_in_look K1, K2, K3 and synthesis A's five): the right sleeves, portfolios and verdicts, the check first and synthesis A's block, the same numbers as the proofs' run, nothing logged, the imported code's sha256 recorded (A5)",
+ "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process with the spec as it stands (changes_in_look K1, K2, K3 and synthesis A's five): the right sleeves, portfolios and verdicts, the check first and synthesis A's block, the same numbers as the proofs' run, nothing logged, exit status 0, the imported code's sha256 recorded (A5), synthesis A's frozen files check recorded (fix 5); fix 3: a reduced in-sample spec whose check first fails exits 3 after writing its output",
  "output": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
- "seconds": 54.2,
+ "seconds": 52.5,
  "detail": {
   "changes": {
    "in_look": [
@@ -157,7 +157,7 @@
    }
   },
   "check_first": {
-   "what": "synthesis A's '3. CHECK FIRST' (the harness's official check): every one of the ten unchanged sleeves rebuilt\nby this pipeline equals the official recalc trades, on the whole frame and on the judged window (count, total R,\ntrade by trade); otherwise synthesis A says 'stop and report': its changes are then not judged (verdicts\nadopted = null), and the failure is written at the top of the output.",
+   "what": "synthesis A's '3. CHECK FIRST' (the harness's official check): every one of the ten unchanged sleeves rebuilt\nby this pipeline equals the official recalc trades, on the whole frame and on the judged window (count, total R,\ntrade by trade); otherwise synthesis A says 'stop and report': its changes are then not judged (verdicts\nadopted = null), and the failure is written at the top of the output. Shown beside it, never a failure\n('payoff_references', 'warnings'): every '<sleeve>@payoff' reference against its P0 sleeve inside the judged\nwindow, with a WARNING line and the counts for each run where they are not identical.",
    "computed": true,
    "passed": true,
    "status": "PASSED: the ten unchanged sleeves rebuilt by the harness equal the official recalc trades (whole frame and judged window: count, total R, trade by trade)",
@@ -293,7 +293,260 @@
       "reproduced": true
      }
     }
-   }
+   },
+   "payoff_references": {
+    "F1_brk_ridge_filter__ethusd@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 516,
+      "n_sB": 516,
+      "matched": 516,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 103.017,
+      "R_sB": 103.017,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 514,
+      "n_sB": 514,
+      "matched": 514,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 96.384,
+      "R_sB": 96.384,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 518,
+      "n_sB": 518,
+      "matched": 518,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 85.899,
+      "R_sB": 85.899,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 1
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 517,
+      "n_sB": 517,
+      "matched": 517,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 77.597,
+      "R_sB": 77.597,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 1
+     }
+    },
+    "ocm4__us100@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 492,
+      "n_sB": 492,
+      "matched": 492,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 53.78,
+      "R_sB": 53.78,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 492,
+      "n_sB": 492,
+      "matched": 492,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 51.605,
+      "R_sB": 51.605,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 492,
+      "n_sB": 492,
+      "matched": 492,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 50.8,
+      "R_sB": 50.8,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 492,
+      "n_sB": 492,
+      "matched": 492,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 48.096,
+      "R_sB": 48.096,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     }
+    },
+    "donch4h_stop__xauusd@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 207,
+      "n_sB": 207,
+      "matched": 207,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 30.033,
+      "R_sB": 30.033,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 240,
+      "n_sB": 240,
+      "matched": 240,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 19.185,
+      "R_sB": 19.185,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 207,
+      "n_sB": 207,
+      "matched": 207,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 27.311,
+      "R_sB": 27.311,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 241,
+      "n_sB": 241,
+      "matched": 241,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 16.133,
+      "R_sB": 16.133,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     }
+    },
+    "brk72_24h_wd__btcusd@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 549,
+      "n_sB": 549,
+      "matched": 549,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 140.684,
+      "R_sB": 140.684,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 558,
+      "n_sB": 558,
+      "matched": 558,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 132.239,
+      "R_sB": 132.239,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 549,
+      "n_sB": 549,
+      "matched": 549,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 135.516,
+      "R_sB": 135.516,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 558,
+      "n_sB": 558,
+      "matched": 558,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 127.999,
+      "R_sB": 127.999,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     }
+    },
+    "orb_asia_2d_buf10__xauusd@payoff": {
+     "fp/lab": {
+      "identical": true,
+      "n_payoff_reference": 464,
+      "n_sB": 464,
+      "matched": 464,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 27.059,
+      "R_sB": 27.059,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "fp/live": {
+      "identical": true,
+      "n_payoff_reference": 510,
+      "n_sB": 510,
+      "matched": 510,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": -21.762,
+      "R_sB": -21.762,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/lab": {
+      "identical": true,
+      "n_payoff_reference": 464,
+      "n_sB": 464,
+      "matched": 464,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": 15.11,
+      "R_sB": 15.11,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     },
+     "stress/live": {
+      "identical": true,
+      "n_payoff_reference": 508,
+      "n_sB": 508,
+      "matched": 508,
+      "only_in_payoff_reference": 0,
+      "only_in_sB": 0,
+      "matched_differing": 0,
+      "R_payoff_reference": -28.389,
+      "R_sB": -28.389,
+      "orders_refused_by_the_3_spread_rule_whole_frame": 0
+     }
+    }
+   },
+   "warnings": []
   },
   "verdicts": {
    "K1": {
@@ -3517,7 +3770,7 @@
     ]
    },
    "r2/tracks/validation_hi/look.py": {
-    "sha256": "642980d1160804db4385517ccdc59c1d1e7ebd53e0aa55d45a0a9c08c8bf4257",
+    "sha256": "569d17a79643d68a6d3870ebaa6f576c2e9a9b1c4f8303c232f81c7963a1376b",
     "modules": [
      "__main__"
     ]
@@ -3535,7 +3788,7 @@
     ]
    },
    "r2/tracks/validation_hi/vhi_guard.py": {
-    "sha256": "89baf8714a69144439e8852be7e80f6943e46e9d91f3b37ad900437f6825bbc4",
+    "sha256": "e35de08f3129684fc40eb4c3c29553006ed9a8ad284a317c0305aac71c99b02f",
     "modules": [
      "vhi_guard"
     ]
@@ -3547,7 +3800,7 @@
     ]
    },
    "r2/tracks/validation_hi/vhi_run.py": {
-    "sha256": "b942e1e3c3880a97da579116ead4c0d3a421b51f0783f2b9b706f727acac89c4",
+    "sha256": "bd824592a1225226ffd9578debddb944050d64716da4f50cacbbe6f0bc8622a2",
     "modules": [
      "vhi_run"
     ]
@@ -3591,15 +3844,129 @@
    "r2/tracks/ml/models/B1_ridge_full.json": "d191cbbcc2fc4d2cae31182f14f412069a194b69c2a9d9ae6bca0d0f5dee644e",
    "tracks/orb/strategy.py": "2be366337535228364921bad36f552f4bb75a6b1f4e13ff743297d90c4ef257f",
    "tracks/trend/strategy.py": "9f572600e1bc78b669ab0a0a3db50342cfd69dce2b2ee0718440f78e7c31ab26"
+  },
+  "frozen_files_check": {
+   "what": "synthesis A's frozen sha256 (results/r2/autopsy/synthesis_A.json, frozen_files_sha256 and its proposed_validation_look text) of the files the look uses, against the files now",
+   "synthesis_A_json": "results/r2/autopsy/synthesis_A.json",
+   "synthesis_A_json_sha256": "2897cdf90e3344572ec55977c8d3112ae535148a02e319f862d69fc696939185",
+   "files": {
+    "goldlab/sim.py": {
+     "frozen": "8757a9de958061a30cf5a590261fa0688b3373979ae6a65a700c6731269b4430",
+     "now": "8757a9de958061a30cf5a590261fa0688b3373979ae6a65a700c6731269b4430",
+     "same": true,
+     "quoted_in_the_text": true
+    },
+    "goldlab/r2.py": {
+     "frozen": "1d6e172b8d392ec8dd42b1d5764d203bd28813fff5afa818ef1c5a72c9420eab",
+     "now": "1d6e172b8d392ec8dd42b1d5764d203bd28813fff5afa818ef1c5a72c9420eab",
+     "same": true,
+     "quoted_in_the_text": false
+    },
+    "goldlab/data.py": {
+     "frozen": "2693d64d1e15f275b1a50395d86308b3db4616a1a26e4e9d20397abe00b20645",
+     "now": "2693d64d1e15f275b1a50395d86308b3db4616a1a26e4e9d20397abe00b20645",
+     "same": true,
+     "quoted_in_the_text": false
+    },
+    "goldlab/split.py": {
+     "frozen": "deee9a188cd7a4f442e35020648debce0e2400dd327567cac13dd7c4e0ab29ec",
+     "now": "deee9a188cd7a4f442e35020648debce0e2400dd327567cac13dd7c4e0ab29ec",
+     "same": true,
+     "quoted_in_the_text": false
+    },
+    "r2/recalc.py": {
+     "frozen": "8e84d2db1fc90a2b05b640502cc6938b54d9daae9eb46e457215e482e50795d1",
+     "now": "8e84d2db1fc90a2b05b640502cc6938b54d9daae9eb46e457215e482e50795d1",
+     "same": true,
+     "quoted_in_the_text": true
+    },
+    "r2/fp_costs.json": {
+     "frozen": "352c2da55e6edca934bad44a2519f437d30a2e5c79f7f887f0f5a267d5cd8eb1",
+     "now": "352c2da55e6edca934bad44a2519f437d30a2e5c79f7f887f0f5a267d5cd8eb1",
+     "same": true,
+     "quoted_in_the_text": true
+    },
+    "r2/tracks/idx_us/strategy.py": {
+     "frozen": "8ed1e0f36d56e7d3ca4d51fdcba357f137957a83400deb28b4695f1c92d5a4c8",
+     "now": "8ed1e0f36d56e7d3ca4d51fdcba357f137957a83400deb28b4695f1c92d5a4c8",
+     "same": true,
+     "quoted_in_the_text": false
+    },
+    "r2/tracks/crypto/strategy.py": {
+     "frozen": "76b7c951b1665e86cc787c99b2c9759415292758705f0f162be0e1a3b9e335ff",
+     "now": "76b7c951b1665e86cc787c99b2c9759415292758705f0f162be0e1a3b9e335ff",
+     "same": true,
+     "quoted_in_the_text": false
+    },
+    "r2/tracks/ml/strategy.py": {
+     "frozen": "0e8baf4d35cccf0bfa83cac5e4c3a095c5f88bd76eedb3f5e5a683184e23a31d",
+     "now": "0e8baf4d35cccf0bfa83cac5e4c3a095c5f88bd76eedb3f5e5a683184e23a31d",
+     "same": true,
+     "quoted_in_the_text": false
+    },
+    "r2/tracks/ml/models/B1_ridge_full.json": {
+     "frozen": "d191cbbcc2fc4d2cae31182f14f412069a194b69c2a9d9ae6bca0d0f5dee644e",
+     "now": "d191cbbcc2fc4d2cae31182f14f412069a194b69c2a9d9ae6bca0d0f5dee644e",
+     "same": true,
+     "quoted_in_the_text": false
+    },
+    "r2/tracks/leadlag/strategy.py": {
+     "frozen": "4c5dd4710d3371ad6a59ab3d96176efa13d17a10b1ac927573260f0246b4e59d",
+     "now": "4c5dd4710d3371ad6a59ab3d96176efa13d17a10b1ac927573260f0246b4e59d",
+     "same": true,
+     "quoted_in_the_text": false
+    },
+    "r2/tracks/overnight/strategy.py": {
+     "frozen": "344bfe35f11b13c1d955f62a52d938ecc12a6bd82b50347b5651fba568d55f86",
+     "now": "344bfe35f11b13c1d955f62a52d938ecc12a6bd82b50347b5651fba568d55f86",
+     "same": true,
+     "quoted_in_the_text": false
+    },
+    "tracks/trend/strategy.py": {
+     "frozen": "9f572600e1bc78b669ab0a0a3db50342cfd69dce2b2ee0718440f78e7c31ab26",
+     "now": "9f572600e1bc78b669ab0a0a3db50342cfd69dce2b2ee0718440f78e7c31ab26",
+     "same": true,
+     "quoted_in_the_text": false
+    },
+    "tracks/orb/strategy.py": {
+     "frozen": "2be366337535228364921bad36f552f4bb75a6b1f4e13ff743297d90c4ef257f",
+     "now": "2be366337535228364921bad36f552f4bb75a6b1f4e13ff743297d90c4ef257f",
+     "same": true,
+     "quoted_in_the_text": false
+    },
+    "r2/tracks/autopsy/synthesis_A/portfolio.py": {
+     "frozen": "56607d818669a9bc2e4cde14bf67a324a76b9882773f229a11bb89da9549f78c",
+     "now": "56607d818669a9bc2e4cde14bf67a324a76b9882773f229a11bb89da9549f78c",
+     "same": true,
+     "quoted_in_the_text": true
+    }
+   },
+   "not_used_by_the_look": {
+    "r2/tracks/autopsy/synthesis_A/synth.py": {
+     "frozen": "773965bd660c05dfd6a3d441e2c72058e7dc553a7b09817b5896319df97d04c9",
+     "now": "773965bd660c05dfd6a3d441e2c72058e7dc553a7b09817b5896319df97d04c9",
+     "same": true
+    }
+   },
+   "problems": [],
+   "ok": true
+  },
+  "exit_code_probe": {
+   "spec": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_exit_code_probe/reduced_spec.json",
+   "output": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_exit_code_probe/vhi_proof_exit_code__cut2022-01-01.json",
+   "returncode": 3,
+   "seconds": 10.4,
+   "stdout_tail": "changes are NOT judged (verdicts adopted = null); every other number of this run is unverified.\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\nwritten /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_exit_code_probe/vhi_proof_exit_code__cut2022-01-01.json [9.7s]; access logged: False\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n!!! FAILED -- STOP AND REPORT (synthesis A, 3. CHECK FIRST): the unchanged sleeves recomputed by this pipeline do not equal the official recalc trades: GOLD_FRI_PM__xauusd, F1_brk_ridge_filter__btcusd, F1_brk_ridge_filter__ethusd, brk72_24h_wd__btcusd, brk72_24h_wd__ethusd, noise30__us100, nq_btc_follow__btcusd, ocm4__us100. synthesis A's changes are NOT judged (verdicts adopted = null); every other number of this run is unverified.\n!!! see 'check_first' at the top of /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_exit_code_probe/vhi_proof_exit_code__cut2022-01-01.json\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+   "stderr_tail": "CHECK FIRST FAILED: FAILED -- STOP AND REPORT (synthesis A, 3. CHECK FIRST): the unchanged sleeves recomputed by this pipeline do not equal the official recalc trades: GOLD_FRI_PM__xauusd, F1_brk_ridge_filter__btcusd, F1_brk_ridge_filter__ethusd, brk72_24h_wd__btcusd, brk72_24h_wd__ethusd, noise30__us100, nq_btc_follow__btcusd, ocm4__us100. synthesis A's changes are NOT judged (verdicts adopted = null); every other number of this run is unverified."
   }
  },
- "checks": 16,
+ "checks": 23,
  "failed": 0,
  "ok": true,
  "failures": [],
  "rows": [
   {
-   "field": "look.py --cut 2022-01-01 exits 0",
+   "field": "look.py --cut 2022-01-01 exits 0 (fix 3: status 0 when the check first passed)",
    "expected": 0,
    "got": 0,
    "ok": true,
@@ -3766,7 +4133,7 @@
    "ok": true
   },
   {
-   "field": "the check first (synthesis A) is the FIRST key of the rehearsal's output, computed and passed, equal to the proofs run's",
+   "field": "the check first (synthesis A) is the FIRST key of the rehearsal's output, computed and passed, equal to the proofs run's (its '@payoff' references: the rehearsal's five, each equal to the proofs run's)",
    "expected": [
     "check_first",
     true,
@@ -3780,6 +4147,53 @@
     true
    ],
    "ok": true
+  },
+  {
+   "field": "fix 5: the rehearsal's check first lists synthesis A's five '@payoff' references, each identical to its P0 sleeve inside the window (lab and live, FP and x1.5): no WARNING line in the check first or in look.py's output",
+   "expected": [
+    [
+     "F1_brk_ridge_filter__ethusd@payoff",
+     "brk72_24h_wd__btcusd@payoff",
+     "donch4h_stop__xauusd@payoff",
+     "ocm4__us100@payoff",
+     "orb_asia_2d_buf10__xauusd@payoff"
+    ],
+    true,
+    [],
+    false
+   ],
+   "got": [
+    [
+     "F1_brk_ridge_filter__ethusd@payoff",
+     "brk72_24h_wd__btcusd@payoff",
+     "donch4h_stop__xauusd@payoff",
+     "ocm4__us100@payoff",
+     "orb_asia_2d_buf10__xauusd@payoff"
+    ],
+    true,
+    [],
+    false
+   ],
+   "ok": true
+  },
+  {
+   "field": "fix 5: the rehearsal's meta records synthesis A's frozen files check, made before the run (recorded, not refused, at an in-sample CUT): ok, the 15 files the look uses each equal to its frozen sha256 in synthesis_A.json, the 4 the proposed_validation_look text names quoted there, synth.py recorded (not used by the look); no check at open_run (not a look)",
+   "expected": [
+    true,
+    true,
+    true,
+    true,
+    null
+   ],
+   "got": [
+    true,
+    true,
+    true,
+    true,
+    null
+   ],
+   "ok": true,
+   "synthesis_A_json_sha256": "2897cdf90e3344572ec55977c8d3112ae535148a02e319f862d69fc696939185"
   },
   {
    "field": "look.py rehearsal == proofs run: synthesis A's block (the passing changes together, item 6), its five changes in the spec's order, no error",
@@ -3858,6 +4272,38 @@
    ],
    "ok": true,
    "parquet_reads": 24
+  },
+  {
+   "field": "fix 3: look.py (the real main, CUT 2022-01-01, the reduced spec, one official GOLD_FRI_PM row changed in memory) exits with status 3 when the check first failed",
+   "expected": 3,
+   "got": 3,
+   "ok": true,
+   "stderr_tail": "esis A, 3. CHECK FIRST): the unchanged sleeves recomputed by this pipeline do not equal the official recalc trades: GOLD_FRI_PM__xauusd, F1_brk_ridge_filter__btcusd, F1_brk_ridge_filter__ethusd, brk72_24h_wd__btcusd, brk72_24h_wd__ethusd, noise30__us100, nq_btc_follow__btcusd, ocm4__us100. synthesis A's changes are NOT judged (verdicts adopted = null); every other number of this run is unverified."
+  },
+  {
+   "field": "fix 3: ... the output was written before the exit: its first key is the check first, FAILED -- STOP AND REPORT, naming GOLD_FRI_PM (1 window row differing) and the 7 missing sleeves",
+   "expected": true,
+   "got": true,
+   "ok": true,
+   "status": "FAILED -- STOP AND REPORT (synthesis A, 3. CHECK FIRST): the unchanged sleeves recomputed by this pipeline do not equal the official recalc trades: GOLD_FRI_PM__xauusd, F1_brk_ridge_filter__btcusd, F1_brk_ridge_filter__ethusd, brk72_24h_wd__btcusd, brk72_24h_wd__ethusd, noise30__us100, nq_btc_follow"
+  },
+  {
+   "field": "fix 3: ... synthesis A's orb S0.75r verdict is not judged (adopted null, stopped by the check first)",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "fix 3: ... stdout says 'written <output>' and shows the '!!!' banner; stderr says 'CHECK FIRST FAILED'",
+   "expected": true,
+   "got": true,
+   "ok": true
+  },
+  {
+   "field": "fix 3: ... nothing logged and no marker (an in-sample run)",
+   "expected": true,
+   "got": true,
+   "ok": true
   }
  ]
 }

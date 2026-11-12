@@ -4,8 +4,9 @@ Rule brk72_24h_wd on btcusd, written in MQL5 as it would live inside the single 
 mql5/SpikeRobot.mq5), translated to C++ (check/to_cpp_spike.py), compiled against a mock terminal + broker that replays
 M1 bars minute by minute (check/mock_replay.h), and compared with the lab's own make_orders + simulator.
 
-    python3 -B lab/robot/spike/run_spike.py            # everything below, about a minute
-    python3 -B lab/robot/spike/run_spike.py --long     # also the whole in-sample history of btcusd (2017-05 .. 2021-12)
+    python3 -B lab/robot/spike/run_spike.py            # everything below on 2020-12 .. 2021-06, about 15 s
+    python3 -B lab/robot/spike/run_spike.py --long     # also the whole in-sample history of btcusd (2017-05 .. 2021-12), ~1 min
+    (results: out/results.json; journals and the mock's deals: out/run_*/; NUMBA_CACHE_DIR is set to the scratchpad)
 
 Steps
   1. export the lab frame data/fp/btcusd_m1.parquet for 2020-12-01 .. 2021-06-30 (in sample) as the broker would publish
@@ -14,8 +15,11 @@ Steps
   3. (a) lab make_orders (the registered sleeve of recalc.sleeves()) + simulate (r2.run, mode 'fp', no_overlap) on a frame
      REBUILT from the exported numbers: must match exactly;
      (b) the same lab run on the official (unrounded) frame: what rounding alone changes;
-  4. restarts: the same replay cut into segments (OnDeinit / new process / OnInit), with and without downtime;
-  5. speed.
+  4. robustness, same window: 25 restarts without downtime and 10 outages of 1-6 h (OnDeinit / new process / OnInit),
+     CopyRates failing 5 % and 30 % of the time (timer 3 times a minute), 20 fresh starts with no saved state (the VPS
+     does not migrate the terminal's global variables) with and without rebuilding the chain from 20 days of history;
+     ether as a second instance of the same module, two symbols on one clock;
+  5. speed; (--long) the whole in-sample history, and how many trades coarser price grids (1 or 0 digits) would change.
 Nothing outside lab/robot/spike/out is written; only bars dated before 2022-01-01 are read (parquet row filter).
 """
 import argparse
@@ -438,12 +442,64 @@ def window_run(exe, start, end, tag, restarts=True):
     if restarts:
         rep["restarts"] = restart_tests(exe, bars, t_srv, J)
         rep["faults"] = fault_test(exe, bars, J)
+        rep["fresh_start"] = fresh_start_test(exe, bars, t_srv, read_journal(OUT / f"run_{tag}_nodebug"))
     return rep
+
+
+def rounding_sensitivity(m1_off, tag, digits_list=(2, 1, 0)):
+    """lab only: how many trades change if the broker publishes coarser prices (FP's real BTCUSD digits are still unread)"""
+    off_o, off_t = lab_run(m1_off)
+    ot = lab_trades_table(off_t, m1_off)
+    out = {}
+    for d in digits_list:
+        p = OUT / f"_tmp_round_{tag}_{d}.csv"
+        export(m1_off, p, d)
+        m1_r = rebuild(p, d)
+        p.unlink()
+        r_o, r_t = lab_run(m1_r)
+        rt = lab_trades_table(r_t, m1_r)
+        res, m = cmp_trades(ot[~ot.artefact], rt[~rt.artefact], names=("off", "rnd"))
+        so_, sr_ = set(off_o.dec_time.astype("int64")), set(r_o.dec_time.astype("int64"))
+        out[f"digits_{d}"] = {"trades_official": res["off_trades"], "trades_rounded": res["rnd_trades"],
+                              "identical_entry_exit_reason": res["same_exit_minute_and_reason"],
+                              "signals_only_official": len(so_ - sr_), "signals_only_rounded": len(sr_ - so_),
+                              "R_official": round(float(off_t.R[~ot.artefact.to_numpy()].sum()), 3),
+                              "R_rounded": round(float(r_t.R[~rt.artefact.to_numpy()].sum()), 3)}
+    return out
 
 
 def same_journal(J1, J2):
     f = lambda J, k: J[k].drop(columns=["code"]).astype(str).to_csv(index=False)
     return f(J1, "TRD") == f(J2, "TRD"), f(J1, "DEC") == f(J2, "DEC")
+
+
+def fresh_start_test(exe, bars, t_srv, J_full):
+    """a robot started from nothing at a random minute (first start, or the VPS after a migration: the terminal's global
+    variables are not migrated): with and without rebuilding the chain from 20 days of history. Compared: its paper
+    trades entered after the start with those of the run that started on 2020-12-01."""
+    rng = np.random.default_rng(11)
+    starts = np.sort(rng.choice(t_srv[(t_srv > t_srv[0] + 25 * 86400) & (t_srv < t_srv[-1] - 15 * 86400)], 20, replace=False))
+    import pont
+    base = J_full["TRD"]
+    out = {}
+    for rebuild in ("1", "0"):
+        rows = []
+        for st in starts:
+            files = OUT / "run_fresh"
+            replay(exe, bars, files, frm=st, debug=False, extra_env={"MOCK_INPUT_InpRebuildChain": rebuild})
+            J = read_journal(files)
+            t0 = pont.server_to_utc([int(st)])[0]
+            a = base[base.entry_time >= t0][["entry_time", "side", "exit_bar", "reason"]].astype(str).reset_index(drop=True)
+            b = J["TRD"][J["TRD"].entry_time >= t0][["entry_time", "side", "exit_bar", "reason"]].astype(str).reset_index(drop=True)
+            sa, sb = set(map(tuple, a.values)), set(map(tuple, b.values))
+            diff = sorted((sa ^ sb), key=lambda x: x[0])
+            last = diff[-1][0] if diff else None
+            rows.append({"start_utc": str(t0), "trades_after_start": len(a), "differing": len(diff),
+                         "last_difference_days_after_start": round((pd.Timestamp(last) - t0).total_seconds() / 86400, 2) if last else 0.0})
+        out["rebuild" if rebuild == "1" else "flat_start"] = {
+            "starts": len(rows), "identical_from_start": sum(r["differing"] == 0 for r in rows),
+            "max_days_to_join": max(r["last_difference_days_after_start"] for r in rows), "detail": rows}
+    return out
 
 
 def fault_test(exe, bars, J_full):
@@ -545,6 +601,7 @@ def main():
                                    read_journal(files))
     if a.long:
         report["long"] = window_run(exe, "2017-01-01", "2022-01-01", "is_all", restarts=False)
+        report["long"]["rounding_sensitivity"] = rounding_sensitivity(load_official("2017-01-01", "2022-01-01"), "is_all")
     (OUT / "results.json").write_text(json.dumps(report, indent=1, default=str))
     print(json.dumps(report, indent=1, default=str)[:20000])
 

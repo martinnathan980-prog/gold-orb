@@ -8,15 +8,27 @@ may read and refuses everything else:
     see vhi_data.official_closed, which adds `exit_time < CUT`).
   * CUT <= 2022-01-01 is the in-sample harness (the only CUT this task uses).
   * 2022-01-01 < CUT <= 2026-01-01 is THE LOOK. It is refused unless (A1) the environment variable LOOK_DECLARED
-    names a file whose REAL PATH (os.path.realpath) is exactly DECLARED_PATH = /home/user/gold-orb/lab/PROTOCOL_V3.md
-    -- every other file is refused before it is read: anything under lab/results/ (proofs.json, the rehearsals,
-    proof_i_guard.json and every other output of this harness, which quote the spec's sha256), the harness folder,
-    /tmp, the scratchpad, any copy -- AND (F1, the declaration bound to the spec) that file's text contains the
-    string "autopsy_HI_look" AND the full 64-hex sha256 of the spec file the run executes (look.py computes it from
-    the very bytes it runs). It is also refused (F2, run once) when results/val_access.log already holds a line with
-    track "autopsy_HI_look" or a '<stem>.started' marker exists, unless a second access is asked with its reason,
-    which is then written into the label. The run appends ONE line to lab/results/val_access.log (track
-    "autopsy_HI_look") and, right after it, the '<stem>.started' marker, before anything is read.
+    names the protocol itself, DECLARED_PATH = /home/user/gold-orb/lab/PROTOCOL_V3.md, AND (F1, the declaration
+    bound to the spec) the text of that very file contains the string "autopsy_HI_look" AND the full 64-hex sha256
+    of the spec file the run executes (look.py computes it from the very bytes it runs). A1 has two parts:
+      - the path rule, first, before anything is opened: the REAL PATH (os.path.realpath) of LOOK_DECLARED must be
+        exactly DECLARED_PATH. Every other file is refused before it is read: anything under lab/results/
+        (proofs.json, the rehearsals, proof_i_guard.json and every other output of this harness, which quote the
+        spec's sha256), the harness folder, /tmp, the scratchpad, any copy;
+      - the same file, atomically (declaration_check): LOOK_DECLARED is opened ONCE (os.open, read only, links
+        followed: a link to the protocol is allowed). The open file is accepted only if os.fstat of that descriptor
+        has the st_dev and st_ino of os.stat AND os.lstat of DECLARED_PATH (so the protocol's own entry is a regular
+        file, not a link) and DECLARED_PATH still has no linked component. The text is read from that same
+        descriptor. A link re-pointed between the path rule and the read cannot bring another file's text in: the
+        open file is then not the protocol, and it is closed without being read.
+    It is also refused (F2, run once) when results/val_access.log already holds a line with track "autopsy_HI_look"
+    or a '<stem>.started' marker exists, unless a second access is asked with its reason, which is then written into
+    the label. It is refused too when one of the files synthesis A froze and the look uses no longer has its frozen
+    sha256 (frozen_files_check: results/r2/autopsy/synthesis_A.json, 'frozen_files_sha256', checked against its
+    proposed_validation_look text; at an in-sample CUT the same check is recorded, not refused). The run appends ONE
+    line to lab/results/val_access.log (track "autopsy_HI_look") and, right after it, the '<stem>.started' marker,
+    before anything is read. look.py also refuses, before anything is logged, a look whose CUT is not the end of the
+    spec's look window (look_cut_check: 2026-01-01), so that a mistyped --cut cannot use up the single access.
   * CUT > 2026-01-01 is refused whatever the environment says (the 2026 holdout is never read).
   * (A2) At every CUT, any read (open, pathlib, parquet, CSV, JSON) of a path under lab/ with a component whose name
     contains 'holdout' (any case: lab/holdout_raw, lab/data/holdout, lab/results/holdout/, lab/holdout.py, ...) and of
@@ -32,20 +44,36 @@ THE READ GUARD (F3, A2, A3), installed for the whole process by open_run:
     (they work only inside a read that the guard has already checked, e.g. pandas -> pyarrow internals).
   * CSV: pandas.read_csv / read_table / read_fwf and pyarrow.csv.read_csv / open_csv: path only (buffers refused);
     refused under lab/ except the allowlist CSV_ALLOW; every CSV read is recorded. (A3) builtins.open / io.open (hence
-    pathlib, the csv module, numpy.loadtxt / genfromtxt through numpy's file openers, gzip, bz2, lzma) in a reading
-    mode of a *.csv / *.csv.gz (.bz2, .xz, .zip) file under lab/ is refused except CSV_ALLOW.
+    pathlib, the csv module, numpy.loadtxt / genfromtxt, gzip, bz2, lzma, tokenize, tarfile) in a reading mode of a
+    *.csv / *.csv.gz (.bz2, .xz, .zip) file under lab/ is refused except CSV_ALLOW.
   * pyarrow.json.read_json: path only, the holdout and 2026 rules, recorded.
   * builtins.open and io.open (hence pathlib): refused on lab/data/** and the holdout (any mode), on any file whose
     name carries "2026" (reading modes) and on CSVs under lab/ off the allowlist (reading modes); every reading open
     of a file under lab/ is recorded (other files under lab/, e.g. JSON configuration and results files, can be
     opened: they are recorded, not refused).
+  * Modules that captured the builtin open when they were imported are pointed at the guarded open too: numpy's file
+    openers (numpy.loadtxt, genfromtxt), bz2 (bz2._builtin_open), tokenize (tokenize._builtin_open: tokenize.open,
+    which linecache also uses) and tarfile (tarfile.bltn_open: tarfile.open in every mode, 'r:' included). gzip and
+    lzma look builtins.open up at each call. numpy.fromfile of a path goes through builtins.open in numpy 2.5, so the
+    open() rules apply to it; so do pandas.read_feather / read_orc / read_pickle / read_json and numpy.load, which
+    open a path with open() before handing the file over.
   Lens and strategy modules call these through their module attribute, so they are covered too: a read that would
   bypass the cut (for example the nq_btc_follow default leader loader, which reads the research file to 2025 when no
-  leader is set) raises instead of reading. What is not covered (no plugin or stake rule enters this look; nothing on
-  its code path uses them): pyarrow.fs file objects and the private pyarrow modules (pyarrow._csv, pyarrow._json,
-  pyarrow._parquet.ParquetReader, dataset fragments), io.FileIO / _io.open / io.open_code, os.open / mmap,
-  numpy.fromfile and other C-level reads, other processes, and reads made by code running inside a read the guard
-  has already checked (the re-entrancy pass-through).
+  leader is set) raises instead of reading.
+  NOT COVERED (no plugin or stake rule enters this look, and nothing on its code path uses them):
+    - opens that bypass builtins.open and io.open: io.FileIO (and _io.FileIO), _io.open called directly,
+      io.open_code, os.open (and os.read on its descriptor), mmap of a descriptor;
+    - pyarrow's own file readers outside the wrapped entry points: pyarrow.OSFile, pyarrow.memory_map, pyarrow.fs
+      input files (e.g. LocalFileSystem().open_input_file), pyarrow.feather.read_table and pyarrow.ipc called
+      directly, the private modules (pyarrow._csv, pyarrow._json, pyarrow._parquet.ParquetReader) and dataset
+      fragments; other C-level readers (sqlite3, HDF5);
+    - hard links: every lab/ path rule (holdout, lab/data, CSV, 2026 names) keys on os.path.realpath, which does not
+      resolve hard links; a hard link made outside lab/ to a lab file (os.link inside the process; /tmp and lab/ are
+      on the same filesystem) escapes those rules;
+    - a file object or descriptor handed to a reader (numpy.fromfile, pickle.load, ...): only the open that made it
+      is checked;
+    - other processes, and reads made by code running inside a read the guard has already checked (the re-entrancy
+      pass-through).
 """
 import builtins
 import datetime as _dt
@@ -56,6 +84,7 @@ import io
 import json
 import os
 import re
+import stat
 import threading
 
 import pandas as pd
@@ -81,9 +110,22 @@ TIME_COLS = ("ts", "entry_time", "t_dec")               # the row-filter columns
 CSV_ALLOW = ("results/r2/autopsy/payoff/variants_table.csv",)   # the only CSV under lab/ the process may read
 CSV_SUFFIXES = (".csv", ".csv.gz", ".csv.bz2", ".csv.xz", ".csv.zip")   # A3: CSV files, refused to open() under lab/
 SHA_RE = re.compile(r"^[0-9a-f]{64}$")
+SHA_IN_TEXT_RE = re.compile(r"(?<![0-9a-f])[0-9a-f]{64}(?![0-9a-f])")
 URI_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
+# synthesis A's FROZEN files: the sha256 values are taken from results/r2/autopsy/synthesis_A.json
+# ('frozen_files_sha256'); these are the files of that list the look uses (relative to lab/). Its
+# proposed_validation_look text quotes the sha256 of four of them, which must be the same values.
+SYNTH_A_JSON = os.path.join(LAB, "results", "r2", "autopsy", "synthesis_A.json")
+FROZEN_REQUIRED = ("goldlab/sim.py", "goldlab/r2.py", "goldlab/data.py", "goldlab/split.py", "r2/recalc.py",
+                   "r2/fp_costs.json", "r2/tracks/idx_us/strategy.py", "r2/tracks/crypto/strategy.py",
+                   "r2/tracks/ml/strategy.py", "r2/tracks/ml/models/B1_ridge_full.json", "r2/tracks/leadlag/strategy.py",
+                   "r2/tracks/overnight/strategy.py", "tracks/trend/strategy.py", "tracks/orb/strategy.py",
+                   "r2/tracks/autopsy/synthesis_A/portfolio.py")
+FROZEN_TEXT_QUOTED = ("goldlab/sim.py", "r2/recalc.py", "r2/fp_costs.json", "r2/tracks/autopsy/synthesis_A/portfolio.py")
+FROZEN_NOT_USED = ("r2/tracks/autopsy/synthesis_A/synth.py",)   # frozen too; the look runs the payoff lens's variants.py
 
-_STATE = {"cut": None, "label": None, "logged": False, "installed": False, "reads": [], "marker": None}
+_STATE = {"cut": None, "label": None, "logged": False, "installed": False, "reads": [], "marker": None,
+          "declaration": None, "frozen_check": None}
 _TL = threading.local()
 _ORIG = {}
 
@@ -107,8 +149,9 @@ def _rel(p):
 
 # ------------------------------------------------------------------------------------------------- the declaration (A1, F1)
 def declared_path_check(path):
-    """A1: (accepted, real path). LOOK_DECLARED is accepted only when its real path (symbolic links resolved) is
-    exactly DECLARED_PATH, the protocol itself. Pure: nothing is opened."""
+    """A1, the path rule: (accepted, real path). LOOK_DECLARED is accepted only when its real path (symbolic links
+    resolved) is exactly DECLARED_PATH, the protocol itself. Pure: nothing is opened. It is the first refusal; the
+    file is then opened once and must be that same file (declaration_check)."""
     try:
         s = os.fspath(path)
         if isinstance(s, bytes):
@@ -119,60 +162,248 @@ def declared_path_check(path):
     return rp == DECLARED_PATH, rp
 
 
-def declaration_check(path, spec_sha):
-    """What the declared file says about this look: its real path and whether it is the protocol (A1), readable,
-    its sha256, whether its text contains the string 'autopsy_HI_look' and the full 64-hex sha256 of the spec (any
-    case). ok = both strings (the content rule only: resolve_cut applies the path rule first, before any read)."""
-    is_prot, rp = declared_path_check(path) if path else (False, None)
-    out = {"file": path or None, "real_path": rp, "is_the_protocol": is_prot, "readable": False, "sha256": None,
-           "contains_track": False, "contains_spec_sha256": False, "spec_sha256": spec_sha, "ok": False}
-    if not path or not os.path.isfile(path):
+def _protocol_identity(st):
+    """A1, atomic: is the open file whose os.fstat is `st` the protocol? Only if `st` is a regular file with the
+    st_dev and st_ino of os.stat(DECLARED_PATH) AND of os.lstat(DECLARED_PATH) (the protocol's own entry is a regular
+    file, not a link to another file), and DECLARED_PATH has no linked component (its real path is itself)."""
+    out = {"fd_dev_ino": [int(st.st_dev), int(st.st_ino)], "fd_is_a_regular_file": bool(stat.S_ISREG(st.st_mode)),
+           "protocol_stat_dev_ino": None, "protocol_lstat_dev_ino": None, "protocol_entry_is_a_regular_file": False,
+           "protocol_path_has_no_link": False, "same": False}
+    try:
+        a, b = os.stat(DECLARED_PATH), os.lstat(DECLARED_PATH)
+    except OSError as e:
+        out["error"] = f"the protocol {DECLARED_PATH} cannot be stat'ed: {e}"[:200]
         return out
-    check_holdout(path)                          # a protocol text, not data: its name may carry a 2026 date
-    with open(path, "rb") as f:
-        raw = f.read()
+    out["protocol_stat_dev_ino"] = [int(a.st_dev), int(a.st_ino)]
+    out["protocol_lstat_dev_ino"] = [int(b.st_dev), int(b.st_ino)]
+    out["protocol_entry_is_a_regular_file"] = bool(stat.S_ISREG(b.st_mode))
+    out["protocol_path_has_no_link"] = os.path.realpath(DECLARED_PATH) == DECLARED_PATH
+    me = (st.st_dev, st.st_ino)
+    out["same"] = bool(out["fd_is_a_regular_file"] and me == (a.st_dev, a.st_ino) and me == (b.st_dev, b.st_ino)
+                       and out["protocol_entry_is_a_regular_file"] and out["protocol_path_has_no_link"])
+    return out
+
+
+def _read_fd(fd, limit=64 << 20):
+    """Every byte of an open descriptor, from where it stands (at most `limit` bytes)."""
+    parts, n = [], 0
+    while True:
+        b = os.read(fd, 1 << 20)
+        if not b:
+            return b"".join(parts)
+        parts.append(b)
+        n += len(b)
+        if n > limit:
+            raise GuardError(f"the declared file is larger than {limit} bytes")
+
+
+def declaration_check(path, spec_sha, protocol_only=False):
+    """What the declared file says about this look. The file is opened ONCE (os.open, read only, links followed: a
+    link to the protocol is allowed). 'same_file_as_the_protocol' tells whether that open file IS the protocol
+    (_protocol_identity: os.fstat of the descriptor against os.stat and os.lstat of DECLARED_PATH, st_dev and
+    st_ino), and the text is read from that same descriptor: a link re-pointed after the path rule cannot bring
+    another file's text in. Also recorded: the real path and the path rule (A1), whether the file is readable, its
+    sha256, and whether its text contains the string 'autopsy_HI_look' and the full 64-hex sha256 of the spec (any
+    case). ok = both strings (the content rule alone, also used on test texts); accepted = the path rule, the same
+    file and the content rule. protocol_only=True (resolve_cut): an open file that is not the protocol is closed
+    without being read."""
+    is_prot, rp = declared_path_check(path) if path else (False, None)
+    out = {"file": path or None, "real_path": rp, "is_the_protocol": is_prot, "readable": False,
+           "same_file_as_the_protocol": False, "identity": None, "sha256": None, "contains_track": False,
+           "contains_spec_sha256": False, "spec_sha256": spec_sha, "ok": False, "accepted": False}
+    if not path:
+        return out
+    try:
+        s = os.fspath(path)
+        s = os.fsdecode(s) if isinstance(s, bytes) else s
+    except (TypeError, ValueError):
+        return out
+    check_holdout(s)                             # a protocol text, not data: its name may carry a 2026 date
+    try:
+        fd = os.open(s, os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_CLOEXEC", 0))
+    except (OSError, ValueError) as e:
+        out["error"] = f"cannot be opened: {e}"[:200]
+        return out
+    try:
+        st = os.fstat(fd)
+        ident = _protocol_identity(st)
+        out["identity"] = ident
+        out["same_file_as_the_protocol"] = ident["same"]
+        if not stat.S_ISREG(st.st_mode):
+            out["error"] = "not a regular file"
+            return out
+        if protocol_only and not ident["same"]:
+            out["error"] = "not read: the open file is not the protocol"
+            return out
+        raw = _read_fd(fd)
+    finally:
+        os.close(fd)
     text = raw.decode("utf-8", errors="replace")
     good_sha = isinstance(spec_sha, str) and SHA_RE.match(spec_sha) is not None
     out.update(readable=True, sha256=hashlib.sha256(raw).hexdigest(), contains_track=TRACK in text,
                contains_spec_sha256=bool(good_sha and spec_sha in text.lower()))
     out["ok"] = bool(out["contains_track"] and out["contains_spec_sha256"])
+    out["accepted"] = bool(out["ok"] and is_prot and out["same_file_as_the_protocol"])
     return out
 
 
-def resolve_cut(cut, env=None, spec_sha=None):
-    """The CUT of a run, checked. Raises GuardError when the run is not allowed. For a CUT after 2022-01-01:
-    LOOK_DECLARED (in `env`, default os.environ) must be the protocol itself (A1: its real path is exactly
-    DECLARED_PATH; checked before the file is read), and its text must contain 'autopsy_HI_look' and `spec_sha`, the
+def resolve_cut_declared(cut, env=None, spec_sha=None):
+    """The CUT of a run, checked, and the declaration check it relied on (None for a CUT at or before 2022-01-01).
+    Raises GuardError when the run is not allowed. For a CUT after 2022-01-01, LOOK_DECLARED (in `env`, default
+    os.environ) must be the protocol itself -- A1: first the path rule (its real path is exactly DECLARED_PATH,
+    checked before anything is opened), then the same file, atomically (the file opened once IS the protocol:
+    st_dev and st_ino) -- and the text read from that open file must contain 'autopsy_HI_look' and `spec_sha`, the
     full sha256 of the spec file the run executes (F1)."""
     env = os.environ if env is None else env
     c = _utc(cut)
     if c > LOOK_MAX:
         raise GuardError(f"CUT {c} is after 2026-01-01: the 2026 holdout is never read, whatever LOOK_DECLARED says")
-    if c > IS_CUT:
-        if not (isinstance(spec_sha, str) and SHA_RE.match(spec_sha)):
-            raise GuardError(f"CUT {c} is after 2022-01-01: the look needs the full sha256 of its spec file "
-                             f"(look.py passes it); got {spec_sha!r}")
-        path = env.get("LOOK_DECLARED", "")
-        if not path:
-            raise GuardError(f"CUT {c} is after 2022-01-01: the look is refused until LOOK_DECLARED={DECLARED_PATH} "
-                             "is set and the protocol declares it")
-        is_prot, rp = declared_path_check(path)
-        if not is_prot:
-            raise GuardError(f"CUT {c}: LOOK_DECLARED={path!r} is refused (A1): its real path {rp!r} is not "
-                             f"{DECLARED_PATH}, the only file the look may be declared in (no output of the harness, "
-                             "no copy, no other file, wherever it is)")
-        d = declaration_check(path, spec_sha)
-        if not d["readable"]:
-            raise GuardError(f"CUT {c}: LOOK_DECLARED={path!r} is not a readable file")
-        if not d["ok"]:
-            raise GuardError(f"CUT {c}: the protocol {DECLARED_PATH} does not declare this look (F1: its text must "
-                             f"contain the look's track name and the full sha256 of the spec file that runs); "
-                             f"track named: {d['contains_track']}, spec sha256 quoted: {d['contains_spec_sha256']}")
-    return c
+    if c <= IS_CUT:
+        return c, None
+    if not (isinstance(spec_sha, str) and SHA_RE.match(spec_sha)):
+        raise GuardError(f"CUT {c} is after 2022-01-01: the look needs the full sha256 of its spec file "
+                         f"(look.py passes it); got {spec_sha!r}")
+    path = env.get("LOOK_DECLARED", "")
+    if not path:
+        raise GuardError(f"CUT {c} is after 2022-01-01: the look is refused until LOOK_DECLARED={DECLARED_PATH} "
+                         "is set and the protocol declares it")
+    is_prot, rp = declared_path_check(path)
+    if not is_prot:
+        raise GuardError(f"CUT {c}: LOOK_DECLARED={path!r} is refused (A1): its real path {rp!r} is not "
+                         f"{DECLARED_PATH}, the only file the look may be declared in (no output of the harness, "
+                         "no copy, no other file, wherever it is)")
+    d = declaration_check(path, spec_sha, protocol_only=True)
+    idt = d.get("identity")
+    if idt is None:
+        raise GuardError(f"CUT {c}: LOOK_DECLARED={path!r} is not a readable file ({d.get('error')})")
+    if not d["same_file_as_the_protocol"]:
+        raise GuardError(f"CUT {c}: LOOK_DECLARED={path!r} is refused (A1, atomic): the file it opened is not the "
+                         f"protocol {DECLARED_PATH} (st_dev, st_ino {idt.get('fd_dev_ino')} against stat "
+                         f"{idt.get('protocol_stat_dev_ino')} and lstat {idt.get('protocol_lstat_dev_ino')}; protocol "
+                         f"entry a regular file: {idt.get('protocol_entry_is_a_regular_file')}; protocol path without a "
+                         f"link: {idt.get('protocol_path_has_no_link')}): a link re-pointed after the path rule, or the "
+                         "protocol's entry replaced. Its text was not read.")
+    if not d["readable"]:
+        raise GuardError(f"CUT {c}: LOOK_DECLARED={path!r} is not a readable file ({d.get('error')})")
+    if not d["ok"]:
+        raise GuardError(f"CUT {c}: the protocol {DECLARED_PATH} does not declare this look (F1: its text must "
+                         f"contain the look's track name and the full sha256 of the spec file that runs); "
+                         f"track named: {d['contains_track']}, spec sha256 quoted: {d['contains_spec_sha256']}")
+    return c, d
+
+
+def resolve_cut(cut, env=None, spec_sha=None):
+    """The CUT of a run, checked (resolve_cut_declared without the declaration it relied on). Raises GuardError when
+    the run is not allowed."""
+    return resolve_cut_declared(cut, env, spec_sha)[0]
 
 
 def is_look(cut):
     return _utc(cut) > IS_CUT
+
+
+# ------------------------------------------------------------------------------------------------- the look's CUT (fix 2)
+def look_window_end(spec):
+    """The end of the spec's look window, spec['windows']['look']['eval'][1], in UTC (GuardError when the spec has
+    none)."""
+    try:
+        return _utc(spec["windows"]["look"]["eval"][1])
+    except (KeyError, IndexError, TypeError, ValueError) as e:
+        raise GuardError(f"the spec has no look window windows.look.eval = [start, end] ({e!r}): a look is refused "
+                         "without one") from e
+
+
+def look_cut_check(cut, spec):
+    """A look (2022-01-01 < CUT <= 2026-01-01) runs only at the end of its spec's look window
+    (spec['windows']['look']['eval'][1], 2026-01-01 in look_spec.json), so that a mistyped --cut cannot use up the
+    single access. Pure; look.plan calls it first, before the declared file is read and before anything is logged or
+    written. Returns that end for a look and None otherwise; raises GuardError for any other look CUT."""
+    c = _utc(cut)
+    if not (IS_CUT < c <= LOOK_MAX):
+        return None
+    end = look_window_end(spec)
+    if c != end:
+        raise GuardError(f"CUT {c} is refused for the look: a look runs only at the end of the spec's look window, "
+                         f"CUT {end} (windows.look.eval = {spec['windows']['look']['eval']}). Nothing was logged and no "
+                         f"marker was written. Check --cut: the look's command uses --cut {end.date()}.")
+    return end
+
+
+# ------------------------------------------------------------------------------------------------- synthesis A's frozen files (fix 5)
+def _sha256_of(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def frozen_files_check(synth_json=None):
+    """synthesis A's FROZEN sha256 of the files the look uses (FROZEN_REQUIRED: goldlab sim / r2 / data / split,
+    r2/recalc.py, r2/fp_costs.json, the strategy files, the F1 model, synthesis A's portfolio.py), against the files
+    as they are now. The frozen values are taken from results/r2/autopsy/synthesis_A.json ('frozen_files_sha256');
+    its proposed_validation_look text must quote the same values for the files it names (FROZEN_TEXT_QUOTED), and
+    every sha256 the text quotes must be one of the frozen values. ok = no problem. Recorded besides, deciding
+    nothing: the sha256 of synthesis_A.json itself, and the frozen files the look does not use (synth.py). Pure: it
+    reads synthesis_A.json and the files; never raises. look.py refuses a look on a problem (twice: in plan, and in
+    open_run just before the access line is written) and records it for a rehearsal."""
+    p = SYNTH_A_JSON if synth_json is None else synth_json
+    out = {"what": "synthesis A's frozen sha256 (results/r2/autopsy/synthesis_A.json, frozen_files_sha256 and its "
+                   "proposed_validation_look text) of the files the look uses, against the files now",
+           "synthesis_A_json": _rel(os.path.realpath(p)), "synthesis_A_json_sha256": None, "files": {},
+           "not_used_by_the_look": {}, "problems": [], "ok": False}
+    try:
+        with open(p, "rb") as f:
+            raw = f.read()
+        out["synthesis_A_json_sha256"] = hashlib.sha256(raw).hexdigest()
+        sa = json.loads(raw)
+        if not isinstance(sa, dict):
+            raise ValueError("it is not a JSON object")
+        fz = sa.get("frozen_files_sha256")
+        text = sa.get("proposed_validation_look")
+        if not isinstance(fz, dict) or not isinstance(text, str):
+            raise ValueError("no 'frozen_files_sha256' dict or no 'proposed_validation_look' text")
+    except (OSError, ValueError, GuardError) as e:
+        out["problems"].append(f"synthesis_A.json cannot be used: {e}"[:300])
+        return out
+    quoted = set(SHA_IN_TEXT_RE.findall(text.lower()))
+    frozen_values = {str(v).lower() for v in fz.values()}
+    for rel in FROZEN_REQUIRED:
+        want = fz.get(rel)
+        row = {"frozen": want, "now": None, "same": False, "quoted_in_the_text": None}
+        if not (isinstance(want, str) and SHA_RE.match(want)):
+            out["problems"].append(f"{rel}: synthesis_A.json frozen_files_sha256 has no sha256 for it")
+            want = None
+        else:
+            row["quoted_in_the_text"] = want in quoted
+            if rel in FROZEN_TEXT_QUOTED and not row["quoted_in_the_text"]:
+                out["problems"].append(f"{rel}: its frozen sha256 {want[:12]}... is not the one the "
+                                       "proposed_validation_look text quotes")
+        try:
+            row["now"] = _sha256_of(os.path.join(LAB, rel))
+        except (OSError, GuardError) as e:
+            row["error"] = str(e)[:200]
+            out["problems"].append(f"{rel}: cannot be read ({e})"[:300])
+        row["same"] = bool(want and row["now"] == want)
+        if want and row["now"] and not row["same"]:
+            out["problems"].append(f"{rel}: sha256 {row['now'][:12]}... is not synthesis A's frozen {want[:12]}...")
+        out["files"][rel] = row
+    stray = sorted(quoted - frozen_values)
+    if stray:
+        out["problems"].append("the proposed_validation_look text quotes sha256 values that are not in "
+                               f"frozen_files_sha256: {', '.join(s[:12] + '...' for s in stray)}")
+    for rel in FROZEN_NOT_USED:
+        try:
+            now = _sha256_of(os.path.join(LAB, rel))
+        except (OSError, GuardError) as e:
+            now = f"error: {e}"[:200]
+        out["not_used_by_the_look"][rel] = {"frozen": fz.get(rel), "now": now, "same": now == fz.get(rel)}
+    out["ok"] = not out["problems"]
+    return out
+
+
+def frozen_refusal(fz):
+    """The refusal message of a look whose frozen files check (frozen_files_check) failed."""
+    pr = fz.get("problems") or ["the check was not made"]
+    return (f"the look is refused before anything is logged: synthesis A's frozen files differ from its declaration "
+            f"(results/r2/autopsy/synthesis_A.json, {len(pr)} problem(s)): " + "; ".join(pr[:6]))
 
 
 # ------------------------------------------------------------------------------------------------- run once (F2)
@@ -498,7 +729,8 @@ def install_read_guard():
     guarded_open.__vhi_guarded__ = True
     builtins.open = io.open = guarded_open
     # modules that captured the builtin open at their import (before this guard): numpy's file openers (loadtxt,
-    # genfromtxt) and bz2. gzip and lzma look builtins.open up at each call.
+    # genfromtxt), bz2 (_builtin_open), tokenize (_builtin_open: tokenize.open, hence linecache) and tarfile
+    # (bltn_open: tarfile.open, 'r:' included). gzip and lzma look builtins.open up at each call.
     try:
         from numpy.lib import _datasource as npds
         fo = npds._file_openers._file_openers
@@ -508,8 +740,11 @@ def install_read_guard():
     except (ImportError, AttributeError):
         pass
     import bz2
-    if getattr(bz2, "_builtin_open", None) is orig_open:
-        bz2._builtin_open = guarded_open
+    import tarfile
+    import tokenize
+    for mod, attr in ((bz2, "_builtin_open"), (tokenize, "_builtin_open"), (tarfile, "bltn_open")):
+        if getattr(mod, attr, None) is orig_open:
+            setattr(mod, attr, guarded_open)
     # pyarrow's CSV and JSON readers (path only; CSV: the lab/ allowlist; both: the holdout and 2026 rules)
     import pyarrow.csv as pacsv
     import pyarrow.json as pajson
@@ -542,10 +777,10 @@ def log_access(label):
 
 
 def open_run(cut, label, spec_sha=None, second_access=None, marker=None):
-    """Check the CUT (and, for a look, the declaration bound to the spec and the run-once rule), then (for the look
-    only) log the access and write the '.started' marker, then install the read guard -- all BEFORE anything is
-    read."""
-    c = resolve_cut(cut, spec_sha=spec_sha)
+    """Check the CUT (and, for a look, the declaration bound to the spec, the run-once rule and synthesis A's frozen
+    files), then (for the look only) log the access and write the '.started' marker, then install the read guard --
+    all BEFORE anything is read."""
+    c, decl = resolve_cut_declared(cut, spec_sha=spec_sha)
     if _STATE["cut"] is not None and _STATE["cut"] != c:
         raise GuardError("one CUT per process")
     look = is_look(c)
@@ -559,15 +794,27 @@ def open_run(cut, label, spec_sha=None, second_access=None, marker=None):
             raise GuardError(f"{marker} exists: the look is run once")
         if second_access is not None and str(second_access).strip() not in label:
             raise GuardError("the second-access reason must be written into the access label")
+        fz = frozen_files_check()                # synthesis A's frozen files, checked again just before the log line
+        if not fz["ok"]:
+            raise GuardError(frozen_refusal(fz))
+        _STATE["declaration"], _STATE["frozen_check"] = decl, fz
     _STATE["cut"], _STATE["label"] = c, label
     if look:
         log_access(label)
         write_marker(marker, {"time": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
                               "track": TRACK, "label": label, "cut": str(c), "spec_sha256": spec_sha,
-                              "declared_file": os.environ.get("LOOK_DECLARED"), "second_access": second_access,
+                              "declared_file": os.environ.get("LOOK_DECLARED"),
+                              "declared_sha256": (decl or {}).get("sha256"),
+                              "synthesis_A_frozen_files_ok": True, "second_access": second_access,
                               "pid": os.getpid()})
     install_read_guard()
     return c
+
+
+def open_run_record():
+    """What open_run checked for a look (None for a rehearsal): the declaration it judged and synthesis A's frozen
+    files check."""
+    return {"declaration": _STATE["declaration"], "frozen_check": _STATE["frozen_check"]}
 
 
 def current_cut():
@@ -583,8 +830,9 @@ def reads():
 
 def self_test(spec_sha=None, protocol=None):
     """The CUT rules checked on SIMULATED environments (dicts: the process environment is never set) with temporary
-    addendum texts; only resolve_cut, declared_path_check and declaration_check are called (pure: nothing is opened
-    but the test texts and the protocol's text, nothing is read from data, nothing is logged).
+    addendum texts; only resolve_cut, declared_path_check, declaration_check, look_cut_check and frozen_files_check
+    are called (pure: nothing is opened but the test texts, the protocol's text, synthesis_A.json, its copies and the
+    files it froze; nothing is read from data, nothing is logged).
     The temporary texts quote a DUMMY spec sha256 (never the real one). (A1) Since only the protocol's real path is
     accepted, every temporary text is refused whatever it says: the content rule (F1) is therefore checked on them
     through declaration_check. `spec_sha` (the real spec's sha256) and `protocol` (lab/PROTOCOL_V3.md) check that the
@@ -677,6 +925,39 @@ def self_test(spec_sha=None, protocol=None):
                                   False)):
             ok_p, rp = declared_path_check(path)
             out[name] = {"expected_allowed": want, "allowed": ok_p, "ok": ok_p == want, "real_path": rp}
+        # (4) fix 5: synthesis A's frozen files, on synthesis_A.json as it stands and on altered copies (test files)
+        fz = frozen_files_check()
+        out["fix5 frozen_files_check: synthesis_A.json as it stands, every file the look uses has its frozen sha256"] = {
+            "expected_allowed": True, "allowed": fz["ok"], "ok": fz["ok"], "problems": fz["problems"][:5]}
+        try:
+            with open(SYNTH_A_JSON, "rb") as f:
+                sa_raw = f.read()
+            sa0 = json.loads(sa_raw)
+            port_sha = sa0["frozen_files_sha256"]["r2/tracks/autopsy/synthesis_A/portfolio.py"]
+            rec_sha = sa0["frozen_files_sha256"]["r2/recalc.py"]
+        except (OSError, ValueError, KeyError, GuardError):
+            sa_raw = None
+        if sa_raw is not None:
+            other_sha = hashlib.sha256(b"vhi_guard self_test: not a frozen file").hexdigest()
+            sa_missing = json.loads(sa_raw)
+            del sa_missing["frozen_files_sha256"]["r2/recalc.py"]
+            sa_text = json.loads(sa_raw)
+            sa_text["proposed_validation_look"] = sa_text["proposed_validation_look"].replace(rec_sha, other_sha)
+            variants = {"portfolio.py's frozen sha256 changed (in the JSON and in the text alike)":
+                            sa_raw.replace(port_sha.encode(), other_sha.encode()),
+                        "r2/recalc.py missing from frozen_files_sha256": json.dumps(sa_missing).encode(),
+                        "the text quoting another sha256 for r2/recalc.py than frozen_files_sha256":
+                            json.dumps(sa_text).encode()}
+            for i, (nm, b) in enumerate(variants.items()):
+                files[f"synthesis_A_copy_{i}"] = os.path.join(tmpd, f"synthesis_A_copy_{i}.json")
+                with open(files[f"synthesis_A_copy_{i}"], "wb") as f:
+                    f.write(b)
+                r = frozen_files_check(files[f"synthesis_A_copy_{i}"])
+                out[f"fix5 frozen_files_check refused: {nm}"] = {"expected_allowed": False, "allowed": r["ok"],
+                                                                "ok": not r["ok"], "problems": r["problems"][:3]}
+        r = frozen_files_check(os.path.join(tmpd, "absent_synthesis_A.json"))
+        out["fix5 frozen_files_check refused: synthesis_A.json missing"] = {"expected_allowed": False,
+                                                                           "allowed": r["ok"], "ok": not r["ok"]}
     finally:
         if os.path.lexists(link):
             os.unlink(link)
@@ -742,5 +1023,26 @@ def self_test(spec_sha=None, protocol=None):
         b = _filter_bound(filters, cols)
         got = b is not None and b <= IS_CUT
         out[name] = {"expected_allowed": want, "allowed": got, "ok": got == want}
+    # fix 2: a look runs only at the end of its spec's look window (look_cut_check, pure)
+    win = {"windows": {"look": {"eval": ["2022-01-01", "2026-01-01"]}}}
+    for name, c_, sp_, want in (("fix2 look CUT 2026-01-01, the end of the look window: accepted", "2026-01-01", win, True),
+                                ("fix2 look CUT 2024-01-01: refused (not the end of the look window)", "2024-01-01", win,
+                                 False),
+                                ("fix2 look CUT 2025-12-31: refused", "2025-12-31", win, False),
+                                ("fix2 look CUT 2025-12-31 23:59: refused", "2025-12-31 23:59", win, False),
+                                ("fix2 look CUT 2022-01-02: refused", "2022-01-02", win, False),
+                                ("fix2 look CUT 2026-01-01 with a spec without a look window: refused", "2026-01-01",
+                                 {"windows": {"in_sample": {"eval": ["2018-02-01", "2022-01-01"]}}}, False),
+                                ("fix2 the rule does not apply in sample (CUT 2022-01-01)", "2022-01-01", win, True),
+                                ("fix2 the rule does not apply in sample (CUT 2021-01-01, no look window)", "2021-01-01",
+                                 {}, True),
+                                ("fix2 CUT 2026-01-02 is left to resolve_cut (the 2026 holdout rule)", "2026-01-02", win,
+                                 True)):
+        try:
+            look_cut_check(c_, sp_)
+            got, why = True, None
+        except GuardError as e:
+            got, why = False, str(e)[:300]
+        out[name] = {"expected_allowed": want, "allowed": got, "ok": got == want, "why": why}
     out["all_ok"] = all(v["ok"] for v in out.values() if isinstance(v, dict))
     return out

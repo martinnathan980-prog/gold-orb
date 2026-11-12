@@ -1,6 +1,6 @@
 {
  "build": {
-  "seconds": 2.59,
+  "seconds": 2.55,
   "warnings": []
  },
  "window": {
@@ -12,13 +12,13 @@
    "spread_points_median": 1175.0
   },
   "speed": {
-   "replay_stdout_debug": "events 217308 from 1606788000 to 1625108340  load 0.104 s  replay 0.217 s  timer calls 217308  copyrates 434617 (failed 0)  open positions 0",
-   "wall_s_debug": 0.324,
-   "replay_stdout": "events 217308 from 1606788000 to 1625108340  load 0.104 s  replay 0.199 s  timer calls 217308  copyrates 434617 (failed 0)  open positions 0",
-   "wall_s": 0.306,
+   "replay_stdout_debug": "events 217308 from 1606788000 to 1625108340  load 0.127 s  replay 0.220 s  timer calls 217308  copyrates 434617 (failed 0)  open positions 0",
+   "wall_s_debug": 0.351,
+   "replay_stdout": "events 217308 from 1606788000 to 1625108340  load 0.154 s  replay 0.363 s  timer calls 217308  copyrates 434617 (failed 0)  open positions 0",
+   "wall_s": 0.521,
    "simulated_months": 6.93,
-   "months_per_second": 22.7,
-   "lab_python_s": 0.587
+   "months_per_second": 13.3,
+   "lab_python_s": 0.539
   },
   "a_hours": {
    "lab_hours": 3626,
@@ -280,7 +280,7 @@
   },
   "faults": {
    "0.05": {
-    "stdout": "events 217308 from 1606788000 to 1625108340  load 0.135 s  replay 0.230 s  timer calls 651924  copyrates 880617 (failed 44268)  open positions 0",
+    "stdout": "events 217308 from 1606788000 to 1625108340  load 0.103 s  replay 0.218 s  timer calls 651924  copyrates 880617 (failed 44268)  open positions 0",
     "paper_trades_identical": true,
     "decisions_identical": true,
     "status": {
@@ -293,7 +293,7 @@
     "broker_trades": 82
    },
    "0.3": {
-    "stdout": "events 217308 from 1606788000 to 1625108340  load 0.104 s  replay 0.222 s  timer calls 651924  copyrates 921288 (failed 275977)  open positions 0",
+    "stdout": "events 217308 from 1606788000 to 1625108340  load 0.106 s  replay 0.218 s  timer calls 651924  copyrates 921288 (failed 275977)  open positions 0",
     "paper_trades_identical": true,
     "decisions_identical": false,
     "status": {
@@ -306,11 +306,267 @@
     },
     "broker_trades": 68
    }
+  },
+  "fresh_start": {
+   "rebuild": {
+    "starts": 20,
+    "identical_from_start": 20,
+    "max_days_to_join": 0.0,
+    "detail": [
+     {
+      "start_utc": "2020-12-31 09:19:00+00:00",
+      "trades_after_start": 70,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-01-08 10:31:00+00:00",
+      "trades_after_start": 66,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-01-19 11:33:00+00:00",
+      "trades_after_start": 63,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-01-19 15:05:00+00:00",
+      "trades_after_start": 63,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-01-20 02:45:00+00:00",
+      "trades_after_start": 63,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-01-21 19:48:00+00:00",
+      "trades_after_start": 61,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-03-05 12:49:00+00:00",
+      "trades_after_start": 46,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-03-19 16:00:00+00:00",
+      "trades_after_start": 40,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-03-23 08:04:00+00:00",
+      "trades_after_start": 39,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-03-30 14:32:00+00:00",
+      "trades_after_start": 36,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-03-31 05:04:00+00:00",
+      "trades_after_start": 36,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-04-07 07:58:00+00:00",
+      "trades_after_start": 34,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-04-08 17:16:00+00:00",
+      "trades_after_start": 33,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-04-13 04:43:00+00:00",
+      "trades_after_start": 31,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-04-28 03:02:00+00:00",
+      "trades_after_start": 24,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-05-05 06:01:00+00:00",
+      "trades_after_start": 20,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-05-12 09:46:00+00:00",
+      "trades_after_start": 17,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-06-03 07:04:00+00:00",
+      "trades_after_start": 11,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-06-07 17:40:00+00:00",
+      "trades_after_start": 11,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-06-11 12:10:00+00:00",
+      "trades_after_start": 9,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     }
+    ]
+   },
+   "flat_start": {
+    "starts": 20,
+    "identical_from_start": 16,
+    "max_days_to_join": 0.69,
+    "detail": [
+     {
+      "start_utc": "2020-12-31 09:19:00+00:00",
+      "trades_after_start": 70,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-01-08 10:31:00+00:00",
+      "trades_after_start": 66,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-01-19 11:33:00+00:00",
+      "trades_after_start": 63,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-01-19 15:05:00+00:00",
+      "trades_after_start": 63,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-01-20 02:45:00+00:00",
+      "trades_after_start": 63,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-01-21 19:48:00+00:00",
+      "trades_after_start": 61,
+      "differing": 1,
+      "last_difference_days_after_start": 0.13
+     },
+     {
+      "start_utc": "2021-03-05 12:49:00+00:00",
+      "trades_after_start": 46,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-03-19 16:00:00+00:00",
+      "trades_after_start": 40,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-03-23 08:04:00+00:00",
+      "trades_after_start": 39,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-03-30 14:32:00+00:00",
+      "trades_after_start": 36,
+      "differing": 1,
+      "last_difference_days_after_start": 0.69
+     },
+     {
+      "start_utc": "2021-03-31 05:04:00+00:00",
+      "trades_after_start": 36,
+      "differing": 1,
+      "last_difference_days_after_start": 0.08
+     },
+     {
+      "start_utc": "2021-04-07 07:58:00+00:00",
+      "trades_after_start": 34,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-04-08 17:16:00+00:00",
+      "trades_after_start": 33,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-04-13 04:43:00+00:00",
+      "trades_after_start": 31,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-04-28 03:02:00+00:00",
+      "trades_after_start": 24,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-05-05 06:01:00+00:00",
+      "trades_after_start": 20,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-05-12 09:46:00+00:00",
+      "trades_after_start": 17,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-06-03 07:04:00+00:00",
+      "trades_after_start": 11,
+      "differing": 1,
+      "last_difference_days_after_start": 0.12
+     },
+     {
+      "start_utc": "2021-06-07 17:40:00+00:00",
+      "trades_after_start": 11,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     },
+     {
+      "start_utc": "2021-06-11 12:10:00+00:00",
+      "trades_after_start": 9,
+      "differing": 0,
+      "last_difference_days_after_start": 0.0
+     }
+    ]
+   }
   }
  },
  "window_eth": {
-  "stdout": "events 217350 from 1606788000 to 1625108340  load 0.233 s  replay 0.409 s  timer calls 217350  copyrates 869102 (failed 0)  open positions 1",
-  "wall_s": 0.646,
+  "stdout": "events 217350 from 1606788000 to 1625108340  load 0.342 s  replay 0.738 s  timer calls 217350  copyrates 869102 (failed 0)  open positions 1",
+  "wall_s": 1.085,
   "btc_trades_identical_to_btc_only_run": true,
   "btc_decisions_identical": true,
   "eth_frame_bars": 217092,
@@ -378,13 +634,13 @@
    "spread_points_median": 274.0
   },
   "speed": {
-   "replay_stdout_debug": "events 1699217 from 1494212340 to 1640977080  load 0.960 s  replay 1.682 s  timer calls 1699217  copyrates 3398435 (failed 0)  open positions 0",
-   "wall_s_debug": 2.649,
-   "replay_stdout": "events 1699217 from 1494212340 to 1640977080  load 0.841 s  replay 1.553 s  timer calls 1699217  copyrates 3398435 (failed 0)  open positions 0",
-   "wall_s": 2.403,
+   "replay_stdout_debug": "events 1699217 from 1494212340 to 1640977080  load 0.815 s  replay 2.140 s  timer calls 1699217  copyrates 3398435 (failed 0)  open positions 0",
+   "wall_s_debug": 2.965,
+   "replay_stdout": "events 1699217 from 1494212340 to 1640977080  load 1.055 s  replay 1.596 s  timer calls 1699217  copyrates 3398435 (failed 0)  open positions 0",
+   "wall_s": 2.66,
    "simulated_months": 55.79,
-   "months_per_second": 23.2,
-   "lab_python_s": 0.158
+   "months_per_second": 21.0,
+   "lab_python_s": 0.145
   },
   "a_hours": {
    "lab_hours": 28700,
@@ -724,6 +980,35 @@
    "exit_stop_max_abs_diff": 0.012197252286568983,
    "exit_time_bitwise_equal": "0/438",
    "exit_time_max_abs_diff": 0.00749215090445432
+  },
+  "rounding_sensitivity": {
+   "digits_2": {
+    "trades_official": 645,
+    "trades_rounded": 645,
+    "identical_entry_exit_reason": 645,
+    "signals_only_official": 0,
+    "signals_only_rounded": 1,
+    "R_official": 172.874,
+    "R_rounded": 172.871
+   },
+   "digits_1": {
+    "trades_official": 645,
+    "trades_rounded": 645,
+    "identical_entry_exit_reason": 642,
+    "signals_only_official": 0,
+    "signals_only_rounded": 2,
+    "R_official": 172.874,
+    "R_rounded": 172.898
+   },
+   "digits_0": {
+    "trades_official": 645,
+    "trades_rounded": 644,
+    "identical_entry_exit_reason": 630,
+    "signals_only_official": 40,
+    "signals_only_rounded": 0,
+    "R_official": 172.874,
+    "R_rounded": 173.528
+   }
   }
  }
 }

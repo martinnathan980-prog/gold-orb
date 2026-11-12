@@ -2,7 +2,7 @@
  "cut": "2022-01-01 00:00:00+00:00",
  "spec": "/home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json",
  "spec_sha256": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960",
- "seconds": 193.9,
+ "seconds": 201.1,
  "changes_in_look_of_the_spec": [
   "K1",
   "K2",
@@ -85,17 +85,17 @@
   },
   "i_guard": {
    "ok": true,
-   "checks": 164,
+   "checks": 216,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json",
-   "what": "the guard of the harness (vhi_guard): F1 the declaration bound to the spec (PROTOCOL_V3.md as it stands refused), A1 only the protocol's real path accepted as LOOK_DECLARED (the harness's outputs and copies of them refused, also once they quote this run's spec sha256: rows 'A1 (after_write)', added after those files are written), F2 run once / fixed output / second access, F3 / A2 / A3 the hardened read guard (probes refused before any byte is read: the holdout component rule and lab/ CSVs through open() included), CUT rules, the access log untouched, every read of the process with its filter"
+   "what": "the guard of the harness (vhi_guard): F1 the declaration bound to the spec (PROTOCOL_V3.md as it stands refused), A1 only the protocol's real path accepted as LOOK_DECLARED (the harness's outputs and copies of them refused, also once they quote this run's spec sha256: rows 'A1 (after_write)', added after those files are written), fix 1 A1 made atomic (the file opened once must be the protocol: st_dev, st_ino; deterministic symlink races with a stand-in for the protocol refused), fix 2 a look CUT other than the end of the look window refused before anything is logged, F2 run once / fixed output / second access, F3 / A2 / A3 and fix 4 the hardened read guard (probes refused before any byte is read: the holdout component rule, lab/ CSVs through open(), tokenize.open, tarfile.open 'r:' and numpy.fromfile included), fix 5 synthesis A's frozen files (a difference refuses a look before anything is logged), look.py end to end in child processes with the access log redirected, CUT rules, the access log untouched (line count and sha256), every read of the process with its filter"
   },
   "j_entry_point_rehearsal": {
    "ok": true,
-   "checks": 16,
+   "checks": 23,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_j_entry_point_rehearsal.json",
-   "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process with the spec as it stands (changes_in_look K1, K2, K3 and synthesis A's five): the right sleeves, portfolios and verdicts, the check first and synthesis A's block, the same numbers as the proofs' run, nothing logged, the imported code's sha256 recorded (A5)"
+   "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process with the spec as it stands (changes_in_look K1, K2, K3 and synthesis A's five): the right sleeves, portfolios and verdicts, the check first and synthesis A's block, the same numbers as the proofs' run, nothing logged, exit status 0, the imported code's sha256 recorded (A5), synthesis A's frozen files check recorded (fix 5); fix 3: a reduced in-sample spec whose check first fails exits 3 after writing its output"
   },
   "k_moving_the_cut": {
    "ok": true,
@@ -113,7 +113,7 @@
   },
   "m_synthesis_A_criteria": {
    "ok": true,
-   "checks": 574,
+   "checks": 576,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_m_synthesis_A_criteria.json",
    "what": "synthesis A's criteria V1-V5 (res['verdicts'], kind synthesis_A_change) and its report (res['synthesis_A']) on\nthe in-sample window 2018-02..2021-12, against synthesis A's published in-sample rehearsal of its own criteria\n(synthesis_A.json criteria_rehearsal_in_sample, main window, FP and x1.5: sleeve weekly Sharpe unchanged / changed,\nten-sleeve portfolio weekly Sharpe unchanged / with the change at its frozen factor, total R at a constant stake,\nthe equal-swing gain by entry year, V1, V2, V3, V5), its changed sleeves (changed_sleeves_detail), its frozen\nequal-swing factors (portfolio.equal_swing_factors, reproduced from the in-sample weekly sd as synthesis A computes\nthem), its portfolios through its own frozen measures() (unchanged, all five at a constant stake and at equal\nswing, each change alone); the check first reported first and gating synthesis A's verdicts ('stop and report')."
@@ -123,17 +123,18 @@
  "rehearsal_of_the_spec_as_it_stands": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
  "harness_sha256": {
   "example_plugins.py": "fdd2d6d8ad7bc2ec87b3a7d47c0373913e4aa6f97acea4c04f5f98ddf9447852",
-  "look.py": "642980d1160804db4385517ccdc59c1d1e7ebd53e0aa55d45a0a9c08c8bf4257",
+  "look.py": "569d17a79643d68a6d3870ebaa6f576c2e9a9b1c4f8303c232f81c7963a1376b",
+  "look_chart.py": "75e7691ef3c81ab5bcfebfe892954b55ea1a5eabc096ad712fb884ac0aed99e7",
   "look_spec.json": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960",
-  "proofs.py": "a3855c2f807df1c1ddc06836a2e27148a82ba500b88bc5e771bf67e64a48e1e0",
+  "proofs.py": "bcf056d3158114198e5e252e7674c7addf4453c063c6a2ddbc43a00dbb6a878f",
   "vhi_book.py": "053b3f1cbce8c9f5775a533c7646705ea3c28526361024a8633497d2f7ae51f2",
   "vhi_data.py": "2553cb38a2f3e3254aa461dc9aacfcdb5f26d54781e3eeb1304fda3f00a59b3e",
-  "vhi_guard.py": "89baf8714a69144439e8852be7e80f6943e46e9d91f3b37ad900437f6825bbc4",
+  "vhi_guard.py": "e35de08f3129684fc40eb4c3c29553006ed9a8ad284a317c0305aac71c99b02f",
   "vhi_lens.py": "67fa812745ae264b4d5ccf372ba0593486be050c6ae477c7b69b9409bfaccd5d",
-  "vhi_run.py": "b942e1e3c3880a97da579116ead4c0d3a421b51f0783f2b9b706f727acac89c4",
+  "vhi_run.py": "bd824592a1225226ffd9578debddb944050d64716da4f50cacbbe6f0bc8622a2",
   "vhi_sleeves.py": "f9b504a531c68357c8718ca2888f9ca6106a47d52f95b8a45a816924f67d6b97",
   "vhi_stakes.py": "99bdca8a34e2727f66cc67859447eb25cae5a2b5a07c52f89f4125cbd1d022dc",
   "vhi_verdicts.py": "674cb01c331194526d46ae24099b07d9b7427b91de7c3c1304036d160cdf1b87"
  },
- "protocol_sha256_at_proof_time": "97c1569af63b48c659c661e1496fec97f09d38eee9c02856e08fbaebb920f5be"
+ "protocol_sha256_at_proof_time": "5212480224282e6d8d0d414b34f4f4fd155bd278c083ebe8f7bb1335ff139a14"
 }
