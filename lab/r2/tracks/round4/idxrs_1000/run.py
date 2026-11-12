@@ -82,7 +82,8 @@ def main():
                 continue
             cm = p["cost_mult"]
             P = P15 if cm != 1.0 else P1
-            sg = C.signals(P, p["entry_min"], p["exit_min"], p["q"], p["win"], p["minv"])
+            # signals on mid prices (R12: the widening keeps the mid, so the stress run sees the main's signals)
+            sg = C.signals(P1, p["entry_min"], p["exit_min"], p["q"], p["win"], p["minv"])
             t, counts = C.run_config(P, sg, p["k"], C.SLIP_M * cm, C.SLIP_S * cm, "net")
             tg, _ = C.run_config(P1, sg, p["k"], mode="mid")
             rep = C.summarize(t, tg)
@@ -94,11 +95,9 @@ def main():
                                     "r_us30": sg["r"][:, 2], "D": sg["D"], "Q": sg["Q"], "h": sg["h"], "sd_pi": sg["sdpi"],
                                     "pi_mid": sg["pi"], "take": sg["take"]})
                 sig.to_parquet(os.path.join(C.OUT, "signals_main.parquet"))
-            if c["id"] == 11:      # the stress run must see the same signals (mid unchanged by the widening)
-                for kk in ("take", "S", "W"):
-                    assert np.array_equal(sg[kk], main_sg[kk]), kk
-                for kk in ("h", "sdpi", "Q", "D"):
-                    assert np.allclose(sg[kk], main_sg[kk], equal_nan=True), kk
+            if c["id"] == 11:      # information: signals recomputed on the widened frames (mid equal to ~1e-12)
+                s15 = C.signals(P15, p["entry_min"], p["exit_min"], p["q"], p["win"], p["minv"])
+                counts["signals_differing_if_built_on_widened_frames"] = int((s15["take"] != sg["take"]).sum())
             t.to_parquet(os.path.join(C.OUT, f"trades_{c['id']:02d}_{c['name']}.parquet"))
             row = {"id": c["id"], "name": c["name"], "params": p, "counts": counts,
                    "is": {kk: rep.get(kk) for kk in KEEP}, "period": "IS sessions 2013-09-30..2021-12-31 (entries)",

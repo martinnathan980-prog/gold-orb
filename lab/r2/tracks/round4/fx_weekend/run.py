@@ -180,7 +180,7 @@ def main():
                 "trades_per_replay_mean": round(float(null_cnt.mean()), 1), "refused_3spreads": null_refused,
                 "weekend_pool_per_pair": null_pool}
 
-    # ---- trials.jsonl: one line per declared configuration, losing ones too
+    # ---- trials.jsonl lines: one per declared configuration, losing ones too (written at the end)
     lines = []
     for i in range(1, 11):
         c = CFG[i]
@@ -192,9 +192,6 @@ def main():
         lines.append(row)
     lines.append({"id": 11, "label": CFG[11]["label"], "role": "null", "params": CFG[11]["params"], "costs": "fp",
                   "pairs": KEPT, "null": null_res})
-    with open(TRIALS, "w") as f:
-        for row in lines:
-            f.write(json.dumps(row, default=W._js) + "\n")
 
     # ---- criteria on the main
     p1, p10 = pooled[1], pooled[10]
@@ -234,7 +231,7 @@ def main():
         "signals_per_weekend": {str(k): int(v) for k, v in M1.groupby("sunday").size().value_counts().sort_index().items()},
         "weekends_with_a_trade": int(M1.sunday.nunique()),
     }
-    al = EX.loc[M1.index] if False else EX
+    al = EX
     mp = {}
     for name, _, _ in PATH_TIMES:
         mp[name] = {"mean_move_R": round(float(al[f"{name}_R"].mean()), 4), "mean_move_bp": round(float(al[f"{name}_bp"].mean()), 2),
@@ -262,6 +259,9 @@ def main():
            "null": null_res, "neighbours_pf": {CFG[i]["label"]: pooled[i]["pf"] for i in range(2, 10)},
            "neighbours_median_pf": round(nb_med, 3), "criteria_main": criteria, "passes_in_sample": passes,
            "information_main": info_main, "runtime_s": round(time.time() - t0, 1)}
+    with open(TRIALS, "w") as f:
+        for row in lines:
+            f.write(json.dumps(row, default=W._js) + "\n")
     W.jdump(res, os.path.join(W.RES, "results.json"))
     for i in T:
         T[i][[c for c in KEEP_COLS if c in T[i].columns]].to_parquet(
