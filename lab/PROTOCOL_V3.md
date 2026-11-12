@@ -695,6 +695,23 @@ F2S+strong (the profile switched on at the start of a server week whose opening 
   making the remaining ones larger (worst week 7.8 % instead of 6.0 %); on paper it costs a quarter of the gain; the
   hands 1.11 cannot run it (catch-up multipliers up to 5 within the week).
 
+### Addendum G — outcome of the review of the sixth clarification (2026-11-12, `results/r2/stake/growth_sixth_review.json`)
+An independent re-implementation from the text equals the lab's engine bit for bit (15,072,000 week-end balances) and
+every published cell of the ladder once six conventions the text leaves open are aligned (168,087 cells compared): when
+the stop is read, positions open at a stop, the worst-run cost on a path without a run (the lab counts 0), weeks without
+a result after month 12, the month of a stop, the first-reach median. Over 21 other draws (7 seeds × blocks of 4, 8 and
+16 weeks) the order of the plans on the 12-month median holds. **What was told to the user was too favourable**: the
+gains quoted were the half-edge medians without saying so; the falls quoted covered the first 13 weeks only (first year
+at half edge: −24 % typical, −38 % one path in ten for F2S); "less than 1 path in 100 loses half" fails when the robot
+only covers its costs (1 in 50) or is worthless (1 in 9); runs of four losing weeks (one path in four in the first year)
+were not said; the hands 1.11 cannot run the schedule nor this stop. By the rule fixed before the run F3S is first
+(+9 EUR at 12 months at half edge, standard error 40 EUR: F3S wins 65 % of resampled path sets); F2S came from the
+tie-break added after the run. No plan of the file dominates F2S; **F1S** (1 % under 12,000 EUR, then ½ %) answers the
+user's "losses of 10 %, perhaps 20 %" better (first-year fall 17 % typical, 26 % one path in ten; a fall of 30 % or more
+in 3 % of half-edge paths against 30 %; 18 % less gain in the first year, 4 % less after three years). Correction sent to
+the user with both plans side by side (`results/r2/stake/images/12_depart_1_ou_2.png`, `r2/tracks/stake/start_choice_chart.py`);
+the choice between 1 % and 2 % is put to him.
+
 ## Addendum I (2026-11-12, 14:00 UTC; written BEFORE any run): gain per unit of swing — bet more where the odds are better
 The user, again: "do not stop until you find it; carte blanche"; as a human he "lets run the trade that has chances and
 cuts the one that has none". Addendum H judged changes by expectancy per trade with the total R not lower. For the
