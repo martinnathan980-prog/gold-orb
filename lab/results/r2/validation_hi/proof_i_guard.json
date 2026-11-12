@@ -3,21 +3,21 @@
  "plan_tests": {
   "the real spec with LOOK_DECLARED = PROTOCOL_V3.md as it stands: refused (F1)": "CUT 2026-01-01 00:00:00+00:00: the protocol /home/user/gold-orb/lab/PROTOCOL_V3.md does not declare this look (F1: its text must contain the look's track name and the full sha256 of the spec file that runs); track named: False, spec sha256 quoted: False",
   "the real spec without LOOK_DECLARED: refused": "CUT 2026-01-01 00:00:00+00:00 is after 2022-01-01: the look is refused until LOOK_DECLARED=/home/user/gold-orb/lab/PROTOCOL_V3.md is set and the protocol declares it",
-  "A1: a dummy spec with a declaration in /tmp quoting the track and its sha256: refused (not the protocol's path)": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_plan_mvmavgls/addendum_test.md' is refused (A1): its real path '/tmp/vhi_plan_mvmavgls/addendum_test.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no copy, no other file, wherever it is)",
-  "a dummy spec whose sha256 the declaration does not quote (the real spec + the test text): refused": "CUT 2026-01-01 00:00:00+00:00: the protocol /tmp/vhi_plan_mvmavgls/addendum_test.md does not declare this look (F1: its text must contain the look's track name and the full sha256 of the spec file that runs); track named: True, spec sha256 quoted: False",
+  "A1: a dummy spec with a declaration in /tmp quoting the track and its sha256: refused (not the protocol's path)": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_plan_o_7ihrpn/addendum_test.md' is refused (A1): its real path '/tmp/vhi_plan_o_7ihrpn/addendum_test.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no copy, no other file, wherever it is)",
+  "a dummy spec whose sha256 the declaration does not quote (the real spec + the test text): refused": "CUT 2026-01-01 00:00:00+00:00: the protocol /tmp/vhi_plan_o_7ihrpn/addendum_test.md does not declare this look (F1: its text must contain the look's track name and the full sha256 of the spec file that runs); track named: True, spec sha256 quoted: False",
   "a look of the dummy spec, declaration quoting its sha256, no earlier access: allowed (plan only)": {
-   "out": "/tmp/vhi_plan_mvmavgls/look/vhi_proof_dummy_spec__cut2026-01-01.json",
-   "marker": "/tmp/vhi_plan_mvmavgls/look/vhi_proof_dummy_spec__cut2026-01-01.started",
+   "out": "/tmp/vhi_plan_o_7ihrpn/look/vhi_proof_dummy_spec__cut2026-01-01.json",
+   "marker": "/tmp/vhi_plan_o_7ihrpn/look/vhi_proof_dummy_spec__cut2026-01-01.started",
    "label": "look:vhi_proof_dummy_spec:65b4a0585e62",
    "stem": "vhi_proof_dummy_spec__cut2026-01-01",
    "is_look": true
   },
-  "a look with --out: refused (F2: fixed output path)": "--out is refused for a look: its output path is fixed (/tmp/vhi_plan_mvmavgls/look/vhi_proof_dummy_spec__cut2026-01-01.json)",
+  "a look with --out: refused (F2: fixed output path)": "--out is refused for a look: its output path is fixed (/tmp/vhi_plan_o_7ihrpn/look/vhi_proof_dummy_spec__cut2026-01-01.json)",
   "a look when val_access.log already holds an autopsy_HI_look line: refused (F2: run once)": "the look is run once: val_access.log already holds 1 line(s) with track 'autopsy_HI_look' and 0 '.started' marker(s) exist; a second access needs --second-access '<reason>'",
   "a look when a '.started' marker exists: refused (F2)": "the look is run once: val_access.log already holds 0 line(s) with track 'autopsy_HI_look' and 1 '.started' marker(s) exist; a second access needs --second-access '<reason>'",
   "a second access with its reason after a logged first access: allowed (plan only)": {
-   "out": "/tmp/vhi_plan_mvmavgls/look/vhi_proof_dummy_spec__cut2026-01-01__access2.json",
-   "marker": "/tmp/vhi_plan_mvmavgls/look/vhi_proof_dummy_spec__cut2026-01-01__access2.started",
+   "out": "/tmp/vhi_plan_o_7ihrpn/look/vhi_proof_dummy_spec__cut2026-01-01__access2.json",
+   "marker": "/tmp/vhi_plan_o_7ihrpn/look/vhi_proof_dummy_spec__cut2026-01-01__access2.started",
    "label": "look:vhi_proof_dummy_spec:65b4a0585e62:second_access:the first run crashed after its access line",
    "stem": "vhi_proof_dummy_spec__cut2026-01-01__access2",
    "is_look": true
@@ -25,7 +25,7 @@
   "a second access with an empty reason: refused": "--second-access needs a reason (it is written into the access label)",
   "--second-access without an earlier access: refused": "--second-access is for a look whose first access is already logged; there is none",
   "a rehearsal (CUT 2022-01-01) with --out: allowed": {
-   "out": "/tmp/vhi_plan_mvmavgls/rehearsal.json",
+   "out": "/tmp/vhi_plan_o_7ihrpn/rehearsal.json",
    "marker": null,
    "label": "look:vhi_proof_dummy_spec:65b4a0585e62",
    "stem": "vhi_proof_dummy_spec__cut2022-01-01",
@@ -38,7 +38,7 @@
   "fix 2: a look of a spec without a look window: refused": "the spec has no look window windows.look.eval = [start, end] (KeyError('windows')): a look is refused without one",
   "fix 5: a look of the dummy spec, the declaration valid, with a copy of synthesis_A.json whose frozen sha256 of portfolio.py differs: refused before anything is logged": "the look is refused before anything is logged: synthesis A's frozen files differ from its declaration (results/r2/autopsy/synthesis_A.json, 1 problem(s)): r2/tracks/autopsy/synthesis_A/portfolio.py: sha256 56607d818669... is not synthesis A's frozen 02a084cd05fd...",
   "fix 5: a rehearsal (CUT 2022-01-01) with the same copy: not refused (in sample the check is recorded)": {
-   "out": "/tmp/vhi_plan_mvmavgls/rehearsal_2.json",
+   "out": "/tmp/vhi_plan_o_7ihrpn/rehearsal_2.json",
    "marker": null,
    "label": "look:vhi_proof_dummy_spec:65b4a0585e62",
    "stem": "vhi_proof_dummy_spec__cut2022-01-01",
@@ -71,7 +71,7 @@
    "refused_by_the_path_rule": true
   },
   "a copy of proofs.json in /tmp named PROTOCOL_V3.md": {
-   "real_path": "/tmp/vhi_a1_czy080zh/PROTOCOL_V3.md",
+   "real_path": "/tmp/vhi_a1_29ihyaif/PROTOCOL_V3.md",
    "content_rule_alone": true,
    "refused": true,
    "refused_by_the_path_rule": true
@@ -108,19 +108,30 @@
    "identity": {
     "fd_dev_ino": [
      65024,
-     1908785
+     1908853
     ],
     "fd_is_a_regular_file": true,
     "protocol_stat_dev_ino": [
      65024,
-     1908785
+     1908853
     ],
     "protocol_lstat_dev_ino": [
      65024,
-     1908785
+     1908853
     ],
     "protocol_entry_is_a_regular_file": true,
     "protocol_path_has_no_link": true,
+    "pinned_dev_ino": [
+     [
+      65024,
+      1908853
+     ],
+     [
+      65024,
+      1908853
+     ]
+    ],
+    "same_as_pinned": true,
     "same": true
    }
   },
@@ -130,19 +141,30 @@
    "identity": {
     "fd_dev_ino": [
      65024,
-     1908785
+     1908853
     ],
     "fd_is_a_regular_file": true,
     "protocol_stat_dev_ino": [
      65024,
-     1908785
+     1908853
     ],
     "protocol_lstat_dev_ino": [
      65024,
-     1908785
+     1908853
     ],
     "protocol_entry_is_a_regular_file": true,
     "protocol_path_has_no_link": true,
+    "pinned_dev_ino": [
+     [
+      65024,
+      1908853
+     ],
+     [
+      65024,
+      1908853
+     ]
+    ],
+    "same_as_pinned": true,
     "same": true
    }
   },
@@ -153,22 +175,32 @@
   },
   "RACE: LOOK_DECLARED = a link that points to the protocol stand-in when the path rule runs and is re-pointed to a harness output right after it: REFUSED, the harness output's text not read": {
    "accepted": false,
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_link_repointed_to_a_harness_output/link_to_the_protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_link_repointed_to_a_harness_output/protocol_stand_in.md (st_dev, st_ino [65024, 1908836] against stat [65024, 1908835] and lstat [65024, 1908835]; protocol entry a regular file: True; protocol path without a link: True): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_link_repointed_to_a_harness_output/link_to_the_protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_link_repointed_to_a_harness_output/protocol_stand_in.md (st_dev, st_ino [65024, 1908931] against stat [65024, 1908915] and lstat [65024, 1908915]; protocol entry a regular file: True; protocol path without a link: True): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
    "identity": null
   },
   "RACE: the same, re-pointed to results/r2/validation_hi/proofs.json, with this spec's sha256: REFUSED, proofs.json not read": {
    "accepted": false,
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_link_repointed_to_proofs_json/link_to_the_protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_link_repointed_to_proofs_json/protocol_stand_in.md (st_dev, st_ino [65024, 1565539] against stat [65024, 1908839] and lstat [65024, 1908839]; protocol entry a regular file: True; protocol path without a link: True): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_link_repointed_to_proofs_json/link_to_the_protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_link_repointed_to_proofs_json/protocol_stand_in.md (st_dev, st_ino [65024, 1565539] against stat [65024, 1908966] and lstat [65024, 1908966]; protocol entry a regular file: True; protocol path without a link: True): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
    "identity": null
   },
   "RACE: LOOK_DECLARED = the protocol stand-in's own path, whose entry is replaced by a link to the harness output right after the path rule: REFUSED (os.lstat: the protocol's entry is not a regular file)": {
    "accepted": false,
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_replaced_by_a_link/protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_replaced_by_a_link/protocol_stand_in.md (st_dev, st_ino [65024, 1908844] against stat [65024, 1908844] and lstat [65024, 1908846]; protocol entry a regular file: False; protocol path without a link: False): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_replaced_by_a_link/protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_replaced_by_a_link/protocol_stand_in.md (st_dev, st_ino [65024, 1908999] against stat [65024, 1908999] and lstat [65024, 1909001]; protocol entry a regular file: False; protocol path without a link: False): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
    "identity": null
   },
   "RACE: a directory of the protocol stand-in's path replaced by a link to another directory holding a file of the same name, right after the path rule: REFUSED (the protocol's path has a linked component; os.stat and os.lstat both follow it)": {
    "accepted": false,
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_directory_replaced_by_a_link/real/PROTOCOL_STAND_IN.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_directory_replaced_by_a_link/real/PROTOCOL_STAND_IN.md (st_dev, st_ino [65024, 1908850] against stat [65024, 1908850] and lstat [65024, 1908850]; protocol entry a regular file: True; protocol path without a link: False): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_directory_replaced_by_a_link/real/PROTOCOL_STAND_IN.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_directory_replaced_by_a_link/real/PROTOCOL_STAND_IN.md (st_dev, st_ino [65024, 1909005] against stat [65024, 1909005] and lstat [65024, 1909005]; protocol entry a regular file: True; protocol path without a link: False): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
+   "identity": null
+  },
+  "RACE (last fixes): LOOK_DECLARED = the protocol stand-in's own path, whose entry is replaced by a COPY of the harness output (a regular file) right after the path rule: REFUSED (the open file is not the file pinned when the path rule ran)": {
+   "accepted": false,
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_replaced_by_a_copy/protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_replaced_by_a_copy/protocol_stand_in.md (st_dev, st_ino [65024, 1909011] against stat [65024, 1909011] and lstat [65024, 1909011]; protocol entry a regular file: True; protocol path without a link: True): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
+   "identity": null
+  },
+  "RACE (last fixes): the same with the entry replaced by a HARD LINK to the harness output: REFUSED (the pinned identity)": {
+   "accepted": false,
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_replaced_by_a_hard_link/protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_replaced_by_a_hard_link/protocol_stand_in.md (st_dev, st_ino [65024, 1909013] against stat [65024, 1909013] and lstat [65024, 1909013]; protocol entry a regular file: True; protocol path without a link: True): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
    "identity": null
   }
  },
@@ -243,7 +275,7 @@
    ],
    "LOOK_DECLARED": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_entry_probes/link_to_the_protocol_stand_in.md",
    "DECLARED_PATH": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_entry_probes/protocol_stand_in.md",
-   "message": "REFUSED: CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_entry_probes/link_to_the_protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_entry_probes/protocol_stand_in.md (st_dev, st_ino [65024, 1908833] against stat [65024, 1908785] and lstat [65024, 1908785]; protocol entry a regular file: True; protocol path without a link: True): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
+   "message": "REFUSED: CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_entry_probes/link_to_the_protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_entry_probes/protocol_stand_in.md (st_dev, st_ino [65024, 1908786] against stat [65024, 1908785] and lstat [65024, 1908785]; protocol entry a regular file: True; protocol path without a link: True): a link re-pointed after the path rule, or the protocol's entry replaced. Its text was not read.",
    "exit": 1,
    "guard_installed": false,
    "logged": false,
@@ -269,7 +301,7 @@
    "logged": true,
    "marker": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_entry_probes/positive/look/vhi_proof_entry_dummy__cut2026-01-01.started",
    "log_lines": [
-    "{\"time\": \"2026-11-12T18:27:04+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e\", \"period\": \"val\"}"
+    "{\"time\": \"2026-11-12T19:03:35+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e\", \"period\": \"val\"}"
    ],
    "markers": [
     "vhi_proof_entry_dummy__cut2026-01-01.started"
@@ -293,7 +325,7 @@
    "logged": false,
    "marker": null,
    "log_lines": [
-    "{\"time\": \"2026-11-12T18:27:04+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e\", \"period\": \"val\"}"
+    "{\"time\": \"2026-11-12T19:03:35+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e\", \"period\": \"val\"}"
    ],
    "markers": [
     "vhi_proof_entry_dummy__cut2026-01-01.started"
@@ -319,8 +351,8 @@
    "logged": true,
    "marker": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_entry_probes/positive/look/vhi_proof_entry_dummy__cut2026-01-01__access2.started",
    "log_lines": [
-    "{\"time\": \"2026-11-12T18:27:04+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e\", \"period\": \"val\"}",
-    "{\"time\": \"2026-11-12T18:27:05+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e:second_access:proof i: the first access stopped at the stub\", \"period\": \"val\"}"
+    "{\"time\": \"2026-11-12T19:03:35+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e\", \"period\": \"val\"}",
+    "{\"time\": \"2026-11-12T19:03:35+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e:second_access:proof i: the first access stopped at the stub\", \"period\": \"val\"}"
    ],
    "markers": [
     "vhi_proof_entry_dummy__cut2026-01-01.started",
@@ -385,6 +417,7 @@
   }
  },
  "opens_under_lab": [
+  "PROTOCOL_V3.md",
   "goldlab/data.py",
   "goldlab/r2.py",
   "goldlab/sim.py",
@@ -1771,6 +1804,12 @@
    "bound": null
   },
   {
+   "path": "PROTOCOL_V3.md",
+   "kind": "open",
+   "filters": "None",
+   "bound": null
+  },
+  {
    "path": "results/r2/autopsy/payoff/variants_table.csv",
    "kind": "open",
    "filters": "None",
@@ -1819,7 +1858,7 @@
    "bound": null
   }
  ],
- "checks": 216,
+ "checks": 220,
  "failed": 0,
  "ok": true,
  "failures": [],
@@ -1862,21 +1901,21 @@
    "expected": false,
    "got": false,
    "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_selftest_i5kb97mo/addendum_full.txt' is refused (A1): its real path '/tmp/vhi_selftest_i5kb97mo/addendum_full.txt' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no copy, no ot"
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_selftest_c3qn9met/addendum_full.txt' is refused (A1): its real path '/tmp/vhi_selftest_c3qn9met/addendum_full.txt' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no copy, no ot"
   },
   {
    "field": "guard.A1 cut_2026_a_full_test_declaration_in_capitals_in_/tmp_refused",
    "expected": false,
    "got": false,
    "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_selftest_i5kb97mo/addendum_full_upper.txt' is refused (A1): its real path '/tmp/vhi_selftest_i5kb97mo/addendum_full_upper.txt' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no"
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_selftest_c3qn9met/addendum_full_upper.txt' is refused (A1): its real path '/tmp/vhi_selftest_c3qn9met/addendum_full_upper.txt' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no"
   },
   {
    "field": "guard.cut_2026_text_with_word_declared_only_refused (the old gate)",
    "expected": false,
    "got": false,
    "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_selftest_i5kb97mo/addendum_word_declared_only.txt' is refused (A1): its real path '/tmp/vhi_selftest_i5kb97mo/addendum_word_declared_only.txt' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of"
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_selftest_c3qn9met/addendum_word_declared_only.txt' is refused (A1): its real path '/tmp/vhi_selftest_c3qn9met/addendum_word_declared_only.txt' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of"
   },
   {
    "field": "guard.cut_2026_full_declaration_but_no_spec_sha_refused",
@@ -2320,14 +2359,14 @@
    "expected": false,
    "got": false,
    "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_plan_mvmavgls/addendum_test.md' is refused (A1): its real path '/tmp/vhi_plan_mvmavgls/addendum_test.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no copy, no other file, wherever it is)"
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_plan_o_7ihrpn/addendum_test.md' is refused (A1): its real path '/tmp/vhi_plan_o_7ihrpn/addendum_test.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no output of the harness, no copy, no other file, wherever it is)"
   },
   {
    "field": "plan: a dummy spec whose sha256 the declaration does not quote (the real spec + the test text): refused",
    "expected": false,
    "got": false,
    "ok": true,
-   "why": "CUT 2026-01-01 00:00:00+00:00: the protocol /tmp/vhi_plan_mvmavgls/addendum_test.md does not declare this look (F1: its text must contain the look's track name and the full sha256 of the spec file that runs); track named: True, spec sha256 quoted: False"
+   "why": "CUT 2026-01-01 00:00:00+00:00: the protocol /tmp/vhi_plan_o_7ihrpn/addendum_test.md does not declare this look (F1: its text must contain the look's track name and the full sha256 of the spec file that runs); track named: True, spec sha256 quoted: False"
   },
   {
    "field": "plan: a look of the dummy spec, declaration quoting its sha256, no earlier access: allowed (plan only)",
@@ -2346,7 +2385,7 @@
    "expected": false,
    "got": false,
    "ok": true,
-   "why": "--out is refused for a look: its output path is fixed (/tmp/vhi_plan_mvmavgls/look/vhi_proof_dummy_spec__cut2026-01-01.json)"
+   "why": "--out is refused for a look: its output path is fixed (/tmp/vhi_plan_o_7ihrpn/look/vhi_proof_dummy_spec__cut2026-01-01.json)"
   },
   {
    "field": "plan: a look when val_access.log already holds an autopsy_HI_look line: refused (F2: run once)",
@@ -2437,19 +2476,30 @@
    "identity": {
     "fd_dev_ino": [
      65024,
-     1908770
+     1908802
     ],
     "fd_is_a_regular_file": true,
     "protocol_stat_dev_ino": [
      65024,
-     1908770
+     1908802
     ],
     "protocol_lstat_dev_ino": [
      65024,
-     1908770
+     1908802
     ],
     "protocol_entry_is_a_regular_file": true,
     "protocol_path_has_no_link": true,
+    "pinned_dev_ino": [
+     [
+      65024,
+      1908802
+     ],
+     [
+      65024,
+      1908802
+     ]
+    ],
+    "same_as_pinned": true,
     "same": true
    }
   },
@@ -2583,8 +2633,8 @@
     true
    ],
    "ok": true,
-   "real_path": "/tmp/vhi_a1_czy080zh/PROTOCOL_V3.md",
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_czy080zh/PROTOCOL_V3.md' is refused (A1): its real path '/tmp/vhi_a1_czy080zh/PROTOCOL_V3.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no outpu"
+   "real_path": "/tmp/vhi_a1_29ihyaif/PROTOCOL_V3.md",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_29ihyaif/PROTOCOL_V3.md' is refused (A1): its real path '/tmp/vhi_a1_29ihyaif/PROTOCOL_V3.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no outpu"
   },
   {
    "field": "A1 (before_write): LOOK_DECLARED = a copy of proofs.json in the scratchpad: refused by the path rule (resolve_cut and look.plan)",
@@ -2648,7 +2698,7 @@
    ],
    "ok": true,
    "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json",
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_czy080zh/link_to_proofs.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the loo"
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_29ihyaif/link_to_proofs.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the loo"
   },
   {
    "field": "A1 (before_write): every copy made for the probes is deleted",
@@ -2730,6 +2780,32 @@
    "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_directory_replaced_by_a_link/real/PROTOCOL_STAND_IN.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_directory_replaced_b"
   },
   {
+   "field": "A1 atomic (fix 1): RACE (last fixes): LOOK_DECLARED = the protocol stand-in's own path, whose entry is replaced by a COPY of the harness output (a regular file) right after the path rule: REFUSED (the open file is not the file pinned when the path rule ran)",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_replaced_by_a_copy/protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_repla"
+  },
+  {
+   "field": "A1 atomic (fix 1): RACE (last fixes): the same with the entry replaced by a HARD LINK to the harness output: REFUSED (the pinned identity)",
+   "expected": false,
+   "got": false,
+   "ok": true,
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_replaced_by_a_hard_link/protocol_stand_in.md' is refused (A1, atomic): the file it opened is not the protocol /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_race_probes/race_protocol_entry_"
+  },
+  {
+   "field": "A1 (last fixes): committed_protocol_check is skipped while DECLARED_PATH points at a test text (the stand-in), and is recorded as skipped",
+   "expected": [
+    false,
+    true
+   ],
+   "got": [
+    false,
+    true
+   ],
+   "ok": true
+  },
+  {
    "field": "A1 atomic (fix 1): vhi_guard.DECLARED_PATH and the path rule are restored after the race probes; their test files are deleted",
    "expected": [
     "/home/user/gold-orb/lab/PROTOCOL_V3.md",
@@ -2742,6 +2818,22 @@
     false
    ],
    "ok": true
+  },
+  {
+   "field": "A1 (last fixes): committed_protocol_check applies to the real protocol, accepts its text when it equals the committed version at HEAD (git show HEAD:lab/PROTOCOL_V3.md) and refuses any other text",
+   "expected": [
+    true,
+    true,
+    false
+   ],
+   "got": [
+    true,
+    true,
+    false
+   ],
+   "ok": true,
+   "head_sha256": "5212480224282e6d8d0d414b34f4f4fd155bd278c083ebe8f7bb1335ff139a14",
+   "working_tree_sha256": "5212480224282e6d8d0d414b34f4f4fd155bd278c083ebe8f7bb1335ff139a14"
   },
   {
    "field": "refused in process: frame_without_row_filter",
@@ -3230,7 +3322,7 @@
    "message": "",
    "exit": 97,
    "log_lines": [
-    "{\"time\": \"2026-11-12T18:27:04+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e\", \"period\": \"val\"}"
+    "{\"time\": \"2026-11-12T19:03:35+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e\", \"period\": \"val\"}"
    ],
    "markers": [
     "vhi_proof_entry_dummy__cut2026-01-01.started"
@@ -3252,8 +3344,8 @@
    "message": "",
    "exit": 97,
    "log_lines": [
-    "{\"time\": \"2026-11-12T18:27:04+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e\", \"period\": \"val\"}",
-    "{\"time\": \"2026-11-12T18:27:05+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e:second_access:proof i: the first access stopped at the stub\", \"period\": \"val\"}"
+    "{\"time\": \"2026-11-12T19:03:35+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e\", \"period\": \"val\"}",
+    "{\"time\": \"2026-11-12T19:03:35+00:00\", \"track\": \"autopsy_HI_look\", \"label\": \"look:vhi_proof_entry_dummy:2fa59db49d1e:second_access:proof i: the first access stopped at the stub\", \"period\": \"val\"}"
    ],
    "markers": [
     "vhi_proof_entry_dummy__cut2026-01-01.started",
@@ -3453,8 +3545,8 @@
     true
    ],
    "ok": true,
-   "real_path": "/tmp/vhi_a1_bj8sgb7i/PROTOCOL_V3.md",
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_bj8sgb7i/PROTOCOL_V3.md' is refused (A1): its real path '/tmp/vhi_a1_bj8sgb7i/PROTOCOL_V3.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no outpu"
+   "real_path": "/tmp/vhi_a1_ua2nq72o/PROTOCOL_V3.md",
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_ua2nq72o/PROTOCOL_V3.md' is refused (A1): its real path '/tmp/vhi_a1_ua2nq72o/PROTOCOL_V3.md' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the look may be declared in (no outpu"
   },
   {
    "field": "A1 (after_write): LOOK_DECLARED = a copy of proofs.json in the scratchpad: refused by the path rule (resolve_cut and look.plan) although its text quotes the track and the spec sha256 (the content rule alone would accept it)",
@@ -3526,7 +3618,7 @@
    ],
    "ok": true,
    "real_path": "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json",
-   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_bj8sgb7i/link_to_proofs.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the loo"
+   "why": "CUT 2026-01-01 00:00:00+00:00: LOOK_DECLARED='/tmp/vhi_a1_ua2nq72o/link_to_proofs.json' is refused (A1): its real path '/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json' is not /home/user/gold-orb/lab/PROTOCOL_V3.md, the only file the loo"
   },
   {
    "field": "A1 (after_write): every copy made for the probes is deleted",
@@ -3573,7 +3665,7 @@
    "refused_by_the_path_rule": true
   },
   "a copy of proofs.json in /tmp named PROTOCOL_V3.md": {
-   "real_path": "/tmp/vhi_a1_bj8sgb7i/PROTOCOL_V3.md",
+   "real_path": "/tmp/vhi_a1_ua2nq72o/PROTOCOL_V3.md",
    "content_rule_alone": true,
    "refused": true,
    "refused_by_the_path_rule": true

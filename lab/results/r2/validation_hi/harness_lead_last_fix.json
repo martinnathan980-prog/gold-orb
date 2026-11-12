@@ -1,0 +1,23 @@
+{
+ "what": "The lead's last harness fix, after harness_last_recheck.json (verdict ready_with_fixes): its fixes_needed items 1 and 2, done in vhi_guard.py and proofs.py; the spec is unchanged",
+ "written_utc": "2026-11-12",
+ "item_1_identity_pinned": "resolve_cut_declared now takes os.stat and os.lstat of DECLARED_PATH BEFORE the path rule runs and passes them to declaration_check; _protocol_identity accepts the descriptor only if its (st_dev, st_ino) equals that pinned identity as well as the current one. A first version pinned AFTER the path rule; the two new race rows of proof i caught it (accepted instead of refused); the pin was moved before the path rule and both rows are now refused.",
+ "item_1b_committed_version": "committed_protocol_check: for the real protocol, the text judged must have the sha256 of git show HEAD:lab/PROTOCOL_V3.md (read by git in another process); otherwise the look is refused before anything is logged ('commit the declaration first'). Skipped and recorded only while the proofs point DECLARED_PATH at a test text. This also refuses a swap made before the run or an uncommitted edit.",
+ "item_2_tarfile_docstring": "The guard's docstring now says that tarfile's stream modes 'r|...' open with os.open (tarfile._LowLevelFile) and are not covered, and lists pyarrow.orc readers under NOT COVERED. Nothing on the look's code path uses them.",
+ "new_proof_rows": "proof i: the protocol stand-in's entry replaced by a COPY of a harness output right after the path rule -> refused (A1, atomic); the same with a HARD LINK -> refused; committed_protocol_check skipped for a test text; on the real protocol it accepts the working-tree text equal to HEAD and refuses another text.",
+ "rehearsal_unchanged": "the regenerated in-sample rehearsal has 955 verdict values and 6,912 comparison values identical to the committed version",
+ "val_access_log": "502 lines, sha256 c1e4e5fb08b2dfd17e098c904be805d397a60e777ad30f1408bd8dab6f26cc9b, 0 autopsy_HI_look lines (unchanged)",
+ "spec_sha256": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960",
+ "harness_sha256": {
+  "look.py": "569d17a79643d68a6d3870ebaa6f576c2e9a9b1c4f8303c232f81c7963a1376b",
+  "vhi_guard.py": "1ccb9ffa7517df684a36b507094bc725a600934bcfd485ae3b1368aae2426d1e",
+  "vhi_run.py": "bd824592a1225226ffd9578debddb944050d64716da4f50cacbbe6f0bc8622a2",
+  "vhi_sleeves.py": "f9b504a531c68357c8718ca2888f9ca6106a47d52f95b8a45a816924f67d6b97",
+  "vhi_verdicts.py": "674cb01c331194526d46ae24099b07d9b7427b91de7c3c1304036d160cdf1b87",
+  "vhi_lens.py": "67fa812745ae264b4d5ccf372ba0593486be050c6ae477c7b69b9409bfaccd5d",
+  "vhi_data.py": "2553cb38a2f3e3254aa461dc9aacfcdb5f26d54781e3eeb1304fda3f00a59b3e",
+  "vhi_book.py": "053b3f1cbce8c9f5775a533c7646705ea3c28526361024a8633497d2f7ae51f2",
+  "vhi_stakes.py": "99bdca8a34e2727f66cc67859447eb25cae5a2b5a07c52f89f4125cbd1d022dc",
+  "proofs.py": "0c85b76c49fde3abcc955b070cd69af12930f5517c3f2f11980e21d036026015"
+ }
+}

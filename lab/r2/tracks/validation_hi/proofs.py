@@ -1292,6 +1292,32 @@ def race_probes():
                 "file of the same name, right after the path rule: REFUSED (the protocol's path has a linked "
                 "component; os.stat and os.lstat both follow it)", False, stand, dsha, racing(swap_dir),
                 why_has="(A1, atomic)")
+        # last fixes, item 1: the protocol's own entry replaced by a regular file (a copy of a harness output, then a
+        # hard link to it) right after the path rule; the identity pinned when the path rule ran refuses both
+        d, stand, fake, link = setup("race_protocol_entry_replaced_by_a_copy")
+
+        def swap_copy(stand=stand, fake=fake):
+            tmp = stand + ".copy"
+            shutil.copyfile(fake, tmp)
+            os.replace(tmp, stand)
+        attempt("RACE (last fixes): LOOK_DECLARED = the protocol stand-in's own path, whose entry is replaced by a COPY "
+                "of the harness output (a regular file) right after the path rule: REFUSED (the open file is not the "
+                "file pinned when the path rule ran)", False, stand, dsha, racing(swap_copy), why_has="(A1, atomic)")
+        d, stand, fake, link = setup("race_protocol_entry_replaced_by_a_hard_link")
+
+        def swap_hard(stand=stand, fake=fake):
+            tmp = stand + ".hard"
+            os.link(fake, tmp)
+            os.replace(tmp, stand)
+        attempt("RACE (last fixes): the same with the entry replaced by a HARD LINK to the harness output: REFUSED (the "
+                "pinned identity)", False, stand, dsha, racing(swap_hard), why_has="(A1, atomic)")
+        # control: without a race, the stand-in replaced BEFORE the run by a copy is judged on its own text (an edit of
+        # the protocol): accepted here because the committed-version check is skipped for test texts; with the real
+        # protocol, committed_protocol_check requires the text to equal HEAD (row below)
+        hc = G.committed_protocol_check("0" * 64)
+        rows.append({"field": "A1 (last fixes): committed_protocol_check is skipped while DECLARED_PATH points at a test "
+                              "text (the stand-in), and is recorded as skipped", "expected": [False, True],
+                     "got": [hc["applies"], hc["ok"]], "ok": hc["applies"] is False and hc["ok"] is True})
     finally:
         G.declared_path_check = saved_fn
         G.DECLARED_PATH = saved_path
@@ -1300,6 +1326,16 @@ def race_probes():
                           "probes; their test files are deleted", "expected": [PROTOCOL, True, False],
                  "got": [G.DECLARED_PATH, G.declared_path_check is saved_fn, os.path.exists(base)],
                  "ok": G.DECLARED_PATH == PROTOCOL and G.declared_path_check is saved_fn and not os.path.exists(base)})
+    # last fixes, item 1b, on the real protocol (its text is only hashed here; nothing is declared or run)
+    with open(PROTOCOL, "rb") as f:
+        psha = hashlib.sha256(f.read()).hexdigest()
+    hc_ok, hc_bad = G.committed_protocol_check(psha), G.committed_protocol_check("0" * 64)
+    rows.append({"field": "A1 (last fixes): committed_protocol_check applies to the real protocol, accepts its text when "
+                          "it equals the committed version at HEAD (git show HEAD:lab/PROTOCOL_V3.md) and refuses any "
+                          "other text", "expected": [True, True, False],
+                 "got": [hc_ok["applies"], hc_ok["ok"], hc_bad["ok"]],
+                 "ok": hc_ok["applies"] is True and hc_ok["ok"] is True and hc_bad["ok"] is False,
+                 "head_sha256": hc_ok.get("head_sha256"), "working_tree_sha256": psha})
     return rows, out
 
 

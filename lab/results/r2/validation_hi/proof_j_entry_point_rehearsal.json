@@ -1,7 +1,7 @@
 {
  "what": "the look's entry point (look.py) run end to end at CUT 2022-01-01 in its own process with the spec as it stands (changes_in_look K1, K2, K3 and synthesis A's five): the right sleeves, portfolios and verdicts, the check first and synthesis A's block, the same numbers as the proofs' run, nothing logged, exit status 0, the imported code's sha256 recorded (A5), synthesis A's frozen files check recorded (fix 5); fix 3: a reduced in-sample spec whose check first fails exits 3 after writing its output",
  "output": "/home/user/gold-orb/lab/results/r2/validation_hi/rehearsal/autopsy_HI_look__cut2022-01-01.json",
- "seconds": 52.5,
+ "seconds": 53.2,
  "detail": {
   "changes": {
    "in_look": [
@@ -3788,7 +3788,7 @@
     ]
    },
    "r2/tracks/validation_hi/vhi_guard.py": {
-    "sha256": "e35de08f3129684fc40eb4c3c29553006ed9a8ad284a317c0305aac71c99b02f",
+    "sha256": "1ccb9ffa7517df684a36b507094bc725a600934bcfd485ae3b1368aae2426d1e",
     "modules": [
      "vhi_guard"
     ]
@@ -3955,8 +3955,8 @@
    "spec": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_exit_code_probe/reduced_spec.json",
    "output": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_exit_code_probe/vhi_proof_exit_code__cut2022-01-01.json",
    "returncode": 3,
-   "seconds": 10.4,
-   "stdout_tail": "changes are NOT judged (verdicts adopted = null); every other number of this run is unverified.\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\nwritten /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_exit_code_probe/vhi_proof_exit_code__cut2022-01-01.json [9.7s]; access logged: False\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n!!! FAILED -- STOP AND REPORT (synthesis A, 3. CHECK FIRST): the unchanged sleeves recomputed by this pipeline do not equal the official recalc trades: GOLD_FRI_PM__xauusd, F1_brk_ridge_filter__btcusd, F1_brk_ridge_filter__ethusd, brk72_24h_wd__btcusd, brk72_24h_wd__ethusd, noise30__us100, nq_btc_follow__btcusd, ocm4__us100. synthesis A's changes are NOT judged (verdicts adopted = null); every other number of this run is unverified.\n!!! see 'check_first' at the top of /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_exit_code_probe/vhi_proof_exit_code__cut2022-01-01.json\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+   "seconds": 9.8,
+   "stdout_tail": "changes are NOT judged (verdicts adopted = null); every other number of this run is unverified.\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\nwritten /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_exit_code_probe/vhi_proof_exit_code__cut2022-01-01.json [9.1s]; access logged: False\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n!!! FAILED -- STOP AND REPORT (synthesis A, 3. CHECK FIRST): the unchanged sleeves recomputed by this pipeline do not equal the official recalc trades: GOLD_FRI_PM__xauusd, F1_brk_ridge_filter__btcusd, F1_brk_ridge_filter__ethusd, brk72_24h_wd__btcusd, brk72_24h_wd__ethusd, noise30__us100, nq_btc_follow__btcusd, ocm4__us100. synthesis A's changes are NOT judged (verdicts adopted = null); every other number of this run is unverified.\n!!! see 'check_first' at the top of /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/vhi_exit_code_probe/vhi_proof_exit_code__cut2022-01-01.json\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
    "stderr_tail": "CHECK FIRST FAILED: FAILED -- STOP AND REPORT (synthesis A, 3. CHECK FIRST): the unchanged sleeves recomputed by this pipeline do not equal the official recalc trades: GOLD_FRI_PM__xauusd, F1_brk_ridge_filter__btcusd, F1_brk_ridge_filter__ethusd, brk72_24h_wd__btcusd, brk72_24h_wd__ethusd, noise30__us100, nq_btc_follow__btcusd, ocm4__us100. synthesis A's changes are NOT judged (verdicts adopted = null); every other number of this run is unverified."
   }
  },

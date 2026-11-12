@@ -1,0 +1,109 @@
+{
+ "what": "Independent recheck of the last harness fixes, workflow wf_71cd7408-a56",
+ "report": {
+  "verdict": "ready_with_fixes",
+  "spec_sha256_seen": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960",
+  "checks": [
+   {
+    "what": "(a) Atomic A1: the re-point race, repeated deterministically (the path rule is wrapped and the swap happens right after its first call)",
+    "ok": true,
+    "note": "Probe probe_a.py, run as its own process with DECLARED_PATH pointed at a stand-in in that process only. All three cases are REFUSED with '(A1, atomic)' and no text is read (0 descriptor reads): a link re-pointed by atomic rename, a link removed and re-created, and a link re-pointed to the real lab/results/r2/validation_hi/proofs.json with the real spec sha256. proofs.json's own text passes the content rule, so only A1 refuses it."
+   },
+   {
+    "what": "(a) Atomic A1: the link LOOK_DECLARED names is replaced by rename between the path rule and the read",
+    "ok": true,
+    "note": "The link is replaced by a regular-file copy of a harness output: REFUSED, nothing read. Also REFUSED: the protocol's entry replaced by a symlink (caught by lstat); the target renamed away (the link dangles); a directory of its path replaced by a link (caught by the linked-component check); and a swap after os.open but before the identity check (the open file is the old inode). When the swap happens after the identity check, the text still comes from the checked descriptor (sha256 and inode of the stand-in, not of the copy)."
+   },
+   {
+    "what": "(a) Atomic A1: the link's TARGET (the protocol's own entry) replaced by a regular file between the path rule and the read",
+    "ok": false,
+    "note": "NOT refused. The entry is replaced by rename with a copy of a harness output (R2, and R2c with LOOK_DECLARED = the stand-in's own path) or with a hard link to it (R3). The look is then ACCEPTED on that file's text. _protocol_identity compares the descriptor with os.stat/os.lstat of DECLARED_PATH as they are after the swap, so the new file counts as the protocol. Making the same replacement before the run, with no race at all (R2b), gives the same result: it is an edit of the protocol's file. It needs write access to lab/. The text judged is recorded: its sha256 is in the meta (declared_sha256, declaration_check_at_open_run) and in the marker. So the task's 'rename/replace of the target ... must be refused' holds for the link but not for the protocol's own entry. See fixes_needed 1."
+   },
+   {
+    "what": "(a) The protocol path itself and a symlink to it pass the path rule, and the protocol is refused on content",
+    "ok": true,
+    "note": "declared_path_check accepts /home/user/gold-orb/lab/PROTOCOL_V3.md and a scratch symlink to it (real path = the protocol). I called only the pure path rule and declaration_check with explicit arguments; LOOK_DECLARED was never set to the protocol, not even in a dict. declaration_check(protocol_only=True) on both opens the protocol itself (same st_dev and st_ino) but accepted = false. The protocol is 804 lines, sha256 5212480224282e6d8d0d414b34f4f4fd155bd278c083ebe8f7bb1335ff139a14, with 0 'autopsy_HI_look' and 0 spec sha256 (not even the prefix b71f69d5)."
+   },
+   {
+    "what": "(b) A mistyped look CUT is refused before anything is logged (stand-in declaration, child processes, log and look folder redirected)",
+    "ok": true,
+    "note": "probe_bd.py runs the real look.py main() in children with vhi_run stubbed and the real look_spec.json. The stand-in quotes the track and the real spec sha256, and DECLARED_PATH points at it in the child only. A safety net blocks any write to the real log or the real look folder; it was never triggered. Refused with exit 1: --cut 2024-01-01, 2025-12-31, 2026-01-02, 2025-12-31T23:59:59 and 2022-01-02. Each refusal comes before the declared file is opened (0 declaration_check calls), with 0 scratch log lines, no marker, no guard and the stub not reached. A spec whose look window ends 2025-01-01 is refused at CUT 2026-01-01. Positive control at --cut 2026-01-01: the gates run in this order: window; declaration and frozen files in plan; declaration and frozen files again in open_run; then 1 scratch log line (label look:autopsy_HI_look:b71f69d59999); then the marker (declared_sha256 = the stand-in's); then the guard; then run_spec. Running the same command again is refused (run once)."
+   },
+   {
+    "what": "(c) A failed check first gives exit 3 and a loud output; a passed one gives exit 0 (in sample)",
+    "ok": true,
+    "note": "Full spec this time (the engineer used a reduced spec). The real look.py main() at CUT 2022-01-01, with one official ocm4 us100 row (entered 2020-07-07 13:34 UTC) changed in memory (R + 0.25), exits 3 after 52 s. The output and the trades parquet are written first. check_first is the first key: passed false, failed_or_missing [ocm4__us100], 1 window row differing, 53.780301 R against 54.030301 R. The '!!!' banner is on stdout and 'CHECK FIRST FAILED' is on stderr. Synthesis A's five have adopted null and stopped_by_check_first true. K1-K3 (synthesis_B's criteria) are still judged, which is what the protocol text has to state. My clean rehearsal exits 0."
+   },
+   {
+    "what": "(d) The frozen-sha check runs before the access line and refuses on a mismatch (simulated on a copy or in memory, no frozen file edited)",
+    "ok": true,
+    "note": "A COPY of synthesis_A.json with another frozen sha256 for r2/fp_costs.json is REFUSED in plan, with no open_run events and nothing logged. goldlab/sim.py's sha256 changed in memory (vhi_guard._sha256_of patched in the child) is REFUSED in plan. A mismatch only at the second check (plan passes; open_run uses the copy) makes open_run REFUSE right after its frozen check: no log_access, no marker, no guard. At CUT 2022-01-01 the same copy is not refused; the problem is recorded and names fp_costs.json. In code, open_run line 797 (frozen check) comes before line 803 (log_access). All 16 frozen files now equal synthesis A's values. synthesis_A.json sha256 is 2897cdf9..., unchanged against git."
+   },
+   {
+    "what": "(e) The new wraps (tokenize, tarfile) and the claims in the docstring, probed on absent paths only",
+    "ok": true,
+    "note": "Every probe path sits under lab/__vhi_reviewer_absent__/ (a folder that does not exist) or is an absent name in lab/data, so no real holdout folder is touched. Wrapped: builtins.open, io.open, bz2._builtin_open, tokenize._builtin_open, tarfile.bltn_open and numpy's opener. 28 probes are REFUSED by GuardError: tokenize.open (holdout, CSV, lab/data, 2026 name); tarfile.open 'r:', 'r', 'r:gz', 'r:bz2', 'r:xz' and TarFile(); numpy fromfile, load and memmap; pandas read_pickle, read_feather and read_orc; gzip, bz2 and lzma of lab CSVs; zipfile; codecs; shutil.copyfile; pathlib; and a 2026 name. The NOT COVERED list is honest: io.FileIO, os.open, io.open_code, _io.open, pyarrow.feather.read_table, OSFile and memory_map all reach the OS. In this Python 3.13.18 only bz2, tarfile and tokenize capture open at import. The probes recorded no read and created nothing."
+   },
+   {
+    "what": "(e) tarfile stream modes",
+    "ok": false,
+    "note": "tarfile.open(path, 'r|*' / 'r|' / 'r|gz' / 'r|bz2' / 'r|xz') is NOT seen by the guard: tarfile._Stream opens with tarfile._LowLevelFile, which calls os.open. The docstring says 'tarfile.open in every mode, r: included', which is wrong for these 5 modes. pyarrow.orc.read_table also bypasses the guard and is not named, although the general 'pyarrow's own readers' item covers it. Nothing on the look's code path uses tarfile or orc."
+   },
+   {
+    "what": "(f) proofs.py re-run, or the engineer's files compared",
+    "ok": true,
+    "note": "Not re-run: proofs.py cannot redirect its outputs. OUT = lab/results/r2/validation_hi is hard-coded; proof j runs look.py without --out (writes rehearsal/autopsy_HI_look__cut2022-01-01.json); proof k writes rehearsal/pseudo_look_cut2021...; the CSV probes write under OUT. As the task says, I compared the engineer's files instead. proofs.json: all_ok true, 13 proofs, 3,340 checks, 0 failed (HEAD before this round: 3,279). Its harness_sha256 equals all 13 files now. The 34 new proof-i rows for fixes 1, 2, 4 and 5, the fix 3 rows in proof j and the fix 5 rows in proof m all pass, and they agree with my own probes."
+   },
+   {
+    "what": "(f) Every verdict value of my own rehearsal against the committed one",
+    "ok": true,
+    "note": "My run: look.py --cut 2022-01-01 --out in my scratch folder, exit 0, 53 s, nothing logged, empty stderr. Against the committed rehearsal of afb033e (HEAD when I extracted it; sha256 df778732...): verdicts 529 numbers, 0 differences, all 8 adopted true (K1, K2, K3, ocm4_T1, F1eth_H2, brk72btc_S0.75r, donch4h_S0.75r, orbxau_S0.75r). Also 0 differences in synthesis_A (1,246 numbers), portfolios (10,656), comparisons (6,768), sleeve_comparisons (560), official (210), payoff_reference_vs_sB (180) and sleeves (13,937, timing skipped). check_first differs only in its description text and the new keys payoff_references and warnings (0 warnings; all 5 references identical). Against the engineer's regenerated rehearsal (now committed in 146f125): 0 differences, check_first included (240 numbers). The trades parquet is byte-identical to both (0b1b885c...)."
+   },
+   {
+    "what": "(g) The look's code path reads nothing at or after 2026-01-01 and no holdout path",
+    "ok": true,
+    "note": "From the code: vhi_data.frame reads ts < CUT and asserts max < CUT. official_closed puts entry_time < CUT AND exit_time < CUT in the read. official_entries reads only the entry_time column, entry_time < CUT. windows_for asserts eval end <= CUT (2026-01-01). The guard requires a bound <= CUT on every parquet read, and refuses lab/data opens, holdout components and 2026 names at every CUT. The frozen code's unfiltered readers (goldlab r2.py and data.py, the leadlag leader loader) would be refused. recalc.py's summary.json read is under __main__ only. No plugin and no stake rule are in the spec. My rehearsal made 24 parquet reads, all bounded at the CUT, and 7 opens (code and config files), the same set as before the fixes. The new reads in plan and open_run (the protocol, synthesis_A.json, the 15+1 frozen files) are text and code, not data. A K1 crash at the look is not expected: only the declared year 2022 is binding (a fold at CUT 2026)."
+   },
+   {
+    "what": "(h) look_spec.json sha256, the harness sha256 and the access log",
+    "ok": true,
+    "note": "look_spec.json is b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960. All 13 harness files equal the engineer's list and equal the new HEAD. val_access.log was 502 lines, sha256 c1e4e5fb08b2dfd17e098c904be805d397a60e777ad30f1408bd8dab6f26cc9b, 0 autopsy_HI_look lines, before and after every probe and run. lab/results/r2/validation_hi/look/ does not exist. No bytecode was written. look_chart.py was not touched (75e7691e...)."
+   },
+   {
+    "what": "Repository state during the review",
+    "ok": true,
+    "note": "A parallel commit, 146f125 at 18:50:01 ('Pictures 7-9 redrawn ...', a stake-pictures message), swept in the harness fixes (look.py, vhi_guard.py, vhi_run.py, proofs.py), the proof files and the regenerated rehearsals. I ran no git command that changes anything. Every harness file in 146f125 equals the files I reviewed. The commit message does not say that it carries the harness round."
+   }
+  ],
+  "leaks_found": [
+   "A1, narrow, not a data leak: the protocol's own entry can be replaced by a regular file (a copy or a hard link of another file) between the path rule and the read. The look is then accepted on that file's text, because the identity check compares the open file with the protocol path as it is after the swap. Making the same replacement before the run (no race) gives the same result, so it is an edit of the protocol's file and needs write access to lab/. The judged text's sha256 is recorded in the meta and the marker, so a swap-and-restore would show up as a sha256 that matches no version of the protocol. No data is read.",
+   "Guard coverage, not on the look's code path: tarfile.open in the 5 stream modes ('r|*', 'r|', 'r|gz', 'r|bz2', 'r|xz') opens the file with os.open (tarfile._LowLevelFile), so the guard never sees it, although the docstring says tarfile is covered in every mode. pyarrow.orc readers also bypass the guard and are not named. Shown on absent paths only; nothing was read.",
+   "No leak found that lets the look read data at or after 2026-01-01, a holdout path, or (through a link race) a file other than the one at the protocol's path."
+  ],
+  "fixes_needed": [
+   "Small, vhi_guard.py only; the spec sha256 does not change; re-run proofs.py afterwards. Pin the protocol's identity when the path rule runs, so that a rename or replace of the protocol's entry between the path rule and the read is refused, as check (a) requires. In resolve_cut_declared, right after declared_path_check, take os.stat and os.lstat of DECLARED_PATH. Pass (st_dev, st_ino) to declaration_check, and accept the descriptor only if it matches that pinned identity as well as the current one. Add 2 proof-i rows (entry replaced by a copy, and by a hard link). This does not stop a replacement made before the run, which is an edit of the protocol. Optional, medium: also require the judged text's sha256 to equal the committed PROTOCOL_V3.md at HEAD, so that a temporary swap cannot carry the look.",
+   "Tiny (docstring) or small (wrap), vhi_guard.py: tarfile's stream modes 'r|...' open with os.open and are not refused. Either correct the docstring ('every mode except the stream modes r|..., which open with os.open: not covered') and list them under NOT COVERED with pyarrow.orc, or wrap tarfile._LowLevelFile.__init__ with the open() check in reading mode and add the 5 modes to the fix 4 probes.",
+   "Not a harness fix, the lead's step before the look: the declaration text in PROTOCOL_V3.md is still absent (0 'autopsy_HI_look', 0 spec sha256). It must quote autopsy_HI_look and b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960, plus item 5 of the previous recheck. That is: the single access line replaces the per-read logging; synthesis A's five run through the payoff lens's variants.py; the check first gates synthesis A's five only (confirmed: K1-K3 are still judged when it fails).",
+   "Optional, tiny: let proofs.py take an output folder (for example an environment variable for OUT and the proof j/k rehearsal paths), so an independent reviewer can re-run it without touching lab/. The A3 CSV probes still need a path under lab/."
+  ],
+  "harness_sha256_seen": {
+   "example_plugins.py": "fdd2d6d8ad7bc2ec87b3a7d47c0373913e4aa6f97acea4c04f5f98ddf9447852",
+   "look.py": "569d17a79643d68a6d3870ebaa6f576c2e9a9b1c4f8303c232f81c7963a1376b",
+   "look_chart.py": "75e7691ef3c81ab5bcfebfe892954b55ea1a5eabc096ad712fb884ac0aed99e7",
+   "look_spec.json": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960",
+   "proofs.py": "bcf056d3158114198e5e252e7674c7addf4453c063c6a2ddbc43a00dbb6a878f",
+   "vhi_book.py": "053b3f1cbce8c9f5775a533c7646705ea3c28526361024a8633497d2f7ae51f2",
+   "vhi_data.py": "2553cb38a2f3e3254aa461dc9aacfcdb5f26d54781e3eeb1304fda3f00a59b3e",
+   "vhi_guard.py": "e35de08f3129684fc40eb4c3c29553006ed9a8ad284a317c0305aac71c99b02f",
+   "vhi_lens.py": "67fa812745ae264b4d5ccf372ba0593486be050c6ae477c7b69b9409bfaccd5d",
+   "vhi_run.py": "bd824592a1225226ffd9578debddb944050d64716da4f50cacbbe6f0bc8622a2",
+   "vhi_sleeves.py": "f9b504a531c68357c8718ca2888f9ca6106a47d52f95b8a45a816924f67d6b97",
+   "vhi_stakes.py": "99bdca8a34e2727f66cc67859447eb25cae5a2b5a07c52f89f4125cbd1d022dc",
+   "vhi_verdicts.py": "674cb01c331194526d46ae24099b07d9b7427b91de7c3c1304036d160cdf1b87",
+   "PROTOCOL_V3.md (read only, not a harness file)": "5212480224282e6d8d0d414b34f4f4fd155bd278c083ebe8f7bb1335ff139a14",
+   "results/r2/autopsy/synthesis_A.json (read only)": "2897cdf90e3344572ec55977c8d3112ae535148a02e319f862d69fc696939185",
+   "results/val_access.log (before and after)": "c1e4e5fb08b2dfd17e098c904be805d397a60e777ad30f1408bd8dab6f26cc9b (502 lines, 0 autopsy_HI_look)",
+   "reviewer scratch folder": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/validation_hi_last/ (probes/, out/probe_a.json, out/probe_bd.json, out/probe_e.json, out/probe_e2.json, out/compare_rehearsals.json, rehearsal/, fail/)"
+  }
+ }
+}

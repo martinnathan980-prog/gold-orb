@@ -2,7 +2,7 @@
  "what": "MOVING THE CUT, as the look will: the same spec run by look.py at CUT 2021-01-01 (in sample) must give, for\nevery sleeve, chain, cost mode and execution, exactly the trades of the CUT 2022-01-01 run that entered and\nclosed inside the shorter frame -- the harness's results do not depend on where the frame ends except for the\ntrades it cannot finish. K1's fit for the year starting at that CUT must be the CUT-2022 run's 2021 fold.",
  "detail": {
   "spec": "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/vhi/pseudo_look_cut2021_spec.json",
-  "seconds": 53.9,
+  "seconds": 54.3,
   "frames_cut2021": {
    "us100": {
     "bars": 2169414,

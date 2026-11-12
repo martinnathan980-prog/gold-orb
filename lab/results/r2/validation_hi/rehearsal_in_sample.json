@@ -1074,7 +1074,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.5
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -1452,7 +1452,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.5
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -1646,7 +1646,7 @@
        "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 999
       },
-      "sec": 0.5
+      "sec": 0.6
      },
      "main": {
       "window": {
@@ -2218,7 +2218,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.7
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -2412,7 +2412,7 @@
        "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1643
       },
-      "sec": 0.4
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -2609,7 +2609,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.5
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -2805,7 +2805,7 @@
        "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 999
       },
-      "sec": 0.5
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -3187,7 +3187,7 @@
        "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 999
       },
-      "sec": 0.6
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -3987,7 +3987,7 @@
        "friday_close_orders_at_a_later_reopen": 801,
        "orders_out": 999
       },
-      "sec": 0.6
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -5171,7 +5171,7 @@
        "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 1643
       },
-      "sec": 0.5
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -5360,7 +5360,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.8
+      "sec": 0.9
      },
      "main": {
       "window": {
@@ -6135,7 +6135,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 1.9
+      "sec": 1.7
      },
      "main": {
       "window": {
@@ -6527,7 +6527,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 0.6
+      "sec": 0.7
      },
      "main": {
       "window": {
@@ -8441,7 +8441,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 1.1
+      "sec": 0.9
      },
      "main": {
       "window": {
@@ -8639,7 +8639,7 @@
        "friday_close_orders_at_a_later_reopen": 65,
        "orders_out": 1659
       },
-      "sec": 0.5
+      "sec": 0.6
      },
      "main": {
       "window": {
@@ -10813,7 +10813,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.0
+      "sec": 1.2
      },
      "main": {
       "window": {
@@ -11012,7 +11012,7 @@
        "friday_close_orders_at_a_later_reopen": 30,
        "orders_out": 1826
       },
-      "sec": 0.7
+      "sec": 0.8
      },
      "main": {
       "window": {
@@ -11584,7 +11584,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.4
+      "sec": 0.5
      },
      "main": {
       "window": {
@@ -11778,7 +11778,7 @@
        "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2914
       },
-      "sec": 0.2
+      "sec": 0.1
      },
      "main": {
       "window": {
@@ -12738,7 +12738,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.9
+      "sec": 1.1
      },
      "main": {
       "window": {
@@ -12932,7 +12932,7 @@
        "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2611
       },
-      "sec": 1.0
+      "sec": 0.9
      },
      "main": {
       "window": {
@@ -13116,7 +13116,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.4
+      "sec": 1.0
      },
      "main": {
       "window": {
@@ -13310,7 +13310,7 @@
        "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2611
       },
-      "sec": 1.1
+      "sec": 1.3
      },
      "main": {
       "window": {
@@ -13509,7 +13509,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 0.4
+      "sec": 0.3
      },
      "main": {
       "window": {
@@ -13714,7 +13714,7 @@
        "friday_close_orders_at_a_later_reopen": 9,
        "orders_out": 785
       },
-      "sec": 0.4
+      "sec": 0.3
      },
      "main": {
       "window": {
@@ -14114,7 +14114,7 @@
        "friday_close_orders_at_a_later_reopen": 9,
        "orders_out": 783
       },
-      "sec": 0.5
+      "sec": 0.4
      },
      "main": {
       "window": {
@@ -14322,7 +14322,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.0
+      "sec": 1.1
      },
      "main": {
       "window": {
@@ -15308,7 +15308,7 @@
        "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2611
       },
-      "sec": 0.9
+      "sec": 1.1
      },
      "main": {
       "window": {
@@ -15499,7 +15499,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 1.3
+      "sec": 1.2
      },
      "main": {
       "window": {
@@ -15700,7 +15700,7 @@
        "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2611
       },
-      "sec": 1.0
+      "sec": 1.3
      },
      "main": {
       "window": {
@@ -16477,7 +16477,7 @@
        "friday_close_orders_at_a_later_reopen": 0,
        "orders_out": 2914
       },
-      "sec": 0.2
+      "sec": 0.1
      },
      "main": {
       "window": {
@@ -17073,7 +17073,7 @@
       "main_payoff_rule_differs": 0,
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.1
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -17844,7 +17844,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.3
+      "sec": 0.2
      },
      "main": {
       "window": {
@@ -18608,7 +18608,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 0,
-      "sec": 0.2
+      "sec": 0.3
      },
      "main": {
       "window": {
@@ -21129,7 +21129,7 @@
       "exec": "lab",
       "main_refused_3spreads": 0,
       "main_boundary_dropped": 1,
-      "sec": 0.4
+      "sec": 0.3
      },
      "main": {
       "window": {
@@ -57251,7 +57251,7 @@
    ]
   },
   "r2/tracks/validation_hi/proofs.py": {
-   "sha256": "bcf056d3158114198e5e252e7674c7addf4453c063c6a2ddbc43a00dbb6a878f",
+   "sha256": "0c85b76c49fde3abcc955b070cd69af12930f5517c3f2f11980e21d036026015",
    "modules": [
     "__main__"
    ]
@@ -57269,7 +57269,7 @@
    ]
   },
   "r2/tracks/validation_hi/vhi_guard.py": {
-   "sha256": "e35de08f3129684fc40eb4c3c29553006ed9a8ad284a317c0305aac71c99b02f",
+   "sha256": "1ccb9ffa7517df684a36b507094bc725a600934bcfd485ae3b1368aae2426d1e",
    "modules": [
     "vhi_guard"
    ]

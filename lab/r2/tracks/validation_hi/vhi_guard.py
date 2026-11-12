@@ -53,7 +53,9 @@ THE READ GUARD (F3, A2, A3), installed for the whole process by open_run:
     opened: they are recorded, not refused).
   * Modules that captured the builtin open when they were imported are pointed at the guarded open too: numpy's file
     openers (numpy.loadtxt, genfromtxt), bz2 (bz2._builtin_open), tokenize (tokenize._builtin_open: tokenize.open,
-    which linecache also uses) and tarfile (tarfile.bltn_open: tarfile.open in every mode, 'r:' included). gzip and
+    which linecache also uses) and tarfile (tarfile.bltn_open: tarfile.open in the file modes 'r', 'r:*', 'r:', 'r:gz',
+    'r:bz2', 'r:xz'; NOT the stream modes 'r|*', 'r|', 'r|gz', 'r|bz2', 'r|xz', which open with os.open through
+    tarfile._LowLevelFile and are listed under NOT COVERED). gzip and
     lzma look builtins.open up at each call. numpy.fromfile of a path goes through builtins.open in numpy 2.5, so the
     open() rules apply to it; so do pandas.read_feather / read_orc / read_pickle / read_json and numpy.load, which
     open a path with open() before handing the file over.
@@ -62,11 +64,12 @@ THE READ GUARD (F3, A2, A3), installed for the whole process by open_run:
   leader is set) raises instead of reading.
   NOT COVERED (no plugin or stake rule enters this look, and nothing on its code path uses them):
     - opens that bypass builtins.open and io.open: io.FileIO (and _io.FileIO), _io.open called directly,
-      io.open_code, os.open (and os.read on its descriptor), mmap of a descriptor;
+      io.open_code, os.open (and os.read on its descriptor), mmap of a descriptor, and tarfile's stream modes
+      ('r|...', which open with os.open through tarfile._LowLevelFile);
     - pyarrow's own file readers outside the wrapped entry points: pyarrow.OSFile, pyarrow.memory_map, pyarrow.fs
       input files (e.g. LocalFileSystem().open_input_file), pyarrow.feather.read_table and pyarrow.ipc called
-      directly, the private modules (pyarrow._csv, pyarrow._json, pyarrow._parquet.ParquetReader) and dataset
-      fragments; other C-level readers (sqlite3, HDF5);
+      directly, pyarrow.orc readers, the private modules (pyarrow._csv, pyarrow._json, pyarrow._parquet.ParquetReader)
+      and dataset fragments; other C-level readers (sqlite3, HDF5);
     - hard links: every lab/ path rule (holdout, lab/data, CSV, 2026 names) keys on os.path.realpath, which does not
       resolve hard links; a hard link made outside lab/ to a lab file (os.link inside the process; /tmp and lab/ are
       on the same filesystem) escapes those rules;
@@ -162,13 +165,16 @@ def declared_path_check(path):
     return rp == DECLARED_PATH, rp
 
 
-def _protocol_identity(st):
+def _protocol_identity(st, pinned=None):
     """A1, atomic: is the open file whose os.fstat is `st` the protocol? Only if `st` is a regular file with the
     st_dev and st_ino of os.stat(DECLARED_PATH) AND of os.lstat(DECLARED_PATH) (the protocol's own entry is a regular
-    file, not a link to another file), and DECLARED_PATH has no linked component (its real path is itself)."""
+    file, not a link to another file), and DECLARED_PATH has no linked component (its real path is itself).
+    `pinned` (last fixes, item 1): the (st_dev, st_ino) of os.stat and os.lstat of DECLARED_PATH taken when the path
+    rule ran; the open file must ALSO be that file, so that the protocol's entry replaced by another file (a copy or
+    a hard link) between the path rule and the read is refused."""
     out = {"fd_dev_ino": [int(st.st_dev), int(st.st_ino)], "fd_is_a_regular_file": bool(stat.S_ISREG(st.st_mode)),
            "protocol_stat_dev_ino": None, "protocol_lstat_dev_ino": None, "protocol_entry_is_a_regular_file": False,
-           "protocol_path_has_no_link": False, "same": False}
+           "protocol_path_has_no_link": False, "pinned_dev_ino": None, "same_as_pinned": None, "same": False}
     try:
         a, b = os.stat(DECLARED_PATH), os.lstat(DECLARED_PATH)
     except OSError as e:
@@ -179,8 +185,37 @@ def _protocol_identity(st):
     out["protocol_entry_is_a_regular_file"] = bool(stat.S_ISREG(b.st_mode))
     out["protocol_path_has_no_link"] = os.path.realpath(DECLARED_PATH) == DECLARED_PATH
     me = (st.st_dev, st.st_ino)
+    pin_ok = True
+    if pinned is not None:
+        out["pinned_dev_ino"] = [[int(x) for x in pinned[0]], [int(x) for x in pinned[1]]]
+        pin_ok = me == tuple(pinned[0]) and me == tuple(pinned[1])
+        out["same_as_pinned"] = bool(pin_ok)
     out["same"] = bool(out["fd_is_a_regular_file"] and me == (a.st_dev, a.st_ino) and me == (b.st_dev, b.st_ino)
-                       and out["protocol_entry_is_a_regular_file"] and out["protocol_path_has_no_link"])
+                       and out["protocol_entry_is_a_regular_file"] and out["protocol_path_has_no_link"] and pin_ok)
+    return out
+
+
+REAL_PROTOCOL = "/home/user/gold-orb/lab/PROTOCOL_V3.md"     # never redirected (DECLARED_PATH is, in the proofs only)
+
+
+def committed_protocol_check(text_sha256):
+    """Last fixes, item 1b: the text the look is judged on must be the protocol exactly as committed at HEAD (git
+    show HEAD:lab/PROTOCOL_V3.md, read by git in another process), so the declaration is committed before the run and
+    neither a swap nor an uncommitted edit can carry the look. Skipped (recorded) only while the proofs point
+    DECLARED_PATH at a test text."""
+    out = {"applies": DECLARED_PATH == REAL_PROTOCOL, "head_sha256": None, "text_sha256": text_sha256, "ok": False}
+    if not out["applies"]:
+        out.update(ok=True, note="skipped: DECLARED_PATH points at a test text (proofs only)")
+        return out
+    try:
+        import subprocess
+        r = subprocess.run(["git", "-C", os.path.dirname(REAL_PROTOCOL), "show", "HEAD:./" + os.path.basename(REAL_PROTOCOL)],
+                           capture_output=True, check=True, timeout=60)
+    except Exception as e:                                   # no git, no HEAD, not committed: refused
+        out["error"] = f"git show HEAD failed: {e}"[:300]
+        return out
+    out["head_sha256"] = hashlib.sha256(r.stdout).hexdigest()
+    out["ok"] = out["head_sha256"] == text_sha256
     return out
 
 
@@ -197,7 +232,7 @@ def _read_fd(fd, limit=64 << 20):
             raise GuardError(f"the declared file is larger than {limit} bytes")
 
 
-def declaration_check(path, spec_sha, protocol_only=False):
+def declaration_check(path, spec_sha, protocol_only=False, pinned=None):
     """What the declared file says about this look. The file is opened ONCE (os.open, read only, links followed: a
     link to the protocol is allowed). 'same_file_as_the_protocol' tells whether that open file IS the protocol
     (_protocol_identity: os.fstat of the descriptor against os.stat and os.lstat of DECLARED_PATH, st_dev and
@@ -226,7 +261,7 @@ def declaration_check(path, spec_sha, protocol_only=False):
         return out
     try:
         st = os.fstat(fd)
-        ident = _protocol_identity(st)
+        ident = _protocol_identity(st, pinned)
         out["identity"] = ident
         out["same_file_as_the_protocol"] = ident["same"]
         if not stat.S_ISREG(st.st_mode):
@@ -267,12 +302,17 @@ def resolve_cut_declared(cut, env=None, spec_sha=None):
     if not path:
         raise GuardError(f"CUT {c} is after 2022-01-01: the look is refused until LOOK_DECLARED={DECLARED_PATH} "
                          "is set and the protocol declares it")
+    try:                                         # pin the protocol's identity BEFORE the path rule runs (item 1)
+        a0, b0 = os.stat(DECLARED_PATH), os.lstat(DECLARED_PATH)
+    except OSError as e:
+        raise GuardError(f"CUT {c}: the protocol {DECLARED_PATH} cannot be stat'ed: {e}")
+    pinned = ((a0.st_dev, a0.st_ino), (b0.st_dev, b0.st_ino))
     is_prot, rp = declared_path_check(path)
     if not is_prot:
         raise GuardError(f"CUT {c}: LOOK_DECLARED={path!r} is refused (A1): its real path {rp!r} is not "
                          f"{DECLARED_PATH}, the only file the look may be declared in (no output of the harness, "
                          "no copy, no other file, wherever it is)")
-    d = declaration_check(path, spec_sha, protocol_only=True)
+    d = declaration_check(path, spec_sha, protocol_only=True, pinned=pinned)
     idt = d.get("identity")
     if idt is None:
         raise GuardError(f"CUT {c}: LOOK_DECLARED={path!r} is not a readable file ({d.get('error')})")
@@ -289,6 +329,11 @@ def resolve_cut_declared(cut, env=None, spec_sha=None):
         raise GuardError(f"CUT {c}: the protocol {DECLARED_PATH} does not declare this look (F1: its text must "
                          f"contain the look's track name and the full sha256 of the spec file that runs); "
                          f"track named: {d['contains_track']}, spec sha256 quoted: {d['contains_spec_sha256']}")
+    hc = committed_protocol_check(d["sha256"])
+    d["committed_check"] = hc
+    if not hc["ok"]:
+        raise GuardError(f"CUT {c}: the protocol's text is not its committed version at HEAD (sha256 {d['sha256']} "
+                         f"against HEAD {hc.get('head_sha256')}; {hc.get('error', '')}): commit the declaration first")
     return c, d
 
 

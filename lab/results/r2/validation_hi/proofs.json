@@ -2,7 +2,7 @@
  "cut": "2022-01-01 00:00:00+00:00",
  "spec": "/home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json",
  "spec_sha256": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960",
- "seconds": 201.1,
+ "seconds": 202.4,
  "changes_in_look_of_the_spec": [
   "K1",
   "K2",
@@ -85,7 +85,7 @@
   },
   "i_guard": {
    "ok": true,
-   "checks": 216,
+   "checks": 220,
    "failed": 0,
    "file": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json",
    "what": "the guard of the harness (vhi_guard): F1 the declaration bound to the spec (PROTOCOL_V3.md as it stands refused), A1 only the protocol's real path accepted as LOOK_DECLARED (the harness's outputs and copies of them refused, also once they quote this run's spec sha256: rows 'A1 (after_write)', added after those files are written), fix 1 A1 made atomic (the file opened once must be the protocol: st_dev, st_ino; deterministic symlink races with a stand-in for the protocol refused), fix 2 a look CUT other than the end of the look window refused before anything is logged, F2 run once / fixed output / second access, F3 / A2 / A3 and fix 4 the hardened read guard (probes refused before any byte is read: the holdout component rule, lab/ CSVs through open(), tokenize.open, tarfile.open 'r:' and numpy.fromfile included), fix 5 synthesis A's frozen files (a difference refuses a look before anything is logged), look.py end to end in child processes with the access log redirected, CUT rules, the access log untouched (line count and sha256), every read of the process with its filter"
@@ -126,10 +126,10 @@
   "look.py": "569d17a79643d68a6d3870ebaa6f576c2e9a9b1c4f8303c232f81c7963a1376b",
   "look_chart.py": "75e7691ef3c81ab5bcfebfe892954b55ea1a5eabc096ad712fb884ac0aed99e7",
   "look_spec.json": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960",
-  "proofs.py": "bcf056d3158114198e5e252e7674c7addf4453c063c6a2ddbc43a00dbb6a878f",
+  "proofs.py": "0c85b76c49fde3abcc955b070cd69af12930f5517c3f2f11980e21d036026015",
   "vhi_book.py": "053b3f1cbce8c9f5775a533c7646705ea3c28526361024a8633497d2f7ae51f2",
   "vhi_data.py": "2553cb38a2f3e3254aa461dc9aacfcdb5f26d54781e3eeb1304fda3f00a59b3e",
-  "vhi_guard.py": "e35de08f3129684fc40eb4c3c29553006ed9a8ad284a317c0305aac71c99b02f",
+  "vhi_guard.py": "1ccb9ffa7517df684a36b507094bc725a600934bcfd485ae3b1368aae2426d1e",
   "vhi_lens.py": "67fa812745ae264b4d5ccf372ba0593486be050c6ae477c7b69b9409bfaccd5d",
   "vhi_run.py": "bd824592a1225226ffd9578debddb944050d64716da4f50cacbbe6f0bc8622a2",
   "vhi_sleeves.py": "f9b504a531c68357c8718ca2888f9ca6106a47d52f95b8a45a816924f67d6b97",
