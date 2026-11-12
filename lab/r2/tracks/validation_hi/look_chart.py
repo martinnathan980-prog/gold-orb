@@ -122,20 +122,23 @@ def main():
         fig.text(1 - L, y - 0.010, mark, fontsize=11, fontweight="bold", color=GOOD if ok else BAD, ha="right", va="top")
         lab, b, a = key_number(cid, v)
         fig.text(L, y - 0.047, f"{lab} : {num(b)} → {num(a)}", fontsize=9.6, color=INK2, va="top")
-        if not ok:
-            ft = failed_tests(v)
-            if ft:
-                fig.text(1 - L, y - 0.047, "raté : " + ", ".join(ft[:3]), fontsize=9, color=INK2, ha="right", va="top")
 
     # ---------------------------------------------------------------- the account, before / after
     y0 = top - 8 * row_h - 0.026
     fig.text(L, y0, "Le compte entier : gain ÷ secousse", fontsize=12.5, fontweight="bold", va="top")
     fig.text(L, y0 - 0.020, "par semaine, à secousse égale (plus haut = mieux)", fontsize=9.6, color=INK2, va="top")
     groups = []
-    comp = d.get("comparisons", {}).get("P2_vs_P0", {}).get("fp/lab/sum")
-    if comp:
-        groups.append(("Les 3 changements crypto (K1, K2 et K3 ensemble)", comp["ref"]["weekly_sharpe"], comp["var_equal_swing"]["weekly_sharpe"],
-                       "avec les 3"))
+    kept_k = [k for k in ("K1", "K2", "K3") if V.get(k, {}).get("adopted") is True]
+    pick = {("K1",): ("P1_vs_P0", "Le changement crypto gardé (K1)", "avec K1"),
+            ("K2",): ("P0+orb_eth_vs_P0", "Le changement crypto gardé (K2)", "avec K2"),
+            ("K3",): ("P0+orb_btc_vs_P0", "Le changement crypto gardé (K3)", "avec K3"),
+            ("K1", "K2", "K3"): ("P2_vs_P0", "Les 3 changements crypto gardés (K1 à K3)", "avec les 3")}
+    name, head, lab_after = pick.get(tuple(kept_k), ("P2_vs_P0", "Les 3 changements crypto ensemble (K1 à K3)", "avec les 3"))
+    comp = d.get("comparisons", {}).get(name, {}).get("fp/lab/sum")
+    if comp and kept_k:
+        groups.append((head, comp["ref"]["weekly_sharpe"], comp["var_equal_swing"]["weekly_sharpe"], lab_after))
+    elif comp:
+        groups.append(("Les changements crypto : aucun gardé", comp["ref"]["weekly_sharpe"], comp["ref"]["weekly_sharpe"], "avec"))
     sa = d.get("synthesis_A", {}).get("together_vs_unchanged_headline", {}).get("fp", {})
     if sa.get("weekly_sharpe_unchanged_vs_together_equal_swing"):
         u, t = sa["weekly_sharpe_unchanged_vs_together_equal_swing"]
@@ -162,6 +165,9 @@ def main():
         y -= gh
     fig.text(L, y + 0.004, "« sans » = les 10 règles d'aujourd'hui, mesurées par chaque famille à sa façon.\n"
              "Les deux familles ensemble ne sont pas mesurées par ce test.", fontsize=8.6, color=MUTED, va="top", linespacing=1.3)
+    if not rehearsal:
+        fig.text(L, y - 0.040, "Pour ta demande (doubler chaque mois, petites baisses),\nil faudrait environ 8,9 sur cette échelle.",
+                 fontsize=10.5, fontweight="bold", color=INK, va="top", linespacing=1.3)
     foot = ("Coûts FP Markets du labo, 1 R par trade. Ce sont des simulations, aucun trade réel :\n"
             "ce qui est gardé passe d'abord par le compte démo.")
     if rehearsal:

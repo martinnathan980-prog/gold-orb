@@ -846,3 +846,25 @@ A: `goldlab.split.cut` with track `autopsy_synthesis_A`; synthesis B: track `aut
   is therefore weaker evidence than it reads; even with no real effect, some of the eight may pass by chance.
 - **What follows**: a change that passes goes to the demo account first, never straight to real money; a change that
   fails is dropped for good; nothing is re-tuned after the look. The result is reported to the user whatever it is.
+
+### Addendum H — outcome of the single look (2026-11-12, `results/r2/validation_hi/look/autopsy_HI_look__cut2026-01-01.json`)
+Run once at 19:06 UTC with the declared command: one access line in `results/val_access.log`, the text judged is the
+protocol committed at HEAD (sha256 `676fdfb1…`), synthesis A's frozen files checked before the access, every read
+bounded at 2026-01-01, no holdout path. **Check first PASSED**: the ten unchanged sleeves rebuilt by the harness equal
+the official 2022–2025 trades. Trades entered 2022–2025, FP costs:
+- **Kept, 3 of 8.** **K1** (brk72_24h_wd ethusd skips the widest-risk signals): expectancy 0.063 → 0.080 R per trade,
+  total 34.3 → 39.2 R; with costs ×1.5 0.030 → 0.044 R; the skipped signals taken alone −0.20 R against +0.13 R for the
+  kept ones; account weekly Sharpe 2.016 → 2.047. **F1_brk_ridge_filter ethusd H2** (winners held two more days): sleeve
+  weekly Sharpe 0.57 → 0.83, ten-sleeve weekly Sharpe at its frozen factor 2.016 → 2.066, V1–V5 all pass.
+  **brk72_24h_wd btcusd S0.75r** (stop at 0.75 × the distance, same money risk): sleeve 0.52 → 0.85, ten-sleeve 2.016 →
+  2.119, V1–V5 all pass. Synthesis A's two together, at equal swing: 2.016 → 2.169 (costs ×1.5: 1.564 → 1.753), total
+  428.9 → 461.7 R.
+- **Rejected, 5 of 8, dropped for good.** **K2** (the gold Asia breakout on ethusd): PF 0.93, −0.048 R per trade, 1 year
+  of 4 positive. **K3** (the same on btcusd): PF 1.25, +0.165 R per trade, but 2 years of 4 positive and the account less
+  regular (2.016 → 1.920). **ocm4 T1**: sleeve weekly Sharpe 1.22 → 0.69. **donch4h S0.75r**: 1.01 → 0.84. **orb gold
+  S0.75r**: 0.76 → 0.71.
+- **What it means.** The three kept changes are all on crypto sleeves. They were picked from about 845 in-sample
+  variants, so a pass is weaker evidence than it reads (said before the run). As declared, they go to the demo account
+  first, never straight to real money. The two families were not measured together by this look and no new measure is
+  made on these years. Whatever their sum, it is a few percent on a weekly Sharpe of about 2.0, against about 8.9 for
+  the user's demand. The 2026 holdout was not touched.

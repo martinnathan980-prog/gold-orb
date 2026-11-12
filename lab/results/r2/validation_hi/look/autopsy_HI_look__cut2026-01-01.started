@@ -1,0 +1,12 @@
+{
+ "time": "2026-11-12T19:06:42+00:00",
+ "track": "autopsy_HI_look",
+ "label": "look:autopsy_HI_look:b71f69d59999",
+ "cut": "2026-01-01 00:00:00+00:00",
+ "spec_sha256": "b71f69d59999bdb97442bf0a1beff9a8512b883396886323426e69e55e277960",
+ "declared_file": "/home/user/gold-orb/lab/PROTOCOL_V3.md",
+ "declared_sha256": "676fdfb1f103b22a0f0a520a3030ab5b2b2b75f1181c00f8f9549d766918c1c2",
+ "synthesis_A_frozen_files_ok": true,
+ "second_access": null,
+ "pid": 20566
+}
