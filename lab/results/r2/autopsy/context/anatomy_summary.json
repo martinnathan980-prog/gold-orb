@@ -1,0 +1,372 @@
+{
+ "ocm4__us100": {
+  "years_with_data": 8,
+  "chance_all_years_same_sign_per_descriptor": 0.0078,
+  "separate_every_year": {},
+  "separate_2018_2021_only": [
+   "al20",
+   "room"
+  ],
+  "do_not_separate": [
+   "vol",
+   "al1",
+   "al5",
+   "cushion",
+   "trig",
+   "sprR",
+   "rel",
+   "prev",
+   "oth24"
+  ],
+  "pooled_abs_t_ge_2": {}
+ },
+ "noise30__us100": {
+  "years_with_data": 8,
+  "chance_all_years_same_sign_per_descriptor": 0.0078,
+  "separate_every_year": {},
+  "separate_2018_2021_only": [
+   "hour",
+   "vol"
+  ],
+  "do_not_separate": [
+   "al1",
+   "al5",
+   "al20",
+   "room",
+   "cushion",
+   "trig",
+   "sprR",
+   "rel",
+   "prev",
+   "oth24"
+  ],
+  "pooled_abs_t_ge_2": {
+   "hour": -2.03
+  }
+ },
+ "donch4h_stop__xauusd": {
+  "years_with_data": 9,
+  "chance_all_years_same_sign_per_descriptor": 0.0039,
+  "separate_every_year": {},
+  "separate_2018_2021_only": [],
+  "do_not_separate": [
+   "hour",
+   "vol",
+   "al1",
+   "al5",
+   "al20",
+   "room",
+   "cushion",
+   "trig",
+   "sprR",
+   "rel",
+   "rel2",
+   "prev",
+   "oth24"
+  ],
+  "pooled_abs_t_ge_2": {
+   "vol": -2.86,
+   "sprR": 2.42
+  }
+ },
+ "orb_asia_2d_buf10__xauusd": {
+  "years_with_data": 9,
+  "chance_all_years_same_sign_per_descriptor": 0.0039,
+  "separate_every_year": {},
+  "separate_2018_2021_only": [],
+  "do_not_separate": [
+   "hour",
+   "vol",
+   "al1",
+   "al5",
+   "al20",
+   "room",
+   "cushion",
+   "trig",
+   "sprR",
+   "rel",
+   "rel2",
+   "prev",
+   "oth24"
+  ],
+  "pooled_abs_t_ge_2": {
+   "rel2": -2.57
+  }
+ },
+ "GOLD_FRI_PM__xauusd": {
+  "years_with_data": 9,
+  "chance_all_years_same_sign_per_descriptor": 0.0039,
+  "separate_every_year": {},
+  "separate_2018_2021_only": [],
+  "do_not_separate": [
+   "hour",
+   "vol",
+   "al1",
+   "al5",
+   "al20",
+   "room",
+   "cushion",
+   "trig",
+   "sprR",
+   "rel",
+   "rel2",
+   "prev",
+   "oth24"
+  ],
+  "pooled_abs_t_ge_2": {}
+ },
+ "brk72_24h_wd__btcusd": {
+  "years_with_data": 5,
+  "chance_all_years_same_sign_per_descriptor": 0.0625,
+  "separate_every_year": {
+   "vol": {
+    "direction": "lower is better",
+    "E_T1": 0.617,
+    "E_T3": 0.069,
+    "welch_t": -2.98,
+    "by_year": {
+     "2017": -0.81,
+     "2018": -0.767,
+     "2019": -0.817,
+     "2020": -0.29,
+     "2021": -0.354
+    }
+   },
+   "al20": {
+    "direction": "higher is better",
+    "E_T1": 0.042,
+    "E_T3": 0.468,
+    "welch_t": 2.37,
+    "by_year": {
+     "2017": 0.434,
+     "2018": 0.496,
+     "2019": 0.289,
+     "2020": 0.802,
+     "2021": 0.088
+    }
+   },
+   "sprR": {
+    "direction": "higher is better",
+    "E_T1": 0.011,
+    "E_T3": 0.526,
+    "welch_t": 2.79,
+    "by_year": {
+     "2017": 0.086,
+     "2018": 0.671,
+     "2019": 0.654,
+     "2020": 0.471
+    }
+   }
+  },
+  "separate_2018_2021_only": [
+   "hour"
+  ],
+  "do_not_separate": [
+   "al1",
+   "al5",
+   "room",
+   "cushion",
+   "trig",
+   "rel",
+   "prev",
+   "oth24"
+  ],
+  "pooled_abs_t_ge_2": {
+   "vol": -2.98,
+   "al20": 2.37,
+   "room": -2.23,
+   "sprR": 2.79
+  }
+ },
+ "brk72_24h_wd__ethusd": {
+  "years_with_data": 4,
+  "chance_all_years_same_sign_per_descriptor": 0.125,
+  "separate_every_year": {
+   "hour": {
+    "direction": "lower is better",
+    "E_T1": 0.375,
+    "E_T3": 0.206,
+    "welch_t": -1.05,
+    "by_year": {
+     "2018": -0.3,
+     "2019": -0.029,
+     "2020": -0.174,
+     "2021": -0.088
+    }
+   },
+   "vol": {
+    "direction": "lower is better",
+    "E_T1": 0.565,
+    "E_T3": -0.06,
+    "welch_t": -3.97,
+    "by_year": {
+     "2018": -1.15,
+     "2019": -0.291,
+     "2020": -0.529,
+     "2021": -0.237
+    }
+   },
+   "sprR": {
+    "direction": "higher is better",
+    "E_T1": -0.179,
+    "E_T3": 0.603,
+    "welch_t": 5.15,
+    "by_year": {
+     "2018": 1.308,
+     "2019": 0.351,
+     "2020": 0.528,
+     "2021": 0.827
+    }
+   }
+  },
+  "separate_2018_2021_only": [],
+  "do_not_separate": [
+   "al1",
+   "al5",
+   "al20",
+   "room",
+   "cushion",
+   "trig",
+   "rel",
+   "prev",
+   "oth24"
+  ],
+  "pooled_abs_t_ge_2": {
+   "vol": -3.97,
+   "sprR": 5.15,
+   "prev": -3.07
+  }
+ },
+ "F1_brk_ridge_filter__btcusd": {
+  "years_with_data": 5,
+  "chance_all_years_same_sign_per_descriptor": 0.0625,
+  "separate_every_year": {
+   "vol": {
+    "direction": "lower is better",
+    "E_T1": 0.772,
+    "E_T3": 0.093,
+    "welch_t": -3.35,
+    "by_year": {
+     "2017": -0.706,
+     "2018": -0.72,
+     "2019": -0.862,
+     "2020": -0.488,
+     "2021": -0.381
+    }
+   },
+   "sprR": {
+    "direction": "higher is better",
+    "E_T1": 0.077,
+    "E_T3": 0.831,
+    "welch_t": 3.72,
+    "by_year": {
+     "2017": 0.403,
+     "2018": 0.958,
+     "2019": 0.905,
+     "2020": 0.581
+    }
+   }
+  },
+  "separate_2018_2021_only": [
+   "room"
+  ],
+  "do_not_separate": [
+   "hour",
+   "al1",
+   "al5",
+   "al20",
+   "cushion",
+   "trig",
+   "rel",
+   "prev",
+   "oth24"
+  ],
+  "pooled_abs_t_ge_2": {
+   "vol": -3.35,
+   "sprR": 3.72
+  }
+ },
+ "F1_brk_ridge_filter__ethusd": {
+  "years_with_data": 4,
+  "chance_all_years_same_sign_per_descriptor": 0.125,
+  "separate_every_year": {
+   "trig": {
+    "direction": "higher is better",
+    "E_T1": -0.019,
+    "E_T3": 0.477,
+    "welch_t": 3.2,
+    "by_year": {
+     "2018": 0.742,
+     "2019": 0.642,
+     "2020": 0.408,
+     "2021": 0.069
+    }
+   },
+   "sprR": {
+    "direction": "higher is better",
+    "E_T1": 0.031,
+    "E_T3": 0.429,
+    "welch_t": 2.59,
+    "by_year": {
+     "2018": 0.551,
+     "2019": 0.364,
+     "2020": 0.267,
+     "2021": 0.253
+    }
+   }
+  },
+  "separate_2018_2021_only": [],
+  "do_not_separate": [
+   "hour",
+   "vol",
+   "al1",
+   "al5",
+   "al20",
+   "room",
+   "cushion",
+   "rel",
+   "prev",
+   "oth24"
+  ],
+  "pooled_abs_t_ge_2": {
+   "hour": -2.25,
+   "trig": 3.2,
+   "sprR": 2.59
+  }
+ },
+ "nq_btc_follow__btcusd": {
+  "years_with_data": 5,
+  "chance_all_years_same_sign_per_descriptor": 0.0625,
+  "separate_every_year": {
+   "hour": {
+    "direction": "higher is better",
+    "E_T1": -0.002,
+    "E_T3": 0.071,
+    "welch_t": 1.64,
+    "by_year": {
+     "2017": 0.015,
+     "2018": 0.026,
+     "2019": 0.043,
+     "2020": 0.024,
+     "2021": 0.2
+    }
+   }
+  },
+  "separate_2018_2021_only": [
+   "al20",
+   "oth24"
+  ],
+  "do_not_separate": [
+   "vol",
+   "al1",
+   "al5",
+   "room",
+   "cushion",
+   "trig",
+   "sprR",
+   "rel",
+   "prev"
+  ],
+  "pooled_abs_t_ge_2": {}
+ }
+}

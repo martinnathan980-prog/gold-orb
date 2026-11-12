@@ -1,0 +1,210 @@
+{
+ "ocm4__us100__fp": {
+  "orders": 999,
+  "filled": 999,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 999,
+  "chain_boundary": 0,
+  "chain_R": 136.879,
+  "sec": 1.3
+ },
+ "ocm4__us100__stress": {
+  "orders": 999,
+  "filled": 999,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 999,
+  "chain_boundary": 0,
+  "chain_R": 123.8645,
+  "sec": 1.2
+ },
+ "noise30__us100__fp": {
+  "orders": 1643,
+  "filled": 1643,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 1643,
+  "chain_boundary": 0,
+  "chain_R": 134.4007,
+  "sec": 0.5
+ },
+ "noise30__us100__stress": {
+  "orders": 1643,
+  "filled": 1643,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 1643,
+  "chain_boundary": 0,
+  "chain_R": 120.3321,
+  "sec": 0.7
+ },
+ "donch4h_stop__xauusd__fp": {
+  "orders": 1654,
+  "filled": 1654,
+  "refused": 0,
+  "boundary_signals": 5,
+  "chain_n": 494,
+  "chain_boundary": 1,
+  "chain_R": 84.3014,
+  "sec": 0.5,
+  "max_diff_level_vs_rule": 0.0
+ },
+ "donch4h_stop__xauusd__stress": {
+  "orders": 1660,
+  "filled": 1660,
+  "refused": 0,
+  "boundary_signals": 5,
+  "chain_n": 494,
+  "chain_boundary": 1,
+  "chain_R": 78.0082,
+  "sec": 1.3,
+  "max_diff_level_vs_rule": 0.0
+ },
+ "orb_asia_2d_buf10__xauusd__fp": {
+  "orders": 1829,
+  "filled": 1829,
+  "refused": 0,
+  "boundary_signals": 1,
+  "chain_n": 1038,
+  "chain_boundary": 1,
+  "chain_R": 231.1453,
+  "sec": 0.8,
+  "max_diff_width_vs_rule": 0.0
+ },
+ "orb_asia_2d_buf10__xauusd__stress": {
+  "orders": 1826,
+  "filled": 1826,
+  "refused": 0,
+  "boundary_signals": 1,
+  "chain_n": 1038,
+  "chain_boundary": 1,
+  "chain_R": 200.8868,
+  "sec": 1.1,
+  "max_diff_width_vs_rule": 0.0
+ },
+ "GOLD_FRI_PM__xauusd__fp": {
+  "orders": 443,
+  "filled": 414,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 414,
+  "chain_boundary": 0,
+  "chain_R": 13.921,
+  "sec": 0.3
+ },
+ "GOLD_FRI_PM__xauusd__stress": {
+  "orders": 443,
+  "filled": 408,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 408,
+  "chain_boundary": 0,
+  "chain_R": 12.0071,
+  "sec": 0.5
+ },
+ "brk72_24h_wd__btcusd__fp": {
+  "orders": 2914,
+  "filled": 2914,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 645,
+  "chain_boundary": 0,
+  "chain_R": 172.8743,
+  "sec": 0.2,
+  "max_diff_trig_vs_rule": 0.0
+ },
+ "brk72_24h_wd__btcusd__stress": {
+  "orders": 2914,
+  "filled": 2914,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 645,
+  "chain_boundary": 0,
+  "chain_R": 167.0234,
+  "sec": 0.3,
+  "max_diff_trig_vs_rule": 0.0
+ },
+ "F1_brk_ridge_filter__btcusd__fp": {
+  "orders": 1235,
+  "filled": 1235,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 631,
+  "chain_boundary": 0,
+  "chain_R": 226.3891,
+  "sec": 0.3
+ },
+ "F1_brk_ridge_filter__btcusd__stress": {
+  "orders": 1234,
+  "filled": 1234,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 632,
+  "chain_boundary": 0,
+  "chain_R": 218.2666,
+  "sec": 0.3
+ },
+ "nq_btc_follow__btcusd__fp": {
+  "orders": 2611,
+  "filled": 2611,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 1063,
+  "chain_boundary": 0,
+  "chain_R": 66.346,
+  "sec": 2.4
+ },
+ "nq_btc_follow__btcusd__stress": {
+  "orders": 2611,
+  "filled": 2611,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 1063,
+  "chain_boundary": 0,
+  "chain_R": 51.0147,
+  "sec": 2.8
+ },
+ "brk72_24h_wd__ethusd__fp": {
+  "orders": 2355,
+  "filled": 2355,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 519,
+  "chain_boundary": 0,
+  "chain_R": 103.6871,
+  "sec": 0.2,
+  "max_diff_trig_vs_rule": 0.0
+ },
+ "brk72_24h_wd__ethusd__stress": {
+  "orders": 2355,
+  "filled": 2355,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 521,
+  "chain_boundary": 0,
+  "chain_R": 93.2424,
+  "sec": 0.3,
+  "max_diff_trig_vs_rule": 0.0
+ },
+ "F1_brk_ridge_filter__ethusd__fp": {
+  "orders": 995,
+  "filled": 995,
+  "refused": 0,
+  "boundary_signals": 0,
+  "chain_n": 517,
+  "chain_boundary": 0,
+  "chain_R": 104.4067,
+  "sec": 0.2
+ },
+ "F1_brk_ridge_filter__ethusd__stress": {
+  "orders": 995,
+  "filled": 995,
+  "refused": 1,
+  "boundary_signals": 0,
+  "chain_n": 519,
+  "chain_boundary": 0,
+  "chain_R": 87.268,
+  "sec": 0.3
+ }
+}

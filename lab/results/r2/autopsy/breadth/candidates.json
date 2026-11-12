@@ -1,0 +1,1527 @@
+{
+ "portfolio_before": {
+  "trades": 5207,
+  "total_R": 788.6,
+  "R_per_year": 201.4,
+  "weekly_sharpe_ann": 2.9,
+  "win_weeks_pct": 58.5,
+  "worst_week_R": -11.8,
+  "max_drawdown_R_weekly": 20.2
+ },
+ "candidates": [
+  {
+   "rank": 1,
+   "id": 41,
+   "rule": "orb_asia_2d_buf10",
+   "instrument": "ethusd",
+   "change": "Frozen rule orb_asia_2d_buf10 (lab/tracks/orb/strategy.py FINALISTS: range 00:00-07:00 London, entry until 12:00 London, stop entry, buf_frac 0.1, stop at the opposite level, exit 16:00 New York 2 business days later, no target / trailing / filter), unchanged, on ethusd. For each weekday London date D (London wall clock with its own daylight saving): RANGE = the M1 bars starting in [00:00, 07:00) London; at least 210 of them are required; H = highest ask high, L = lowest bid low, W = H - L (> 0). LEVELS at 07:00 London: buy = H + 0.1 W, sell = L - 0.1 W. ENTRY WINDOW: M1 bars starting in [07:00, 12:00) London. The first bar with ask high >= buy (long) or bid low <= sell (short) is the day's only signal (both in one bar: the level nearer to that bar's mid open); it consumes the day: it is taken only if the sleeve has no open trade and its previous trade did not exit on that bar or later, otherwise there is no trade that day. FILL: long at max(buy, ask open) x (1 + stop slippage), short at min(sell, bid open) x (1 - stop slippage). STOP: the opposite level, an absolute price, never moved (long stopped when an M1 bid low <= sell, short when an ask high >= buy; fill at the stop or at the bar open if gapped beyond, with stop slippage). TIME EXIT at market at the open of the first M1 bar at or after 16:00 New York on D + 2 business days (Monday -> Wednesday, Tuesday -> Thursday, Wednesday -> Friday, Thursday -> Monday, Friday -> Tuesday; held through weekends). No target, no trailing, one position at a time. Broker rule: an order whose stop is closer than 3 spreads is not taken. Costs: FP model: spread 3.0 USD at 2,300 (13.0 bp, marked uncertain in COSTS_FP.md) with Dukascopy's intraday shape, slippage 2.0 bp stop / 0.7 bp market per side, swap long 20 %/yr, short 2 %/yr (triple Friday); FP crypto hours 24/5.",
+   "parameters": {
+    "tz": "LDN",
+    "range_start": "00:00",
+    "range_end": "07:00",
+    "entry_end": "12:00",
+    "entry": "stop",
+    "buf_frac": 0.1,
+    "buf_abs": 0.0,
+    "stop_mode": "opp",
+    "target_R": null,
+    "be_R": null,
+    "trail_atr": null,
+    "exit_time": "16:00",
+    "exit_tz": "NY",
+    "hold_days": 2,
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "max_cost_R": null,
+    "trend": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14
+   },
+   "window": "trades entered 2018-02-01 .. 2021-12-31",
+   "fp": {
+    "n": 345,
+    "trades_per_year": 88.2,
+    "win_rate": 0.414,
+    "avg_win_R": 2.47,
+    "avg_loss_R": -0.977,
+    "expectancy_R": 0.452,
+    "t_stat": 3.6,
+    "pf": 1.79,
+    "total_R": 156.0,
+    "max_dd_R": 10.1,
+    "long_n": 155,
+    "long_R": 100.1,
+    "short_n": 190,
+    "short_R": 55.8,
+    "avg_hold_h": 54.5,
+    "bps_per_trade": 99.53,
+    "by_year_R": {
+     "2018": 70.9,
+     "2019": 33.9,
+     "2020": 32.0,
+     "2021": 19.0
+    },
+    "exit_reasons": {
+     "stop": 173,
+     "time": 171,
+     "eod": 1
+    }
+   },
+   "stress_x1_5": {
+    "n": 345,
+    "pf": 1.711,
+    "expectancy_R": 0.4078,
+    "t_stat": 3.36,
+    "total_R": 140.7,
+    "by_year_R": {
+     "2018": 66.6,
+     "2019": 30.1,
+     "2020": 28.0,
+     "2021": 16.0
+    }
+   },
+   "gross": {
+    "n": 347,
+    "pf": 2.014,
+    "expectancy_R": 0.5689,
+    "bps_per_trade": 123.33
+   },
+   "earlier_in_sample_years": {
+    "n": 9,
+    "pf": 0.827,
+    "expectancy_R": -0.1168,
+    "t_stat": -0.22,
+    "total_R": -1.1,
+    "by_year_R": {
+     "2018": -1.1
+    }
+   },
+   "refused_by_3_spread_rule": 0,
+   "open_at_friday_1650_NY_hands_close": {
+    "share_pct": 29.3,
+    "n": 101,
+    "R_of_those": 112.4,
+    "R_of_the_others": 43.6
+   },
+   "top5pct_trades_share_of_total_R": 0.85,
+   "stop_distance_pct_of_price": {
+    "median": 3.482,
+    "p10": 1.92,
+    "p90": 7.376,
+    "median_2021": 3.954
+   },
+   "portfolio_before": {
+    "trades": 5207,
+    "total_R": 788.6,
+    "R_per_year": 201.4,
+    "weekly_sharpe_ann": 2.9,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -11.8,
+    "max_drawdown_R_weekly": 20.2
+   },
+   "portfolio_after": {
+    "trades": 5552,
+    "total_R": 944.5,
+    "R_per_year": 241.3,
+    "weekly_sharpe_ann": 3.164,
+    "win_weeks_pct": 61.5,
+    "worst_week_R": -14.9,
+    "max_drawdown_R_weekly": 23.2
+   },
+   "delta_weekly_sharpe": 0.264,
+   "extra_R_per_year": 39.8,
+   "weekly_correlation": {
+    "corr_sum10": 0.19,
+    "noise30:us100": 0.052,
+    "ocm4:us100": -0.046,
+    "brk72_24h_wd:btcusd": 0.104,
+    "brk72_24h_wd:ethusd": 0.323,
+    "nq_btc_follow:btcusd": 0.056,
+    "F1_brk_ridge_filter:btcusd": 0.135,
+    "F1_brk_ridge_filter:ethusd": 0.229,
+    "GOLD_FRI_PM:xauusd": 0.105,
+    "donch4h_stop:xauusd": -0.051,
+    "orb_asia_2d_buf10:xauusd": -0.011
+   },
+   "neighbours_same_rule_other_instruments": [
+    "btcusd: run here, n 376, PF 1.838, t 3.49, 4/4 years, stress PF 1.801 -> PASS",
+    "us100: run here, n 478, PF 1.071, t 0.51, 3/4 years, stress PF 1.05 -> fail",
+    "us500: run here, n 475, PF 0.887, t -0.94, 2/4 years, stress PF 0.871 -> fail",
+    "us30: run here, n 472, PF 1.114, t 0.81, 3/4 years, stress PF 1.091 -> fail",
+    "ger40: run here, n 484, PF 0.892, t -0.95, 2/4 years, stress PF 0.872 -> fail",
+    "jp225: run here, n 288, PF 0.985, t -0.1, 1/4 years, stress PF 0.94 -> fail",
+    "xagusd: tried and failed (PF 0.897, t -1.23, years 3/9)",
+    "eurusd: tried and failed (PF 0.939, t -0.8, years 5/9)",
+    "gbpusd: tried and failed (PF 0.976, t -0.32, years 5/9)",
+    "usdjpy: tried and failed (PF 1.122, t 1.32, years 7/9)",
+    "audusd: tried and failed (PF 0.997, t -0.04, years 5/9)",
+    "usdcad: tried and failed (PF 0.889, t -1.52, years 4/9)",
+    "usdchf: tried and failed (PF 0.945, t -0.71, years 5/9)",
+    "nzdusd: tried and failed (PF 0.945, t -0.69, years 4/9)",
+    "eurjpy: tried and failed (PF 1.087, t 0.97, years 8/9)"
+   ],
+   "zero_edge_pass_probability": 0.014,
+   "truncation_test": {
+    "rule": "orb_asia_2d_buf10",
+    "instrument": "ethusd",
+    "tested": 40,
+    "identical": 40,
+    "missing": 0
+   },
+   "random_entry_null": {
+    "rule": "orb_asia_2d_buf10",
+    "instrument": "ethusd",
+    "mode": "day",
+    "n": 345,
+    "rule_mean_R": 0.452,
+    "null_mean_R": 0.0821,
+    "null_p95_R": 0.3316,
+    "null_max_R": 0.5682,
+    "percentile": 99.0,
+    "draws": 200
+   },
+   "code_file": "lab/r2/tracks/autopsy/breadth/run_pairs.py (common.py run_rule; rule code unchanged in lab/tracks/orb/strategy.py)"
+  },
+  {
+   "rank": 2,
+   "id": 40,
+   "rule": "orb_asia_2d_buf10",
+   "instrument": "btcusd",
+   "change": "Frozen rule orb_asia_2d_buf10 (lab/tracks/orb/strategy.py FINALISTS: range 00:00-07:00 London, entry until 12:00 London, stop entry, buf_frac 0.1, stop at the opposite level, exit 16:00 New York 2 business days later, no target / trailing / filter), unchanged, on btcusd. For each weekday London date D (London wall clock with its own daylight saving): RANGE = the M1 bars starting in [00:00, 07:00) London; at least 210 of them are required; H = highest ask high, L = lowest bid low, W = H - L (> 0). LEVELS at 07:00 London: buy = H + 0.1 W, sell = L - 0.1 W. ENTRY WINDOW: M1 bars starting in [07:00, 12:00) London. The first bar with ask high >= buy (long) or bid low <= sell (short) is the day's only signal (both in one bar: the level nearer to that bar's mid open); it consumes the day: it is taken only if the sleeve has no open trade and its previous trade did not exit on that bar or later, otherwise there is no trade that day. FILL: long at max(buy, ask open) x (1 + stop slippage), short at min(sell, bid open) x (1 - stop slippage). STOP: the opposite level, an absolute price, never moved (long stopped when an M1 bid low <= sell, short when an ask high >= buy; fill at the stop or at the bar open if gapped beyond, with stop slippage). TIME EXIT at market at the open of the first M1 bar at or after 16:00 New York on D + 2 business days (Monday -> Wednesday, Tuesday -> Thursday, Wednesday -> Friday, Thursday -> Monday, Friday -> Tuesday; held through weekends). No target, no trailing, one position at a time. Broker rule: an order whose stop is closer than 3 spreads is not taken. Costs: FP model: spread 22.5 USD at 76,000 (2.96 bp) in the frame with Dukascopy's intraday shape, slippage 1.5 bp stop / 0.5 bp market per side, swap long 20 %/yr, short 2 %/yr (triple Friday), no commission; FP crypto hours 24/5 (no bar from Friday 23:55 to Monday 00:00 server time).",
+   "parameters": {
+    "tz": "LDN",
+    "range_start": "00:00",
+    "range_end": "07:00",
+    "entry_end": "12:00",
+    "entry": "stop",
+    "buf_frac": 0.1,
+    "buf_abs": 0.0,
+    "stop_mode": "opp",
+    "target_R": null,
+    "be_R": null,
+    "trail_atr": null,
+    "exit_time": "16:00",
+    "exit_tz": "NY",
+    "hold_days": 2,
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "max_cost_R": null,
+    "trend": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14
+   },
+   "window": "trades entered 2018-02-01 .. 2021-12-31",
+   "fp": {
+    "n": 376,
+    "trades_per_year": 96.1,
+    "win_rate": 0.38,
+    "avg_win_R": 2.987,
+    "avg_loss_R": -0.997,
+    "expectancy_R": 0.5177,
+    "t_stat": 3.49,
+    "pf": 1.838,
+    "total_R": 194.7,
+    "max_dd_R": 27.4,
+    "long_n": 159,
+    "long_R": 129.2,
+    "short_n": 217,
+    "short_R": 65.5,
+    "avg_hold_h": 50.2,
+    "bps_per_trade": 91.71,
+    "by_year_R": {
+     "2018": 93.6,
+     "2019": 68.3,
+     "2020": 32.1,
+     "2021": 0.7
+    },
+    "exit_reasons": {
+     "stop": 207,
+     "time": 168,
+     "eod": 1
+    }
+   },
+   "stress_x1_5": {
+    "n": 375,
+    "pf": 1.801,
+    "expectancy_R": 0.4958,
+    "t_stat": 3.4,
+    "total_R": 185.9,
+    "by_year_R": {
+     "2018": 90.4,
+     "2019": 65.1,
+     "2020": 29.7,
+     "2021": 0.7
+    }
+   },
+   "gross": {
+    "n": 376,
+    "pf": 2.034,
+    "expectancy_R": 0.6185,
+    "bps_per_trade": 103.37
+   },
+   "earlier_in_sample_years": {
+    "n": 67,
+    "pf": 2.565,
+    "expectancy_R": 0.8651,
+    "t_stat": 2.16,
+    "total_R": 58.0,
+    "by_year_R": {
+     "2017": 59.7,
+     "2018": -1.8
+    }
+   },
+   "refused_by_3_spread_rule": 0,
+   "open_at_friday_1650_NY_hands_close": {
+    "share_pct": 27.4,
+    "n": 103,
+    "R_of_those": 161.1,
+    "R_of_the_others": 33.5
+   },
+   "top5pct_trades_share_of_total_R": 0.96,
+   "stop_distance_pct_of_price": {
+    "median": 2.277,
+    "p10": 0.925,
+    "p90": 5.412,
+    "median_2021": 3.315
+   },
+   "portfolio_before": {
+    "trades": 5207,
+    "total_R": 788.6,
+    "R_per_year": 201.4,
+    "weekly_sharpe_ann": 2.9,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -11.8,
+    "max_drawdown_R_weekly": 20.2
+   },
+   "portfolio_after": {
+    "trades": 5583,
+    "total_R": 983.2,
+    "R_per_year": 251.1,
+    "weekly_sharpe_ann": 3.13,
+    "win_weeks_pct": 61.5,
+    "worst_week_R": -14.9,
+    "max_drawdown_R_weekly": 26.8
+   },
+   "delta_weekly_sharpe": 0.23,
+   "extra_R_per_year": 49.7,
+   "weekly_correlation": {
+    "corr_sum10": 0.221,
+    "noise30:us100": 0.022,
+    "ocm4:us100": -0.007,
+    "brk72_24h_wd:btcusd": 0.245,
+    "brk72_24h_wd:ethusd": 0.173,
+    "nq_btc_follow:btcusd": -0.03,
+    "F1_brk_ridge_filter:btcusd": 0.317,
+    "F1_brk_ridge_filter:ethusd": 0.206,
+    "GOLD_FRI_PM:xauusd": 0.02,
+    "donch4h_stop:xauusd": -0.09,
+    "orb_asia_2d_buf10:xauusd": -0.066
+   },
+   "neighbours_same_rule_other_instruments": [
+    "ethusd: run here, n 345, PF 1.79, t 3.6, 4/4 years, stress PF 1.711 -> PASS",
+    "us100: run here, n 478, PF 1.071, t 0.51, 3/4 years, stress PF 1.05 -> fail",
+    "us500: run here, n 475, PF 0.887, t -0.94, 2/4 years, stress PF 0.871 -> fail",
+    "us30: run here, n 472, PF 1.114, t 0.81, 3/4 years, stress PF 1.091 -> fail",
+    "ger40: run here, n 484, PF 0.892, t -0.95, 2/4 years, stress PF 0.872 -> fail",
+    "jp225: run here, n 288, PF 0.985, t -0.1, 1/4 years, stress PF 0.94 -> fail",
+    "xagusd: tried and failed (PF 0.897, t -1.23, years 3/9)",
+    "eurusd: tried and failed (PF 0.939, t -0.8, years 5/9)",
+    "gbpusd: tried and failed (PF 0.976, t -0.32, years 5/9)",
+    "usdjpy: tried and failed (PF 1.122, t 1.32, years 7/9)",
+    "audusd: tried and failed (PF 0.997, t -0.04, years 5/9)",
+    "usdcad: tried and failed (PF 0.889, t -1.52, years 4/9)",
+    "usdchf: tried and failed (PF 0.945, t -0.71, years 5/9)",
+    "nzdusd: tried and failed (PF 0.945, t -0.69, years 4/9)",
+    "eurjpy: tried and failed (PF 1.087, t 0.97, years 8/9)"
+   ],
+   "zero_edge_pass_probability": 0.014,
+   "truncation_test": {
+    "rule": "orb_asia_2d_buf10",
+    "instrument": "btcusd",
+    "tested": 40,
+    "identical": 40,
+    "missing": 0
+   },
+   "random_entry_null": {
+    "rule": "orb_asia_2d_buf10",
+    "instrument": "btcusd",
+    "mode": "day",
+    "n": 376,
+    "rule_mean_R": 0.5177,
+    "null_mean_R": 0.1106,
+    "null_p95_R": 0.3722,
+    "null_max_R": 0.4955,
+    "percentile": 100.0,
+    "draws": 200
+   },
+   "code_file": "lab/r2/tracks/autopsy/breadth/run_pairs.py (common.py run_rule; rule code unchanged in lab/tracks/orb/strategy.py)"
+  },
+  {
+   "rank": 3,
+   "id": 34,
+   "rule": "donch4h_stop",
+   "instrument": "ethusd",
+   "change": "Frozen rule donch4h_stop (lab/tracks/trend/strategy.py FINALISTS, parameters n=60, stop_atr=2, trail_atr=2, max_days=5, atr_n=14, both sides, no filter, UTC grid), unchanged, on ethusd. BARS: 4-hour bars on the UTC grid (buckets starting 00, 04, 08, 12, 16, 20 UTC) built from M1 bars: high = (max M1 bid high + max M1 ask high)/2, low = (min bid low + min ask low)/2, close = (last bid close + last ask close)/2; a bucket without M1 bars is skipped; the bar is known one minute after the start of its last M1 bar (= decision time). DECISION at every 4h decision time, only if the sleeve is flat and its last trade exited on an M1 bar strictly before the first M1 bar after the decision: U = highest high and L = lowest low of the last 60 4h bars, the bar just closed included; ATR = Wilder ATR(14) of the 4h bars (true range on these bars, alpha 1/14, seeded with the first true range of the history and run continuously). ENTRY: a buy-stop at U and a sell-stop at L, one cancels the other, live on every M1 bar from the first bar after the decision to the last bar before the next 4h decision time; long when an M1 ask high >= U, filled at max(U, ask open) x (1 + stop slippage); short when an M1 bid low <= L, filled at min(L, bid open) x (1 - stop slippage); if both levels are touched in the same minute take the side opposite to that minute's bid move (short if bid close >= bid open, else long). STOP: initial stop = fill - side x 2 x ATR; trailing: after every M1 bar (the fill bar included) best = highest bid high since the fill for a long (lowest ask low for a short), starting at the fill price, and the stop becomes max(stop, best - 2 ATR) for a long / min(stop, best + 2 ATR) for a short, effective from the next bar; a long is out when an M1 bid low <= stop (a short when an ask high >= stop), at the stop price, or at the bar open if the bar opened beyond it, with stop slippage. TIME EXIT at market at the open of the first M1 bar at or after (decision time + 5 trading days at the same New-York wall-clock time, trading days rolling at 17:00 New York) - 5 minutes; if no bar starts within 30 minutes of that instant, at the open of the last bar before it. No target. One position at a time; positions are held through nights and weekends. Broker rule: an order whose stop is closer than 3 spreads is not taken. Costs: FP model: spread 3.0 USD at 2,300 (13.0 bp, marked uncertain in COSTS_FP.md) with Dukascopy's intraday shape, slippage 2.0 bp stop / 0.7 bp market per side, swap long 20 %/yr, short 2 %/yr (triple Friday); FP crypto hours 24/5.",
+   "parameters": {
+    "family": "donchian",
+    "tf": "4h",
+    "n": 60,
+    "entry": "stop",
+    "stop_atr": 2.0,
+    "trail_atr": 2.0,
+    "max_days": 5,
+    "atr_n": 14,
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   },
+   "window": "trades entered 2018-02-01 .. 2021-12-31",
+   "fp": {
+    "n": 223,
+    "trades_per_year": 57.1,
+    "win_rate": 0.493,
+    "avg_win_R": 1.314,
+    "avg_loss_R": -0.63,
+    "expectancy_R": 0.329,
+    "t_stat": 3.81,
+    "pf": 2.03,
+    "total_R": 73.4,
+    "max_dd_R": 5.2,
+    "long_n": 137,
+    "long_R": 40.6,
+    "short_n": 86,
+    "short_R": 32.8,
+    "avg_hold_h": 32.0,
+    "bps_per_trade": 150.91,
+    "by_year_R": {
+     "2018": 24.8,
+     "2019": 15.4,
+     "2020": 31.3,
+     "2021": 1.9
+    },
+    "exit_reasons": {
+     "trail": 218,
+     "stop": 3,
+     "time": 2
+    }
+   },
+   "stress_x1_5": {
+    "n": 226,
+    "pf": 1.884,
+    "expectancy_R": 0.2971,
+    "t_stat": 3.46,
+    "total_R": 67.1,
+    "by_year_R": {
+     "2018": 22.6,
+     "2019": 13.7,
+     "2020": 30.5,
+     "2021": 0.3
+    }
+   },
+   "gross": {
+    "n": 223,
+    "pf": 2.185,
+    "expectancy_R": 0.3628,
+    "bps_per_trade": 167.03
+   },
+   "earlier_in_sample_years": {
+    "n": 1,
+    "pf": 0.0,
+    "expectancy_R": -0.5223,
+    "t_stat": 0.0,
+    "total_R": -0.5,
+    "by_year_R": {
+     "2018": -0.5
+    }
+   },
+   "refused_by_3_spread_rule": 0,
+   "open_at_friday_1650_NY_hands_close": {
+    "share_pct": 17.0,
+    "n": 38,
+    "R_of_those": 36.6,
+    "R_of_the_others": 36.8
+   },
+   "top5pct_trades_share_of_total_R": 0.56,
+   "stop_distance_pct_of_price": {
+    "median": 5.0,
+    "p10": 3.427,
+    "p90": 7.945,
+    "median_2021": 5.684
+   },
+   "portfolio_before": {
+    "trades": 5207,
+    "total_R": 788.6,
+    "R_per_year": 201.4,
+    "weekly_sharpe_ann": 2.9,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -11.8,
+    "max_drawdown_R_weekly": 20.2
+   },
+   "portfolio_after": {
+    "trades": 5430,
+    "total_R": 861.9,
+    "R_per_year": 220.2,
+    "weekly_sharpe_ann": 2.992,
+    "win_weeks_pct": 58.0,
+    "worst_week_R": -12.4,
+    "max_drawdown_R_weekly": 21.1
+   },
+   "delta_weekly_sharpe": 0.092,
+   "extra_R_per_year": 18.7,
+   "weekly_correlation": {
+    "corr_sum10": 0.443,
+    "noise30:us100": -0.001,
+    "ocm4:us100": 0.112,
+    "brk72_24h_wd:btcusd": 0.333,
+    "brk72_24h_wd:ethusd": 0.486,
+    "nq_btc_follow:btcusd": -0.018,
+    "F1_brk_ridge_filter:btcusd": 0.223,
+    "F1_brk_ridge_filter:ethusd": 0.403,
+    "GOLD_FRI_PM:xauusd": 0.156,
+    "donch4h_stop:xauusd": 0.066,
+    "orb_asia_2d_buf10:xauusd": 0.163
+   },
+   "neighbours_same_rule_other_instruments": [
+    "btcusd: run here, n 232, PF 1.895, t 3.01, 4/4 years, stress PF 1.831 -> PASS",
+    "us100: run here, n 243, PF 1.235, t 1.22, 3/4 years, stress PF 1.218 -> PASS",
+    "us500: run here, n 252, PF 0.968, t -0.2, 2/4 years, stress PF 0.951 -> fail",
+    "us30: run here, n 244, PF 1.014, t 0.08, 2/4 years, stress PF 0.986 -> fail",
+    "jp225: run here, n 218, PF 1.3, t 1.4, 3/4 years, stress PF 1.247 -> PASS",
+    "xagusd: tried and failed (PF 1.14, t 1.08, years 5/9)",
+    "ger40: tried and failed (round-1 audit: IS PF 1.148, t 1.08 (bar t >= 2.0 / PF >= 1.2); validation also printed)",
+    "eurusd: tried and failed (PF 1.026, t 0.21, years 5/9)",
+    "gbpusd: tried and failed (PF 1.08, t 0.65, years 7/9)",
+    "usdjpy: tried and failed (PF 1.094, t 0.71, years 5/9)",
+    "audusd: tried and failed (PF 0.935, t -0.59, years 3/9)",
+    "usdcad: tried and failed (PF 1.0, t -0.0, years 6/9)",
+    "usdchf: tried and failed (PF 0.982, t -0.15, years 5/9)",
+    "nzdusd: tried and failed (PF 0.839, t -1.52, years 3/9)",
+    "eurjpy: tried and failed (PF 0.886, t -1.03, years 4/9)"
+   ],
+   "zero_edge_pass_probability": 0.062,
+   "truncation_test": {
+    "rule": "donch4h_stop",
+    "instrument": "ethusd",
+    "tested": 40,
+    "identical": 40,
+    "missing": 0
+   },
+   "random_entry_null": {
+    "rule": "donch4h_stop",
+    "instrument": "ethusd",
+    "mode": "day",
+    "n": 223,
+    "rule_mean_R": 0.329,
+    "null_mean_R": 0.0386,
+    "null_p95_R": 0.175,
+    "null_max_R": 0.3019,
+    "percentile": 100.0,
+    "draws": 200
+   },
+   "code_file": "lab/r2/tracks/autopsy/breadth/run_pairs.py (common.py run_rule; rule code unchanged in lab/tracks/trend/strategy.py)"
+  },
+  {
+   "rank": 4,
+   "id": 60,
+   "rule": "brk72_24h_wd",
+   "instrument": "jp225",
+   "change": "Frozen rule brk72_24h_wd (lab/r2/tracks/crypto/strategy.py FINALISTS: n=72, stop_atr=3, hold_h=24, weekday decisions, atr_n=24) with the FP-hours exit wrapper of lab/r2/recalc.py, unchanged, on jp225. BARS: hourly bars on the UTC hour grid from M1 mid prices (high = max of M1 mid highs, low = min of mid lows, close = last M1 mid close); hours without M1 bars are skipped (the look-backs count existing bars); the last hour is used only once its minute :59 exists. DECISION at the end of every hourly bar whose end falls on Monday-Friday UTC, if flat: long if the bar's close > the highest close of the previous 72 hourly bars, short if < their lowest close (strict). ENTRY at market at the open of the first M1 bar starting at or after the decision (dropped if more than 5 minutes late): long at ask open x (1 + market slippage), short at bid open x (1 - market slippage). STOP fixed at fill -/+ 3 x ATR24 (ATR24 = simple mean of the last 24 hourly true ranges). TIME EXIT at market at the open of the first M1 bar at or after decision + 24 h; if no bar starts within 30 minutes of that time (daily break, weekend, holiday), at the open of the last bar before it. No target, no trailing, one position at a time; a signal whose entry bar is at or before the previous trade's exit bar is ignored. Broker rule: an order whose stop is closer than 3 spreads is not taken. Costs: DECLARED model (no FP figure in the lab): spread 12 points at 50,000 = 2.4 bp all-in, Dukascopy JPN.IDX intraday spread shape, slippage 0.5 bp stop / 0.2 bp market, swap long 5.5 %/yr, short 0 (triple Friday); the real FP spread must be read in MT5 before anything.",
+   "parameters": {
+    "family": "brk",
+    "n": 72,
+    "stop_atr": 3.0,
+    "hold_h": 24,
+    "dow": "weekday"
+   },
+   "window": "trades entered 2018-02-01 .. 2021-12-31",
+   "fp": {
+    "n": 524,
+    "trades_per_year": 134.1,
+    "win_rate": 0.466,
+    "avg_win_R": 0.967,
+    "avg_loss_R": -0.726,
+    "expectancy_R": 0.0622,
+    "t_stat": 1.33,
+    "pf": 1.16,
+    "total_R": 32.6,
+    "max_dd_R": 16.6,
+    "long_n": 284,
+    "long_R": 24.0,
+    "short_n": 240,
+    "short_R": 8.6,
+    "avg_hold_h": 18.0,
+    "bps_per_trade": 8.09,
+    "by_year_R": {
+     "2018": 15.4,
+     "2019": -9.5,
+     "2020": 10.8,
+     "2021": 15.9
+    },
+    "exit_reasons": {
+     "time": 371,
+     "stop": 153
+    }
+   },
+   "stress_x1_5": {
+    "n": 525,
+    "pf": 1.114,
+    "expectancy_R": 0.0451,
+    "t_stat": 0.97,
+    "total_R": 23.7,
+    "by_year_R": {
+     "2018": 13.7,
+     "2019": -12.0,
+     "2020": 9.4,
+     "2021": 12.6
+    }
+   },
+   "gross": {
+    "n": 523,
+    "pf": 1.285,
+    "expectancy_R": 0.1047,
+    "bps_per_trade": 11.5
+   },
+   "earlier_in_sample_years": {
+    "n": 627,
+    "pf": 0.956,
+    "expectancy_R": -0.0183,
+    "t_stat": -0.44,
+    "total_R": -11.5,
+    "by_year_R": {
+     "2013": -3.0,
+     "2014": 11.9,
+     "2015": -10.6,
+     "2016": -2.7,
+     "2017": -9.2,
+     "2018": 2.1
+    }
+   },
+   "refused_by_3_spread_rule": 0,
+   "open_at_friday_1650_NY_hands_close": {
+    "share_pct": 0.0,
+    "n": 0,
+    "R_of_those": 0.0,
+    "R_of_the_others": 32.6
+   },
+   "top5pct_trades_share_of_total_R": 2.29,
+   "stop_distance_pct_of_price": {
+    "median": 0.83,
+    "p10": 0.547,
+    "p90": 1.474,
+    "median_2021": 0.84
+   },
+   "portfolio_before": {
+    "trades": 5207,
+    "total_R": 788.6,
+    "R_per_year": 201.4,
+    "weekly_sharpe_ann": 2.9,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -11.8,
+    "max_drawdown_R_weekly": 20.2
+   },
+   "portfolio_after": {
+    "trades": 5731,
+    "total_R": 821.2,
+    "R_per_year": 209.7,
+    "weekly_sharpe_ann": 2.97,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -13.8,
+    "max_drawdown_R_weekly": 17.3
+   },
+   "delta_weekly_sharpe": 0.07,
+   "extra_R_per_year": 8.3,
+   "weekly_correlation": {
+    "corr_sum10": 0.019,
+    "noise30:us100": 0.005,
+    "ocm4:us100": -0.098,
+    "brk72_24h_wd:btcusd": -0.009,
+    "brk72_24h_wd:ethusd": 0.073,
+    "nq_btc_follow:btcusd": 0.016,
+    "F1_brk_ridge_filter:btcusd": 0.015,
+    "F1_brk_ridge_filter:ethusd": 0.063,
+    "GOLD_FRI_PM:xauusd": -0.089,
+    "donch4h_stop:xauusd": -0.009,
+    "orb_asia_2d_buf10:xauusd": 0.03
+   },
+   "neighbours_same_rule_other_instruments": [
+    "us100: run here, n 608, PF 1.01, t 0.1, 3/4 years, stress PF 1.0 -> fail",
+    "us500: run here, n 595, PF 1.014, t 0.14, 2/4 years, stress PF 0.982 -> fail",
+    "us30: run here, n 582, PF 0.958, t -0.41, 2/4 years, stress PF 0.944 -> fail",
+    "ger40: run here, n 564, PF 0.962, t -0.36, 1/4 years, stress PF 0.946 -> fail",
+    "xauusd: run here, n 555, PF 1.015, t 0.14, 3/4 years, stress PF 0.995 -> fail",
+    "xagusd: run here, n 541, PF 0.899, t -0.93, 1/4 years, stress PF 0.822 -> fail",
+    "eurusd: tried and failed (PF 0.985, t -0.22, years 2/9)",
+    "gbpusd: tried and failed (PF 1.055, t 0.8, years 5/9)",
+    "usdjpy: tried and failed (PF 1.118, t 1.58, years 5/9)",
+    "audusd: tried and failed (PF 0.859, t -2.36, years 2/9)",
+    "usdcad: tried and failed (PF 0.96, t -0.62, years 4/9)",
+    "usdchf: tried and failed (PF 0.858, t -2.33, years 2/9)",
+    "nzdusd: tried and failed (PF 0.854, t -2.43, years 2/9)",
+    "eurjpy: tried and failed (PF 0.995, t -0.08, years 5/9)"
+   ],
+   "zero_edge_pass_probability": 0.014,
+   "truncation_test": {
+    "rule": "brk72_24h_wd",
+    "instrument": "jp225",
+    "tested": 40,
+    "identical": 40,
+    "missing": 0
+   },
+   "random_entry_null": {
+    "rule": "brk72_24h_wd",
+    "instrument": "jp225",
+    "mode": "day",
+    "n": 524,
+    "rule_mean_R": 0.0622,
+    "null_mean_R": -0.0271,
+    "null_p95_R": 0.0821,
+    "null_max_R": 0.1376,
+    "percentile": 92.0,
+    "draws": 200
+   },
+   "code_file": "lab/r2/tracks/autopsy/breadth/run_pairs.py (common.py run_rule; rule code unchanged in lab/r2/tracks/crypto/strategy.py + lab/r2/recalc.py::_crypto_fp_hours)"
+  },
+  {
+   "rank": 5,
+   "id": 30,
+   "rule": "donch4h_stop",
+   "instrument": "us100",
+   "change": "Frozen rule donch4h_stop (lab/tracks/trend/strategy.py FINALISTS, parameters n=60, stop_atr=2, trail_atr=2, max_days=5, atr_n=14, both sides, no filter, UTC grid), unchanged, on us100. BARS: 4-hour bars on the UTC grid (buckets starting 00, 04, 08, 12, 16, 20 UTC) built from M1 bars: high = (max M1 bid high + max M1 ask high)/2, low = (min bid low + min ask low)/2, close = (last bid close + last ask close)/2; a bucket without M1 bars is skipped; the bar is known one minute after the start of its last M1 bar (= decision time). DECISION at every 4h decision time, only if the sleeve is flat and its last trade exited on an M1 bar strictly before the first M1 bar after the decision: U = highest high and L = lowest low of the last 60 4h bars, the bar just closed included; ATR = Wilder ATR(14) of the 4h bars (true range on these bars, alpha 1/14, seeded with the first true range of the history and run continuously). ENTRY: a buy-stop at U and a sell-stop at L, one cancels the other, live on every M1 bar from the first bar after the decision to the last bar before the next 4h decision time; long when an M1 ask high >= U, filled at max(U, ask open) x (1 + stop slippage); short when an M1 bid low <= L, filled at min(L, bid open) x (1 - stop slippage); if both levels are touched in the same minute take the side opposite to that minute's bid move (short if bid close >= bid open, else long). STOP: initial stop = fill - side x 2 x ATR; trailing: after every M1 bar (the fill bar included) best = highest bid high since the fill for a long (lowest ask low for a short), starting at the fill price, and the stop becomes max(stop, best - 2 ATR) for a long / min(stop, best + 2 ATR) for a short, effective from the next bar; a long is out when an M1 bid low <= stop (a short when an ask high >= stop), at the stop price, or at the bar open if the bar opened beyond it, with stop slippage. TIME EXIT at market at the open of the first M1 bar at or after (decision time + 5 trading days at the same New-York wall-clock time, trading days rolling at 17:00 New York) - 5 minutes; if no bar starts within 30 minutes of that instant, at the open of the last bar before it. No target. One position at a time; positions are held through nights and weekends. Broker rule: an order whose stop is closer than 3 spreads is not taken. Costs: FP model: spread 1.0 point at 27,000 (0.37 bp) with Dukascopy's intraday shape, slippage 0.5 bp stop / 0.2 bp market, swap long 4.7 %/yr, short 0 (triple Friday).",
+   "parameters": {
+    "family": "donchian",
+    "tf": "4h",
+    "n": 60,
+    "entry": "stop",
+    "stop_atr": 2.0,
+    "trail_atr": 2.0,
+    "max_days": 5,
+    "atr_n": 14,
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   },
+   "window": "trades entered 2018-02-01 .. 2021-12-31",
+   "fp": {
+    "n": 243,
+    "trades_per_year": 62.3,
+    "win_rate": 0.403,
+    "avg_win_R": 1.002,
+    "avg_loss_R": -0.548,
+    "expectancy_R": 0.077,
+    "t_stat": 1.22,
+    "pf": 1.235,
+    "total_R": 18.7,
+    "max_dd_R": 6.3,
+    "long_n": 144,
+    "long_R": 28.7,
+    "short_n": 99,
+    "short_R": -10.0,
+    "avg_hold_h": 46.8,
+    "bps_per_trade": -2.45,
+    "by_year_R": {
+     "2018": -3.6,
+     "2019": 10.9,
+     "2020": 5.5,
+     "2021": 5.9
+    },
+    "exit_reasons": {
+     "trail": 226,
+     "time": 17
+    }
+   },
+   "stress_x1_5": {
+    "n": 243,
+    "pf": 1.218,
+    "expectancy_R": 0.0721,
+    "t_stat": 1.14,
+    "total_R": 17.5,
+    "by_year_R": {
+     "2018": -3.8,
+     "2019": 10.5,
+     "2020": 5.2,
+     "2021": 5.6
+    }
+   },
+   "gross": {
+    "n": 243,
+    "pf": 1.334,
+    "expectancy_R": 0.1057,
+    "bps_per_trade": 0.68
+   },
+   "earlier_in_sample_years": {
+    "n": 319,
+    "pf": 0.978,
+    "expectancy_R": -0.0087,
+    "t_stat": -0.15,
+    "total_R": -2.8,
+    "by_year_R": {
+     "2013": -4.1,
+     "2014": -14.3,
+     "2015": 13.1,
+     "2016": -8.4,
+     "2017": 6.9,
+     "2018": 4.1
+    }
+   },
+   "refused_by_3_spread_rule": 0,
+   "open_at_friday_1650_NY_hands_close": {
+    "share_pct": 27.6,
+    "n": 67,
+    "R_of_those": 56.7,
+    "R_of_the_others": -38.0
+   },
+   "top5pct_trades_share_of_total_R": 1.85,
+   "stop_distance_pct_of_price": {
+    "median": 1.184,
+    "p10": 0.716,
+    "p90": 2.42,
+    "median_2021": 0.985
+   },
+   "portfolio_before": {
+    "trades": 5207,
+    "total_R": 788.6,
+    "R_per_year": 201.4,
+    "weekly_sharpe_ann": 2.9,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -11.8,
+    "max_drawdown_R_weekly": 20.2
+   },
+   "portfolio_after": {
+    "trades": 5450,
+    "total_R": 807.3,
+    "R_per_year": 206.2,
+    "weekly_sharpe_ann": 2.961,
+    "win_weeks_pct": 59.5,
+    "worst_week_R": -12.1,
+    "max_drawdown_R_weekly": 19.9
+   },
+   "delta_weekly_sharpe": 0.061,
+   "extra_R_per_year": 4.8,
+   "weekly_correlation": {
+    "corr_sum10": -0.031,
+    "noise30:us100": 0.162,
+    "ocm4:us100": -0.141,
+    "brk72_24h_wd:btcusd": -0.057,
+    "brk72_24h_wd:ethusd": -0.026,
+    "nq_btc_follow:btcusd": 0.11,
+    "F1_brk_ridge_filter:btcusd": -0.089,
+    "F1_brk_ridge_filter:ethusd": -0.07,
+    "GOLD_FRI_PM:xauusd": -0.042,
+    "donch4h_stop:xauusd": 0.097,
+    "orb_asia_2d_buf10:xauusd": 0.038
+   },
+   "neighbours_same_rule_other_instruments": [
+    "btcusd: run here, n 232, PF 1.895, t 3.01, 4/4 years, stress PF 1.831 -> PASS",
+    "ethusd: run here, n 223, PF 2.03, t 3.81, 4/4 years, stress PF 1.884 -> PASS",
+    "us500: run here, n 252, PF 0.968, t -0.2, 2/4 years, stress PF 0.951 -> fail",
+    "us30: run here, n 244, PF 1.014, t 0.08, 2/4 years, stress PF 0.986 -> fail",
+    "jp225: run here, n 218, PF 1.3, t 1.4, 3/4 years, stress PF 1.247 -> PASS",
+    "xagusd: tried and failed (PF 1.14, t 1.08, years 5/9)",
+    "ger40: tried and failed (round-1 audit: IS PF 1.148, t 1.08 (bar t >= 2.0 / PF >= 1.2); validation also printed)",
+    "eurusd: tried and failed (PF 1.026, t 0.21, years 5/9)",
+    "gbpusd: tried and failed (PF 1.08, t 0.65, years 7/9)",
+    "usdjpy: tried and failed (PF 1.094, t 0.71, years 5/9)",
+    "audusd: tried and failed (PF 0.935, t -0.59, years 3/9)",
+    "usdcad: tried and failed (PF 1.0, t -0.0, years 6/9)",
+    "usdchf: tried and failed (PF 0.982, t -0.15, years 5/9)",
+    "nzdusd: tried and failed (PF 0.839, t -1.52, years 3/9)",
+    "eurjpy: tried and failed (PF 0.886, t -1.03, years 4/9)"
+   ],
+   "zero_edge_pass_probability": 0.072,
+   "truncation_test": {
+    "rule": "donch4h_stop",
+    "instrument": "us100",
+    "tested": 40,
+    "identical": 40,
+    "missing": 0
+   },
+   "random_entry_null": {
+    "rule": "donch4h_stop",
+    "instrument": "us100",
+    "mode": "day",
+    "n": 243,
+    "rule_mean_R": 0.077,
+    "null_mean_R": 0.0087,
+    "null_p95_R": 0.1547,
+    "null_max_R": 0.2184,
+    "percentile": 80.5,
+    "draws": 200
+   },
+   "code_file": "lab/r2/tracks/autopsy/breadth/run_pairs.py (common.py run_rule; rule code unchanged in lab/tracks/trend/strategy.py)"
+  },
+  {
+   "rank": 6,
+   "id": 35,
+   "rule": "donch4h_stop",
+   "instrument": "jp225",
+   "change": "Frozen rule donch4h_stop (lab/tracks/trend/strategy.py FINALISTS, parameters n=60, stop_atr=2, trail_atr=2, max_days=5, atr_n=14, both sides, no filter, UTC grid), unchanged, on jp225. BARS: 4-hour bars on the UTC grid (buckets starting 00, 04, 08, 12, 16, 20 UTC) built from M1 bars: high = (max M1 bid high + max M1 ask high)/2, low = (min bid low + min ask low)/2, close = (last bid close + last ask close)/2; a bucket without M1 bars is skipped; the bar is known one minute after the start of its last M1 bar (= decision time). DECISION at every 4h decision time, only if the sleeve is flat and its last trade exited on an M1 bar strictly before the first M1 bar after the decision: U = highest high and L = lowest low of the last 60 4h bars, the bar just closed included; ATR = Wilder ATR(14) of the 4h bars (true range on these bars, alpha 1/14, seeded with the first true range of the history and run continuously). ENTRY: a buy-stop at U and a sell-stop at L, one cancels the other, live on every M1 bar from the first bar after the decision to the last bar before the next 4h decision time; long when an M1 ask high >= U, filled at max(U, ask open) x (1 + stop slippage); short when an M1 bid low <= L, filled at min(L, bid open) x (1 - stop slippage); if both levels are touched in the same minute take the side opposite to that minute's bid move (short if bid close >= bid open, else long). STOP: initial stop = fill - side x 2 x ATR; trailing: after every M1 bar (the fill bar included) best = highest bid high since the fill for a long (lowest ask low for a short), starting at the fill price, and the stop becomes max(stop, best - 2 ATR) for a long / min(stop, best + 2 ATR) for a short, effective from the next bar; a long is out when an M1 bid low <= stop (a short when an ask high >= stop), at the stop price, or at the bar open if the bar opened beyond it, with stop slippage. TIME EXIT at market at the open of the first M1 bar at or after (decision time + 5 trading days at the same New-York wall-clock time, trading days rolling at 17:00 New York) - 5 minutes; if no bar starts within 30 minutes of that instant, at the open of the last bar before it. No target. One position at a time; positions are held through nights and weekends. Broker rule: an order whose stop is closer than 3 spreads is not taken. Costs: DECLARED model (no FP figure in the lab): spread 12 points at 50,000 = 2.4 bp all-in, Dukascopy JPN.IDX intraday spread shape, slippage 0.5 bp stop / 0.2 bp market, swap long 5.5 %/yr, short 0 (triple Friday); the real FP spread must be read in MT5 before anything.",
+   "parameters": {
+    "family": "donchian",
+    "tf": "4h",
+    "n": 60,
+    "entry": "stop",
+    "stop_atr": 2.0,
+    "trail_atr": 2.0,
+    "max_days": 5,
+    "atr_n": 14,
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   },
+   "window": "trades entered 2018-02-01 .. 2021-12-31",
+   "fp": {
+    "n": 218,
+    "trades_per_year": 56.4,
+    "win_rate": 0.394,
+    "avg_win_R": 1.145,
+    "avg_loss_R": -0.574,
+    "expectancy_R": 0.1043,
+    "t_stat": 1.4,
+    "pf": 1.3,
+    "total_R": 22.7,
+    "max_dd_R": 8.6,
+    "long_n": 114,
+    "long_R": 4.2,
+    "short_n": 104,
+    "short_R": 18.5,
+    "avg_hold_h": 38.2,
+    "bps_per_trade": 4.57,
+    "by_year_R": {
+     "2018": 9.6,
+     "2019": 4.9,
+     "2020": -1.4,
+     "2021": 9.6
+    },
+    "exit_reasons": {
+     "trail": 204,
+     "stop": 9,
+     "time": 5
+    }
+   },
+   "stress_x1_5": {
+    "n": 219,
+    "pf": 1.247,
+    "expectancy_R": 0.0881,
+    "t_stat": 1.19,
+    "total_R": 19.3,
+    "by_year_R": {
+     "2018": 8.9,
+     "2019": 3.2,
+     "2020": -1.9,
+     "2021": 9.1
+    }
+   },
+   "gross": {
+    "n": 217,
+    "pf": 1.467,
+    "expectancy_R": 0.1485,
+    "bps_per_trade": 9.73
+   },
+   "earlier_in_sample_years": {
+    "n": 237,
+    "pf": 1.186,
+    "expectancy_R": 0.0701,
+    "t_stat": 0.93,
+    "total_R": 16.6,
+    "by_year_R": {
+     "2013": -1.9,
+     "2014": 11.6,
+     "2015": 2.3,
+     "2016": 1.5,
+     "2017": 2.3,
+     "2018": 0.8
+    }
+   },
+   "refused_by_3_spread_rule": 0,
+   "open_at_friday_1650_NY_hands_close": {
+    "share_pct": 22.0,
+    "n": 48,
+    "R_of_those": 40.3,
+    "R_of_the_others": -17.6
+   },
+   "top5pct_trades_share_of_total_R": 1.46,
+   "stop_distance_pct_of_price": {
+    "median": 1.111,
+    "p10": 0.761,
+    "p90": 1.979,
+    "median_2021": 1.155
+   },
+   "portfolio_before": {
+    "trades": 5207,
+    "total_R": 788.6,
+    "R_per_year": 201.4,
+    "weekly_sharpe_ann": 2.9,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -11.8,
+    "max_drawdown_R_weekly": 20.2
+   },
+   "portfolio_after": {
+    "trades": 5425,
+    "total_R": 811.3,
+    "R_per_year": 207.2,
+    "weekly_sharpe_ann": 2.924,
+    "win_weeks_pct": 58.0,
+    "worst_week_R": -12.8,
+    "max_drawdown_R_weekly": 21.5
+   },
+   "delta_weekly_sharpe": 0.024,
+   "extra_R_per_year": 5.8,
+   "weekly_correlation": {
+    "corr_sum10": 0.116,
+    "noise30:us100": 0.048,
+    "ocm4:us100": -0.031,
+    "brk72_24h_wd:btcusd": -0.005,
+    "brk72_24h_wd:ethusd": 0.108,
+    "nq_btc_follow:btcusd": 0.126,
+    "F1_brk_ridge_filter:btcusd": 0.03,
+    "F1_brk_ridge_filter:ethusd": 0.115,
+    "GOLD_FRI_PM:xauusd": 0.087,
+    "donch4h_stop:xauusd": 0.04,
+    "orb_asia_2d_buf10:xauusd": 0.107
+   },
+   "neighbours_same_rule_other_instruments": [
+    "btcusd: run here, n 232, PF 1.895, t 3.01, 4/4 years, stress PF 1.831 -> PASS",
+    "ethusd: run here, n 223, PF 2.03, t 3.81, 4/4 years, stress PF 1.884 -> PASS",
+    "us100: run here, n 243, PF 1.235, t 1.22, 3/4 years, stress PF 1.218 -> PASS",
+    "us500: run here, n 252, PF 0.968, t -0.2, 2/4 years, stress PF 0.951 -> fail",
+    "us30: run here, n 244, PF 1.014, t 0.08, 2/4 years, stress PF 0.986 -> fail",
+    "xagusd: tried and failed (PF 1.14, t 1.08, years 5/9)",
+    "ger40: tried and failed (round-1 audit: IS PF 1.148, t 1.08 (bar t >= 2.0 / PF >= 1.2); validation also printed)",
+    "eurusd: tried and failed (PF 1.026, t 0.21, years 5/9)",
+    "gbpusd: tried and failed (PF 1.08, t 0.65, years 7/9)",
+    "usdjpy: tried and failed (PF 1.094, t 0.71, years 5/9)",
+    "audusd: tried and failed (PF 0.935, t -0.59, years 3/9)",
+    "usdcad: tried and failed (PF 1.0, t -0.0, years 6/9)",
+    "usdchf: tried and failed (PF 0.982, t -0.15, years 5/9)",
+    "nzdusd: tried and failed (PF 0.839, t -1.52, years 3/9)",
+    "eurjpy: tried and failed (PF 0.886, t -1.03, years 4/9)"
+   ],
+   "zero_edge_pass_probability": 0.072,
+   "truncation_test": {
+    "rule": "donch4h_stop",
+    "instrument": "jp225",
+    "tested": 40,
+    "identical": 40,
+    "missing": 0
+   },
+   "random_entry_null": {
+    "rule": "donch4h_stop",
+    "instrument": "jp225",
+    "mode": "day",
+    "n": 218,
+    "rule_mean_R": 0.1043,
+    "null_mean_R": -0.0194,
+    "null_p95_R": 0.1182,
+    "null_max_R": 0.2207,
+    "percentile": 92.0,
+    "draws": 200
+   },
+   "code_file": "lab/r2/tracks/autopsy/breadth/run_pairs.py (common.py run_rule; rule code unchanged in lab/tracks/trend/strategy.py)"
+  },
+  {
+   "rank": 7,
+   "id": 63,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "xagusd",
+   "change": "Frozen rule F1_brk_ridge_filter (lab/r2/tracks/ml/strategy.py FINALISTS: stop_k=2.0, exit 15:55 New York, frozen scorecard models/B1_ridge_full.json['frozen'] = models/F1_frozen_scorecard.json, threshold 0.027922380451488427), unchanged, on xagusd; the full text specification is lab/r2/tracks/ml/ea_spec_F1.txt (only the instrument changes). BARS: H1 bars from M1 BID prices on whole UTC hours; only SESSION bars count = H1 bars starting 02:00..15:00 New York, Monday-Friday (14 a day); S[0] = the session bar just closed. DECISION at the close of a session bar starting 02:00..14:00 New York: HH = max high of S[1..14], LL = min low of S[1..14]; long candidate if close S[0] > HH, short if < LL; A = mean (high - low) of S[0..69]. FILTER: score = intercept + sum coef_i x clip((x_i - mean_i)/std_i, -4, 4) + sum coef_j x dummy_j with the 13 numeric inputs brk, bar, body, ret4, ret14, ret70, chan, vol, pos, seq, opp, pdd, dret (definitions in ea_spec_F1.txt; all are price distances divided by A and signed by the side, plus counts of earlier breakouts in the last 14 session bars and the previous New-York session's high/low/close) and the 5 dummies decision hour 8-10 / 11-12 / 13-15 New York, Monday, Friday; trade only if score >= 0.027922380451488427 (constants in the JSON, never refitted). ENTRY at market at the open of the first M1 bar at or after the hour boundary (dropped if more than 5 minutes late). STOP fixed at fill -/+ 2.0 x A. EXIT at market at the first M1 bar at or after 15:55 New York the same day. No target, no trailing, nothing held overnight, one position at a time; a candidate arriving while a trade is open is dropped. Broker rule: an order whose stop is closer than 3 spreads is not taken. Costs: FP model: spread 0.03 USD (about 5.4 bp at 55.5) with Dukascopy's intraday shape, slippage 1.5 bp stop / 0.5 bp market, swap long 6 %/yr, short 0 (triple Wednesday).",
+   "parameters": {
+    "stop_k": 2.0,
+    "hold_h": 13.0,
+    "model": "B1_ridge_full.json",
+    "q": "0.5"
+   },
+   "window": "trades entered 2018-02-01 .. 2021-12-31",
+   "fp": {
+    "n": 438,
+    "trades_per_year": 112.2,
+    "win_rate": 0.45,
+    "avg_win_R": 1.011,
+    "avg_loss_R": -0.71,
+    "expectancy_R": 0.0642,
+    "t_stat": 1.2,
+    "pf": 1.164,
+    "total_R": 28.1,
+    "max_dd_R": 15.8,
+    "long_n": 227,
+    "long_R": 8.5,
+    "short_n": 211,
+    "short_R": 19.6,
+    "avg_hold_h": 7.3,
+    "bps_per_trade": 10.72,
+    "by_year_R": {
+     "2018": 2.1,
+     "2019": -3.0,
+     "2020": 25.1,
+     "2021": 3.9
+    },
+    "exit_reasons": {
+     "time": 303,
+     "stop": 135
+    }
+   },
+   "stress_x1_5": {
+    "n": 437,
+    "pf": 1.069,
+    "expectancy_R": 0.0284,
+    "t_stat": 0.53,
+    "total_R": 12.4,
+    "by_year_R": {
+     "2018": -1.6,
+     "2019": -10.7,
+     "2020": 23.3,
+     "2021": 1.4
+    }
+   },
+   "gross": {
+    "n": 439,
+    "pf": 1.361,
+    "expectancy_R": 0.13,
+    "bps_per_trade": 16.54
+   },
+   "earlier_in_sample_years": {
+    "n": 547,
+    "pf": 0.943,
+    "expectancy_R": -0.0246,
+    "t_stat": -0.52,
+    "total_R": -13.5,
+    "by_year_R": {
+     "2013": 12.3,
+     "2014": -0.8,
+     "2015": -3.9,
+     "2016": -13.4,
+     "2017": -9.6,
+     "2018": 2.0
+    }
+   },
+   "refused_by_3_spread_rule": 0,
+   "open_at_friday_1650_NY_hands_close": {
+    "share_pct": 0.0,
+    "n": 0,
+    "R_of_those": 0.0,
+    "R_of_the_others": 28.1
+   },
+   "top5pct_trades_share_of_total_R": 2.41,
+   "stop_distance_pct_of_price": {
+    "median": 0.914,
+    "p10": 0.623,
+    "p90": 1.687,
+    "median_2021": 1.074
+   },
+   "portfolio_before": {
+    "trades": 5207,
+    "total_R": 788.6,
+    "R_per_year": 201.4,
+    "weekly_sharpe_ann": 2.9,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -11.8,
+    "max_drawdown_R_weekly": 20.2
+   },
+   "portfolio_after": {
+    "trades": 5645,
+    "total_R": 816.7,
+    "R_per_year": 208.6,
+    "weekly_sharpe_ann": 2.902,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -13.1,
+    "max_drawdown_R_weekly": 23.2
+   },
+   "delta_weekly_sharpe": 0.002,
+   "extra_R_per_year": 7.2,
+   "weekly_correlation": {
+    "corr_sum10": 0.105,
+    "noise30:us100": -0.008,
+    "ocm4:us100": 0.006,
+    "brk72_24h_wd:btcusd": -0.093,
+    "brk72_24h_wd:ethusd": 0.16,
+    "nq_btc_follow:btcusd": 0.066,
+    "F1_brk_ridge_filter:btcusd": 0.014,
+    "F1_brk_ridge_filter:ethusd": 0.113,
+    "GOLD_FRI_PM:xauusd": 0.086,
+    "donch4h_stop:xauusd": 0.122,
+    "orb_asia_2d_buf10:xauusd": 0.136
+   },
+   "neighbours_same_rule_other_instruments": [
+    "xauusd: tried and failed (ml track, walk-forward out-of-fold: PF 1.048, t 0.51)",
+    "us500: run here, n 510, PF 1.041, t 0.36, 3/4 years, stress PF 1.023 -> fail",
+    "us30: run here, n 497, PF 0.989, t -0.1, 2/4 years, stress PF 0.979 -> fail",
+    "jp225: run here, n 577, PF 0.945, t -0.53, 1/4 years, stress PF 0.881 -> fail",
+    "us100: tried and failed (ml track, walk-forward out-of-fold: PF 1.004, t 0.04)",
+    "ger40: tried and failed (ml track, walk-forward out-of-fold: PF 0.971, t -0.32)",
+    "eurusd: run here, n 490, PF 0.922, t -0.74, 0/4 years, stress PF 0.878 -> fail",
+    "gbpusd: run here, n 516, PF 0.961, t -0.36, 2/4 years, stress PF 0.925 -> fail",
+    "usdjpy: run here, n 526, PF 1.1, t 0.83, 4/4 years, stress PF 1.039 -> fail",
+    "audusd: run here, n 556, PF 0.845, t -1.57, 0/4 years, stress PF 0.791 -> fail",
+    "usdcad: run here, n 487, PF 1.011, t 0.09, 3/4 years, stress PF 0.963 -> fail",
+    "usdchf: run here, n 538, PF 0.813, t -1.96, 0/4 years, stress PF 0.758 -> fail",
+    "nzdusd: run here, n 586, PF 0.876, t -1.32, 0/4 years, stress PF 0.819 -> fail",
+    "eurjpy: run here, n 541, PF 0.912, t -0.86, 1/4 years, stress PF 0.859 -> fail"
+   ],
+   "zero_edge_pass_probability": 0.006,
+   "truncation_test": {
+    "rule": "F1_brk_ridge_filter",
+    "instrument": "xagusd",
+    "tested": 40,
+    "identical": 40,
+    "missing": 0
+   },
+   "random_entry_null": {
+    "rule": "F1_brk_ridge_filter",
+    "instrument": "xagusd",
+    "mode": "day",
+    "n": 438,
+    "rule_mean_R": 0.0642,
+    "null_mean_R": -0.0957,
+    "null_p95_R": 0.0137,
+    "null_max_R": 0.0495,
+    "percentile": 100.0,
+    "draws": 200
+   },
+   "code_file": "lab/r2/tracks/autopsy/breadth/run_pairs.py (common.py run_rule; rule code unchanged in lab/r2/tracks/ml/strategy.py)"
+  },
+  {
+   "rank": 8,
+   "id": 33,
+   "rule": "donch4h_stop",
+   "instrument": "btcusd",
+   "change": "Frozen rule donch4h_stop (lab/tracks/trend/strategy.py FINALISTS, parameters n=60, stop_atr=2, trail_atr=2, max_days=5, atr_n=14, both sides, no filter, UTC grid), unchanged, on btcusd. BARS: 4-hour bars on the UTC grid (buckets starting 00, 04, 08, 12, 16, 20 UTC) built from M1 bars: high = (max M1 bid high + max M1 ask high)/2, low = (min bid low + min ask low)/2, close = (last bid close + last ask close)/2; a bucket without M1 bars is skipped; the bar is known one minute after the start of its last M1 bar (= decision time). DECISION at every 4h decision time, only if the sleeve is flat and its last trade exited on an M1 bar strictly before the first M1 bar after the decision: U = highest high and L = lowest low of the last 60 4h bars, the bar just closed included; ATR = Wilder ATR(14) of the 4h bars (true range on these bars, alpha 1/14, seeded with the first true range of the history and run continuously). ENTRY: a buy-stop at U and a sell-stop at L, one cancels the other, live on every M1 bar from the first bar after the decision to the last bar before the next 4h decision time; long when an M1 ask high >= U, filled at max(U, ask open) x (1 + stop slippage); short when an M1 bid low <= L, filled at min(L, bid open) x (1 - stop slippage); if both levels are touched in the same minute take the side opposite to that minute's bid move (short if bid close >= bid open, else long). STOP: initial stop = fill - side x 2 x ATR; trailing: after every M1 bar (the fill bar included) best = highest bid high since the fill for a long (lowest ask low for a short), starting at the fill price, and the stop becomes max(stop, best - 2 ATR) for a long / min(stop, best + 2 ATR) for a short, effective from the next bar; a long is out when an M1 bid low <= stop (a short when an ask high >= stop), at the stop price, or at the bar open if the bar opened beyond it, with stop slippage. TIME EXIT at market at the open of the first M1 bar at or after (decision time + 5 trading days at the same New-York wall-clock time, trading days rolling at 17:00 New York) - 5 minutes; if no bar starts within 30 minutes of that instant, at the open of the last bar before it. No target. One position at a time; positions are held through nights and weekends. Broker rule: an order whose stop is closer than 3 spreads is not taken. Costs: FP model: spread 22.5 USD at 76,000 (2.96 bp) in the frame with Dukascopy's intraday shape, slippage 1.5 bp stop / 0.5 bp market per side, swap long 20 %/yr, short 2 %/yr (triple Friday), no commission; FP crypto hours 24/5 (no bar from Friday 23:55 to Monday 00:00 server time).",
+   "parameters": {
+    "family": "donchian",
+    "tf": "4h",
+    "n": 60,
+    "entry": "stop",
+    "stop_atr": 2.0,
+    "trail_atr": 2.0,
+    "max_days": 5,
+    "atr_n": 14,
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   },
+   "window": "trades entered 2018-02-01 .. 2021-12-31",
+   "fp": {
+    "n": 232,
+    "trades_per_year": 59.5,
+    "win_rate": 0.435,
+    "avg_win_R": 1.603,
+    "avg_loss_R": -0.652,
+    "expectancy_R": 0.3296,
+    "t_stat": 3.01,
+    "pf": 1.895,
+    "total_R": 76.5,
+    "max_dd_R": 7.2,
+    "long_n": 135,
+    "long_R": 57.6,
+    "short_n": 97,
+    "short_R": 18.9,
+    "avg_hold_h": 32.9,
+    "bps_per_trade": 90.07,
+    "by_year_R": {
+     "2018": 14.7,
+     "2019": 36.1,
+     "2020": 19.8,
+     "2021": 5.9
+    },
+    "exit_reasons": {
+     "trail": 229,
+     "stop": 2,
+     "time": 1
+    }
+   },
+   "stress_x1_5": {
+    "n": 234,
+    "pf": 1.831,
+    "expectancy_R": 0.3114,
+    "t_stat": 2.87,
+    "total_R": 72.9,
+    "by_year_R": {
+     "2018": 13.3,
+     "2019": 35.6,
+     "2020": 19.2,
+     "2021": 4.7
+    }
+   },
+   "gross": {
+    "n": 232,
+    "pf": 2.03,
+    "expectancy_R": 0.3621,
+    "bps_per_trade": 100.65
+   },
+   "earlier_in_sample_years": {
+    "n": 43,
+    "pf": 1.953,
+    "expectancy_R": 0.3268,
+    "t_stat": 1.47,
+    "total_R": 14.1,
+    "by_year_R": {
+     "2017": 15.8,
+     "2018": -1.7
+    }
+   },
+   "refused_by_3_spread_rule": 0,
+   "open_at_friday_1650_NY_hands_close": {
+    "share_pct": 20.3,
+    "n": 47,
+    "R_of_those": 30.3,
+    "R_of_the_others": 46.1
+   },
+   "top5pct_trades_share_of_total_R": 0.81,
+   "stop_distance_pct_of_price": {
+    "median": 3.723,
+    "p10": 2.18,
+    "p90": 6.268,
+    "median_2021": 5.062
+   },
+   "portfolio_before": {
+    "trades": 5207,
+    "total_R": 788.6,
+    "R_per_year": 201.4,
+    "weekly_sharpe_ann": 2.9,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -11.8,
+    "max_drawdown_R_weekly": 20.2
+   },
+   "portfolio_after": {
+    "trades": 5439,
+    "total_R": 865.1,
+    "R_per_year": 221.0,
+    "weekly_sharpe_ann": 2.895,
+    "win_weeks_pct": 58.0,
+    "worst_week_R": -12.4,
+    "max_drawdown_R_weekly": 21.8
+   },
+   "delta_weekly_sharpe": -0.005,
+   "extra_R_per_year": 19.5,
+   "weekly_correlation": {
+    "corr_sum10": 0.483,
+    "noise30:us100": 0.033,
+    "ocm4:us100": 0.051,
+    "brk72_24h_wd:btcusd": 0.722,
+    "brk72_24h_wd:ethusd": 0.316,
+    "nq_btc_follow:btcusd": 0.019,
+    "F1_brk_ridge_filter:btcusd": 0.375,
+    "F1_brk_ridge_filter:ethusd": 0.341,
+    "GOLD_FRI_PM:xauusd": 0.071,
+    "donch4h_stop:xauusd": -0.06,
+    "orb_asia_2d_buf10:xauusd": -0.003
+   },
+   "neighbours_same_rule_other_instruments": [
+    "ethusd: run here, n 223, PF 2.03, t 3.81, 4/4 years, stress PF 1.884 -> PASS",
+    "us100: run here, n 243, PF 1.235, t 1.22, 3/4 years, stress PF 1.218 -> PASS",
+    "us500: run here, n 252, PF 0.968, t -0.2, 2/4 years, stress PF 0.951 -> fail",
+    "us30: run here, n 244, PF 1.014, t 0.08, 2/4 years, stress PF 0.986 -> fail",
+    "jp225: run here, n 218, PF 1.3, t 1.4, 3/4 years, stress PF 1.247 -> PASS",
+    "xagusd: tried and failed (PF 1.14, t 1.08, years 5/9)",
+    "ger40: tried and failed (round-1 audit: IS PF 1.148, t 1.08 (bar t >= 2.0 / PF >= 1.2); validation also printed)",
+    "eurusd: tried and failed (PF 1.026, t 0.21, years 5/9)",
+    "gbpusd: tried and failed (PF 1.08, t 0.65, years 7/9)",
+    "usdjpy: tried and failed (PF 1.094, t 0.71, years 5/9)",
+    "audusd: tried and failed (PF 0.935, t -0.59, years 3/9)",
+    "usdcad: tried and failed (PF 1.0, t -0.0, years 6/9)",
+    "usdchf: tried and failed (PF 0.982, t -0.15, years 5/9)",
+    "nzdusd: tried and failed (PF 0.839, t -1.52, years 3/9)",
+    "eurjpy: tried and failed (PF 0.886, t -1.03, years 4/9)"
+   ],
+   "zero_edge_pass_probability": 0.06,
+   "truncation_test": {
+    "rule": "donch4h_stop",
+    "instrument": "btcusd",
+    "tested": 40,
+    "identical": 40,
+    "missing": 0
+   },
+   "random_entry_null": {
+    "rule": "donch4h_stop",
+    "instrument": "btcusd",
+    "mode": "day",
+    "n": 232,
+    "rule_mean_R": 0.3296,
+    "null_mean_R": 0.0778,
+    "null_p95_R": 0.2428,
+    "null_max_R": 0.4624,
+    "percentile": 99.0,
+    "draws": 200
+   },
+   "code_file": "lab/r2/tracks/autopsy/breadth/run_pairs.py (common.py run_rule; rule code unchanged in lab/tracks/trend/strategy.py)"
+  },
+  {
+   "rank": 9,
+   "id": 19,
+   "rule": "ocm4",
+   "instrument": "btcusd",
+   "change": "Frozen rule ocm4 (lab/r2/tracks/idx_us/strategy.py FINALISTS: n=4, stop 0.3 x ATR14 daily, size_min 1.0, size_win 20, exit 15:55), unchanged, on btcusd, on the New-York clock. Sessions: Monday-Friday New-York dates that are not NYSE full holidays and not 13:00 early closes, from 2014. O = mid open of the first M1 bar starting in [09:30, 09:32) New York; C = mid close of the last M1 bar starting before 09:34 (at most 10 minutes old); at least 3 of the 4 bars 09:30-09:33 must exist. move = C / O - 1; med = median of |move| over the previous 20 sessions (at least 10). If |move| >= med: buy if move > 0, sell if move < 0, at market at the open of the first M1 bar starting in [09:34, 09:39]. STOP fixed at 0.3 x ATR14 from the fill, ATR14 = simple mean of the true ranges of the last 14 COMPLETED daily bars (trading days ending 17:00 New York, mid prices, days with fewer than 600 M1 bars dropped). EXIT at market at the open of the first M1 bar at or after 15:55 New York (if none within 30 minutes, the last bar before). One trade a day at most. Broker rule: an order whose stop is closer than 3 spreads is not taken. Costs: FP model: spread 22.5 USD at 76,000 (2.96 bp) in the frame with Dukascopy's intraday shape, slippage 1.5 bp stop / 0.5 bp market per side, swap long 20 %/yr, short 2 %/yr (triple Friday), no commission; FP crypto hours 24/5 (no bar from Friday 23:55 to Monday 00:00 server time).",
+   "parameters": {
+    "rule": "ocm",
+    "n": 4,
+    "stop": "atr",
+    "k": 0.3,
+    "exit_min": 955,
+    "size_min": 1.0,
+    "size_win": 20,
+    "target_r": null,
+    "atr_n": 14,
+    "sides": "both"
+   },
+   "window": "trades entered 2018-02-01 .. 2021-12-31",
+   "fp": {
+    "n": 492,
+    "trades_per_year": 125.8,
+    "win_rate": 0.445,
+    "avg_win_R": 1.077,
+    "avg_loss_R": -0.693,
+    "expectancy_R": 0.0951,
+    "t_stat": 1.23,
+    "pf": 1.247,
+    "total_R": 46.8,
+    "max_dd_R": 21.8,
+    "long_n": 254,
+    "long_R": 30.7,
+    "short_n": 238,
+    "short_R": 16.1,
+    "avg_hold_h": 5.2,
+    "bps_per_trade": 4.88,
+    "by_year_R": {
+     "2018": 29.7,
+     "2019": 17.6,
+     "2020": 8.8,
+     "2021": -9.3
+    },
+    "exit_reasons": {
+     "time": 347,
+     "stop": 145
+    }
+   },
+   "stress_x1_5": {
+    "n": 492,
+    "pf": 1.213,
+    "expectancy_R": 0.0832,
+    "t_stat": 1.08,
+    "total_R": 40.9,
+    "by_year_R": {
+     "2018": 28.5,
+     "2019": 16.1,
+     "2020": 6.9,
+     "2021": -10.7
+    }
+   },
+   "gross": {
+    "n": 492,
+    "pf": 1.308,
+    "expectancy_R": 0.1156,
+    "bps_per_trade": 8.11
+   },
+   "earlier_in_sample_years": {
+    "n": 76,
+    "pf": 0.596,
+    "expectancy_R": -0.1978,
+    "t_stat": -1.84,
+    "total_R": -15.0,
+    "by_year_R": {
+     "2017": -11.2,
+     "2018": -3.8
+    }
+   },
+   "refused_by_3_spread_rule": 0,
+   "open_at_friday_1650_NY_hands_close": {
+    "share_pct": 0.0,
+    "n": 0,
+    "R_of_those": 0.0,
+    "R_of_the_others": 46.8
+   },
+   "top5pct_trades_share_of_total_R": 2.23,
+   "stop_distance_pct_of_price": {
+    "median": 1.692,
+    "p10": 1.014,
+    "p90": 3.211,
+    "median_2021": 2.094
+   },
+   "portfolio_before": {
+    "trades": 5207,
+    "total_R": 788.6,
+    "R_per_year": 201.4,
+    "weekly_sharpe_ann": 2.9,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -11.8,
+    "max_drawdown_R_weekly": 20.2
+   },
+   "portfolio_after": {
+    "trades": 5699,
+    "total_R": 835.4,
+    "R_per_year": 213.4,
+    "weekly_sharpe_ann": 2.78,
+    "win_weeks_pct": 58.5,
+    "worst_week_R": -12.9,
+    "max_drawdown_R_weekly": 24.4
+   },
+   "delta_weekly_sharpe": -0.12,
+   "extra_R_per_year": 12.0,
+   "weekly_correlation": {
+    "corr_sum10": 0.299,
+    "noise30:us100": 0.012,
+    "ocm4:us100": -0.014,
+    "brk72_24h_wd:btcusd": 0.282,
+    "brk72_24h_wd:ethusd": 0.184,
+    "nq_btc_follow:btcusd": -0.189,
+    "F1_brk_ridge_filter:btcusd": 0.482,
+    "F1_brk_ridge_filter:ethusd": 0.343,
+    "GOLD_FRI_PM:xauusd": -0.051,
+    "donch4h_stop:xauusd": 0.03,
+    "orb_asia_2d_buf10:xauusd": -0.088
+   },
+   "neighbours_same_rule_other_instruments": [
+    "ethusd: run here, n 466, PF 1.023, t 0.17, 3/4 years, stress PF 0.946 -> fail",
+    "us500: tried and failed (PF 1.098, t 1.16, years 7/8)",
+    "us30: run here, n 494, PF 1.13, t 1.07, 3/4 years, stress PF 1.102 -> fail",
+    "ger40: run here, n 486, PF 1.086, t 0.7, 3/4 years, stress PF 1.063 -> fail",
+    "jp225: run here, n 482, PF 0.925, t -0.69, 1/4 years, stress PF 0.857 -> fail",
+    "xauusd: run here, n 481, PF 0.984, t -0.15, 2/4 years, stress PF 0.953 -> fail",
+    "xagusd: run here, n 489, PF 0.846, t -1.48, 1/4 years, stress PF 0.726 -> fail",
+    "eurusd: run here, n 487, PF 0.862, t -1.37, 0/4 years, stress PF 0.81 -> fail",
+    "gbpusd: run here, n 495, PF 0.854, t -1.39, 0/4 years, stress PF 0.822 -> fail",
+    "usdjpy: run here, n 482, PF 1.016, t 0.14, 2/4 years, stress PF 0.959 -> fail",
+    "audusd: run here, n 490, PF 0.999, t -0.01, 2/4 years, stress PF 0.938 -> fail",
+    "usdcad: run here, n 494, PF 0.982, t -0.16, 3/4 years, stress PF 0.884 -> fail",
+    "usdchf: run here, n 478, PF 0.825, t -1.75, 1/4 years, stress PF 0.754 -> fail",
+    "nzdusd: run here, n 482, PF 0.751, t -2.57, 1/4 years, stress PF 0.68 -> fail",
+    "eurjpy: run here, n 485, PF 0.923, t -0.75, 2/4 years, stress PF 0.873 -> fail"
+   ],
+   "zero_edge_pass_probability": 0.058,
+   "truncation_test": {
+    "rule": "ocm4",
+    "instrument": "btcusd",
+    "tested": 40,
+    "identical": 40,
+    "missing": 0
+   },
+   "random_entry_null": {
+    "rule": "ocm4",
+    "instrument": "btcusd",
+    "mode": "day",
+    "n": 492,
+    "rule_mean_R": 0.0951,
+    "null_mean_R": 0.0006,
+    "null_p95_R": 0.1006,
+    "null_max_R": 0.2344,
+    "percentile": 93.0,
+    "draws": 200
+   },
+   "code_file": "lab/r2/tracks/autopsy/breadth/run_pairs.py (common.py run_rule; rule code unchanged in lab/r2/tracks/idx_us/strategy.py)"
+  }
+ ],
+ "portfolio_with_all_qualifiers": {
+  "trades": 8298,
+  "total_R": 1438.0,
+  "R_per_year": 367.3,
+  "weekly_sharpe_ann": 3.305,
+  "win_weeks_pct": 63.9,
+  "worst_week_R": -21.0,
+  "max_drawdown_R_weekly": 37.0
+ }
+}

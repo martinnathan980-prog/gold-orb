@@ -1,0 +1,1458 @@
+{
+ "noise30:us100|S": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 118,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 1339,
+    "entry_time": "2020-07-17 14:30:00+00:00",
+    "cut_last_real_bar": "2020-07-17 14:29:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1555,
+    "entry_time": "2021-08-10 17:00:00+00:00",
+    "cut_last_real_bar": "2021-08-10 16:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1461,
+    "entry_time": "2021-02-26 15:30:00+00:00",
+    "cut_last_real_bar": "2021-02-26 15:29:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1508,
+    "entry_time": "2021-05-12 16:00:00+00:00",
+    "cut_last_real_bar": "2021-05-12 15:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1304,
+    "entry_time": "2020-05-21 19:00:00+00:00",
+    "cut_last_real_bar": "2020-05-21 18:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1086,
+    "entry_time": "2019-04-23 14:00:00+00:00",
+    "cut_last_real_bar": "2019-04-23 13:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1590,
+    "entry_time": "2021-10-01 14:30:00+00:00",
+    "cut_last_real_bar": "2021-10-01 14:29:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 892,
+    "entry_time": "2018-04-24 14:30:00+00:00",
+    "cut_last_real_bar": "2018-04-24 14:29:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1026,
+    "entry_time": "2018-12-20 18:30:00+00:00",
+    "cut_last_real_bar": "2018-12-20 18:29:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1387,
+    "entry_time": "2020-10-06 19:30:00+00:00",
+    "cut_last_real_bar": "2020-10-06 19:29:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "S0.25",
+   "S0.5",
+   "S0.75"
+  ],
+  "passed": true
+ },
+ "ocm4:us100|S": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 74,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 616,
+    "entry_time": "2018-12-19 14:34:00+00:00",
+    "cut_last_real_bar": "2018-12-19 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 663,
+    "entry_time": "2019-05-13 13:34:00+00:00",
+    "cut_last_real_bar": "2019-05-13 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 699,
+    "entry_time": "2019-08-16 13:34:00+00:00",
+    "cut_last_real_bar": "2019-08-16 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 788,
+    "entry_time": "2020-05-01 13:34:00+00:00",
+    "cut_last_real_bar": "2020-05-01 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 579,
+    "entry_time": "2018-08-31 13:34:00+00:00",
+    "cut_last_real_bar": "2018-08-31 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 995,
+    "entry_time": "2021-12-27 14:34:00+00:00",
+    "cut_last_real_bar": "2021-12-27 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 987,
+    "entry_time": "2021-12-06 14:34:00+00:00",
+    "cut_last_real_bar": "2021-12-06 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 904,
+    "entry_time": "2021-04-14 13:34:00+00:00",
+    "cut_last_real_bar": "2021-04-14 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 692,
+    "entry_time": "2019-07-29 13:34:00+00:00",
+    "cut_last_real_bar": "2019-07-29 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 702,
+    "entry_time": "2019-08-26 13:34:00+00:00",
+    "cut_last_real_bar": "2019-08-26 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "S0.25",
+   "S0.5"
+  ],
+  "passed": true
+ },
+ "ocm4:us100|T": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 39,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 536,
+    "entry_time": "2018-04-27 13:34:00+00:00",
+    "cut_last_real_bar": "2018-04-27 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 518,
+    "entry_time": "2018-03-02 14:34:00+00:00",
+    "cut_last_real_bar": "2018-03-02 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 893,
+    "entry_time": "2021-03-08 14:34:00+00:00",
+    "cut_last_real_bar": "2021-03-08 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 716,
+    "entry_time": "2019-10-02 13:34:00+00:00",
+    "cut_last_real_bar": "2019-10-02 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 684,
+    "entry_time": "2019-07-10 13:34:00+00:00",
+    "cut_last_real_bar": "2019-07-10 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 730,
+    "entry_time": "2019-11-18 14:34:00+00:00",
+    "cut_last_real_bar": "2019-11-18 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 857,
+    "entry_time": "2020-12-01 14:34:00+00:00",
+    "cut_last_real_bar": "2020-12-01 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 867,
+    "entry_time": "2020-12-23 14:34:00+00:00",
+    "cut_last_real_bar": "2020-12-23 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 658,
+    "entry_time": "2019-04-30 13:34:00+00:00",
+    "cut_last_real_bar": "2019-04-30 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 520,
+    "entry_time": "2018-03-07 14:34:00+00:00",
+    "cut_last_real_bar": "2018-03-07 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "T1"
+  ],
+  "passed": true
+ },
+ "ocm4:us100|H": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 79,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 718,
+    "entry_time": "2019-10-10 13:34:00+00:00",
+    "cut_last_real_bar": "2019-10-10 19:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 979,
+    "entry_time": "2021-11-16 14:34:00+00:00",
+    "cut_last_real_bar": "2021-11-16 20:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 925,
+    "entry_time": "2021-06-10 13:34:00+00:00",
+    "cut_last_real_bar": "2021-06-10 19:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 922,
+    "entry_time": "2021-05-20 13:34:00+00:00",
+    "cut_last_real_bar": "2021-05-20 19:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 514,
+    "entry_time": "2018-02-13 14:34:00+00:00",
+    "cut_last_real_bar": "2018-02-13 20:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 552,
+    "entry_time": "2018-06-11 13:34:00+00:00",
+    "cut_last_real_bar": "2018-06-11 19:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 620,
+    "entry_time": "2018-12-27 14:34:00+00:00",
+    "cut_last_real_bar": "2018-12-27 20:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 852,
+    "entry_time": "2020-11-04 14:34:00+00:00",
+    "cut_last_real_bar": "2020-11-04 20:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 965,
+    "entry_time": "2021-10-01 13:34:00+00:00",
+    "cut_last_real_bar": "2021-10-01 19:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 753,
+    "entry_time": "2020-01-17 14:34:00+00:00",
+    "cut_last_real_bar": "2020-01-17 20:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "H1",
+   "H2"
+  ],
+  "passed": true
+ },
+ "ocm4:us100|B": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 40,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 605,
+    "entry_time": "2018-11-08 14:34:00+00:00",
+    "cut_last_real_bar": "2018-11-08 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 611,
+    "entry_time": "2018-11-30 14:34:00+00:00",
+    "cut_last_real_bar": "2018-11-30 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 653,
+    "entry_time": "2019-04-11 13:34:00+00:00",
+    "cut_last_real_bar": "2019-04-11 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 860,
+    "entry_time": "2020-12-08 14:34:00+00:00",
+    "cut_last_real_bar": "2020-12-08 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 531,
+    "entry_time": "2018-04-06 13:34:00+00:00",
+    "cut_last_real_bar": "2018-04-06 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 589,
+    "entry_time": "2018-09-26 13:34:00+00:00",
+    "cut_last_real_bar": "2018-09-26 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 907,
+    "entry_time": "2021-04-19 13:34:00+00:00",
+    "cut_last_real_bar": "2021-04-19 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 699,
+    "entry_time": "2019-08-16 13:34:00+00:00",
+    "cut_last_real_bar": "2019-08-16 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 736,
+    "entry_time": "2019-12-05 14:34:00+00:00",
+    "cut_last_real_bar": "2019-12-05 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 956,
+    "entry_time": "2021-09-08 13:34:00+00:00",
+    "cut_last_real_bar": "2021-09-08 13:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "B1.5"
+  ],
+  "passed": true
+ },
+ "brk72_24h_wd:btcusd|S": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 239,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 630,
+    "entry_time": "2018-03-29 05:00:00+00:00",
+    "cut_last_real_bar": "2018-03-29 04:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2799,
+    "entry_time": "2021-10-19 17:00:00+00:00",
+    "cut_last_real_bar": "2021-10-19 16:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 942,
+    "entry_time": "2018-10-10 06:00:00+00:00",
+    "cut_last_real_bar": "2018-10-10 05:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1871,
+    "entry_time": "2020-04-16 09:00:00+00:00",
+    "cut_last_real_bar": "2020-04-16 08:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1231,
+    "entry_time": "2019-04-22 15:00:00+00:00",
+    "cut_last_real_bar": "2019-04-22 14:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 583,
+    "entry_time": "2018-03-07 07:00:00+00:00",
+    "cut_last_real_bar": "2018-03-07 06:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2711,
+    "entry_time": "2021-09-07 15:00:00+00:00",
+    "cut_last_real_bar": "2021-09-07 14:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2731,
+    "entry_time": "2021-09-16 07:00:00+00:00",
+    "cut_last_real_bar": "2021-09-16 06:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2390,
+    "entry_time": "2021-03-05 01:00:00+00:00",
+    "cut_last_real_bar": "2021-03-05 00:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2580,
+    "entry_time": "2021-06-25 17:00:00+00:00",
+    "cut_last_real_bar": "2021-06-25 16:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "S0.25r",
+   "S0.25n",
+   "S0.5r",
+   "S0.5n",
+   "S0.75r",
+   "S0.75n"
+  ],
+  "passed": true
+ },
+ "F1_brk_ridge_filter:btcusd|S": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 80,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 525,
+    "entry_time": "2019-04-03 07:00:00+00:00",
+    "cut_last_real_bar": "2019-04-03 06:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 605,
+    "entry_time": "2019-07-08 08:00:00+00:00",
+    "cut_last_real_bar": "2019-07-08 07:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 428,
+    "entry_time": "2018-11-19 08:00:00+00:00",
+    "cut_last_real_bar": "2018-11-19 07:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1173,
+    "entry_time": "2021-10-01 08:00:00+00:00",
+    "cut_last_real_bar": "2021-10-01 07:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 474,
+    "entry_time": "2019-01-21 08:00:00+00:00",
+    "cut_last_real_bar": "2019-01-21 07:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1053,
+    "entry_time": "2021-04-12 07:00:00+00:00",
+    "cut_last_real_bar": "2021-04-12 06:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 963,
+    "entry_time": "2020-12-03 09:00:00+00:00",
+    "cut_last_real_bar": "2020-12-03 08:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 749,
+    "entry_time": "2020-03-05 08:00:00+00:00",
+    "cut_last_real_bar": "2020-03-05 07:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 997,
+    "entry_time": "2021-01-26 08:00:00+00:00",
+    "cut_last_real_bar": "2021-01-26 07:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 290,
+    "entry_time": "2018-05-01 07:00:00+00:00",
+    "cut_last_real_bar": "2018-05-01 06:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "S0.5r",
+   "S0.5n"
+  ],
+  "passed": true
+ },
+ "F1_brk_ridge_filter:btcusd|H": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 80,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 847,
+    "entry_time": "2020-07-08 12:00:00+00:00",
+    "cut_last_real_bar": "2020-07-08 19:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 328,
+    "entry_time": "2018-06-22 07:00:00+00:00",
+    "cut_last_real_bar": "2018-06-22 19:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 514,
+    "entry_time": "2019-03-25 13:00:00+00:00",
+    "cut_last_real_bar": "2019-03-25 19:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 341,
+    "entry_time": "2018-07-10 07:00:00+00:00",
+    "cut_last_real_bar": "2018-07-10 19:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1132,
+    "entry_time": "2021-08-04 13:00:00+00:00",
+    "cut_last_real_bar": "2021-08-04 19:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 674,
+    "entry_time": "2019-11-14 08:00:00+00:00",
+    "cut_last_real_bar": "2019-11-14 20:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 334,
+    "entry_time": "2018-06-29 07:00:00+00:00",
+    "cut_last_real_bar": "2018-06-29 19:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 963,
+    "entry_time": "2020-12-03 09:00:00+00:00",
+    "cut_last_real_bar": "2020-12-03 20:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1225,
+    "entry_time": "2021-12-09 15:00:00+00:00",
+    "cut_last_real_bar": "2021-12-09 20:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 394,
+    "entry_time": "2018-09-24 10:00:00+00:00",
+    "cut_last_real_bar": "2018-09-24 19:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "H1",
+   "H2"
+  ],
+  "passed": true
+ },
+ "nq_btc_follow:btcusd|S": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 113,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 892,
+    "entry_time": "2019-03-20 18:01:00+00:00",
+    "cut_last_real_bar": "2019-03-20 18:00:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2034,
+    "entry_time": "2021-02-23 16:03:00+00:00",
+    "cut_last_real_bar": "2021-02-23 16:02:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2323,
+    "entry_time": "2021-08-11 17:03:00+00:00",
+    "cut_last_real_bar": "2021-08-11 17:02:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2375,
+    "entry_time": "2021-09-13 13:56:00+00:00",
+    "cut_last_real_bar": "2021-09-13 13:55:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1560,
+    "entry_time": "2020-05-27 14:38:00+00:00",
+    "cut_last_real_bar": "2020-05-27 14:37:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 943,
+    "entry_time": "2019-05-02 13:31:00+00:00",
+    "cut_last_real_bar": "2019-05-02 13:30:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 886,
+    "entry_time": "2019-03-08 15:11:00+00:00",
+    "cut_last_real_bar": "2019-03-08 15:10:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1547,
+    "entry_time": "2020-04-23 16:45:00+00:00",
+    "cut_last_real_bar": "2020-04-23 16:44:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1855,
+    "entry_time": "2020-10-29 15:58:00+00:00",
+    "cut_last_real_bar": "2020-10-29 15:57:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2198,
+    "entry_time": "2021-05-13 13:31:00+00:00",
+    "cut_last_real_bar": "2021-05-13 13:30:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "S0.25r",
+   "S0.5r",
+   "S0.75r"
+  ],
+  "passed": true
+ },
+ "nq_btc_follow:btcusd|T": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 119,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 1156,
+    "entry_time": "2019-09-02 15:50:00+00:00",
+    "cut_last_real_bar": "2019-09-02 15:49:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 289,
+    "entry_time": "2018-02-02 17:00:00+00:00",
+    "cut_last_real_bar": "2018-02-02 16:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1342,
+    "entry_time": "2020-01-27 14:31:00+00:00",
+    "cut_last_real_bar": "2020-01-27 14:30:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2090,
+    "entry_time": "2021-02-26 18:48:00+00:00",
+    "cut_last_real_bar": "2021-02-26 18:47:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1946,
+    "entry_time": "2021-01-11 14:34:00+00:00",
+    "cut_last_real_bar": "2021-01-11 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1432,
+    "entry_time": "2020-02-26 18:27:00+00:00",
+    "cut_last_real_bar": "2020-02-26 18:26:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 865,
+    "entry_time": "2019-02-15 14:51:00+00:00",
+    "cut_last_real_bar": "2019-02-15 14:50:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2350,
+    "entry_time": "2021-08-20 13:33:00+00:00",
+    "cut_last_real_bar": "2021-08-20 13:32:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1334,
+    "entry_time": "2020-01-08 20:47:00+00:00",
+    "cut_last_real_bar": "2020-01-08 20:46:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2005,
+    "entry_time": "2021-02-01 14:34:00+00:00",
+    "cut_last_real_bar": "2021-02-01 14:33:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "T1",
+   "T2",
+   "T3"
+  ],
+  "passed": true
+ },
+ "brk72_24h_wd:ethusd|S": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 198,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 778,
+    "entry_time": "2019-05-28 22:00:00+00:00",
+    "cut_last_real_bar": "2019-05-28 21:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2161,
+    "entry_time": "2021-09-13 08:00:00+00:00",
+    "cut_last_real_bar": "2021-09-13 07:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 861,
+    "entry_time": "2019-08-02 07:00:00+00:00",
+    "cut_last_real_bar": "2019-08-02 06:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2065,
+    "entry_time": "2021-07-21 15:00:00+00:00",
+    "cut_last_real_bar": "2021-07-21 14:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 167,
+    "entry_time": "2018-04-04 15:00:00+00:00",
+    "cut_last_real_bar": "2018-04-04 14:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 469,
+    "entry_time": "2018-10-26 09:00:00+00:00",
+    "cut_last_real_bar": "2018-10-26 08:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1709,
+    "entry_time": "2021-01-04 04:00:00+00:00",
+    "cut_last_real_bar": "2021-01-04 03:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 455,
+    "entry_time": "2018-10-11 01:00:00+00:00",
+    "cut_last_real_bar": "2018-10-11 00:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1151,
+    "entry_time": "2020-01-28 23:00:00+00:00",
+    "cut_last_real_bar": "2020-01-28 22:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2051,
+    "entry_time": "2021-07-13 19:00:00+00:00",
+    "cut_last_real_bar": "2021-07-13 18:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "S0.25n",
+   "S0.5r",
+   "S0.5n",
+   "S0.75r",
+   "S0.75n"
+  ],
+  "passed": true
+ },
+ "brk72_24h_wd:ethusd|H": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 79,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 612,
+    "entry_time": "2019-01-28 00:00:00+00:00",
+    "cut_last_real_bar": "2019-01-28 23:58:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 283,
+    "entry_time": "2018-06-22 02:00:00+00:00",
+    "cut_last_real_bar": "2018-06-22 20:53:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 237,
+    "entry_time": "2018-05-11 07:00:00+00:00",
+    "cut_last_real_bar": "2018-05-11 20:53:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2174,
+    "entry_time": "2021-09-20 01:00:00+00:00",
+    "cut_last_real_bar": "2021-09-21 00:59:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 496,
+    "entry_time": "2018-11-14 10:00:00+00:00",
+    "cut_last_real_bar": "2018-11-15 09:59:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 587,
+    "entry_time": "2018-12-31 00:00:00+00:00",
+    "cut_last_real_bar": "2018-12-31 21:59:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 2269,
+    "entry_time": "2021-11-10 15:00:00+00:00",
+    "cut_last_real_bar": "2021-11-11 14:59:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 80,
+    "entry_time": "2018-02-26 15:00:00+00:00",
+    "cut_last_real_bar": "2018-02-27 14:59:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 545,
+    "entry_time": "2018-12-05 08:00:00+00:00",
+    "cut_last_real_bar": "2018-12-06 07:57:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 997,
+    "entry_time": "2019-11-01 16:00:00+00:00",
+    "cut_last_real_bar": "2019-11-01 20:53:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "H1",
+   "H2"
+  ],
+  "passed": true
+ },
+ "F1_brk_ridge_filter:ethusd|S": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 80,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 931,
+    "entry_time": "2021-09-30 07:00:00+00:00",
+    "cut_last_real_bar": "2021-09-30 06:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 875,
+    "entry_time": "2021-07-20 07:00:00+00:00",
+    "cut_last_real_bar": "2021-07-20 06:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 399,
+    "entry_time": "2019-09-02 07:00:00+00:00",
+    "cut_last_real_bar": "2019-09-02 06:58:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 498,
+    "entry_time": "2020-02-21 12:00:00+00:00",
+    "cut_last_real_bar": "2020-02-21 11:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 750,
+    "entry_time": "2021-02-05 14:00:00+00:00",
+    "cut_last_real_bar": "2021-02-05 13:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 17,
+    "entry_time": "2018-03-02 11:00:00+00:00",
+    "cut_last_real_bar": "2018-03-02 10:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 337,
+    "entry_time": "2019-05-24 07:00:00+00:00",
+    "cut_last_real_bar": "2019-05-24 06:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 386,
+    "entry_time": "2019-07-26 07:00:00+00:00",
+    "cut_last_real_bar": "2019-07-26 06:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 588,
+    "entry_time": "2020-06-24 07:00:00+00:00",
+    "cut_last_real_bar": "2020-06-24 06:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 277,
+    "entry_time": "2019-02-27 08:00:00+00:00",
+    "cut_last_real_bar": "2019-02-27 07:59:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "S0.75r",
+   "S0.75n"
+  ],
+  "passed": true
+ },
+ "F1_brk_ridge_filter:ethusd|H": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 80,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 449,
+    "entry_time": "2020-01-06 08:00:00+00:00",
+    "cut_last_real_bar": "2020-01-06 20:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 179,
+    "entry_time": "2018-09-13 07:00:00+00:00",
+    "cut_last_real_bar": "2018-09-13 19:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 77,
+    "entry_time": "2018-05-03 07:00:00+00:00",
+    "cut_last_real_bar": "2018-05-03 19:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 691,
+    "entry_time": "2020-11-17 08:00:00+00:00",
+    "cut_last_real_bar": "2020-11-17 20:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 258,
+    "entry_time": "2019-01-10 08:00:00+00:00",
+    "cut_last_real_bar": "2019-01-10 20:54:00+00:00",
+    "found": true,
+    "decision_full": true,
+    "decision_cut": true,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 570,
+    "entry_time": "2020-05-27 11:00:00+00:00",
+    "cut_last_real_bar": "2020-05-27 19:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 331,
+    "entry_time": "2019-05-16 16:00:00+00:00",
+    "cut_last_real_bar": "2019-05-16 19:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 628,
+    "entry_time": "2020-08-20 15:00:00+00:00",
+    "cut_last_real_bar": "2020-08-20 19:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 443,
+    "entry_time": "2019-12-26 08:00:00+00:00",
+    "cut_last_real_bar": "2019-12-26 20:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 384,
+    "entry_time": "2019-07-24 07:00:00+00:00",
+    "cut_last_real_bar": "2019-07-24 19:54:00+00:00",
+    "found": true,
+    "decision_full": false,
+    "decision_cut": false,
+    "ext_times_equal": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "H1",
+   "H2"
+  ],
+  "passed": true
+ },
+ "donch4h_stop:xauusd|S": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 38,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 1022,
+    "entry_time": "2018-05-16 08:00:00+00:00",
+    "cut_last_real_bar": "2018-05-16 11:32:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1522,
+    "entry_time": "2021-04-08 04:00:00+00:00",
+    "cut_last_real_bar": "2021-04-08 07:36:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1568,
+    "entry_time": "2021-06-29 12:00:00+00:00",
+    "cut_last_real_bar": "2021-06-29 12:43:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1525,
+    "entry_time": "2021-04-15 12:00:00+00:00",
+    "cut_last_real_bar": "2021-04-15 14:08:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1310,
+    "entry_time": "2020-01-02 12:00:00+00:00",
+    "cut_last_real_bar": "2020-01-02 13:21:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1253,
+    "entry_time": "2019-08-06 20:00:00+00:00",
+    "cut_last_real_bar": "2019-08-06 22:08:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1549,
+    "entry_time": "2021-05-19 12:00:00+00:00",
+    "cut_last_real_bar": "2021-05-19 13:00:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1532,
+    "entry_time": "2021-04-29 12:00:00+00:00",
+    "cut_last_real_bar": "2021-04-29 13:52:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1334,
+    "entry_time": "2020-02-19 20:00:00+00:00",
+    "cut_last_real_bar": "2020-02-19 20:49:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1052,
+    "entry_time": "2018-07-17 12:00:00+00:00",
+    "cut_last_real_bar": "2018-07-17 13:07:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "S0.75r"
+  ],
+  "passed": true
+ },
+ "orb_asia_2d_buf10:xauusd|S": {
+  "decision_tests": 10,
+  "decision_mismatches": 0,
+  "path_tests": 120,
+  "path_mismatches": 0,
+  "details": [
+   {
+    "oid": 1553,
+    "entry_time": "2020-08-28 06:47:00+00:00",
+    "cut_last_real_bar": "2020-08-28 06:47:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1229,
+    "entry_time": "2019-01-24 07:06:00+00:00",
+    "cut_last_real_bar": "2019-01-24 07:06:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1413,
+    "entry_time": "2019-12-16 07:30:00+00:00",
+    "cut_last_real_bar": "2019-12-16 07:30:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1749,
+    "entry_time": "2021-08-16 06:07:00+00:00",
+    "cut_last_real_bar": "2021-08-16 06:07:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1539,
+    "entry_time": "2020-07-31 06:13:00+00:00",
+    "cut_last_real_bar": "2020-07-31 06:13:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1547,
+    "entry_time": "2020-08-18 06:27:00+00:00",
+    "cut_last_real_bar": "2020-08-18 06:27:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1592,
+    "entry_time": "2020-11-05 07:23:00+00:00",
+    "cut_last_real_bar": "2020-11-05 07:23:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1325,
+    "entry_time": "2019-07-12 07:20:00+00:00",
+    "cut_last_real_bar": "2019-07-12 07:20:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1625,
+    "entry_time": "2021-01-12 09:53:00+00:00",
+    "cut_last_real_bar": "2021-01-12 09:53:00+00:00",
+    "found": true,
+    "decision_identical": true
+   },
+   {
+    "oid": 1506,
+    "entry_time": "2020-06-03 08:02:00+00:00",
+    "cut_last_real_bar": "2020-06-03 08:02:00+00:00",
+    "found": true,
+    "decision_identical": true
+   }
+  ],
+  "variants": [
+   "S0.25n",
+   "S0.75r",
+   "S0.75n"
+  ],
+  "passed": true
+ }
+}

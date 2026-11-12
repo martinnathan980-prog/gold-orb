@@ -1,0 +1,68 @@
+{
+ "fp": {
+  "n_whole": 7965,
+  "sum_R_whole": 1276.74,
+  "uncapped_whole_total": 1276.74,
+  "uncapped_common": {
+   "n_taken": 5207,
+   "total_R": 790.981,
+   "worst_day": -7.705,
+   "worst_week": -12.541,
+   "max_dd": 29.14
+  },
+  "capped_common": {
+   "n_taken": 4878,
+   "total_R": 795.672,
+   "worst_day": -7.009,
+   "worst_week": -12.541,
+   "max_dd": 29.792
+  },
+  "capped_skips_whole": 398,
+  "capped_skips_common": 329,
+  "broker_refusals": 0,
+  "account_py_common": {
+   "n_taken": 4878,
+   "position_cap_skips": 329,
+   "min_lot_skips": 0,
+   "margin_skips": 0
+  },
+  "engine_on_same_frame": {
+   "n_taken": 4878,
+   "position_cap_skips": 329
+  },
+  "engine_equals_account_py": true
+ },
+ "stress": {
+  "n_whole": 7964,
+  "sum_R_whole": 1154.219,
+  "uncapped_whole_total": 1154.219,
+  "uncapped_common": {
+   "n_taken": 5209,
+   "total_R": 713.4,
+   "worst_day": -7.765,
+   "worst_week": -12.66,
+   "max_dd": 30.781
+  },
+  "capped_common": {
+   "n_taken": 4881,
+   "total_R": 721.407,
+   "worst_day": -7.109,
+   "worst_week": -12.66,
+   "max_dd": 31.309
+  },
+  "capped_skips_whole": 396,
+  "capped_skips_common": 328,
+  "broker_refusals": 0,
+  "account_py_common": {
+   "n_taken": 4881,
+   "position_cap_skips": 328,
+   "min_lot_skips": 0,
+   "margin_skips": 0
+  },
+  "engine_on_same_frame": {
+   "n_taken": 4881,
+   "position_cap_skips": 328
+  },
+  "engine_equals_account_py": true
+ }
+}

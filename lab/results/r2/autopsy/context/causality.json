@@ -1,0 +1,102 @@
+{
+ "ocm4__us100": {
+  "n_tested": 40,
+  "n_random": 40,
+  "n_skipped_by_candidates": 0,
+  "mismatch_values": 0,
+  "mismatch_decisions": 0,
+  "max_abs_diff": 0.0,
+  "examples": [],
+  "pass": true
+ },
+ "noise30__us100": {
+  "n_tested": 40,
+  "n_random": 40,
+  "n_skipped_by_candidates": 0,
+  "mismatch_values": 0,
+  "mismatch_decisions": 0,
+  "max_abs_diff": 0.0,
+  "examples": [],
+  "pass": true
+ },
+ "donch4h_stop__xauusd": {
+  "n_tested": 40,
+  "n_random": 40,
+  "n_skipped_by_candidates": 0,
+  "mismatch_values": 0,
+  "mismatch_decisions": 0,
+  "max_abs_diff": 0.0,
+  "examples": [],
+  "pass": true
+ },
+ "orb_asia_2d_buf10__xauusd": {
+  "n_tested": 40,
+  "n_random": 40,
+  "n_skipped_by_candidates": 0,
+  "mismatch_values": 0,
+  "mismatch_decisions": 0,
+  "max_abs_diff": 0.0,
+  "examples": [],
+  "pass": true
+ },
+ "GOLD_FRI_PM__xauusd": {
+  "n_tested": 40,
+  "n_random": 40,
+  "n_skipped_by_candidates": 0,
+  "mismatch_values": 0,
+  "mismatch_decisions": 0,
+  "max_abs_diff": 0.0,
+  "examples": [],
+  "pass": true
+ },
+ "brk72_24h_wd__btcusd": {
+  "n_tested": 40,
+  "n_random": 40,
+  "n_skipped_by_candidates": 0,
+  "mismatch_values": 0,
+  "mismatch_decisions": 0,
+  "max_abs_diff": 0.0,
+  "examples": [],
+  "pass": true
+ },
+ "F1_brk_ridge_filter__btcusd": {
+  "n_tested": 40,
+  "n_random": 40,
+  "n_skipped_by_candidates": 0,
+  "mismatch_values": 0,
+  "mismatch_decisions": 0,
+  "max_abs_diff": 0.0,
+  "examples": [],
+  "pass": true
+ },
+ "nq_btc_follow__btcusd": {
+  "n_tested": 40,
+  "n_random": 40,
+  "n_skipped_by_candidates": 0,
+  "mismatch_values": 0,
+  "mismatch_decisions": 0,
+  "max_abs_diff": 0.0,
+  "examples": [],
+  "pass": true
+ },
+ "brk72_24h_wd__ethusd": {
+  "n_tested": 100,
+  "n_random": 40,
+  "n_skipped_by_candidates": 60,
+  "mismatch_values": 0,
+  "mismatch_decisions": 0,
+  "max_abs_diff": 0.0,
+  "examples": [],
+  "pass": true
+ },
+ "F1_brk_ridge_filter__ethusd": {
+  "n_tested": 40,
+  "n_random": 40,
+  "n_skipped_by_candidates": 0,
+  "mismatch_values": 0,
+  "mismatch_decisions": 0,
+  "max_abs_diff": 0.0,
+  "examples": [],
+  "pass": true
+ }
+}

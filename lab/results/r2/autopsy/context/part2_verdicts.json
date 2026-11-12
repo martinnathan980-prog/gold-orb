@@ -1,0 +1,1011 @@
+{
+ "verdicts_declared": {
+  "ocm4__us100": {
+   "al1_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al20_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al5_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "prev_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "rel_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "ridge_a1": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 2,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "room_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "sprR_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "trig_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "vol_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   }
+  },
+  "noise30__us100": {
+   "al1_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al20_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al5_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "hour_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 2,
+    "d": true,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "prev_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "rel_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "ridge_a1": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "room_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "sprR_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "trig_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "vol_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   }
+  },
+  "donch4h_stop__xauusd": {
+   "al1_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al20_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al5_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "hour_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "prev_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "rel_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "ridge_a1": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "room_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "sprR_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "trig_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "vol_q0.333": {
+    "a": true,
+    "b": true,
+    "c": false,
+    "c_years_up": 2,
+    "d": true,
+    "e": false,
+    "candidate_before_f": false
+   }
+  },
+  "orb_asia_2d_buf10__xauusd": {
+   "al1_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al20_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al5_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "hour_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "prev_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "rel_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "ridge_a1": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 2,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "room_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "sprR_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "trig_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "vol_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   }
+  },
+  "GOLD_FRI_PM__xauusd": {
+   "al1_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al20_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al5_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "hour_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "prev_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "rel_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "ridge_a1": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "room_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "sprR_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "trig_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "vol_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": true,
+    "e": false,
+    "candidate_before_f": false
+   }
+  },
+  "brk72_24h_wd__btcusd": {
+   "al1_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al20_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al5_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "hour_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "prev_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "rel_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "ridge_a1": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 2,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "room_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "sprR_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "trig_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "vol_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   }
+  },
+  "brk72_24h_wd__ethusd": {
+   "al1_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al20_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al5_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "hour_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "prev_q0.333": {
+    "a": true,
+    "b": true,
+    "c": false,
+    "c_years_up": 2,
+    "d": true,
+    "e": true,
+    "candidate_before_f": false
+   },
+   "rel_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "ridge_a1": {
+    "a": false,
+    "b": true,
+    "c": true,
+    "c_years_up": 3,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "room_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "sprR_q0.333": {
+    "a": true,
+    "b": true,
+    "c": true,
+    "c_years_up": 3,
+    "d": true,
+    "e": true,
+    "candidate_before_f": true
+   },
+   "trig_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "vol_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   }
+  },
+  "F1_brk_ridge_filter__btcusd": {
+   "al1_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al20_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al5_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "hour_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "prev_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "rel_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "ridge_a1": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "room_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "sprR_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "trig_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "vol_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   }
+  },
+  "F1_brk_ridge_filter__ethusd": {
+   "al1_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al20_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al5_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "hour_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 2,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "prev_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "rel_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "ridge_a1": {
+    "a": true,
+    "b": true,
+    "c": true,
+    "c_years_up": 3,
+    "d": false,
+    "e": true,
+    "candidate_before_f": false
+   },
+   "room_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "sprR_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "trig_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "vol_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   }
+  },
+  "nq_btc_follow__btcusd": {
+   "al1_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al20_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "al5_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "hour_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "prev_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "rel_q0.333": {
+    "a": false,
+    "b": true,
+    "c": false,
+    "c_years_up": 2,
+    "d": false,
+    "e": true,
+    "candidate_before_f": false
+   },
+   "ridge_a1": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "room_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 0,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "sprR_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "trig_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 1,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   },
+   "vol_q0.333": {
+    "a": false,
+    "b": false,
+    "c": false,
+    "c_years_up": 2,
+    "d": false,
+    "e": false,
+    "candidate_before_f": false
+   }
+  }
+ },
+ "candidates_before_causality": {
+  "brk72_24h_wd__ethusd": [
+   "sprR_q0.333"
+  ]
+ },
+ "trials": 327
+}

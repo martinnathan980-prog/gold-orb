@@ -1,0 +1,2531 @@
+{
+ "test1": {
+  "noise30:us100": {
+   "5m": {
+    "orders_tested": 1643,
+    "identical": 1643,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 12.1
+   },
+   "15m": {
+    "orders_tested": 1643,
+    "identical": 1643,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 11.8
+   },
+   "10%": {
+    "orders_tested": 1643,
+    "identical": 1643,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 11.4
+   },
+   "60m": {
+    "orders_tested": 1643,
+    "identical": 1643,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 11.1
+   },
+   "120m": {
+    "orders_tested": 1643,
+    "identical": 1643,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 11.3
+   }
+  },
+  "ocm4:us100": {
+   "5m": {
+    "orders_tested": 999,
+    "identical": 999,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 7.1
+   },
+   "15m": {
+    "orders_tested": 999,
+    "identical": 999,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 7.2
+   },
+   "30m": {
+    "orders_tested": 999,
+    "identical": 999,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 7.7
+   },
+   "120m": {
+    "orders_tested": 999,
+    "identical": 999,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 6.9
+   },
+   "50%": {
+    "orders_tested": 999,
+    "identical": 999,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 7.1
+   }
+  },
+  "brk72_24h_wd:btcusd": {
+   "10%": {
+    "orders_tested": 2914,
+    "identical": 2914,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 23.5
+   },
+   "25%": {
+    "orders_tested": 2914,
+    "identical": 2914,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 22.8
+   },
+   "50%": {
+    "orders_tested": 2914,
+    "identical": 2914,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 23.8
+   }
+  },
+  "nq_btc_follow:btcusd": {
+   "5m": {
+    "orders_tested": 2611,
+    "identical": 2611,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 22.4
+   },
+   "15m": {
+    "orders_tested": 2611,
+    "identical": 2611,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 23.0
+   },
+   "30m": {
+    "orders_tested": 2611,
+    "identical": 2611,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 22.5
+   }
+  },
+  "F1_brk_ridge_filter:btcusd": {
+   "10%": {
+    "orders_tested": 1235,
+    "identical": 1235,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 10.3
+   },
+   "25%": {
+    "orders_tested": 1235,
+    "identical": 1235,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 10.5
+   },
+   "50%": {
+    "orders_tested": 1235,
+    "identical": 1235,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 10.4
+   }
+  },
+  "brk72_24h_wd:ethusd": {
+   "10%": {
+    "orders_tested": 2355,
+    "identical": 2355,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 19.0
+   },
+   "25%": {
+    "orders_tested": 2355,
+    "identical": 2355,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 19.5
+   },
+   "50%": {
+    "orders_tested": 2355,
+    "identical": 2355,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 18.5
+   }
+  },
+  "F1_brk_ridge_filter:ethusd": {
+   "10%": {
+    "orders_tested": 995,
+    "identical": 995,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 8.2
+   },
+   "25%": {
+    "orders_tested": 995,
+    "identical": 995,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 8.0
+   },
+   "50%": {
+    "orders_tested": 995,
+    "identical": 995,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 8.1
+   }
+  },
+  "GOLD_FRI_PM:xauusd": {
+   "30m": {
+    "orders_tested": 414,
+    "identical": 414,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 3.3
+   },
+   "60m": {
+    "orders_tested": 414,
+    "identical": 414,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 3.3
+   },
+   "120m": {
+    "orders_tested": 414,
+    "identical": 414,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 3.3
+   },
+   "10%": {
+    "orders_tested": 414,
+    "identical": 414,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 3.3
+   }
+  },
+  "donch4h_stop:xauusd": {
+   "30m": {
+    "orders_tested": 1654,
+    "identical": 1654,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 12.8
+   },
+   "60m": {
+    "orders_tested": 1654,
+    "identical": 1654,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 13.1
+   },
+   "120m": {
+    "orders_tested": 1653,
+    "identical": 1653,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 13.1
+   },
+   "10%": {
+    "orders_tested": 1654,
+    "identical": 1654,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 13.0
+   },
+   "25%": {
+    "orders_tested": 1654,
+    "identical": 1654,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 13.0
+   }
+  },
+  "orb_asia_2d_buf10:xauusd": {
+   "60m": {
+    "orders_tested": 1829,
+    "identical": 1829,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 12.9
+   },
+   "120m": {
+    "orders_tested": 1829,
+    "identical": 1829,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 13.4
+   },
+   "10%": {
+    "orders_tested": 1829,
+    "identical": 1829,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 12.9
+   },
+   "25%": {
+    "orders_tested": 1829,
+    "identical": 1829,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 13.4
+   },
+   "50%": {
+    "orders_tested": 1829,
+    "identical": 1829,
+    "mismatches": 0,
+    "examples": [],
+    "seconds": 13.2
+   }
+  }
+ },
+ "test2": {
+  "ocm4:us100|NP|t=50%|y=0.5": {
+   "variant": "ocm4:us100|NP|t=50%|y=0.5",
+   "trades_tested": 80,
+   "identical": 80,
+   "fired_tested": 40,
+   "not_fired_tested": 40,
+   "rows": [
+    {
+     "order_row": 817,
+     "entry_time": "2020-08-03 13:34:00+00:00",
+     "decision_bar_time": "2020-08-03 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 534,
+     "entry_time": "2018-04-11 13:34:00+00:00",
+     "decision_bar_time": "2018-04-11 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 566,
+     "entry_time": "2018-07-19 13:34:00+00:00",
+     "decision_bar_time": "2018-07-19 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 975,
+     "entry_time": "2021-11-03 13:34:00+00:00",
+     "decision_bar_time": "2021-11-03 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 799,
+     "entry_time": "2020-06-18 13:34:00+00:00",
+     "decision_bar_time": "2020-06-18 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 805,
+     "entry_time": "2020-07-02 13:34:00+00:00",
+     "decision_bar_time": "2020-07-02 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 605,
+     "entry_time": "2018-11-08 14:34:00+00:00",
+     "decision_bar_time": "2018-11-08 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 542,
+     "entry_time": "2018-05-15 13:34:00+00:00",
+     "decision_bar_time": "2018-05-15 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 989,
+     "entry_time": "2021-12-08 14:34:00+00:00",
+     "decision_bar_time": "2021-12-08 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 675,
+     "entry_time": "2019-06-12 13:34:00+00:00",
+     "decision_bar_time": "2019-06-12 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 974,
+     "entry_time": "2021-11-01 13:34:00+00:00",
+     "decision_bar_time": "2021-11-01 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 798,
+     "entry_time": "2020-06-16 13:34:00+00:00",
+     "decision_bar_time": "2020-06-16 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 883,
+     "entry_time": "2021-02-08 14:34:00+00:00",
+     "decision_bar_time": "2021-02-08 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 670,
+     "entry_time": "2019-05-28 13:34:00+00:00",
+     "decision_bar_time": "2019-05-28 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 645,
+     "entry_time": "2019-03-19 13:34:00+00:00",
+     "decision_bar_time": "2019-03-19 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 729,
+     "entry_time": "2019-11-15 14:34:00+00:00",
+     "decision_bar_time": "2019-11-15 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 854,
+     "entry_time": "2020-11-06 14:34:00+00:00",
+     "decision_bar_time": "2020-11-06 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 958,
+     "entry_time": "2021-09-15 13:34:00+00:00",
+     "decision_bar_time": "2021-09-15 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 611,
+     "entry_time": "2018-11-30 14:34:00+00:00",
+     "decision_bar_time": "2018-11-30 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 846,
+     "entry_time": "2020-10-23 13:34:00+00:00",
+     "decision_bar_time": "2020-10-23 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 978,
+     "entry_time": "2021-11-11 14:34:00+00:00",
+     "decision_bar_time": "2021-11-11 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 517,
+     "entry_time": "2018-02-22 14:34:00+00:00",
+     "decision_bar_time": "2018-02-22 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 678,
+     "entry_time": "2019-06-26 13:34:00+00:00",
+     "decision_bar_time": "2019-06-26 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 953,
+     "entry_time": "2021-08-31 13:34:00+00:00",
+     "decision_bar_time": "2021-08-31 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 942,
+     "entry_time": "2021-07-22 13:34:00+00:00",
+     "decision_bar_time": "2021-07-22 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 897,
+     "entry_time": "2021-03-15 13:34:00+00:00",
+     "decision_bar_time": "2021-03-15 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 686,
+     "entry_time": "2019-07-15 13:34:00+00:00",
+     "decision_bar_time": "2019-07-15 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 860,
+     "entry_time": "2020-12-08 14:34:00+00:00",
+     "decision_bar_time": "2020-12-08 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 540,
+     "entry_time": "2018-05-08 13:34:00+00:00",
+     "decision_bar_time": "2018-05-08 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 774,
+     "entry_time": "2020-03-18 13:34:00+00:00",
+     "decision_bar_time": "2020-03-18 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 538,
+     "entry_time": "2018-05-02 13:34:00+00:00",
+     "decision_bar_time": "2018-05-02 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 882,
+     "entry_time": "2021-02-03 14:34:00+00:00",
+     "decision_bar_time": "2021-02-03 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 558,
+     "entry_time": "2018-06-29 13:34:00+00:00",
+     "decision_bar_time": "2018-06-29 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 818,
+     "entry_time": "2020-08-05 13:34:00+00:00",
+     "decision_bar_time": "2020-08-05 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 752,
+     "entry_time": "2020-01-16 14:34:00+00:00",
+     "decision_bar_time": "2020-01-16 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 765,
+     "entry_time": "2020-02-18 14:34:00+00:00",
+     "decision_bar_time": "2020-02-18 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 750,
+     "entry_time": "2020-01-10 14:34:00+00:00",
+     "decision_bar_time": "2020-01-10 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 730,
+     "entry_time": "2019-11-18 14:34:00+00:00",
+     "decision_bar_time": "2019-11-18 17:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 906,
+     "entry_time": "2021-04-16 13:34:00+00:00",
+     "decision_bar_time": "2021-04-16 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 522,
+     "entry_time": "2018-03-15 13:34:00+00:00",
+     "decision_bar_time": "2018-03-15 16:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 889,
+     "entry_time": "2021-03-02 14:34:00+00:00",
+     "decision_bar_time": "2021-03-02 17:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 676,
+     "entry_time": "2019-06-20 13:34:00+00:00",
+     "decision_bar_time": "2019-06-20 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 837,
+     "entry_time": "2020-09-30 13:34:00+00:00",
+     "decision_bar_time": "2020-09-30 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 642,
+     "entry_time": "2019-03-11 13:34:00+00:00",
+     "decision_bar_time": "2019-03-11 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 706,
+     "entry_time": "2019-09-05 13:34:00+00:00",
+     "decision_bar_time": "2019-09-05 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 714,
+     "entry_time": "2019-09-27 13:34:00+00:00",
+     "decision_bar_time": "2019-09-27 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 665,
+     "entry_time": "2019-05-16 13:34:00+00:00",
+     "decision_bar_time": "2019-05-16 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 734,
+     "entry_time": "2019-12-02 14:34:00+00:00",
+     "decision_bar_time": "2019-12-02 17:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 594,
+     "entry_time": "2018-10-10 13:34:00+00:00",
+     "decision_bar_time": "2018-10-10 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 784,
+     "entry_time": "2020-04-20 13:34:00+00:00",
+     "decision_bar_time": "2020-04-20 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 737,
+     "entry_time": "2019-12-06 14:34:00+00:00",
+     "decision_bar_time": "2019-12-06 17:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 821,
+     "entry_time": "2020-08-12 13:34:00+00:00",
+     "decision_bar_time": "2020-08-12 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 596,
+     "entry_time": "2018-10-12 13:34:00+00:00",
+     "decision_bar_time": "2018-10-12 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 535,
+     "entry_time": "2018-04-20 13:34:00+00:00",
+     "decision_bar_time": "2018-04-20 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 894,
+     "entry_time": "2021-03-10 14:34:00+00:00",
+     "decision_bar_time": "2021-03-10 17:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 966,
+     "entry_time": "2021-10-04 13:34:00+00:00",
+     "decision_bar_time": "2021-10-04 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 955,
+     "entry_time": "2021-09-03 13:34:00+00:00",
+     "decision_bar_time": "2021-09-03 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 576,
+     "entry_time": "2018-08-22 13:34:00+00:00",
+     "decision_bar_time": "2018-08-22 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 928,
+     "entry_time": "2021-06-17 13:34:00+00:00",
+     "decision_bar_time": "2021-06-17 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 508,
+     "entry_time": "2018-02-05 14:34:00+00:00",
+     "decision_bar_time": "2018-02-05 17:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 780,
+     "entry_time": "2020-04-02 13:34:00+00:00",
+     "decision_bar_time": "2020-04-02 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 960,
+     "entry_time": "2021-09-17 13:34:00+00:00",
+     "decision_bar_time": "2021-09-17 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 948,
+     "entry_time": "2021-08-19 13:34:00+00:00",
+     "decision_bar_time": "2021-08-19 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 673,
+     "entry_time": "2019-06-05 13:34:00+00:00",
+     "decision_bar_time": "2019-06-05 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 612,
+     "entry_time": "2018-12-03 14:34:00+00:00",
+     "decision_bar_time": "2018-12-03 17:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 615,
+     "entry_time": "2018-12-11 14:34:00+00:00",
+     "decision_bar_time": "2018-12-11 17:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 733,
+     "entry_time": "2019-11-25 14:34:00+00:00",
+     "decision_bar_time": "2019-11-25 17:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 647,
+     "entry_time": "2019-03-21 13:34:00+00:00",
+     "decision_bar_time": "2019-03-21 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 568,
+     "entry_time": "2018-07-25 13:34:00+00:00",
+     "decision_bar_time": "2018-07-25 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 787,
+     "entry_time": "2020-04-30 13:34:00+00:00",
+     "decision_bar_time": "2020-04-30 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 779,
+     "entry_time": "2020-03-30 13:34:00+00:00",
+     "decision_bar_time": "2020-03-30 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 578,
+     "entry_time": "2018-08-24 13:34:00+00:00",
+     "decision_bar_time": "2018-08-24 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 718,
+     "entry_time": "2019-10-10 13:34:00+00:00",
+     "decision_bar_time": "2019-10-10 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 553,
+     "entry_time": "2018-06-14 13:34:00+00:00",
+     "decision_bar_time": "2018-06-14 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 872,
+     "entry_time": "2021-01-07 14:34:00+00:00",
+     "decision_bar_time": "2021-01-07 17:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 901,
+     "entry_time": "2021-03-22 13:34:00+00:00",
+     "decision_bar_time": "2021-03-22 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 921,
+     "entry_time": "2021-05-19 13:34:00+00:00",
+     "decision_bar_time": "2021-05-19 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 908,
+     "entry_time": "2021-04-23 13:34:00+00:00",
+     "decision_bar_time": "2021-04-23 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 863,
+     "entry_time": "2020-12-14 14:34:00+00:00",
+     "decision_bar_time": "2020-12-14 17:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 655,
+     "entry_time": "2019-04-25 13:34:00+00:00",
+     "decision_bar_time": "2019-04-25 16:44:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    }
+   ]
+  },
+  "brk72_24h_wd:ethusd|HC|t=25%": {
+   "variant": "brk72_24h_wd:ethusd|HC|t=25%",
+   "trades_tested": 80,
+   "identical": 80,
+   "fired_tested": 40,
+   "not_fired_tested": 40,
+   "rows": [
+    {
+     "order_row": 880,
+     "entry_time": "2019-08-09 11:00:00+00:00",
+     "decision_bar_time": "2019-08-09 13:28:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1793,
+     "entry_time": "2021-02-18 02:00:00+00:00",
+     "decision_bar_time": "2021-02-18 07:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1530,
+     "entry_time": "2020-09-17 19:00:00+00:00",
+     "decision_bar_time": "2020-09-18 00:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 584,
+     "entry_time": "2018-12-24 04:00:00+00:00",
+     "decision_bar_time": "2018-12-24 08:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 727,
+     "entry_time": "2019-04-26 00:00:00+00:00",
+     "decision_bar_time": "2019-04-26 05:13:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 796,
+     "entry_time": "2019-06-17 15:00:00+00:00",
+     "decision_bar_time": "2019-06-17 20:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 453,
+     "entry_time": "2018-10-08 22:00:00+00:00",
+     "decision_bar_time": "2018-10-09 04:00:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 728,
+     "entry_time": "2019-04-26 01:00:00+00:00",
+     "decision_bar_time": "2019-04-26 05:57:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1031,
+     "entry_time": "2019-11-19 19:02:00+00:00",
+     "decision_bar_time": "2019-11-20 01:01:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 45,
+     "entry_time": "2018-02-05 19:00:00+00:00",
+     "decision_bar_time": "2018-02-06 00:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 169,
+     "entry_time": "2018-04-05 02:00:00+00:00",
+     "decision_bar_time": "2018-04-05 07:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1817,
+     "entry_time": "2021-03-05 02:00:00+00:00",
+     "decision_bar_time": "2021-03-05 06:58:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 2013,
+     "entry_time": "2021-06-21 22:00:00+00:00",
+     "decision_bar_time": "2021-06-22 03:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1806,
+     "entry_time": "2021-02-22 18:00:00+00:00",
+     "decision_bar_time": "2021-02-22 23:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 357,
+     "entry_time": "2018-07-31 13:00:00+00:00",
+     "decision_bar_time": "2018-07-31 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 488,
+     "entry_time": "2018-11-09 10:00:00+00:00",
+     "decision_bar_time": "2018-11-09 12:18:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 587,
+     "entry_time": "2018-12-31 00:00:00+00:00",
+     "decision_bar_time": "2018-12-31 05:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1780,
+     "entry_time": "2021-02-05 16:00:00+00:00",
+     "decision_bar_time": "2021-02-05 17:28:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 2203,
+     "entry_time": "2021-10-05 10:00:00+00:00",
+     "decision_bar_time": "2021-10-05 15:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1009,
+     "entry_time": "2019-11-06 06:00:00+00:00",
+     "decision_bar_time": "2019-11-06 11:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 2180,
+     "entry_time": "2021-09-20 12:00:00+00:00",
+     "decision_bar_time": "2021-09-20 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 307,
+     "entry_time": "2018-06-29 12:00:00+00:00",
+     "decision_bar_time": "2018-06-29 14:13:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 2031,
+     "entry_time": "2021-06-30 22:00:00+00:00",
+     "decision_bar_time": "2021-07-01 03:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1301,
+     "entry_time": "2020-04-27 00:00:00+00:00",
+     "decision_bar_time": "2020-04-27 05:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 634,
+     "entry_time": "2019-02-11 00:00:00+00:00",
+     "decision_bar_time": "2019-02-11 05:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1959,
+     "entry_time": "2021-05-17 03:00:00+00:00",
+     "decision_bar_time": "2021-05-17 08:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 656,
+     "entry_time": "2019-03-06 12:00:00+00:00",
+     "decision_bar_time": "2019-03-06 17:55:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1051,
+     "entry_time": "2019-11-27 20:00:00+00:00",
+     "decision_bar_time": "2019-11-28 01:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 745,
+     "entry_time": "2019-05-13 17:00:00+00:00",
+     "decision_bar_time": "2019-05-13 22:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1757,
+     "entry_time": "2021-01-27 15:00:00+00:00",
+     "decision_bar_time": "2021-01-27 20:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1405,
+     "entry_time": "2020-07-06 16:00:00+00:00",
+     "decision_bar_time": "2020-07-06 21:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 272,
+     "entry_time": "2018-06-12 21:00:00+00:00",
+     "decision_bar_time": "2018-06-13 03:00:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 730,
+     "entry_time": "2019-04-26 20:00:00+00:00",
+     "decision_bar_time": "2019-04-26 20:13:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1666,
+     "entry_time": "2020-11-30 23:00:00+00:00",
+     "decision_bar_time": "2020-12-01 04:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 465,
+     "entry_time": "2018-10-18 22:00:00+00:00",
+     "decision_bar_time": "2018-10-19 03:29:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1681,
+     "entry_time": "2020-12-15 02:00:00+00:00",
+     "decision_bar_time": "2020-12-15 07:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1825,
+     "entry_time": "2021-03-09 02:00:00+00:00",
+     "decision_bar_time": "2021-03-09 07:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 1528,
+     "entry_time": "2020-09-14 16:00:00+00:00",
+     "decision_bar_time": "2020-09-14 21:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 538,
+     "entry_time": "2018-11-27 11:00:00+00:00",
+     "decision_bar_time": "2018-11-27 16:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 2226,
+     "entry_time": "2021-10-15 17:00:00+00:00",
+     "decision_bar_time": "2021-10-15 17:58:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 2164,
+     "entry_time": "2021-09-15 15:00:00+00:00",
+     "decision_bar_time": "2021-09-15 20:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1354,
+     "entry_time": "2020-06-01 02:00:00+00:00",
+     "decision_bar_time": "2020-06-01 08:00:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 643,
+     "entry_time": "2019-02-18 19:00:00+00:00",
+     "decision_bar_time": "2019-02-19 00:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 2244,
+     "entry_time": "2021-10-29 00:00:00+00:00",
+     "decision_bar_time": "2021-10-29 05:13:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 662,
+     "entry_time": "2019-03-11 09:00:00+00:00",
+     "decision_bar_time": "2019-03-11 14:58:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1449,
+     "entry_time": "2020-08-03 01:00:00+00:00",
+     "decision_bar_time": "2020-08-03 06:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 2272,
+     "entry_time": "2021-11-16 02:00:00+00:00",
+     "decision_bar_time": "2021-11-16 07:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 2216,
+     "entry_time": "2021-10-13 23:00:00+00:00",
+     "decision_bar_time": "2021-10-14 04:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1638,
+     "entry_time": "2020-11-20 09:00:00+00:00",
+     "decision_bar_time": "2020-11-20 12:13:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 456,
+     "entry_time": "2018-10-11 02:00:00+00:00",
+     "decision_bar_time": "2018-10-11 07:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1853,
+     "entry_time": "2021-03-31 20:00:00+00:00",
+     "decision_bar_time": "2021-04-01 01:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1151,
+     "entry_time": "2020-01-28 23:00:00+00:00",
+     "decision_bar_time": "2020-01-29 04:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 616,
+     "entry_time": "2019-01-28 06:00:00+00:00",
+     "decision_bar_time": "2019-01-28 11:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1502,
+     "entry_time": "2020-09-01 07:00:00+00:00",
+     "decision_bar_time": "2020-09-01 12:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1243,
+     "entry_time": "2020-03-12 23:00:00+00:00",
+     "decision_bar_time": "2020-03-13 04:28:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1452,
+     "entry_time": "2020-08-03 06:00:00+00:00",
+     "decision_bar_time": "2020-08-03 11:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 688,
+     "entry_time": "2019-04-02 05:00:00+00:00",
+     "decision_bar_time": "2019-04-02 10:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 2231,
+     "entry_time": "2021-10-20 15:00:00+00:00",
+     "decision_bar_time": "2021-10-20 20:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1412,
+     "entry_time": "2020-07-08 14:00:00+00:00",
+     "decision_bar_time": "2020-07-08 19:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 208,
+     "entry_time": "2018-04-20 19:00:00+00:00",
+     "decision_bar_time": "2018-04-20 19:28:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1725,
+     "entry_time": "2021-01-11 06:00:00+00:00",
+     "decision_bar_time": "2021-01-11 11:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1192,
+     "entry_time": "2020-02-12 07:00:00+00:00",
+     "decision_bar_time": "2020-02-12 12:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 613,
+     "entry_time": "2019-01-28 02:00:00+00:00",
+     "decision_bar_time": "2019-01-28 07:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 871,
+     "entry_time": "2019-08-08 14:00:00+00:00",
+     "decision_bar_time": "2019-08-08 19:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1902,
+     "entry_time": "2021-04-22 06:00:00+00:00",
+     "decision_bar_time": "2021-04-22 11:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1511,
+     "entry_time": "2020-09-03 16:00:00+00:00",
+     "decision_bar_time": "2020-09-03 21:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 2234,
+     "entry_time": "2021-10-20 23:00:00+00:00",
+     "decision_bar_time": "2021-10-21 04:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1717,
+     "entry_time": "2021-01-06 18:00:00+00:00",
+     "decision_bar_time": "2021-01-06 23:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1236,
+     "entry_time": "2020-03-12 07:00:00+00:00",
+     "decision_bar_time": "2020-03-12 12:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 637,
+     "entry_time": "2019-02-18 03:00:00+00:00",
+     "decision_bar_time": "2019-02-18 08:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1571,
+     "entry_time": "2020-10-09 14:00:00+00:00",
+     "decision_bar_time": "2020-10-09 15:43:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1131,
+     "entry_time": "2020-01-14 19:00:00+00:00",
+     "decision_bar_time": "2020-01-15 00:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1924,
+     "entry_time": "2021-05-03 02:00:00+00:00",
+     "decision_bar_time": "2021-05-03 07:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1434,
+     "entry_time": "2020-07-24 19:00:00+00:00",
+     "decision_bar_time": "2020-07-24 19:28:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1064,
+     "entry_time": "2019-12-04 01:00:00+00:00",
+     "decision_bar_time": "2019-12-04 06:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 1346,
+     "entry_time": "2020-05-28 13:00:00+00:00",
+     "decision_bar_time": "2020-05-28 18:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 2062,
+     "entry_time": "2021-07-20 02:00:00+00:00",
+     "decision_bar_time": "2021-07-20 07:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 43,
+     "entry_time": "2018-02-05 17:00:00+00:00",
+     "decision_bar_time": "2018-02-05 22:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 2253,
+     "entry_time": "2021-11-02 22:00:00+00:00",
+     "decision_bar_time": "2021-11-03 03:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 2133,
+     "entry_time": "2021-08-30 17:00:00+00:00",
+     "decision_bar_time": "2021-08-30 22:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    }
+   ]
+  },
+  "GOLD_FRI_PM:xauusd|NP|t=10%|y=0.25": {
+   "variant": "GOLD_FRI_PM:xauusd|NP|t=10%|y=0.25",
+   "trades_tested": 41,
+   "identical": 41,
+   "fired_tested": 40,
+   "not_fired_tested": 1,
+   "rows": [
+    {
+     "order_row": 323,
+     "entry_time": "2019-07-19 17:30:00+00:00",
+     "decision_bar_time": "2019-07-19 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 295,
+     "entry_time": "2018-12-28 18:30:00+00:00",
+     "decision_bar_time": "2018-12-28 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 354,
+     "entry_time": "2020-02-28 19:12:00+00:00",
+     "decision_bar_time": "2020-02-28 19:27:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 333,
+     "entry_time": "2019-09-27 17:54:00+00:00",
+     "decision_bar_time": "2019-09-27 18:11:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 425,
+     "entry_time": "2021-08-20 17:30:00+00:00",
+     "decision_bar_time": "2021-08-20 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 278,
+     "entry_time": "2018-08-24 17:30:00+00:00",
+     "decision_bar_time": "2018-08-24 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 396,
+     "entry_time": "2021-01-22 18:30:00+00:00",
+     "decision_bar_time": "2021-01-22 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 335,
+     "entry_time": "2019-10-11 17:30:00+00:00",
+     "decision_bar_time": "2019-10-11 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 404,
+     "entry_time": "2021-03-19 17:30:00+00:00",
+     "decision_bar_time": "2021-03-19 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 441,
+     "entry_time": "2021-12-17 18:31:00+00:00",
+     "decision_bar_time": "2021-12-17 18:50:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 269,
+     "entry_time": "2018-06-22 17:31:00+00:00",
+     "decision_bar_time": "2018-06-22 17:50:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 259,
+     "entry_time": "2018-04-13 17:30:00+00:00",
+     "decision_bar_time": "2018-04-13 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 291,
+     "entry_time": "2018-11-30 18:30:00+00:00",
+     "decision_bar_time": "2018-11-30 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 403,
+     "entry_time": "2021-03-12 18:30:00+00:00",
+     "decision_bar_time": "2021-03-12 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 371,
+     "entry_time": "2020-07-10 17:30:00+00:00",
+     "decision_bar_time": "2020-07-10 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 321,
+     "entry_time": "2019-07-05 17:30:00+00:00",
+     "decision_bar_time": "2019-07-05 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 362,
+     "entry_time": "2020-05-01 17:30:00+00:00",
+     "decision_bar_time": "2020-05-01 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 328,
+     "entry_time": "2019-08-23 17:30:00+00:00",
+     "decision_bar_time": "2019-08-23 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 383,
+     "entry_time": "2020-10-02 17:30:00+00:00",
+     "decision_bar_time": "2020-10-02 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 325,
+     "entry_time": "2019-08-02 17:30:00+00:00",
+     "decision_bar_time": "2019-08-02 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 380,
+     "entry_time": "2020-09-11 17:30:00+00:00",
+     "decision_bar_time": "2020-09-11 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 386,
+     "entry_time": "2020-10-23 17:30:00+00:00",
+     "decision_bar_time": "2020-10-23 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 389,
+     "entry_time": "2020-11-13 18:30:00+00:00",
+     "decision_bar_time": "2020-11-13 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 342,
+     "entry_time": "2019-12-06 18:30:00+00:00",
+     "decision_bar_time": "2019-12-06 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 401,
+     "entry_time": "2021-02-26 18:30:00+00:00",
+     "decision_bar_time": "2021-02-26 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 254,
+     "entry_time": "2018-03-02 18:30:00+00:00",
+     "decision_bar_time": "2018-03-02 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 406,
+     "entry_time": "2021-04-09 17:54:00+00:00",
+     "decision_bar_time": "2021-04-09 18:11:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 366,
+     "entry_time": "2020-05-29 17:30:00+00:00",
+     "decision_bar_time": "2020-05-29 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 405,
+     "entry_time": "2021-03-26 17:30:00+00:00",
+     "decision_bar_time": "2021-03-26 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 437,
+     "entry_time": "2021-11-12 18:30:00+00:00",
+     "decision_bar_time": "2021-11-12 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 314,
+     "entry_time": "2019-05-17 17:30:00+00:00",
+     "decision_bar_time": "2019-05-17 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 334,
+     "entry_time": "2019-10-04 17:30:00+00:00",
+     "decision_bar_time": "2019-10-04 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 299,
+     "entry_time": "2019-01-25 18:30:00+00:00",
+     "decision_bar_time": "2019-01-25 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 379,
+     "entry_time": "2020-09-04 17:30:00+00:00",
+     "decision_bar_time": "2020-09-04 17:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 336,
+     "entry_time": "2019-10-18 17:47:00+00:00",
+     "decision_bar_time": "2019-10-18 18:04:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 352,
+     "entry_time": "2020-02-14 18:31:00+00:00",
+     "decision_bar_time": "2020-02-14 18:50:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 277,
+     "entry_time": "2018-08-17 17:42:00+00:00",
+     "decision_bar_time": "2018-08-17 18:00:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 438,
+     "entry_time": "2021-11-19 18:30:00+00:00",
+     "decision_bar_time": "2021-11-19 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 442,
+     "entry_time": "2021-12-31 18:30:00+00:00",
+     "decision_bar_time": "2021-12-31 18:49:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 315,
+     "entry_time": "2019-05-24 17:49:00+00:00",
+     "decision_bar_time": "2019-05-24 18:06:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 332,
+     "entry_time": "2019-09-20 17:30:00+00:00",
+     "decision_bar_time": "2019-09-20 17:49:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    }
+   ]
+  },
+  "GOLD_FRI_PM:xauusd|NP|t=30m|y=0.25": {
+   "variant": "GOLD_FRI_PM:xauusd|NP|t=30m|y=0.25",
+   "trades_tested": 43,
+   "identical": 43,
+   "fired_tested": 40,
+   "not_fired_tested": 3,
+   "rows": [
+    {
+     "order_row": 375,
+     "entry_time": "2020-08-07 17:39:00+00:00",
+     "decision_bar_time": "2020-08-07 18:08:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 420,
+     "entry_time": "2021-07-16 17:30:00+00:00",
+     "decision_bar_time": "2021-07-16 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 342,
+     "entry_time": "2019-12-06 18:30:00+00:00",
+     "decision_bar_time": "2019-12-06 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 424,
+     "entry_time": "2021-08-13 17:30:00+00:00",
+     "decision_bar_time": "2021-08-13 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 382,
+     "entry_time": "2020-09-25 17:34:00+00:00",
+     "decision_bar_time": "2020-09-25 18:03:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 374,
+     "entry_time": "2020-07-31 17:30:00+00:00",
+     "decision_bar_time": "2020-07-31 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 402,
+     "entry_time": "2021-03-05 18:31:00+00:00",
+     "decision_bar_time": "2021-03-05 19:00:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 278,
+     "entry_time": "2018-08-24 17:30:00+00:00",
+     "decision_bar_time": "2018-08-24 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 396,
+     "entry_time": "2021-01-22 18:30:00+00:00",
+     "decision_bar_time": "2021-01-22 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 263,
+     "entry_time": "2018-05-11 18:15:00+00:00",
+     "decision_bar_time": "2018-05-11 18:44:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 435,
+     "entry_time": "2021-10-29 17:30:00+00:00",
+     "decision_bar_time": "2021-10-29 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 352,
+     "entry_time": "2020-02-14 18:31:00+00:00",
+     "decision_bar_time": "2020-02-14 19:00:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 295,
+     "entry_time": "2018-12-28 18:30:00+00:00",
+     "decision_bar_time": "2018-12-28 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 409,
+     "entry_time": "2021-04-30 17:30:00+00:00",
+     "decision_bar_time": "2021-04-30 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 324,
+     "entry_time": "2019-07-26 17:30:00+00:00",
+     "decision_bar_time": "2019-07-26 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 308,
+     "entry_time": "2019-03-29 17:30:00+00:00",
+     "decision_bar_time": "2019-03-29 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 360,
+     "entry_time": "2020-04-17 17:31:00+00:00",
+     "decision_bar_time": "2020-04-17 18:00:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 399,
+     "entry_time": "2021-02-12 18:35:00+00:00",
+     "decision_bar_time": "2021-02-12 19:04:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 264,
+     "entry_time": "2018-05-18 17:51:00+00:00",
+     "decision_bar_time": "2018-05-18 18:20:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 301,
+     "entry_time": "2019-02-08 18:30:00+00:00",
+     "decision_bar_time": "2019-02-08 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 406,
+     "entry_time": "2021-04-09 17:54:00+00:00",
+     "decision_bar_time": "2021-04-09 18:23:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 368,
+     "entry_time": "2020-06-12 17:30:00+00:00",
+     "decision_bar_time": "2020-06-12 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 323,
+     "entry_time": "2019-07-19 17:30:00+00:00",
+     "decision_bar_time": "2019-07-19 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 267,
+     "entry_time": "2018-06-08 17:53:00+00:00",
+     "decision_bar_time": "2018-06-08 18:22:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 283,
+     "entry_time": "2018-09-28 17:30:00+00:00",
+     "decision_bar_time": "2018-09-28 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 285,
+     "entry_time": "2018-10-12 17:51:00+00:00",
+     "decision_bar_time": "2018-10-12 18:20:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 333,
+     "entry_time": "2019-09-27 17:54:00+00:00",
+     "decision_bar_time": "2019-09-27 18:23:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 347,
+     "entry_time": "2020-01-10 18:30:00+00:00",
+     "decision_bar_time": "2020-01-10 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 394,
+     "entry_time": "2021-01-08 18:30:00+00:00",
+     "decision_bar_time": "2021-01-08 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 353,
+     "entry_time": "2020-02-21 18:30:00+00:00",
+     "decision_bar_time": "2020-02-21 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 389,
+     "entry_time": "2020-11-13 18:30:00+00:00",
+     "decision_bar_time": "2020-11-13 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 317,
+     "entry_time": "2019-06-07 17:30:00+00:00",
+     "decision_bar_time": "2019-06-07 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 261,
+     "entry_time": "2018-04-27 17:30:00+00:00",
+     "decision_bar_time": "2018-04-27 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 272,
+     "entry_time": "2018-07-13 17:30:00+00:00",
+     "decision_bar_time": "2018-07-13 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 355,
+     "entry_time": "2020-03-06 18:30:00+00:00",
+     "decision_bar_time": "2020-03-06 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 291,
+     "entry_time": "2018-11-30 18:30:00+00:00",
+     "decision_bar_time": "2018-11-30 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 297,
+     "entry_time": "2019-01-11 18:30:00+00:00",
+     "decision_bar_time": "2019-01-11 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 273,
+     "entry_time": "2018-07-20 17:30:00+00:00",
+     "decision_bar_time": "2018-07-20 17:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 440,
+     "entry_time": "2021-12-10 18:30:00+00:00",
+     "decision_bar_time": "2021-12-10 18:59:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 282,
+     "entry_time": "2018-09-21 17:35:00+00:00",
+     "decision_bar_time": "2018-09-21 18:04:00+00:00",
+     "fired_full": true,
+     "order_found_in_cut_frame": true,
+     "fired_cut": true,
+     "identical": true
+    },
+    {
+     "order_row": 332,
+     "entry_time": "2019-09-20 17:30:00+00:00",
+     "decision_bar_time": "2019-09-20 17:59:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 354,
+     "entry_time": "2020-02-28 19:12:00+00:00",
+     "decision_bar_time": "2020-02-28 19:41:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    },
+    {
+     "order_row": 293,
+     "entry_time": "2018-12-14 18:31:00+00:00",
+     "decision_bar_time": "2018-12-14 19:00:00+00:00",
+     "fired_full": false,
+     "order_found_in_cut_frame": true,
+     "fired_cut": false,
+     "identical": true
+    }
+   ]
+  }
+ }
+}

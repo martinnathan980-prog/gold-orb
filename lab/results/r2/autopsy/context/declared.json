@@ -1,0 +1,79 @@
+{
+ "written": "2026-11-12T11:17:21Z (file system time; the time typed here originally, 11:20Z, was a guess and was corrected after the run, nothing else changed), after the baseline reproduction (baseline_repro.json, 11:13:45Z) and BEFORE any descriptor, any descriptor-outcome table and any filter was computed (signals 11:22Z, anatomy 11:23Z, part 2 11:26Z)",
+ "lens": "context: when do the signals lose (PROTOCOL_V3 Addendum H). In sample only: price rows ts < 2022-01-01 (parquet row filter at read time), trades entry_time < 2022-01-01 (filter in the read statement).",
+ "sleeves": ["ocm4__us100", "noise30__us100", "donch4h_stop__xauusd", "orb_asia_2d_buf10__xauusd", "GOLD_FRI_PM__xauusd", "brk72_24h_wd__btcusd", "brk72_24h_wd__ethusd", "F1_brk_ridge_filter__btcusd", "F1_brk_ridge_filter__ethusd", "nq_btc_follow__btcusd"],
+ "baseline": {
+  "trades": "the sleeve's own in-sample chain rebuilt from the in-sample slice with the frozen make_orders/params of r2/recalc.py::sleeves(), FP costs, no_overlap=True (identical to the official rows except one boundary trade each in donch4h_stop and orb_asia_2d_buf10, see baseline_repro.json)",
+  "boundary_trades": "a trade still open when the in-sample slice ends (exit_time >= start of the last bar of the slice) has no in-sample result: it is excluded from every statistic, for the baseline and for every variant alike",
+  "broker_refusal": "an order whose stop distance at the fill (|fill price - initial stop|) is smaller than 3 x the spread of the fill bar (ask open - bid open, of the frame of the cost mode) is not taken and does not block later signals; applied to the baseline and to every variant",
+  "costs": "mode fp = r2.costs(sym) on the FP frame; mode stress = spread x1.5 around the mid (apply_spread_mult) and slippages x1.5 (r2.costs(sym, 1.5)), orders rebuilt on the widened frame, as r2.run does. Every result is given in both modes."
+ },
+ "decision_time": {
+  "rule": "t_dec = the instant at which the signal is decided; a descriptor at t_dec uses only M1 bars whose START is < t_dec (all closed at t_dec), trades whose exit_time <= t_dec, daily bars whose t_known <= t_dec",
+  "ocm4__us100": "09:34 New York of the session",
+  "noise30__us100": "the check time T (10:00, 10:30, ..., 15:30 New York) = entry time floored to the half hour",
+  "brk72_24h_wd": "dec_time of the order (end of the hourly bar)",
+  "F1_brk_ridge_filter": "t_dec of the candidate (end of the session bar, order column cid)",
+  "nq_btc_follow": "end of the decision bar g (= start of minute g+1), g recovered from the rule's own arrays",
+  "GOLD_FRI_PM__xauusd": "13:30 New York of the Friday (when the limit is placed)",
+  "donch4h_stop__xauusd": "dec_time = t_close of the 4h bar (when the two stop orders are armed); the traded side is the side touched first",
+  "orb_asia_2d_buf10__xauusd": "07:00 London of the session date (when the two stop orders are armed); the traded side is the side touched first",
+  "pending_orders_note": "for the three gold sleeves the filter decision is taken when the orders are armed, separately for each side (side x descriptor); if the side that is touched first is disallowed, the bracket is consumed and no trade is taken (= skipping that signal). The one exception is `hour`, which is the clock time of the fill, known at the fill."
+ },
+ "descriptors": {
+  "P(t)": "mid close (bc+ac)/2 of the last M1 bar of the market whose start is < t",
+  "ATRd(t)": "daily ATR of the market: simple mean of the true range of the last 14 full trading days (17:00 New York roll, days with >= 600 M1 bars), usable from 17:00 New York of the day (idxus_lib.daily_atr), last value known at t",
+  "hour": "New York clock time of the entry (fill), in fractional hours",
+  "dow": "New York weekday of t_dec (part 1 only)",
+  "vol": "the sleeve's own volatility unit at t_dec divided by the median of the same series over the 60 calendar days ending at its last value known at t_dec. Units: ocm4 = daily ATR14 (its stop unit); noise30 = sigma of the check (mean |move from the open| of the previous 14 sessions at that check, series per check); brk72 = ATR24 of hourly mid bars; F1 = A (mean high-low of the last 70 bid session bars); nq = sigF1 (20-day RMS of BTC one-minute returns, series sampled every hour); GOLD_FRI_PM = Wilder ATR14 of UTC-hour mid bars; donch4h_stop = Wilder ATR14 of 4h mid bars; orb = width W of the Asian range, series by session",
+  "al1": "side x (P(t_dec) - P(t_dec - 24h)) / ATRd(t_dec)",
+  "al5": "side x (P(t_dec) - P(t_dec - 7 calendar days)) / ATRd(t_dec)   (5 trading days)",
+  "al20": "side x (P(t_dec) - P(t_dec - 28 calendar days)) / ATRd(t_dec)   (20 trading days)",
+  "room": "distance to the 20-day extreme in the trade's direction, in ATRd: long (H20 - P)/ATRd, short (P - L20)/ATRd; H20 / L20 = max mid high / min mid low of the complete UTC hourly bars that start in the 28 calendar days before t_dec",
+  "cushion": "the distance to the opposite 20-day extreme, same units (part 1 only)",
+  "trig": "size of the move that triggered the signal. ocm4: |4-minute opening move| / median of the previous 20 sessions; noise30: |P/reference - 1| / sigma (reference = max(open, prev close) for a long, min for a short); brk72: (close - 72-bar extreme) / ATR24 signed by side; F1: (close - 14-bar extreme) / A signed by side; nq: |us100 one-minute return| / its 20-day RMS; GOLD_FRI_PM: (P(13:30) - P(12:30)) / hourly ATR14; donch4h_stop: side x (level - P(t_dec)) / ATR14(4h) (distance the price must still travel to trigger); orb: W / ATRd (Asian range width in daily ATR)",
+  "sprR": "spread (ac - bc) of the last bar before t_dec divided by the risk known at t_dec (stop distance; noise30 |P - stop|; orb |level - stop|)",
+  "rel": "state of a related market: side x (Q(t_dec) - Q(t_dec - 24h)) / ATRd_Q(t_dec); Q = us100 for the five crypto sleeves, eurusd (dollar proxy) for the three gold sleeves, usdjpy for the two us100 sleeves; data/fp/us100, data/eurusd, data/usdjpy cut at 2021-12-31",
+  "rel2": "gold sleeves only: the same with Q = us100 (part 1 only)",
+  "prev": "R of the sleeve's previous trade: last baseline trade of the sleeve with exit_time <= t_dec (the baseline chain is the paper twin a robot keeps even when it skips signals)",
+  "oth24": "sum of R of the other nine sleeves' baseline trades with exit_time in (t_dec - 24h, t_dec] (part 1 only), and oth24_n their number"
+ },
+ "part1": {
+  "population": "the baseline trades (official chain); repeated on every signal taken alone (no_overlap=False) as a secondary table",
+  "groups": "terciles of each descriptor over the sleeve's whole in-sample trades (dow: by weekday), the same boundaries every year",
+  "table": "per sleeve x descriptor x group x year (and all years): n, expectancy R, win rate, average loss R, total R, share of stop exits; FP costs (stress in the CSV too)",
+  "separation": "per year: E(top tercile) - E(bottom tercile); a descriptor 'separates winners from losers in every year' when this difference has the same sign in every year of the sleeve with at least 10 trades in each of the two terciles; pooled Welch t of the difference is reported; with 12 descriptors x 10 sleeves some descriptors look consistent by chance (P = 2 x 0.5^years: 12.5 % for 4 years, 0.8 % for 8 years), which is said with the table"
+ },
+ "part2": {
+  "budget": "per sleeve at most 10 filters + 1 regularised model, all listed here; each has 2 declared neighbours used ONLY for criterion (e), never selected in its place. Every simulated variant is one line of trials.jsonl (both cost modes in the line).",
+  "filters": {
+   "list": ["hour", "vol", "al1", "al5", "al20", "room", "trig", "sprR", "rel", "prev"],
+   "not_applicable": "a filter whose descriptor takes fewer than 3 distinct values in the sleeve (ocm4: hour) is not run",
+   "action": "skip the signal (the order is removed; the sleeve stays flat and may take a later signal; the chain is re-simulated with no_overlap=True)",
+   "walk_forward": "for each out-of-fold year Y: training = the sleeve's signals with t_dec < 1 January Y minus 7 days (purge, longer than the longest hold), labels = R of each signal taken alone (no_overlap=False, same cost mode), refused and boundary signals excluded; at least 100 training signals and a sleeve history that starts no later than 31 January of Y-1, else no filter that year. On the training signals: q_lo = quantile(x, q), q_hi = quantile(x, 1-q); E_lo = mean label of x <= q_lo, E_hi = mean label of x >= q_hi. If min(E_lo, E_hi) < 0, year Y skips the signals on the worse side (x <= q_lo if E_lo < E_hi, else x >= q_hi), with the training thresholds; otherwise year Y skips nothing. Signals with a missing descriptor are never skipped.",
+   "q": "1/3 (declared); neighbours 0.25 and 0.40",
+   "years": "before the first out-of-fold year nothing is skipped",
+   "in_fold": "the same rule fitted on all in-sample signals (t_dec < 2021-12-25) and applied to all years, reported beside the out-of-fold result on the same years"
+  },
+  "model": {
+   "type": "ridge regression of the signal's R clipped to [-2, 4] on the 8 descriptors vol, al1, al5, al20, room, trig, sprR, rel; standardised with the training mean and standard deviation, clipped at +/-4, missing values set to 0 (the training mean); unpenalised intercept; alpha = number of training signals (declared); neighbours alpha x 0.5 and x 2",
+   "walk_forward": "same folds and purge as the filters; year Y skips the signals whose predicted R < 0",
+   "in_fold": "fitted on all in-sample signals and applied to all years, reported beside"
+  },
+  "evaluation": {
+   "window": "W = the out-of-fold years inside 2018-2021 (gold and us100 sleeves: 2018-2021; crypto sleeves: 2019-2021, their first out-of-fold year); all out-of-fold years also reported, and the earlier years separately",
+   "before_after": "baseline chain vs re-simulated variant chain, same years, same cost mode",
+   "criteria_candidate": {
+    "a": "on W, FP: expectancy per trade >= baseline + 20 % of |baseline|, OR average loss smaller in size by >= 20 % with expectancy >= baseline",
+    "b": "on W, FP: total R >= baseline total R",
+    "c": "expectancy per trade higher than the baseline's in at least 3 of the 4 years 2018-2021 (crypto: 3 of its 3 out-of-fold years 2019-2021)",
+    "d": "(a) and (b) also hold in the stress run (whole procedure re-run with costs x1.5)",
+    "e": "both neighbours raise the expectancy per trade on W (FP) and do not lower the total R",
+    "f": "truncation test: the skip / keep decision and every descriptor of the tested signals are identical when all frames are cut right after the decision bar (bars starting < t_dec) and the trade lists are cut at t_dec"
+   },
+   "ranking": "if several variants of one sleeve qualify: highest out-of-fold total-R gain on W with costs x1.5, then with FP costs"
+  }
+ },
+ "causality_test": "for every sleeve: 40 random signals of its out-of-fold years (seed 11) plus every signal skipped by a qualifying variant (up to 60 more): recompute all descriptors on frames cut at t_dec (own market, related market) and trade lists cut at exit_time <= t_dec, compare with the full-frame values (absolute difference <= 1e-9), and recompute the skip decision of each filter and of the model with the fold's thresholds",
+ "not_done_on_purpose": ["no product-of-two filters", "no half-stake variants", "no weekday filter (calendar effects: described in part 1 only)", "no filter on oth24 (portfolio clustering is the cluster lens)", "no re-tuning of any rule parameter", "no validation-period look"]
+}

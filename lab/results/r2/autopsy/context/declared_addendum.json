@@ -1,0 +1,10 @@
+{
+ "written": "2026-11-12T11:28:16Z (file system time; the time typed here originally, 11:45Z, was a guess and was corrected after the run, nothing else changed), after part 2 (327 variants, 11:26Z) and BEFORE the variants below were computed (respec.json 11:28:45Z)",
+ "reason": "The only variant that passed (a)-(e), sprR_q0.333 on brk72_24h_wd__ethusd, reads the spread of the FP frame. That spread is modelled (build_fp_frames.py): constant basis points x a per-bar shape factor equal to the bar's Dukascopy spread divided by the MEDIAN spread of its whole trading day (clipped 0.7-6), i.e. it uses later bars of the day. The truncation test cannot see this (the frame values are fixed), and a live robot cannot compute it. For ethusd the spread in basis points is nearly constant, so sprR is almost exactly (constant spread in bp) / (stop distance in bp): the information is the stop distance relative to price.",
+ "variants": {
+  "riskbp_q0.333 on brk72_24h_wd__ethusd": "descriptor riskbp = stop distance known at t_dec (3 x ATR24 of hourly mid bars, the order's stop_dist) / P(t_dec) x 1e4; the same walk-forward rule, folds, purge, action and evaluation as the declared filters (declared.json part2.filters), in both cost modes",
+  "riskbp_q0.25 and riskbp_q0.40 on brk72_24h_wd__ethusd": "its neighbours, for criterion (e) only"
+ },
+ "rule": "the candidate is kept only if riskbp_q0.333 passes (a)-(e) by itself (and (f)); its change text is then written with riskbp, not sprR. If it does not pass, the sleeve has no candidate. Nothing else is added: 3 more trials.",
+ "causality_extra": "the truncation test of brk72_24h_wd__ethusd also recomputes 3 x ATR24 and P on the cut frame for every tested signal and compares riskbp"
+}

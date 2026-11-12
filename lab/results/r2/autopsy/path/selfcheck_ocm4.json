@@ -1,0 +1,21 @@
+{
+ "window_2018_2021": {
+  "n": 492,
+  "fired": 128,
+  "total_base": 53.7803,
+  "total_new_selfcheck": 76.7357,
+  "total_new_s2": 76.74,
+  "n_fired_s2": 128
+ },
+ "pre_2018": {
+  "n": 507,
+  "fired": 113,
+  "total_base": 83.0987,
+  "total_new_selfcheck": 78.5522,
+  "total_new_s2": 78.55
+ },
+ "checkpoint_clock_ny": {
+  "12:45": 998,
+  "12:44": 1
+ }
+}

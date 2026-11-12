@@ -1,0 +1,6 @@
+{
+ "signals": 20,
+ "causal_price_identical": 20,
+ "leaky_price_identical": 2,
+ "reading": "the truncation test detects a descriptor that reads the entry bar (leaky price differs on the cut frame) and passes the descriptors actually used"
+}

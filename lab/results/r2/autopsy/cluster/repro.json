@@ -1,0 +1,680 @@
+{
+ "noise30:us100": {
+  "track": "idx_us",
+  "params": {
+   "rule": "noise",
+   "lookback": 14,
+   "first_min": 600,
+   "step": 30,
+   "last_min": 930,
+   "exit_min": 955,
+   "vm": 1.0
+  },
+  "frame": [
+   "2013-01-01 00:00:00+00:00",
+   "2021-12-31 21:14:00+00:00",
+   2513306
+  ],
+  "fp": {
+   "n": 1643,
+   "total_R": 134.40073,
+   "mean_R": 0.081802,
+   "orders": 1643,
+   "skipped": 0,
+   "nofill": 0,
+   "reasons": {
+    "time": 1491,
+    "stop": 152
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 22.2,
+   "first_entry": "2014-01-02 15:00:00+00:00",
+   "last_entry": "2021-12-27 15:00:00+00:00",
+   "seconds": 1.7
+  },
+  "vs_official": {
+   "n_mine": 1643,
+   "n_official": 1643,
+   "n_matched_on_entry_and_side": 1643,
+   "only_mine": 0,
+   "only_official": 0,
+   "n_identical": 1643,
+   "max_abs_dR_identical": 0.0,
+   "total_R_mine": 134.40073,
+   "total_R_official": 134.40073,
+   "different_trades": []
+  },
+  "stress": {
+   "n": 1643,
+   "total_R": 120.332053,
+   "mean_R": 0.073239,
+   "orders": 1643,
+   "skipped": 0,
+   "nofill": 0,
+   "reasons": {
+    "time": 1491,
+    "stop": 152
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 15.04,
+   "first_entry": "2014-01-02 15:00:00+00:00",
+   "last_entry": "2021-12-27 15:00:00+00:00",
+   "seconds": 0.4
+  }
+ },
+ "ocm4:us100": {
+  "track": "idx_us",
+  "params": {
+   "rule": "ocm",
+   "n": 4,
+   "stop": "atr",
+   "k": 0.3,
+   "exit_min": 955,
+   "size_min": 1.0,
+   "size_win": 20,
+   "target_r": null,
+   "atr_n": 14,
+   "sides": "both"
+  },
+  "frame": [
+   "2013-01-01 00:00:00+00:00",
+   "2021-12-31 21:14:00+00:00",
+   2513306
+  ],
+  "fp": {
+   "n": 999,
+   "total_R": 136.878974,
+   "mean_R": 0.137016,
+   "orders": 999,
+   "skipped": 0,
+   "nofill": 0,
+   "reasons": {
+    "stop": 500,
+    "time": 499
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 17.87,
+   "first_entry": "2014-01-03 14:34:00+00:00",
+   "last_entry": "2021-12-31 14:34:00+00:00",
+   "seconds": 0.4
+  },
+  "vs_official": {
+   "n_mine": 999,
+   "n_official": 999,
+   "n_matched_on_entry_and_side": 999,
+   "only_mine": 0,
+   "only_official": 0,
+   "n_identical": 999,
+   "max_abs_dR_identical": 0.0,
+   "total_R_mine": 136.878974,
+   "total_R_official": 136.878974,
+   "different_trades": []
+  },
+  "stress": {
+   "n": 999,
+   "total_R": 123.864513,
+   "mean_R": 0.123989,
+   "orders": 999,
+   "skipped": 0,
+   "nofill": 0,
+   "reasons": {
+    "stop": 503,
+    "time": 496
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 11.91,
+   "first_entry": "2014-01-03 14:34:00+00:00",
+   "last_entry": "2021-12-31 14:34:00+00:00",
+   "seconds": 0.5
+  }
+ },
+ "brk72_24h_wd:btcusd": {
+  "track": "crypto",
+  "params": {
+   "family": "brk",
+   "n": 72,
+   "stop_atr": 3.0,
+   "hold_h": 24,
+   "dow": "weekday"
+  },
+  "frame": [
+   "2017-05-07 23:59:00+00:00",
+   "2021-12-31 16:58:00+00:00",
+   1699217
+  ],
+  "fp": {
+   "n": 645,
+   "total_R": 172.874279,
+   "mean_R": 0.268022,
+   "orders": 2914,
+   "skipped": 2269,
+   "nofill": 0,
+   "reasons": {
+    "time": 451,
+    "stop": 194
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 11.58,
+   "first_entry": "2017-05-18 15:00:00+00:00",
+   "last_entry": "2021-12-30 00:00:00+00:00",
+   "seconds": 0.1
+  },
+  "vs_official": {
+   "n_mine": 645,
+   "n_official": 645,
+   "n_matched_on_entry_and_side": 645,
+   "only_mine": 0,
+   "only_official": 0,
+   "n_identical": 645,
+   "max_abs_dR_identical": 0.0,
+   "total_R_mine": 172.874279,
+   "total_R_official": 172.874279,
+   "different_trades": []
+  },
+  "stress": {
+   "n": 645,
+   "total_R": 167.023433,
+   "mean_R": 0.258951,
+   "orders": 2914,
+   "skipped": 2269,
+   "nofill": 0,
+   "reasons": {
+    "time": 448,
+    "stop": 197
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 7.72,
+   "first_entry": "2017-05-18 15:00:00+00:00",
+   "last_entry": "2021-12-30 00:00:00+00:00",
+   "seconds": 0.2
+  }
+ },
+ "nq_btc_follow:btcusd": {
+  "track": "leadlag",
+  "params": {
+   "rule": "xlead",
+   "leader": "us100",
+   "pred": "lead",
+   "sess": "uscash",
+   "dirn": 1,
+   "k": 1,
+   "z": 6,
+   "hold": 60,
+   "stop": 2.0
+  },
+  "frame": [
+   "2017-05-07 23:59:00+00:00",
+   "2021-12-31 16:58:00+00:00",
+   1699217
+  ],
+  "fp": {
+   "n": 1063,
+   "total_R": 66.345962,
+   "mean_R": 0.062414,
+   "orders": 2611,
+   "skipped": 1548,
+   "nofill": 0,
+   "reasons": {
+    "time": 980,
+    "stop": 83
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 11.35,
+   "first_entry": "2017-05-17 13:32:00+00:00",
+   "last_entry": "2021-12-31 15:02:00+00:00",
+   "seconds": 0.9
+  },
+  "vs_official": {
+   "n_mine": 1063,
+   "n_official": 1063,
+   "n_matched_on_entry_and_side": 1063,
+   "only_mine": 0,
+   "only_official": 0,
+   "n_identical": 1063,
+   "max_abs_dR_identical": 0.0,
+   "total_R_mine": 66.345962,
+   "total_R_official": 66.345962,
+   "different_trades": []
+  },
+  "stress": {
+   "n": 1063,
+   "total_R": 51.014693,
+   "mean_R": 0.047991,
+   "orders": 2611,
+   "skipped": 1548,
+   "nofill": 0,
+   "reasons": {
+    "time": 979,
+    "stop": 84
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 7.56,
+   "first_entry": "2017-05-17 13:32:00+00:00",
+   "last_entry": "2021-12-31 15:02:00+00:00",
+   "seconds": 0.9
+  }
+ },
+ "F1_brk_ridge_filter:btcusd": {
+  "track": "ml",
+  "params": {
+   "stop_k": 2.0,
+   "hold_h": 13.0,
+   "model": "B1_ridge_full.json",
+   "q": "0.5"
+  },
+  "frame": [
+   "2017-05-07 23:59:00+00:00",
+   "2021-12-31 16:58:00+00:00",
+   1699217
+  ],
+  "fp": {
+   "n": 631,
+   "total_R": 226.389065,
+   "mean_R": 0.358778,
+   "orders": 1235,
+   "skipped": 604,
+   "nofill": 0,
+   "reasons": {
+    "time": 455,
+    "stop": 176
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 8.62,
+   "first_entry": "2017-06-09 13:00:00+00:00",
+   "last_entry": "2021-12-29 13:00:00+00:00",
+   "seconds": 0.1
+  },
+  "vs_official": {
+   "n_mine": 631,
+   "n_official": 631,
+   "n_matched_on_entry_and_side": 631,
+   "only_mine": 0,
+   "only_official": 0,
+   "n_identical": 631,
+   "max_abs_dR_identical": 0.0,
+   "total_R_mine": 226.389065,
+   "total_R_official": 226.389065,
+   "different_trades": []
+  },
+  "stress": {
+   "n": 632,
+   "total_R": 218.26662,
+   "mean_R": 0.345359,
+   "orders": 1234,
+   "skipped": 602,
+   "nofill": 0,
+   "reasons": {
+    "time": 455,
+    "stop": 177
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 5.87,
+   "first_entry": "2017-06-09 13:00:00+00:00",
+   "last_entry": "2021-12-29 13:00:00+00:00",
+   "seconds": 0.2
+  }
+ },
+ "brk72_24h_wd:ethusd": {
+  "track": "crypto",
+  "params": {
+   "family": "brk",
+   "n": 72,
+   "stop_atr": 3.0,
+   "hold_h": 24,
+   "dow": "weekday"
+  },
+  "frame": [
+   "2018-01-01 00:00:00+00:00",
+   "2021-12-31 16:58:00+00:00",
+   1397208
+  ],
+  "fp": {
+   "n": 519,
+   "total_R": 103.68708,
+   "mean_R": 0.199782,
+   "orders": 2355,
+   "skipped": 1836,
+   "nofill": 0,
+   "reasons": {
+    "time": 362,
+    "stop": 157
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 5.13,
+   "first_entry": "2018-01-05 05:00:00+00:00",
+   "last_entry": "2021-12-29 12:00:00+00:00",
+   "seconds": 0.1
+  },
+  "vs_official": {
+   "n_mine": 519,
+   "n_official": 519,
+   "n_matched_on_entry_and_side": 519,
+   "only_mine": 0,
+   "only_official": 0,
+   "n_identical": 519,
+   "max_abs_dR_identical": 0.0,
+   "total_R_mine": 103.68708,
+   "total_R_official": 103.68708,
+   "different_trades": []
+  },
+  "stress": {
+   "n": 521,
+   "total_R": 93.24236,
+   "mean_R": 0.178968,
+   "orders": 2355,
+   "skipped": 1834,
+   "nofill": 0,
+   "reasons": {
+    "time": 360,
+    "stop": 161
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 3.42,
+   "first_entry": "2018-01-05 05:00:00+00:00",
+   "last_entry": "2021-12-29 12:00:00+00:00",
+   "seconds": 0.1
+  }
+ },
+ "F1_brk_ridge_filter:ethusd": {
+  "track": "ml",
+  "params": {
+   "stop_k": 2.0,
+   "hold_h": 13.0,
+   "model": "B1_ridge_full.json",
+   "q": "0.5"
+  },
+  "frame": [
+   "2018-01-01 00:00:00+00:00",
+   "2021-12-31 16:58:00+00:00",
+   1397208
+  ],
+  "fp": {
+   "n": 517,
+   "total_R": 104.406706,
+   "mean_R": 0.201947,
+   "orders": 995,
+   "skipped": 478,
+   "nofill": 0,
+   "reasons": {
+    "time": 358,
+    "stop": 159
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 6.11,
+   "first_entry": "2018-01-30 14:00:00+00:00",
+   "last_entry": "2021-12-29 13:00:00+00:00",
+   "seconds": 0.1
+  },
+  "vs_official": {
+   "n_mine": 517,
+   "n_official": 517,
+   "n_matched_on_entry_and_side": 517,
+   "only_mine": 0,
+   "only_official": 0,
+   "n_identical": 517,
+   "max_abs_dR_identical": 0.0,
+   "total_R_mine": 104.406706,
+   "total_R_official": 104.406706,
+   "different_trades": []
+  },
+  "stress": {
+   "n": 519,
+   "total_R": 87.267989,
+   "mean_R": 0.168146,
+   "orders": 995,
+   "skipped": 476,
+   "nofill": 0,
+   "reasons": {
+    "time": 355,
+    "stop": 164
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 4.07,
+   "first_entry": "2018-01-30 14:00:00+00:00",
+   "last_entry": "2021-12-29 13:00:00+00:00",
+   "seconds": 0.2
+  }
+ },
+ "GOLD_FRI_PM:xauusd": {
+  "track": "overnight",
+  "params": {
+   "tz": "NY",
+   "entry": "13:30",
+   "exit": "16:45",
+   "weekdays": [
+    4
+   ],
+   "side": 1,
+   "stop_atr": 3.0,
+   "atr_n": 14,
+   "atr_tf": "1h",
+   "entry_type": "limit",
+   "limit_min": 60,
+   "min_prev": 0,
+   "skip_early_close": true
+  },
+  "frame": [
+   "2012-12-31 00:00:00+00:00",
+   "2021-12-31 21:59:00+00:00",
+   3172985
+  ],
+  "fp": {
+   "n": 414,
+   "total_R": 13.92101,
+   "mean_R": 0.033626,
+   "orders": 443,
+   "skipped": 0,
+   "nofill": 29,
+   "reasons": {
+    "time": 414
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 79.23,
+   "first_entry": "2013-01-11 18:30:00+00:00",
+   "last_entry": "2021-12-31 18:30:00+00:00",
+   "seconds": 0.1
+  },
+  "vs_official": {
+   "n_mine": 414,
+   "n_official": 414,
+   "n_matched_on_entry_and_side": 414,
+   "only_mine": 0,
+   "only_official": 0,
+   "n_identical": 414,
+   "max_abs_dR_identical": 0.0,
+   "total_R_mine": 13.92101,
+   "total_R_official": 13.92101,
+   "different_trades": []
+  },
+  "stress": {
+   "n": 408,
+   "total_R": 12.007137,
+   "mean_R": 0.029429,
+   "orders": 443,
+   "skipped": 0,
+   "nofill": 35,
+   "reasons": {
+    "time": 408
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 52.82,
+   "first_entry": "2013-01-11 18:30:00+00:00",
+   "last_entry": "2021-12-31 18:30:00+00:00",
+   "seconds": 0.3
+  }
+ },
+ "donch4h_stop:xauusd": {
+  "track": "r1_trend",
+  "params": {
+   "family": "donchian",
+   "tf": "4h",
+   "n": 60,
+   "entry": "stop",
+   "stop_atr": 2.0,
+   "trail_atr": 2.0,
+   "max_days": 5,
+   "atr_n": 14,
+   "target_r": NaN,
+   "sides": "both",
+   "sess": "none",
+   "trend_ma": 0
+  },
+  "frame": [
+   "2012-12-31 00:00:00+00:00",
+   "2021-12-31 21:59:00+00:00",
+   3172985
+  ],
+  "fp": {
+   "n": 495,
+   "total_R": 85.056363,
+   "mean_R": 0.171831,
+   "orders": 1654,
+   "skipped": 1159,
+   "nofill": 0,
+   "reasons": {
+    "trail": 478,
+    "time": 9,
+    "stop": 8
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 39.72,
+   "first_entry": "2013-01-17 15:11:00+00:00",
+   "last_entry": "2021-12-31 07:06:00+00:00",
+   "seconds": 0.7
+  },
+  "vs_official": {
+   "n_mine": 495,
+   "n_official": 495,
+   "n_matched_on_entry_and_side": 495,
+   "only_mine": 0,
+   "only_official": 0,
+   "n_identical": 494,
+   "max_abs_dR_identical": 0.0,
+   "total_R_mine": 85.056363,
+   "total_R_official": 84.235154,
+   "different_trades": [
+    {
+     "entry_time": "2021-12-31 07:06:00+00:00",
+     "side": 1,
+     "mine": {
+      "exit_time": "2021-12-31 21:59:00+00:00",
+      "reason": "time",
+      "R": 0.754949
+     },
+     "official_R": -0.06626,
+     "official_reason": "trail"
+    }
+   ]
+  },
+  "stress": {
+   "n": 495,
+   "total_R": 78.7484,
+   "mean_R": 0.159088,
+   "orders": 1660,
+   "skipped": 1165,
+   "nofill": 0,
+   "reasons": {
+    "trail": 475,
+    "stop": 11,
+    "time": 9
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 26.48,
+   "first_entry": "2013-01-17 15:11:00+00:00",
+   "last_entry": "2021-12-31 07:06:00+00:00",
+   "seconds": 0.5
+  }
+ },
+ "orb_asia_2d_buf10:xauusd": {
+  "track": "r1_orb",
+  "params": {
+   "tz": "LDN",
+   "range_start": "00:00",
+   "range_end": "07:00",
+   "entry_end": "12:00",
+   "entry": "stop",
+   "buf_frac": 0.1,
+   "buf_abs": 0.0,
+   "stop_mode": "opp",
+   "target_R": null,
+   "be_R": null,
+   "trail_atr": null,
+   "exit_time": "16:00",
+   "exit_tz": "NY",
+   "hold_days": 2,
+   "min_width_atr": null,
+   "max_width_atr": null,
+   "max_cost_R": null,
+   "trend": null,
+   "sides": "both",
+   "skip_dow": [],
+   "min_bars_frac": 0.5,
+   "atr_n": 14
+  },
+  "frame": [
+   "2012-12-31 00:00:00+00:00",
+   "2021-12-31 21:59:00+00:00",
+   3172985
+  ],
+  "fp": {
+   "n": 1039,
+   "total_R": 232.780057,
+   "mean_R": 0.224042,
+   "orders": 1829,
+   "skipped": 790,
+   "nofill": 0,
+   "reasons": {
+    "stop": 651,
+    "time": 387,
+    "eod": 1
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 29.08,
+   "first_entry": "2012-12-31 08:18:00+00:00",
+   "last_entry": "2021-12-31 07:03:00+00:00",
+   "seconds": 1.1
+  },
+  "vs_official": {
+   "n_mine": 1039,
+   "n_official": 1039,
+   "n_matched_on_entry_and_side": 1039,
+   "only_mine": 0,
+   "only_official": 0,
+   "n_identical": 1038,
+   "max_abs_dR_identical": 0.0,
+   "total_R_mine": 232.780057,
+   "total_R_official": 230.065261,
+   "different_trades": [
+    {
+     "entry_time": "2021-12-31 07:03:00+00:00",
+     "side": 1,
+     "mine": {
+      "exit_time": "2021-12-31 22:00:00+00:00",
+      "reason": "eod",
+      "R": 1.634743
+     },
+     "official_R": -1.080053,
+     "official_reason": "stop"
+    }
+   ]
+  },
+  "stress": {
+   "n": 1039,
+   "total_R": 202.451774,
+   "mean_R": 0.194853,
+   "orders": 1826,
+   "skipped": 787,
+   "nofill": 0,
+   "reasons": {
+    "stop": 651,
+    "time": 387,
+    "eod": 1
+   },
+   "stop_lt_3_spreads": 0,
+   "min_stop_spreads": 20.31,
+   "first_entry": "2012-12-31 08:18:00+00:00",
+   "last_entry": "2021-12-31 07:03:00+00:00",
+   "seconds": 0.8
+  }
+ }
+}

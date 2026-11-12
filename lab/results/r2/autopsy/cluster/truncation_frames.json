@@ -1,0 +1,247 @@
+{
+ "points": [
+  {
+   "T": "2018-04-13 13:00:00+00:00",
+   "target_sleeve": "brk72_24h_wd_btcusd",
+   "trades_in_cut_book": 3015,
+   "trades_at_or_before_T_full": 3015,
+   "trades_at_or_before_T_cut": 3015,
+   "matched": 3015,
+   "decisions_differing": {
+    "ref": 0,
+    "A3": 0,
+    "A5": 0,
+    "B1": 0,
+    "C2": 0,
+    "D5": 0,
+    "D7": 0,
+    "E2": 0,
+    "F2": 0,
+    "G2": 0
+   },
+   "pass": true
+  },
+  {
+   "T": "2018-08-14 02:00:00+00:00",
+   "target_sleeve": "brk72_24h_wd_btcusd",
+   "trades_in_cut_book": 3432,
+   "trades_at_or_before_T_full": 3432,
+   "trades_at_or_before_T_cut": 3432,
+   "matched": 3432,
+   "decisions_differing": {
+    "ref": 0,
+    "A3": 0,
+    "A5": 0,
+    "B1": 0,
+    "C2": 0,
+    "D5": 0,
+    "D7": 0,
+    "E2": 0,
+    "F2": 0,
+    "G2": 0
+   },
+   "pass": true
+  },
+  {
+   "T": "2018-08-17 17:42:00+00:00",
+   "target_sleeve": "GOLD_FRI_PM_xauusd",
+   "trades_in_cut_book": 3447,
+   "trades_at_or_before_T_full": 3447,
+   "trades_at_or_before_T_cut": 3447,
+   "matched": 3447,
+   "decisions_differing": {
+    "ref": 0,
+    "A3": 0,
+    "A5": 0,
+    "B1": 0,
+    "C2": 0,
+    "D5": 0,
+    "D7": 0,
+    "E2": 0,
+    "F2": 0,
+    "G2": 0
+   },
+   "pass": true
+  },
+  {
+   "T": "2018-09-06 15:58:00+00:00",
+   "target_sleeve": "nq_btc_follow_btcusd",
+   "trades_in_cut_book": 3526,
+   "trades_at_or_before_T_full": 3526,
+   "trades_at_or_before_T_cut": 3526,
+   "matched": 3526,
+   "decisions_differing": {
+    "ref": 0,
+    "A3": 0,
+    "A5": 0,
+    "B1": 0,
+    "C2": 0,
+    "D5": 0,
+    "D7": 0,
+    "E2": 0,
+    "F2": 0,
+    "G2": 0
+   },
+   "pass": true
+  },
+  {
+   "T": "2019-09-18 18:02:00+00:00",
+   "target_sleeve": "nq_btc_follow_btcusd",
+   "trades_in_cut_book": 4845,
+   "trades_at_or_before_T_full": 4845,
+   "trades_at_or_before_T_cut": 4845,
+   "matched": 4845,
+   "decisions_differing": {
+    "ref": 0,
+    "A3": 0,
+    "A5": 0,
+    "B1": 0,
+    "C2": 0,
+    "D5": 0,
+    "D7": 0,
+    "E2": 0,
+    "F2": 0,
+    "G2": 0
+   },
+   "pass": true
+  },
+  {
+   "T": "2019-10-23 04:00:00+00:00",
+   "target_sleeve": "brk72_24h_wd_ethusd",
+   "trades_in_cut_book": 4986,
+   "trades_at_or_before_T_full": 4986,
+   "trades_at_or_before_T_cut": 4986,
+   "matched": 4986,
+   "decisions_differing": {
+    "ref": 0,
+    "A3": 0,
+    "A5": 0,
+    "B1": 0,
+    "C2": 0,
+    "D5": 0,
+    "D7": 0,
+    "E2": 0,
+    "F2": 0,
+    "G2": 0
+   },
+   "pass": true
+  },
+  {
+   "T": "2020-01-06 00:00:00+00:00",
+   "target_sleeve": "brk72_24h_wd_ethusd",
+   "trades_in_cut_book": 5238,
+   "trades_at_or_before_T_full": 5238,
+   "trades_at_or_before_T_cut": 5238,
+   "matched": 5238,
+   "decisions_differing": {
+    "ref": 0,
+    "A3": 0,
+    "A5": 0,
+    "B1": 0,
+    "C2": 0,
+    "D5": 0,
+    "D7": 0,
+    "E2": 0,
+    "F2": 0,
+    "G2": 0
+   },
+   "pass": true
+  },
+  {
+   "T": "2020-06-18 13:34:00+00:00",
+   "target_sleeve": "ocm4_us100",
+   "trades_in_cut_book": 5837,
+   "trades_at_or_before_T_full": 5837,
+   "trades_at_or_before_T_cut": 5837,
+   "matched": 5837,
+   "decisions_differing": {
+    "ref": 0,
+    "A3": 0,
+    "A5": 0,
+    "B1": 0,
+    "C2": 0,
+    "D5": 0,
+    "D7": 0,
+    "E2": 0,
+    "F2": 0,
+    "G2": 0
+   },
+   "pass": true
+  },
+  {
+   "T": "2020-07-02 16:00:00+00:00",
+   "target_sleeve": "F1_brk_ridge_filter_btcusd",
+   "trades_in_cut_book": 5895,
+   "trades_at_or_before_T_full": 5895,
+   "trades_at_or_before_T_cut": 5895,
+   "matched": 5895,
+   "decisions_differing": {
+    "ref": 0,
+    "A3": 0,
+    "A5": 0,
+    "B1": 0,
+    "C2": 0,
+    "D5": 0,
+    "D7": 0,
+    "E2": 0,
+    "F2": 0,
+    "G2": 0
+   },
+   "pass": true
+  },
+  {
+   "T": "2021-01-12 14:51:00+00:00",
+   "target_sleeve": "nq_btc_follow_btcusd",
+   "trades_in_cut_book": 6573,
+   "trades_at_or_before_T_full": 6573,
+   "trades_at_or_before_T_cut": 6573,
+   "matched": 6573,
+   "decisions_differing": {
+    "ref": 0,
+    "A3": 0,
+    "A5": 0,
+    "B1": 0,
+    "C2": 0,
+    "D5": 0,
+    "D7": 0,
+    "E2": 0,
+    "F2": 0,
+    "G2": 0
+   },
+   "pass": true
+  },
+  {
+   "T": "2021-05-07 14:30:00+00:00",
+   "target_sleeve": "noise30_us100",
+   "trades_in_cut_book": 7022,
+   "trades_at_or_before_T_full": 7022,
+   "trades_at_or_before_T_cut": 7022,
+   "matched": 7022,
+   "decisions_differing": {
+    "ref": 0,
+    "A3": 0,
+    "A5": 0,
+    "B1": 0,
+    "C2": 0,
+    "D5": 0,
+    "D7": 0,
+    "E2": 0,
+    "F2": 0,
+    "G2": 0
+   },
+   "pass": true
+  }
+ ],
+ "variants_tested": [
+  "A3",
+  "A5",
+  "B1",
+  "C2",
+  "D5",
+  "D7",
+  "E2",
+  "F2",
+  "G2"
+ ],
+ "pass": true
+}

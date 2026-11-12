@@ -1,0 +1,110 @@
+{
+ "orb_asia_2d_buf10:ethusd": {
+  "rule": "orb_asia_2d_buf10",
+  "instrument": "ethusd",
+  "mode": "day",
+  "n": 345,
+  "rule_mean_R": 0.452,
+  "null_mean_R": 0.0821,
+  "null_p95_R": 0.3316,
+  "null_max_R": 0.5682,
+  "percentile": 99.0,
+  "draws": 200
+ },
+ "orb_asia_2d_buf10:btcusd": {
+  "rule": "orb_asia_2d_buf10",
+  "instrument": "btcusd",
+  "mode": "day",
+  "n": 376,
+  "rule_mean_R": 0.5177,
+  "null_mean_R": 0.1106,
+  "null_p95_R": 0.3722,
+  "null_max_R": 0.4955,
+  "percentile": 100.0,
+  "draws": 200
+ },
+ "donch4h_stop:ethusd": {
+  "rule": "donch4h_stop",
+  "instrument": "ethusd",
+  "mode": "day",
+  "n": 223,
+  "rule_mean_R": 0.329,
+  "null_mean_R": 0.0386,
+  "null_p95_R": 0.175,
+  "null_max_R": 0.3019,
+  "percentile": 100.0,
+  "draws": 200
+ },
+ "brk72_24h_wd:jp225": {
+  "rule": "brk72_24h_wd",
+  "instrument": "jp225",
+  "mode": "day",
+  "n": 524,
+  "rule_mean_R": 0.0622,
+  "null_mean_R": -0.0271,
+  "null_p95_R": 0.0821,
+  "null_max_R": 0.1376,
+  "percentile": 92.0,
+  "draws": 200
+ },
+ "donch4h_stop:us100": {
+  "rule": "donch4h_stop",
+  "instrument": "us100",
+  "mode": "day",
+  "n": 243,
+  "rule_mean_R": 0.077,
+  "null_mean_R": 0.0087,
+  "null_p95_R": 0.1547,
+  "null_max_R": 0.2184,
+  "percentile": 80.5,
+  "draws": 200
+ },
+ "donch4h_stop:jp225": {
+  "rule": "donch4h_stop",
+  "instrument": "jp225",
+  "mode": "day",
+  "n": 218,
+  "rule_mean_R": 0.1043,
+  "null_mean_R": -0.0194,
+  "null_p95_R": 0.1182,
+  "null_max_R": 0.2207,
+  "percentile": 92.0,
+  "draws": 200
+ },
+ "F1_brk_ridge_filter:xagusd": {
+  "rule": "F1_brk_ridge_filter",
+  "instrument": "xagusd",
+  "mode": "day",
+  "n": 438,
+  "rule_mean_R": 0.0642,
+  "null_mean_R": -0.0957,
+  "null_p95_R": 0.0137,
+  "null_max_R": 0.0495,
+  "percentile": 100.0,
+  "draws": 200
+ },
+ "donch4h_stop:btcusd": {
+  "rule": "donch4h_stop",
+  "instrument": "btcusd",
+  "mode": "day",
+  "n": 232,
+  "rule_mean_R": 0.3296,
+  "null_mean_R": 0.0778,
+  "null_p95_R": 0.2428,
+  "null_max_R": 0.4624,
+  "percentile": 99.0,
+  "draws": 200
+ },
+ "ocm4:btcusd": {
+  "rule": "ocm4",
+  "instrument": "btcusd",
+  "mode": "day",
+  "n": 492,
+  "rule_mean_R": 0.0951,
+  "null_mean_R": 0.0006,
+  "null_p95_R": 0.1006,
+  "null_max_R": 0.2344,
+  "percentile": 93.0,
+  "draws": 200
+ }
+}

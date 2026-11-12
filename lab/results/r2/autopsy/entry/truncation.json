@@ -1,0 +1,837 @@
+{
+ "what": "Addendum H, lens `entry` -- causality (criterion f), FP frames, in sample.",
+ "cells": {
+  "noise30:us100|LIM10_skip|price": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "noise30:us100|LIM10_skip|dist": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "noise30:us100|LIM25_skip|price": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "noise30:us100|LIM25_skip|dist": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "noise30:us100|LIM10_mkt|price": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "noise30:us100|LIM10_mkt|dist": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "noise30:us100|CONF1|price": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "noise30:us100|CONF1|dist": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "noise30:us100|CONF5|price": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "noise30:us100|CONF5|dist": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "noise30:us100|HALF25|price": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "noise30:us100|HALF25|dist": {
+   "decisions_checked": 3286,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|LIM10_skip|price": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|LIM10_skip|dist": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|LIM25_skip|price": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|LIM25_skip|dist": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|LIM10_mkt|price": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|LIM10_mkt|dist": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|CONF1|price": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|CONF1|dist": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|CONF5|price": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|CONF5|dist": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|HALF25|price": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100|HALF25|dist": {
+   "decisions_checked": 1998,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|LIM10_skip|price": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|LIM10_skip|dist": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|LIM25_skip|price": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|LIM25_skip|dist": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|LIM10_mkt|price": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|LIM10_mkt|dist": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|CONF1|price": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|CONF1|dist": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|CONF5|price": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|CONF5|dist": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|HALF25|price": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd|HALF25|dist": {
+   "decisions_checked": 5828,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|LIM10_skip|price": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|LIM10_skip|dist": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|LIM25_skip|price": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|LIM25_skip|dist": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|LIM10_mkt|price": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|LIM10_mkt|dist": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|CONF1|price": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|CONF1|dist": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|CONF5|price": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|CONF5|dist": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|HALF25|price": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd|HALF25|dist": {
+   "decisions_checked": 5222,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|LIM10_skip|price": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|LIM10_skip|dist": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|LIM25_skip|price": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|LIM25_skip|dist": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|LIM10_mkt|price": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|LIM10_mkt|dist": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|CONF1|price": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|CONF1|dist": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|CONF5|price": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|CONF5|dist": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|HALF25|price": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd|HALF25|dist": {
+   "decisions_checked": 2470,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|LIM10_skip|price": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|LIM10_skip|dist": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|LIM25_skip|price": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|LIM25_skip|dist": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|LIM10_mkt|price": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|LIM10_mkt|dist": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|CONF1|price": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|CONF1|dist": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|CONF5|price": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|CONF5|dist": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|HALF25|price": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd|HALF25|dist": {
+   "decisions_checked": 4710,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|LIM10_skip|price": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|LIM10_skip|dist": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|LIM25_skip|price": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|LIM25_skip|dist": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|LIM10_mkt|price": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|LIM10_mkt|dist": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|CONF1|price": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|CONF1|dist": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|CONF5|price": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|CONF5|dist": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|HALF25|price": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd|HALF25|dist": {
+   "decisions_checked": 1990,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|LIM10_skip|price": {
+   "decisions_checked": 443,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|LIM10_skip|dist": {
+   "decisions_checked": 443,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|LIM25_skip|price": {
+   "decisions_checked": 443,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|LIM25_skip|dist": {
+   "decisions_checked": 443,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|LIM10_mkt|price": {
+   "decisions_checked": 443,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|LIM10_mkt|dist": {
+   "decisions_checked": 443,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|CONF1|price": {
+   "decisions_checked": 886,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|CONF1|dist": {
+   "decisions_checked": 886,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|CONF5|price": {
+   "decisions_checked": 886,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|CONF5|dist": {
+   "decisions_checked": 886,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|HALF25|price": {
+   "decisions_checked": 443,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd|HALF25|dist": {
+   "decisions_checked": 443,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|RT60_skip|price": {
+   "decisions_checked": 1653,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|RT60_skip|dist": {
+   "decisions_checked": 1653,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|RT240_skip|price": {
+   "decisions_checked": 1654,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|RT240_skip|dist": {
+   "decisions_checked": 1654,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|RT720_skip|price": {
+   "decisions_checked": 1654,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|RT720_skip|dist": {
+   "decisions_checked": 1654,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|RT60_mkt|price": {
+   "decisions_checked": 1653,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|RT60_mkt|dist": {
+   "decisions_checked": 1653,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|RT240_mkt|price": {
+   "decisions_checked": 1654,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|RT240_mkt|dist": {
+   "decisions_checked": 1654,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|HALFRT240|price": {
+   "decisions_checked": 1654,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd|HALFRT240|dist": {
+   "decisions_checked": 1654,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|RT30_skip|price": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|RT30_skip|dist": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|RT120_skip|price": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|RT120_skip|dist": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|RT300_skip|price": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|RT300_skip|dist": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|RT30_mkt|price": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|RT30_mkt|dist": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|RT120_mkt|price": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|RT120_mkt|dist": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|HALFRT120|price": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd|HALFRT120|dist": {
+   "decisions_checked": 1829,
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  }
+ },
+ "rule_layer": {
+  "noise30:us100": {
+   "signals_checked": 25,
+   "fields": [
+    "side",
+    "stop",
+    "stop_dist",
+    "level"
+   ],
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "ocm4:us100": {
+   "signals_checked": 25,
+   "fields": [
+    "side",
+    "stop",
+    "stop_dist",
+    "level"
+   ],
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:btcusd": {
+   "signals_checked": 25,
+   "fields": [
+    "side",
+    "stop_dist"
+   ],
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "nq_btc_follow:btcusd": {
+   "signals_checked": 25,
+   "fields": [
+    "side",
+    "stop_dist"
+   ],
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:btcusd": {
+   "signals_checked": 25,
+   "fields": [
+    "side",
+    "stop_dist"
+   ],
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "brk72_24h_wd:ethusd": {
+   "signals_checked": 25,
+   "fields": [
+    "side",
+    "stop_dist"
+   ],
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "F1_brk_ridge_filter:ethusd": {
+   "signals_checked": 25,
+   "fields": [
+    "side",
+    "stop_dist"
+   ],
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "GOLD_FRI_PM:xauusd": {
+   "signals_checked": 25,
+   "fields": [
+    "side",
+    "stop_dist",
+    "level"
+   ],
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "donch4h_stop:xauusd": {
+   "signals_checked": 25,
+   "fields": [
+    "side",
+    "stop_dist",
+    "level",
+    "trig_i"
+   ],
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  },
+  "orb_asia_2d_buf10:xauusd": {
+   "signals_checked": 25,
+   "fields": [
+    "side",
+    "stop",
+    "level"
+   ],
+   "mismatches": 0,
+   "examples": [],
+   "identical": true
+  }
+ },
+ "all_identical": true,
+ "rule_layer_all_identical": true
+}

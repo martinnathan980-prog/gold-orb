@@ -1,0 +1,795 @@
+{
+ "written": "2026-11-12T11:49:19Z",
+ "lens": "breadth (PROTOCOL_V3 Addendum H): the frozen rules of the ten sleeves, parameters unchanged, on instruments never tried",
+ "status_before_any_new_simulation": "only the ten official sleeves have been simulated (repro.py, first check, all ten reproduced)",
+ "budget_trials": 126,
+ "pairs": [
+  {
+   "id": 1,
+   "rule": "noise30",
+   "instrument": "ger40"
+  },
+  {
+   "id": 2,
+   "rule": "noise30",
+   "instrument": "xauusd"
+  },
+  {
+   "id": 3,
+   "rule": "noise30",
+   "instrument": "xagusd"
+  },
+  {
+   "id": 4,
+   "rule": "noise30",
+   "instrument": "btcusd"
+  },
+  {
+   "id": 5,
+   "rule": "noise30",
+   "instrument": "ethusd"
+  },
+  {
+   "id": 6,
+   "rule": "noise30",
+   "instrument": "eurusd"
+  },
+  {
+   "id": 7,
+   "rule": "noise30",
+   "instrument": "gbpusd"
+  },
+  {
+   "id": 8,
+   "rule": "noise30",
+   "instrument": "usdjpy"
+  },
+  {
+   "id": 9,
+   "rule": "noise30",
+   "instrument": "audusd"
+  },
+  {
+   "id": 10,
+   "rule": "noise30",
+   "instrument": "usdcad"
+  },
+  {
+   "id": 11,
+   "rule": "noise30",
+   "instrument": "usdchf"
+  },
+  {
+   "id": 12,
+   "rule": "noise30",
+   "instrument": "nzdusd"
+  },
+  {
+   "id": 13,
+   "rule": "noise30",
+   "instrument": "eurjpy"
+  },
+  {
+   "id": 14,
+   "rule": "noise30",
+   "instrument": "jp225"
+  },
+  {
+   "id": 15,
+   "rule": "ocm4",
+   "instrument": "us30"
+  },
+  {
+   "id": 16,
+   "rule": "ocm4",
+   "instrument": "ger40"
+  },
+  {
+   "id": 17,
+   "rule": "ocm4",
+   "instrument": "xauusd"
+  },
+  {
+   "id": 18,
+   "rule": "ocm4",
+   "instrument": "xagusd"
+  },
+  {
+   "id": 19,
+   "rule": "ocm4",
+   "instrument": "btcusd"
+  },
+  {
+   "id": 20,
+   "rule": "ocm4",
+   "instrument": "ethusd"
+  },
+  {
+   "id": 21,
+   "rule": "ocm4",
+   "instrument": "eurusd"
+  },
+  {
+   "id": 22,
+   "rule": "ocm4",
+   "instrument": "gbpusd"
+  },
+  {
+   "id": 23,
+   "rule": "ocm4",
+   "instrument": "usdjpy"
+  },
+  {
+   "id": 24,
+   "rule": "ocm4",
+   "instrument": "audusd"
+  },
+  {
+   "id": 25,
+   "rule": "ocm4",
+   "instrument": "usdcad"
+  },
+  {
+   "id": 26,
+   "rule": "ocm4",
+   "instrument": "usdchf"
+  },
+  {
+   "id": 27,
+   "rule": "ocm4",
+   "instrument": "nzdusd"
+  },
+  {
+   "id": 28,
+   "rule": "ocm4",
+   "instrument": "eurjpy"
+  },
+  {
+   "id": 29,
+   "rule": "ocm4",
+   "instrument": "jp225"
+  },
+  {
+   "id": 30,
+   "rule": "donch4h_stop",
+   "instrument": "us100"
+  },
+  {
+   "id": 31,
+   "rule": "donch4h_stop",
+   "instrument": "us500"
+  },
+  {
+   "id": 32,
+   "rule": "donch4h_stop",
+   "instrument": "us30"
+  },
+  {
+   "id": 33,
+   "rule": "donch4h_stop",
+   "instrument": "btcusd"
+  },
+  {
+   "id": 34,
+   "rule": "donch4h_stop",
+   "instrument": "ethusd"
+  },
+  {
+   "id": 35,
+   "rule": "donch4h_stop",
+   "instrument": "jp225"
+  },
+  {
+   "id": 36,
+   "rule": "orb_asia_2d_buf10",
+   "instrument": "us100"
+  },
+  {
+   "id": 37,
+   "rule": "orb_asia_2d_buf10",
+   "instrument": "us500"
+  },
+  {
+   "id": 38,
+   "rule": "orb_asia_2d_buf10",
+   "instrument": "us30"
+  },
+  {
+   "id": 39,
+   "rule": "orb_asia_2d_buf10",
+   "instrument": "ger40"
+  },
+  {
+   "id": 40,
+   "rule": "orb_asia_2d_buf10",
+   "instrument": "btcusd"
+  },
+  {
+   "id": 41,
+   "rule": "orb_asia_2d_buf10",
+   "instrument": "ethusd"
+  },
+  {
+   "id": 42,
+   "rule": "orb_asia_2d_buf10",
+   "instrument": "jp225"
+  },
+  {
+   "id": 43,
+   "rule": "GOLD_FRI_PM",
+   "instrument": "xagusd"
+  },
+  {
+   "id": 44,
+   "rule": "GOLD_FRI_PM",
+   "instrument": "btcusd"
+  },
+  {
+   "id": 45,
+   "rule": "GOLD_FRI_PM",
+   "instrument": "ethusd"
+  },
+  {
+   "id": 46,
+   "rule": "GOLD_FRI_PM",
+   "instrument": "eurusd"
+  },
+  {
+   "id": 47,
+   "rule": "GOLD_FRI_PM",
+   "instrument": "gbpusd"
+  },
+  {
+   "id": 48,
+   "rule": "GOLD_FRI_PM",
+   "instrument": "usdjpy"
+  },
+  {
+   "id": 49,
+   "rule": "GOLD_FRI_PM",
+   "instrument": "audusd"
+  },
+  {
+   "id": 50,
+   "rule": "GOLD_FRI_PM",
+   "instrument": "usdcad"
+  },
+  {
+   "id": 51,
+   "rule": "GOLD_FRI_PM",
+   "instrument": "usdchf"
+  },
+  {
+   "id": 52,
+   "rule": "GOLD_FRI_PM",
+   "instrument": "nzdusd"
+  },
+  {
+   "id": 53,
+   "rule": "GOLD_FRI_PM",
+   "instrument": "eurjpy"
+  },
+  {
+   "id": 54,
+   "rule": "brk72_24h_wd",
+   "instrument": "us100"
+  },
+  {
+   "id": 55,
+   "rule": "brk72_24h_wd",
+   "instrument": "us500"
+  },
+  {
+   "id": 56,
+   "rule": "brk72_24h_wd",
+   "instrument": "us30"
+  },
+  {
+   "id": 57,
+   "rule": "brk72_24h_wd",
+   "instrument": "ger40"
+  },
+  {
+   "id": 58,
+   "rule": "brk72_24h_wd",
+   "instrument": "xauusd"
+  },
+  {
+   "id": 59,
+   "rule": "brk72_24h_wd",
+   "instrument": "xagusd"
+  },
+  {
+   "id": 60,
+   "rule": "brk72_24h_wd",
+   "instrument": "jp225"
+  },
+  {
+   "id": 61,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "us500"
+  },
+  {
+   "id": 62,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "us30"
+  },
+  {
+   "id": 63,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "xagusd"
+  },
+  {
+   "id": 64,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "eurusd"
+  },
+  {
+   "id": 65,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "gbpusd"
+  },
+  {
+   "id": 66,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "usdjpy"
+  },
+  {
+   "id": 67,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "audusd"
+  },
+  {
+   "id": 68,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "usdcad"
+  },
+  {
+   "id": 69,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "usdchf"
+  },
+  {
+   "id": 70,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "nzdusd"
+  },
+  {
+   "id": 71,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "eurjpy"
+  },
+  {
+   "id": 72,
+   "rule": "F1_brk_ridge_filter",
+   "instrument": "jp225"
+  },
+  {
+   "id": 73,
+   "rule": "nq_btc_follow",
+   "instrument": "us500"
+  },
+  {
+   "id": 74,
+   "rule": "nq_btc_follow",
+   "instrument": "us30"
+  },
+  {
+   "id": 75,
+   "rule": "nq_btc_follow",
+   "instrument": "ger40"
+  },
+  {
+   "id": 76,
+   "rule": "nq_btc_follow",
+   "instrument": "xauusd"
+  },
+  {
+   "id": 77,
+   "rule": "nq_btc_follow",
+   "instrument": "xagusd"
+  },
+  {
+   "id": 78,
+   "rule": "nq_btc_follow",
+   "instrument": "eurusd"
+  },
+  {
+   "id": 79,
+   "rule": "nq_btc_follow",
+   "instrument": "gbpusd"
+  },
+  {
+   "id": 80,
+   "rule": "nq_btc_follow",
+   "instrument": "usdjpy"
+  },
+  {
+   "id": 81,
+   "rule": "nq_btc_follow",
+   "instrument": "audusd"
+  },
+  {
+   "id": 82,
+   "rule": "nq_btc_follow",
+   "instrument": "usdcad"
+  },
+  {
+   "id": 83,
+   "rule": "nq_btc_follow",
+   "instrument": "usdchf"
+  },
+  {
+   "id": 84,
+   "rule": "nq_btc_follow",
+   "instrument": "nzdusd"
+  },
+  {
+   "id": 85,
+   "rule": "nq_btc_follow",
+   "instrument": "eurjpy"
+  },
+  {
+   "id": 86,
+   "rule": "nq_btc_follow",
+   "instrument": "jp225"
+  },
+  {
+   "id": 87,
+   "rule": "nq_btc_follow",
+   "instrument": "aapl"
+  },
+  {
+   "id": 88,
+   "rule": "nq_btc_follow",
+   "instrument": "msft"
+  },
+  {
+   "id": 89,
+   "rule": "nq_btc_follow",
+   "instrument": "amzn"
+  },
+  {
+   "id": 90,
+   "rule": "nq_btc_follow",
+   "instrument": "googl"
+  },
+  {
+   "id": 91,
+   "rule": "nq_btc_follow",
+   "instrument": "fb"
+  },
+  {
+   "id": 92,
+   "rule": "nq_btc_follow",
+   "instrument": "nvda"
+  },
+  {
+   "id": 93,
+   "rule": "nq_btc_follow",
+   "instrument": "tsla"
+  },
+  {
+   "id": 94,
+   "rule": "nq_btc_follow",
+   "instrument": "nflx"
+  },
+  {
+   "id": 95,
+   "rule": "nq_btc_follow",
+   "instrument": "amd"
+  },
+  {
+   "id": 96,
+   "rule": "nq_btc_follow",
+   "instrument": "intc"
+  },
+  {
+   "id": 97,
+   "rule": "nq_btc_follow",
+   "instrument": "csco"
+  },
+  {
+   "id": 98,
+   "rule": "nq_btc_follow",
+   "instrument": "orcl"
+  },
+  {
+   "id": 99,
+   "rule": "nq_btc_follow",
+   "instrument": "crm"
+  },
+  {
+   "id": 100,
+   "rule": "nq_btc_follow",
+   "instrument": "adbe"
+  },
+  {
+   "id": 101,
+   "rule": "nq_btc_follow",
+   "instrument": "qcom"
+  },
+  {
+   "id": 102,
+   "rule": "nq_btc_follow",
+   "instrument": "avgo"
+  },
+  {
+   "id": 103,
+   "rule": "nq_btc_follow",
+   "instrument": "mu"
+  },
+  {
+   "id": 104,
+   "rule": "nq_btc_follow",
+   "instrument": "pypl"
+  },
+  {
+   "id": 105,
+   "rule": "nq_btc_follow",
+   "instrument": "baba"
+  },
+  {
+   "id": 106,
+   "rule": "nq_btc_follow",
+   "instrument": "jpm"
+  },
+  {
+   "id": 107,
+   "rule": "nq_btc_follow",
+   "instrument": "bac"
+  },
+  {
+   "id": 108,
+   "rule": "nq_btc_follow",
+   "instrument": "c"
+  },
+  {
+   "id": 109,
+   "rule": "nq_btc_follow",
+   "instrument": "wfc"
+  },
+  {
+   "id": 110,
+   "rule": "nq_btc_follow",
+   "instrument": "gs"
+  },
+  {
+   "id": 111,
+   "rule": "nq_btc_follow",
+   "instrument": "v"
+  },
+  {
+   "id": 112,
+   "rule": "nq_btc_follow",
+   "instrument": "ma"
+  },
+  {
+   "id": 113,
+   "rule": "nq_btc_follow",
+   "instrument": "jnj"
+  },
+  {
+   "id": 114,
+   "rule": "nq_btc_follow",
+   "instrument": "pfe"
+  },
+  {
+   "id": 115,
+   "rule": "nq_btc_follow",
+   "instrument": "mrk"
+  },
+  {
+   "id": 116,
+   "rule": "nq_btc_follow",
+   "instrument": "unh"
+  },
+  {
+   "id": 117,
+   "rule": "nq_btc_follow",
+   "instrument": "xom"
+  },
+  {
+   "id": 118,
+   "rule": "nq_btc_follow",
+   "instrument": "cvx"
+  },
+  {
+   "id": 119,
+   "rule": "nq_btc_follow",
+   "instrument": "ba"
+  },
+  {
+   "id": 120,
+   "rule": "nq_btc_follow",
+   "instrument": "cat"
+  },
+  {
+   "id": 121,
+   "rule": "nq_btc_follow",
+   "instrument": "ge"
+  },
+  {
+   "id": 122,
+   "rule": "nq_btc_follow",
+   "instrument": "wmt"
+  },
+  {
+   "id": 123,
+   "rule": "nq_btc_follow",
+   "instrument": "hd"
+  },
+  {
+   "id": 124,
+   "rule": "nq_btc_follow",
+   "instrument": "dis"
+  },
+  {
+   "id": 125,
+   "rule": "nq_btc_follow",
+   "instrument": "mcd"
+  },
+  {
+   "id": 126,
+   "rule": "nq_btc_follow",
+   "instrument": "nke"
+  }
+ ],
+ "frozen_rules": {
+  "noise30": {
+   "track": "idx_us",
+   "params": {
+    "rule": "noise",
+    "lookback": 14,
+    "first_min": 600,
+    "step": 30,
+    "last_min": 930,
+    "exit_min": 955,
+    "vm": 1.0
+   }
+  },
+  "ocm4": {
+   "track": "idx_us",
+   "params": {
+    "rule": "ocm",
+    "n": 4,
+    "stop": "atr",
+    "k": 0.3,
+    "exit_min": 955,
+    "size_min": 1.0,
+    "size_win": 20,
+    "target_r": null,
+    "atr_n": 14,
+    "sides": "both"
+   }
+  },
+  "brk72_24h_wd": {
+   "track": "crypto",
+   "params": {
+    "family": "brk",
+    "n": 72,
+    "stop_atr": 3.0,
+    "hold_h": 24,
+    "dow": "weekday"
+   }
+  },
+  "nq_btc_follow": {
+   "track": "leadlag",
+   "params": {
+    "rule": "xlead",
+    "leader": "us100",
+    "pred": "lead",
+    "sess": "uscash",
+    "dirn": 1,
+    "k": 1,
+    "z": 6,
+    "hold": 60,
+    "stop": 2.0
+   }
+  },
+  "F1_brk_ridge_filter": {
+   "track": "ml",
+   "params": {
+    "stop_k": 2.0,
+    "hold_h": 13.0,
+    "model": "B1_ridge_full.json",
+    "q": "0.5"
+   }
+  },
+  "GOLD_FRI_PM": {
+   "track": "overnight",
+   "params": {
+    "tz": "NY",
+    "entry": "13:30",
+    "exit": "16:45",
+    "weekdays": [
+     4
+    ],
+    "side": 1,
+    "stop_atr": 3.0,
+    "atr_n": 14,
+    "atr_tf": "1h",
+    "entry_type": "limit",
+    "limit_min": 60,
+    "min_prev": 0,
+    "skip_early_close": true
+   }
+  },
+  "donch4h_stop": {
+   "track": "r1_trend",
+   "params": {
+    "family": "donchian",
+    "tf": "4h",
+    "n": 60,
+    "entry": "stop",
+    "stop_atr": 2.0,
+    "trail_atr": 2.0,
+    "max_days": 5,
+    "atr_n": 14,
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   }
+  },
+  "orb_asia_2d_buf10": {
+   "track": "r1_orb",
+   "params": {
+    "tz": "LDN",
+    "range_start": "00:00",
+    "range_end": "07:00",
+    "entry_end": "12:00",
+    "entry": "stop",
+    "buf_frac": 0.1,
+    "buf_abs": 0.0,
+    "stop_mode": "opp",
+    "target_R": null,
+    "be_R": null,
+    "trail_atr": null,
+    "exit_time": "16:00",
+    "exit_tz": "NY",
+    "hold_days": 2,
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "max_cost_R": null,
+    "trend": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14
+   }
+  }
+ },
+ "rule_notes": {
+  "brk72_24h_wd": "with the FP-hours exit wrapper of lab/r2/recalc.py (a time exit inside a closure is done on the last bar before it), as recalculated and as the fx track transferred it",
+  "nq_btc_follow": "leader us100 (in-sample slice registered with set_leader before every call); the instrument is the follower",
+  "GOLD_FRI_PM": "finalist_params('GOLD_FRI_PM', ...) has no per-symbol variant: same dict on every instrument",
+  "F1_brk_ridge_filter": "frozen scorecard models/B1_ridge_full.json['frozen'] (trained on us100+ger40+xauusd+btcusd in-sample candidates); not refitted"
+ },
+ "data": "in-sample slices only: price frames read with a filter ts < 2022-01-01 (last bar 2021-12-31 23:59 UTC at most); each rule is run on the whole in-sample slice of its instrument (warm-up), from the frame start",
+ "jp225_frame": "built in memory from lab/data/raw_jp (2013-2021 CSVs only) with the prep_round2 cleaning and the build_fp_frames cost construction",
+ "costs": {
+  "fp": "goldlab.r2.costs(sym) on the FP frame (fp_costs.json); jp225 and shares: declared rows in common.py (JP225_SPEC: 12 points at 50,000 = 2.4 bp, slip 0.5/0.2 bp, swap long 5.5 %; STOCK_SPEC of the stocks track)",
+  "stress": "spread and slippage x1.5, orders rebuilt on the widened quotes (goldlab.r2.run mode 'stress' logic)",
+  "gross": "bid = ask = mid, no slippage, no swap (information only)",
+  "broker_min_stop": "a trade whose initial stop is closer than 3 spreads of its fill bar (or already crossed at the fill) is not taken: its order is removed and the sleeve re-simulated; applied in fp and stress (not in gross); the count is reported"
+ },
+ "judging_window": "trades entered 2018-02-01 .. 2021-12-31 (the common in-sample window of the ten sleeves); earlier in-sample years are reported separately and judge nothing",
+ "criterion_breadth": "PF >= 1.15 (net of FP costs, window above), total R positive in at least 3 of the 4 calendar years 2018-2021, total R positive with costs x1.5, parameters unchanged",
+ "reported_for_every_pair": [
+  "n, trades per year, win rate, average win and loss in R, expectancy, t, PF, total R, max drawdown in R, long/short R, years",
+  "the same with costs x1.5 and gross",
+  "the earlier in-sample years separately",
+  "trades refused by the 3-spread rule",
+  "weekly R correlation (calendar week of the exit, every week of the window, empty weeks = 0) with each of the ten official sleeves (rows entry < 2022) and with their sum",
+  "PROTOCOL_V2 sleeve bars for information (n >= 250, PF >= 1.12, t >= 2.5, >= 60 % years, stress PF >= 1.04)"
+ ],
+ "ranking_of_qualifiers": "by the change of the annualised Sharpe ratio of the weekly sum of R of the ten sleeves when the pair is added at the same risk per trade (window above); ties by the extra total R per year; the correlation with the sum and the extra R per year are shown beside it",
+ "tests_for_qualifiers": [
+  "truncation test: for up to 40 trades (fixed seed) the frame is cut right after the decision bar (stop-entry rules: right after the touch bar), 3 flat provisional bars are appended, the orders are rebuilt and the order of the trade must be identical (entry time, side, stop or stop distance, level)",
+  "random-entry null (PROTOCOL_V2 mode 'day', information only): the same trades re-entered at market on a random day at the same New-York time with the same side, stop and holding time, 200 draws, percentile of the rule's mean R"
+ ],
+ "pooled_readings_information_only": "per rule: FX basket (8 pairs), shares basket (nq_btc_follow), metals, indices -- with the PROTOCOL_V3 basket t on daily sums",
+ "multiple_testing": "with this many trials some pairs can pass the loose breadth bar by chance; each qualifier is shown with its t and its null percentile, and the number of passes is compared with the number expected from pairs with no edge",
+ "nothing_else": "no parameter, clock, filter, exit or cost variant is run on any new instrument; a pair is run once (fp, stress, gross)"
+}

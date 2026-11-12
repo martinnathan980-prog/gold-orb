@@ -1,0 +1,24 @@
+{
+ "RT30_mkt|price": {
+  "trades_loop": 1039,
+  "trades_engine": 1039,
+  "only_loop": 0,
+  "only_engine": 0,
+  "max_abs_dR": 0.0,
+  "common_n_loop": 464,
+  "common_total_R_loop": 36.36,
+  "common_n_engine": 464,
+  "common_total_R_engine": 36.36
+ },
+ "RT30_skip|price": {
+  "trades_loop": 1013,
+  "trades_engine": 1013,
+  "only_loop": 0,
+  "only_engine": 0,
+  "max_abs_dR": 0.0,
+  "common_n_loop": 454,
+  "common_total_R_loop": 37.29,
+  "common_n_engine": 454,
+  "common_total_R_engine": 37.29
+ }
+}

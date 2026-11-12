@@ -1,0 +1,220 @@
+{
+ "fp": {
+  "censored": 0,
+  "common": {
+   "n": 549,
+   "win_rate": 0.4536,
+   "exp_R": 0.2563,
+   "avg_win_R": 1.4399,
+   "avg_loss_R": -0.7261,
+   "pf": 1.646,
+   "total_R": 140.68,
+   "t_stat": 3.32,
+   "max_dd_R": 8.55,
+   "worst_R": -1.492,
+   "best_R": 24.184,
+   "avg_hold_h": 18.02,
+   "max_hold_h": 24.03,
+   "reasons": {
+    "time": 378,
+    "stop": 171
+   }
+  },
+  "early": {
+   "n": 96,
+   "win_rate": 0.5312,
+   "exp_R": 0.3353,
+   "avg_win_R": 1.2938,
+   "avg_loss_R": -0.751,
+   "pf": 1.953,
+   "total_R": 32.19,
+   "t_stat": 2.33,
+   "max_dd_R": 3.4,
+   "worst_R": -1.83,
+   "best_R": 6.587,
+   "avg_hold_h": 18.52,
+   "max_hold_h": 24.0,
+   "reasons": {
+    "time": 73,
+    "stop": 23
+   }
+  },
+  "whole": {
+   "n": 645,
+   "win_rate": 0.4651,
+   "exp_R": 0.268,
+   "avg_win_R": 1.415,
+   "avg_loss_R": -0.7294,
+   "pf": 1.687,
+   "total_R": 172.87,
+   "t_stat": 3.88,
+   "max_dd_R": 8.55,
+   "worst_R": -1.83,
+   "best_R": 24.184,
+   "avg_hold_h": 18.09,
+   "max_hold_h": 24.03,
+   "reasons": {
+    "time": 451,
+    "stop": 194
+   }
+  },
+  "by_year": {
+   "2018": {
+    "n": 129,
+    "total_R": 36.16,
+    "exp_R": 0.2803,
+    "avg_loss_R": -0.7226,
+    "win_rate": 0.4186
+   },
+   "2019": {
+    "n": 140,
+    "total_R": 44.43,
+    "exp_R": 0.3173,
+    "avg_loss_R": -0.7598,
+    "win_rate": 0.4714
+   },
+   "2020": {
+    "n": 135,
+    "total_R": 49.05,
+    "exp_R": 0.3634,
+    "avg_loss_R": -0.7203,
+    "win_rate": 0.4593
+   },
+   "2021": {
+    "n": 145,
+    "total_R": 11.04,
+    "exp_R": 0.0761,
+    "avg_loss_R": -0.703,
+    "win_rate": 0.4621
+   }
+  },
+  "by_year_early": {
+   "2017": {
+    "n": 86,
+    "total_R": 29.47,
+    "exp_R": 0.3426,
+    "avg_loss_R": -0.7578,
+    "win_rate": 0.5349
+   },
+   "2018": {
+    "n": 10,
+    "total_R": 2.72,
+    "exp_R": 0.2724,
+    "avg_loss_R": -0.6967,
+    "win_rate": 0.5
+   }
+  },
+  "orders": 2914,
+  "orders_with_stop_under_3_spreads": 0,
+  "taken_with_stop_under_3_spreads": 0
+ },
+ "stress": {
+  "censored": 0,
+  "common": {
+   "n": 549,
+   "win_rate": 0.4499,
+   "exp_R": 0.2468,
+   "avg_win_R": 1.4425,
+   "avg_loss_R": -0.7311,
+   "pf": 1.614,
+   "total_R": 135.52,
+   "t_stat": 3.2,
+   "max_dd_R": 8.7,
+   "worst_R": -1.495,
+   "best_R": 24.157,
+   "avg_hold_h": 17.96,
+   "max_hold_h": 24.03,
+   "reasons": {
+    "time": 376,
+    "stop": 173
+   }
+  },
+  "early": {
+   "n": 96,
+   "win_rate": 0.5312,
+   "exp_R": 0.3282,
+   "avg_win_R": 1.2865,
+   "avg_loss_R": -0.7579,
+   "pf": 1.924,
+   "total_R": 31.51,
+   "t_stat": 2.28,
+   "max_dd_R": 3.44,
+   "worst_R": -1.84,
+   "best_R": 6.578,
+   "avg_hold_h": 18.51,
+   "max_hold_h": 24.0,
+   "reasons": {
+    "time": 72,
+    "stop": 24
+   }
+  },
+  "whole": {
+   "n": 645,
+   "win_rate": 0.462,
+   "exp_R": 0.259,
+   "avg_win_R": 1.4158,
+   "avg_loss_R": -0.7345,
+   "pf": 1.655,
+   "total_R": 167.02,
+   "t_stat": 3.75,
+   "max_dd_R": 8.7,
+   "worst_R": -1.84,
+   "best_R": 24.157,
+   "avg_hold_h": 18.04,
+   "max_hold_h": 24.03,
+   "reasons": {
+    "time": 448,
+    "stop": 197
+   }
+  },
+  "by_year": {
+   "2018": {
+    "n": 129,
+    "total_R": 34.4,
+    "exp_R": 0.2667,
+    "avg_loss_R": -0.7387,
+    "win_rate": 0.4186
+   },
+   "2019": {
+    "n": 140,
+    "total_R": 42.8,
+    "exp_R": 0.3057,
+    "avg_loss_R": -0.7625,
+    "win_rate": 0.4643
+   },
+   "2020": {
+    "n": 135,
+    "total_R": 47.98,
+    "exp_R": 0.3554,
+    "avg_loss_R": -0.7169,
+    "win_rate": 0.4519
+   },
+   "2021": {
+    "n": 145,
+    "total_R": 10.34,
+    "exp_R": 0.0713,
+    "avg_loss_R": -0.7069,
+    "win_rate": 0.4621
+   }
+  },
+  "by_year_early": {
+   "2017": {
+    "n": 86,
+    "total_R": 28.81,
+    "exp_R": 0.335,
+    "avg_loss_R": -0.7653,
+    "win_rate": 0.5349
+   },
+   "2018": {
+    "n": 10,
+    "total_R": 2.7,
+    "exp_R": 0.2695,
+    "avg_loss_R": -0.6985,
+    "win_rate": 0.5
+   }
+  },
+  "orders": 2914,
+  "orders_with_stop_under_3_spreads": 0,
+  "taken_with_stop_under_3_spreads": 0
+ }
+}

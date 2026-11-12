@@ -1,0 +1,465 @@
+rule,instrument,status,evidence,source,n,pf,t,years_pos
+noise30,us100,sleeve (validated),,results/r2/idx_us/trials.jsonl,1643.0,1.282,3.12,8/8
+noise30,us500,tried and failed,"PF 1.125, t 1.59, years 4/8",results/r2/idx_us/trials.jsonl,1713.0,1.125,1.59,4/8
+noise30,us30,tried and failed,"PF 0.983, t -0.23, years 4/8",results/r2/idx_us/trials.jsonl,1697.0,0.983,-0.23,4/8
+noise30,ger40,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,xauusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,xagusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,btcusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,ethusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,eurusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,gbpusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,usdjpy,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,audusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,usdcad,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,usdchf,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,nzdusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,eurjpy,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+noise30,jp225,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (declared cost model),,,,,
+noise30,wti,"never tried, out of this lens",OUT: no FP cost model and the only M1 file is bid-only with a synthetic 4-cent ask and unadjusted contract-roll jumps (e.g. +30 % at the 2020-04-19 reopen); a frozen rule would trade the roll gaps,,,,,
+noise30,aapl,tried and failed,"stocks track (frozen transfer): PF 0.963, t -0.42; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,996.0,0.963,-0.42,3/5
+noise30,msft,tried and failed,"stocks track (frozen transfer): PF 0.795, t -2.57; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1023.0,0.795,-2.57,1/5
+noise30,amzn,tried and failed,"stocks track (frozen transfer): PF 1.095, t 0.97; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,956.0,1.095,0.97,4/5
+noise30,googl,tried and failed,"stocks track (frozen transfer): PF 0.952, t -0.55; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,977.0,0.952,-0.55,2/5
+noise30,fb,tried and failed,"stocks track (frozen transfer): PF 0.905, t -1.08; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1006.0,0.905,-1.08,2/5
+noise30,nvda,tried and failed,"stocks track (frozen transfer): PF 1.062, t 0.64; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,947.0,1.062,0.64,3/5
+noise30,tsla,tried and failed,"stocks track (frozen transfer): PF 1.253, t 2.36; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,995.0,1.253,2.36,5/5
+noise30,nflx,tried and failed,"stocks track (frozen transfer): PF 0.858, t -1.75; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1079.0,0.858,-1.75,1/5
+noise30,amd,tried and failed,"stocks track (frozen transfer): PF 0.709, t -3.78; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,847.0,0.709,-3.78,1/5
+noise30,intc,tried and failed,"stocks track (frozen transfer): PF 0.573, t -6.52; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,994.0,0.573,-6.52,0/5
+noise30,csco,tried and failed,"stocks track (frozen transfer): PF 0.406, t -10.92; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,986.0,0.406,-10.92,0/5
+noise30,orcl,tried and failed,"stocks track (frozen transfer): PF 0.625, t -4.9; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,758.0,0.625,-4.9,0/5
+noise30,crm,tried and failed,"stocks track (frozen transfer): PF 0.749, t -3.13; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,907.0,0.749,-3.13,1/5
+noise30,adbe,tried and failed,"stocks track (frozen transfer): PF 0.7, t -3.96; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,952.0,0.7,-3.96,0/5
+noise30,qcom,tried and failed,"stocks track (frozen transfer): PF 0.742, t -2.02; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,836.0,0.742,-2.02,1/5
+noise30,avgo,tried and failed,"stocks track (frozen transfer): PF 0.672, t -4.78; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1015.0,0.672,-4.78,0/5
+noise30,mu,tried and failed,"stocks track (frozen transfer): PF 0.712, t -3.67; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,802.0,0.712,-3.67,0/5
+noise30,pypl,tried and failed,"stocks track (frozen transfer): PF 0.764, t -2.92; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,809.0,0.764,-2.92,1/5
+noise30,baba,tried and failed,"stocks track (frozen transfer): PF 0.903, t -1.07; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,929.0,0.903,-1.07,3/5
+noise30,jpm,tried and failed,"stocks track (frozen transfer): PF 0.639, t -4.87; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1007.0,0.639,-4.87,0/5
+noise30,bac,tried and failed,"stocks track (frozen transfer): PF 0.401, t -11.13; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1017.0,0.401,-11.13,0/5
+noise30,c,tried and failed,"stocks track (frozen transfer): PF 0.582, t -6.13; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1026.0,0.582,-6.13,0/5
+noise30,wfc,tried and failed,"stocks track (frozen transfer): PF 0.55, t -6.7; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,962.0,0.55,-6.7,0/5
+noise30,gs,tried and failed,"stocks track (frozen transfer): PF 0.686, t -4.33; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1026.0,0.686,-4.33,0/5
+noise30,v,tried and failed,"stocks track (frozen transfer): PF 0.715, t -3.85; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,977.0,0.715,-3.85,0/5
+noise30,ma,tried and failed,"stocks track (frozen transfer): PF 0.785, t -2.64; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,917.0,0.785,-2.64,0/5
+noise30,jnj,tried and failed,"stocks track (frozen transfer): PF 0.51, t -7.99; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1021.0,0.51,-7.99,0/5
+noise30,pfe,tried and failed,"stocks track (frozen transfer): PF 0.315, t -14.47; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1014.0,0.315,-14.47,0/5
+noise30,mrk,tried and failed,"stocks track (frozen transfer): PF 0.526, t -6.91; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,808.0,0.526,-6.91,0/5
+noise30,unh,tried and failed,"stocks track (frozen transfer): PF 0.766, t -2.7; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,825.0,0.766,-2.7,1/5
+noise30,xom,tried and failed,"stocks track (frozen transfer): PF 0.594, t -6.28; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1036.0,0.594,-6.28,0/5
+noise30,cvx,tried and failed,"stocks track (frozen transfer): PF 0.587, t -6.34; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1045.0,0.587,-6.34,0/5
+noise30,ba,tried and failed,"stocks track (frozen transfer): PF 0.88, t -1.29; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1114.0,0.88,-1.29,1/5
+noise30,cat,tried and failed,"stocks track (frozen transfer): PF 0.634, t -5.28; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,966.0,0.634,-5.28,0/5
+noise30,ge,tried and failed,"stocks track (frozen transfer): PF 0.298, t -15.6; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,988.0,0.298,-15.6,0/5
+noise30,wmt,tried and failed,"stocks track (frozen transfer): PF 0.609, t -5.26; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,808.0,0.609,-5.26,0/5
+noise30,hd,tried and failed,"stocks track (frozen transfer): PF 0.567, t -6.9; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1101.0,0.567,-6.9,0/5
+noise30,dis,tried and failed,"stocks track (frozen transfer): PF 0.649, t -5.27; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,1033.0,0.649,-5.27,0/5
+noise30,mcd,tried and failed,"stocks track (frozen transfer): PF 0.549, t -6.52; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,860.0,0.549,-6.52,0/5
+noise30,nke,tried and failed,"stocks track (frozen transfer): PF 0.628, t -4.85; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,810.0,0.628,-4.85,0/5
+ocm4,us100,sleeve (validated),,results/r2/idx_us/trials.jsonl,999.0,1.243,2.69,7/8
+ocm4,us500,tried and failed,"PF 1.098, t 1.16, years 7/8",results/r2/idx_us/trials.jsonl,998.0,1.098,1.16,7/8
+ocm4,us30,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,ger40,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,xauusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,xagusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,btcusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,ethusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,eurusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,gbpusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,usdjpy,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,audusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,usdcad,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,usdchf,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,nzdusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,eurjpy,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+ocm4,jp225,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (declared cost model),,,,,
+ocm4,wti,"never tried, out of this lens",OUT: no FP cost model and the only M1 file is bid-only with a synthetic 4-cent ask and unadjusted contract-roll jumps (e.g. +30 % at the 2020-04-19 reopen); a frozen rule would trade the roll gaps,,,,,
+ocm4,aapl,tried and failed,"stocks track (frozen transfer): PF 0.794, t -2.36; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,618.0,0.794,-2.36,1/5
+ocm4,msft,tried and failed,"stocks track (frozen transfer): PF 0.836, t -1.77; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,636.0,0.836,-1.77,1/5
+ocm4,amzn,tried and failed,"stocks track (frozen transfer): PF 1.091, t 0.78; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,586.0,1.091,0.78,4/5
+ocm4,googl,tried and failed,"stocks track (frozen transfer): PF 0.819, t -2.04; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,612.0,0.819,-2.04,2/5
+ocm4,fb,tried and failed,"stocks track (frozen transfer): PF 0.892, t -1.11; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,600.0,0.892,-1.11,2/5
+ocm4,nvda,tried and failed,"stocks track (frozen transfer): PF 1.166, t 1.46; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,595.0,1.166,1.46,4/5
+ocm4,tsla,tried and failed,"stocks track (frozen transfer): PF 1.001, t 0.01; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,605.0,1.001,0.01,2/5
+ocm4,nflx,tried and failed,"stocks track (frozen transfer): PF 0.914, t -0.85; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,621.0,0.914,-0.85,1/5
+ocm4,amd,tried and failed,"stocks track (frozen transfer): PF 0.908, t -0.85; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,509.0,0.908,-0.85,1/5
+ocm4,intc,tried and failed,"stocks track (frozen transfer): PF 0.458, t -8.56; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,599.0,0.458,-8.56,0/5
+ocm4,csco,tried and failed,"stocks track (frozen transfer): PF 0.512, t -6.81; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,578.0,0.512,-6.81,0/5
+ocm4,orcl,tried and failed,"stocks track (frozen transfer): PF 0.688, t -3.56; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,510.0,0.688,-3.56,2/5
+ocm4,crm,tried and failed,"stocks track (frozen transfer): PF 0.854, t -1.44; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,580.0,0.854,-1.44,1/5
+ocm4,adbe,tried and failed,"stocks track (frozen transfer): PF 0.682, t -3.73; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,576.0,0.682,-3.73,1/5
+ocm4,qcom,tried and failed,"stocks track (frozen transfer): PF 0.683, t -3.49; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,504.0,0.683,-3.49,0/5
+ocm4,avgo,tried and failed,"stocks track (frozen transfer): PF 0.755, t -2.87; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,597.0,0.755,-2.87,1/5
+ocm4,mu,tried and failed,"stocks track (frozen transfer): PF 0.77, t -2.41; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,510.0,0.77,-2.41,1/5
+ocm4,pypl,tried and failed,"stocks track (frozen transfer): PF 0.863, t -1.32; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,503.0,0.863,-1.32,2/5
+ocm4,baba,tried and failed,"stocks track (frozen transfer): PF 0.984, t -0.17; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,611.0,0.984,-0.17,3/5
+ocm4,jpm,tried and failed,"stocks track (frozen transfer): PF 0.723, t -3.36; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,597.0,0.723,-3.36,0/5
+ocm4,bac,tried and failed,"stocks track (frozen transfer): PF 0.587, t -5.38; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,594.0,0.587,-5.38,0/5
+ocm4,c,tried and failed,"stocks track (frozen transfer): PF 0.795, t -2.24; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,600.0,0.795,-2.24,1/5
+ocm4,wfc,tried and failed,"stocks track (frozen transfer): PF 0.617, t -5.13; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,608.0,0.617,-5.13,0/5
+ocm4,gs,tried and failed,"stocks track (frozen transfer): PF 0.705, t -3.48; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,606.0,0.705,-3.48,0/5
+ocm4,v,tried and failed,"stocks track (frozen transfer): PF 0.719, t -3.23; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,601.0,0.719,-3.23,0/5
+ocm4,ma,tried and failed,"stocks track (frozen transfer): PF 0.903, t -0.92; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,564.0,0.903,-0.92,0/5
+ocm4,jnj,tried and failed,"stocks track (frozen transfer): PF 0.585, t -5.23; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,609.0,0.585,-5.23,0/5
+ocm4,pfe,tried and failed,"stocks track (frozen transfer): PF 0.542, t -6.01; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,597.0,0.542,-6.01,0/5
+ocm4,mrk,tried and failed,"stocks track (frozen transfer): PF 0.639, t -4.21; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,520.0,0.639,-4.21,0/5
+ocm4,unh,tried and failed,"stocks track (frozen transfer): PF 0.637, t -4.01; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,510.0,0.637,-4.01,0/5
+ocm4,xom,tried and failed,"stocks track (frozen transfer): PF 0.618, t -5.23; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,614.0,0.618,-5.23,0/5
+ocm4,cvx,tried and failed,"stocks track (frozen transfer): PF 0.707, t -3.56; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,615.0,0.707,-3.56,0/5
+ocm4,ba,tried and failed,"stocks track (frozen transfer): PF 0.77, t -2.49; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,610.0,0.77,-2.49,1/5
+ocm4,cat,tried and failed,"stocks track (frozen transfer): PF 0.638, t -4.54; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,574.0,0.638,-4.54,0/5
+ocm4,ge,tried and failed,"stocks track (frozen transfer): PF 0.447, t -7.85; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,584.0,0.447,-7.85,0/5
+ocm4,wmt,tried and failed,"stocks track (frozen transfer): PF 0.66, t -3.8; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,502.0,0.66,-3.8,1/5
+ocm4,hd,tried and failed,"stocks track (frozen transfer): PF 0.592, t -5.24; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,589.0,0.592,-5.24,0/5
+ocm4,dis,tried and failed,"stocks track (frozen transfer): PF 0.7, t -3.61; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,613.0,0.7,-3.61,0/5
+ocm4,mcd,tried and failed,"stocks track (frozen transfer): PF 0.576, t -5.08; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,499.0,0.576,-5.08,0/5
+ocm4,nke,tried and failed,"stocks track (frozen transfer): PF 0.601, t -4.77; basket net PF 0.68-0.73",results/r2/stocks/trials.jsonl,509.0,0.601,-4.77,0/5
+donch4h_stop,us100,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+donch4h_stop,us500,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+donch4h_stop,us30,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+donch4h_stop,ger40,tried and failed,"round-1 audit: IS PF 1.148, t 1.08 (bar t >= 2.0 / PF >= 1.2); validation also printed","results/audit/crossmarket__trend__donch4h_stop.json (round-1 audit on deuidxeur, round-1 costs; its 2022-2025 result was also printed: PF 1.145)",448.0,1.148,1.08,6/9
+donch4h_stop,xauusd,sleeve (validated),,results/trend/trials.jsonl,494.0,1.356,2.37,8/9
+donch4h_stop,xagusd,tried and failed,"PF 1.14, t 1.08, years 5/9","results/r2/gold2/trials.jsonl (label A0_ref_legacy_donch4h_stop, stage A-confirmatory-silver)",514.0,1.14,1.08,5/9
+donch4h_stop,btcusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+donch4h_stop,ethusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+donch4h_stop,eurusd,tried and failed,"PF 1.026, t 0.21, years 5/9",results/r2/fx/trials.jsonl,508.0,1.026,0.21,5/9
+donch4h_stop,gbpusd,tried and failed,"PF 1.08, t 0.65, years 7/9",results/r2/fx/trials.jsonl,534.0,1.08,0.65,7/9
+donch4h_stop,usdjpy,tried and failed,"PF 1.094, t 0.71, years 5/9",results/r2/fx/trials.jsonl,499.0,1.094,0.71,5/9
+donch4h_stop,audusd,tried and failed,"PF 0.935, t -0.59, years 3/9",results/r2/fx/trials.jsonl,510.0,0.935,-0.59,3/9
+donch4h_stop,usdcad,tried and failed,"PF 1.0, t -0.0, years 6/9",results/r2/fx/trials.jsonl,523.0,1.0,-0.0,6/9
+donch4h_stop,usdchf,tried and failed,"PF 0.982, t -0.15, years 5/9",results/r2/fx/trials.jsonl,503.0,0.982,-0.15,5/9
+donch4h_stop,nzdusd,tried and failed,"PF 0.839, t -1.52, years 3/9",results/r2/fx/trials.jsonl,503.0,0.839,-1.52,3/9
+donch4h_stop,eurjpy,tried and failed,"PF 0.886, t -1.03, years 4/9",results/r2/fx/trials.jsonl,523.0,0.886,-1.03,4/9
+donch4h_stop,jp225,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (declared cost model),,,,,
+donch4h_stop,wti,"tried: passed in sample, FAILED validation","round-1 audit: IS PF 1.343 t 2.47, validation PF 0.599 (0/4 years)","results/audit/crossmarket__trend__donch4h_stop.json (round-1 audit; validation 2022-2025 already read: PF 0.599, 0/4 years)",513.0,1.343,2.47,7/9
+donch4h_stop,aapl,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,msft,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,amzn,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,googl,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,fb,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,nvda,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,tsla,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,nflx,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,amd,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,intc,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,csco,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,orcl,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,crm,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,adbe,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,qcom,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,avgo,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,mu,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,pypl,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,baba,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,jpm,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,bac,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,c,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,wfc,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,gs,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,v,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,ma,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,jnj,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,pfe,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,mrk,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,unh,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,xom,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,cvx,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,ba,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,cat,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,ge,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,wmt,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,hd,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,dis,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,mcd,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+donch4h_stop,nke,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+orb_asia_2d_buf10,us100,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+orb_asia_2d_buf10,us500,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+orb_asia_2d_buf10,us30,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+orb_asia_2d_buf10,ger40,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+orb_asia_2d_buf10,xauusd,sleeve (validated),,results/orb/trials.jsonl,1028.0,1.196,1.99,7/9
+orb_asia_2d_buf10,xagusd,tried and failed,"PF 0.897, t -1.23, years 3/9","results/r2/gold2/trials.jsonl (label A5_orb_asia_2d_buf10, silver)",1012.0,0.897,-1.23,3/9
+orb_asia_2d_buf10,btcusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+orb_asia_2d_buf10,ethusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+orb_asia_2d_buf10,eurusd,tried and failed,"PF 0.939, t -0.8, years 5/9",results/r2/fx/trials.jsonl,1235.0,0.939,-0.8,5/9
+orb_asia_2d_buf10,gbpusd,tried and failed,"PF 0.976, t -0.32, years 5/9",results/r2/fx/trials.jsonl,1278.0,0.976,-0.32,5/9
+orb_asia_2d_buf10,usdjpy,tried and failed,"PF 1.122, t 1.32, years 7/9",results/r2/fx/trials.jsonl,889.0,1.122,1.32,7/9
+orb_asia_2d_buf10,audusd,tried and failed,"PF 0.997, t -0.04, years 5/9",results/r2/fx/trials.jsonl,902.0,0.997,-0.04,5/9
+orb_asia_2d_buf10,usdcad,tried and failed,"PF 0.889, t -1.52, years 4/9",results/r2/fx/trials.jsonl,1213.0,0.889,-1.52,4/9
+orb_asia_2d_buf10,usdchf,tried and failed,"PF 0.945, t -0.71, years 5/9",results/r2/fx/trials.jsonl,1240.0,0.945,-0.71,5/9
+orb_asia_2d_buf10,nzdusd,tried and failed,"PF 0.945, t -0.69, years 4/9",results/r2/fx/trials.jsonl,937.0,0.945,-0.69,4/9
+orb_asia_2d_buf10,eurjpy,tried and failed,"PF 1.087, t 0.97, years 8/9",results/r2/fx/trials.jsonl,1021.0,1.087,0.97,8/9
+orb_asia_2d_buf10,jp225,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (declared cost model),,,,,
+orb_asia_2d_buf10,wti,"never tried, out of this lens",OUT: no FP cost model and the only M1 file is bid-only with a synthetic 4-cent ask and unadjusted contract-roll jumps (e.g. +30 % at the 2020-04-19 reopen); a frozen rule would trade the roll gaps,,,,,
+orb_asia_2d_buf10,aapl,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,msft,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,amzn,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,googl,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,fb,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,nvda,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,tsla,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,nflx,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,amd,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,intc,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,csco,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,orcl,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,crm,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,adbe,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,qcom,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,avgo,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,mu,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,pypl,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,baba,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,jpm,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,bac,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,c,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,wfc,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,gs,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,v,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,ma,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,jnj,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,pfe,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,mrk,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,unh,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,xom,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,cvx,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,ba,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,cat,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,ge,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,wmt,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,hd,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,dis,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,mcd,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+orb_asia_2d_buf10,nke,"never tried, out of this lens","OUT (structural): share frames hold 09:30-16:00 New York only, no bar in the 00:00-07:00 London range",,,,,
+GOLD_FRI_PM,us100,"never tried, out of this lens","OUT (structural): the rule exits at 16:45 New York and drops a Friday with no quote within 10 minutes after 16:45; these index frames stop at 16:14-16:15 New York (ger40: 108 bars in Friday 16:45-16:55 over 2019-2021, us indices and jp225: 0), so the frozen rule takes no trade",,,,,
+GOLD_FRI_PM,us500,"never tried, out of this lens","OUT (structural): the rule exits at 16:45 New York and drops a Friday with no quote within 10 minutes after 16:45; these index frames stop at 16:14-16:15 New York (ger40: 108 bars in Friday 16:45-16:55 over 2019-2021, us indices and jp225: 0), so the frozen rule takes no trade",,,,,
+GOLD_FRI_PM,us30,"never tried, out of this lens","OUT (structural): the rule exits at 16:45 New York and drops a Friday with no quote within 10 minutes after 16:45; these index frames stop at 16:14-16:15 New York (ger40: 108 bars in Friday 16:45-16:55 over 2019-2021, us indices and jp225: 0), so the frozen rule takes no trade",,,,,
+GOLD_FRI_PM,ger40,"never tried, out of this lens","OUT (structural): the rule exits at 16:45 New York and drops a Friday with no quote within 10 minutes after 16:45; these index frames stop at 16:14-16:15 New York (ger40: 108 bars in Friday 16:45-16:55 over 2019-2021, us indices and jp225: 0), so the frozen rule takes no trade",,,,,
+GOLD_FRI_PM,xauusd,sleeve (validated),,results/r2/overnight/trials.jsonl,408.0,1.421,2.53,7/9
+GOLD_FRI_PM,xagusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+GOLD_FRI_PM,btcusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+GOLD_FRI_PM,ethusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+GOLD_FRI_PM,eurusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+GOLD_FRI_PM,gbpusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+GOLD_FRI_PM,usdjpy,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+GOLD_FRI_PM,audusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+GOLD_FRI_PM,usdcad,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+GOLD_FRI_PM,usdchf,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+GOLD_FRI_PM,nzdusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+GOLD_FRI_PM,eurjpy,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+GOLD_FRI_PM,jp225,"never tried, out of this lens","OUT (structural): the rule exits at 16:45 New York and drops a Friday with no quote within 10 minutes after 16:45; these index frames stop at 16:14-16:15 New York (ger40: 108 bars in Friday 16:45-16:55 over 2019-2021, us indices and jp225: 0), so the frozen rule takes no trade",,,,,
+GOLD_FRI_PM,wti,"never tried, out of this lens",OUT: no FP cost model and the only M1 file is bid-only with a synthetic 4-cent ask and unadjusted contract-roll jumps (e.g. +30 % at the 2020-04-19 reopen); a frozen rule would trade the roll gaps,,,,,
+GOLD_FRI_PM,aapl,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,msft,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,amzn,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,googl,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,fb,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,nvda,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,tsla,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,nflx,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,amd,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,intc,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,csco,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,orcl,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,crm,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,adbe,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,qcom,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,avgo,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,mu,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,pypl,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,baba,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,jpm,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,bac,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,c,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,wfc,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,gs,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,v,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,ma,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,jnj,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,pfe,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,mrk,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,unh,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,xom,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,cvx,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,ba,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,cat,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,ge,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,wmt,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,hd,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,dis,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,mcd,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+GOLD_FRI_PM,nke,"never tried, out of this lens","OUT (structural): share frames stop at 16:00 New York, the 16:45 exit never has a quote, no trade",,,,,
+brk72_24h_wd,us100,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+brk72_24h_wd,us500,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+brk72_24h_wd,us30,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+brk72_24h_wd,ger40,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+brk72_24h_wd,xauusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+brk72_24h_wd,xagusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+brk72_24h_wd,btcusd,sleeve (validated),,results/r2/crypto/trials.jsonl,679.0,1.775,4.57,5/5
+brk72_24h_wd,ethusd,sleeve (validated),,results/r2/crypto/trials.jsonl,536.0,1.668,4.15,4/4
+brk72_24h_wd,eurusd,tried and failed,"PF 0.985, t -0.22, years 2/9",results/r2/fx/trials.jsonl,1355.0,0.985,-0.22,2/9
+brk72_24h_wd,gbpusd,tried and failed,"PF 1.055, t 0.8, years 5/9",results/r2/fx/trials.jsonl,1361.0,1.055,0.8,5/9
+brk72_24h_wd,usdjpy,tried and failed,"PF 1.118, t 1.58, years 5/9",results/r2/fx/trials.jsonl,1302.0,1.118,1.58,5/9
+brk72_24h_wd,audusd,tried and failed,"PF 0.859, t -2.36, years 2/9",results/r2/fx/trials.jsonl,1412.0,0.859,-2.36,2/9
+brk72_24h_wd,usdcad,tried and failed,"PF 0.96, t -0.62, years 4/9",results/r2/fx/trials.jsonl,1378.0,0.96,-0.62,4/9
+brk72_24h_wd,usdchf,tried and failed,"PF 0.858, t -2.33, years 2/9",results/r2/fx/trials.jsonl,1395.0,0.858,-2.33,2/9
+brk72_24h_wd,nzdusd,tried and failed,"PF 0.854, t -2.43, years 2/9",results/r2/fx/trials.jsonl,1386.0,0.854,-2.43,2/9
+brk72_24h_wd,eurjpy,tried and failed,"PF 0.995, t -0.08, years 5/9",results/r2/fx/trials.jsonl,1343.0,0.995,-0.08,5/9
+brk72_24h_wd,jp225,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (declared cost model),,,,,
+brk72_24h_wd,wti,"never tried, out of this lens",OUT: no FP cost model and the only M1 file is bid-only with a synthetic 4-cent ask and unadjusted contract-roll jumps (e.g. +30 % at the 2020-04-19 reopen); a frozen rule would trade the roll gaps,,,,,
+brk72_24h_wd,aapl,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,msft,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,amzn,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,googl,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,fb,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,nvda,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,tsla,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,nflx,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,amd,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,intc,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,csco,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,orcl,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,crm,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,adbe,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,qcom,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,avgo,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,mu,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,pypl,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,baba,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,jpm,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,bac,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,c,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,wfc,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,gs,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,v,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,ma,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,jnj,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,pfe,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,mrk,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,unh,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,xom,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,cvx,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,ba,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,cat,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,ge,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,wmt,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,hd,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,dis,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,mcd,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+brk72_24h_wd,nke,"never tried, out of this lens",OUT: the rule holds positions overnight (up to 5 days / 24 h); PROTOCOL_V3 section 5 forbids overnight share holds in this lab (dividends and share-CFD financing are not in the cost model),,,,,
+F1_brk_ridge_filter,us100,tried and failed,"ml track, walk-forward out-of-fold: PF 1.004, t 0.04",results/r2/ml/trials.jsonl,773.0,1.004,0.04,4/6
+F1_brk_ridge_filter,us500,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+F1_brk_ridge_filter,us30,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+F1_brk_ridge_filter,ger40,tried and failed,"ml track, walk-forward out-of-fold: PF 0.971, t -0.32",results/r2/ml/trials.jsonl,750.0,0.971,-0.32,2/6
+F1_brk_ridge_filter,xauusd,tried and failed,"ml track, walk-forward out-of-fold: PF 1.048, t 0.51",results/r2/ml/trials.jsonl,756.0,1.048,0.51,3/6
+F1_brk_ridge_filter,xagusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+F1_brk_ridge_filter,btcusd,sleeve (validated),,results/r2/ml/trials.jsonl,631.0,2.035,4.88,5/5
+F1_brk_ridge_filter,ethusd,sleeve (validated),,results/r2/ml/trials.jsonl,518.0,1.633,3.8,4/4
+F1_brk_ridge_filter,eurusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+F1_brk_ridge_filter,gbpusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+F1_brk_ridge_filter,usdjpy,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+F1_brk_ridge_filter,audusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+F1_brk_ridge_filter,usdcad,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+F1_brk_ridge_filter,usdchf,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+F1_brk_ridge_filter,nzdusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+F1_brk_ridge_filter,eurjpy,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+F1_brk_ridge_filter,jp225,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (declared cost model),,,,,
+F1_brk_ridge_filter,wti,"never tried, out of this lens",OUT: no FP cost model and the only M1 file is bid-only with a synthetic 4-cent ask and unadjusted contract-roll jumps (e.g. +30 % at the 2020-04-19 reopen); a frozen rule would trade the roll gaps,,,,,
+F1_brk_ridge_filter,aapl,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,msft,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,amzn,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,googl,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,fb,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,nvda,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,tsla,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,nflx,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,amd,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,intc,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,csco,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,orcl,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,crm,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,adbe,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,qcom,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,avgo,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,mu,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,pypl,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,baba,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,jpm,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,bac,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,c,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,wfc,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,gs,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,v,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,ma,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,jnj,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,pfe,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,mrk,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,unh,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,xom,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,cvx,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,ba,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,cat,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,ge,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,wmt,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,hd,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,dis,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,mcd,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+F1_brk_ridge_filter,nke,"never tried, out of this lens","OUT: the frozen rule is defined on 14 session bars a day (02:00-15:00 New York); a share has 7 (09:30-16:00), so n=14 and vol_n=70 would mean 2 and 10 sessions instead of 1 and 5: in effect new parameters",,,,,
+nq_btc_follow,us100,"never tried, out of this lens",OUT: degenerate (the follower would be its own leader),,,,,
+nq_btc_follow,us500,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,us30,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,ger40,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,xauusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,xagusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,btcusd,sleeve (validated),,results/r2/leadlag/trials.jsonl,1063.0,1.409,3.86,3/5
+nq_btc_follow,ethusd,tried and failed,"PF 1.139, t 1.44, years 2/4",results/r2/leadlag/trials.jsonl,930.0,1.139,1.44,2/4
+nq_btc_follow,eurusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,gbpusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,usdjpy,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,audusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,usdcad,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,usdchf,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,nzdusd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,eurjpy,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (FP model),,,,,
+nq_btc_follow,jp225,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (declared cost model),,,,,
+nq_btc_follow,wti,"never tried, out of this lens",OUT: no FP cost model and the only M1 file is bid-only with a synthetic 4-cent ask and unadjusted contract-roll jumps (e.g. +30 % at the 2020-04-19 reopen); a frozen rule would trade the roll gaps,,,,,
+nq_btc_follow,aapl,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,msft,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,amzn,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,googl,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,fb,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,nvda,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,tsla,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,nflx,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,amd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,intc,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,csco,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,orcl,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,crm,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,adbe,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,qcom,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,avgo,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,mu,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,pypl,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,baba,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,jpm,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,bac,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,c,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,wfc,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,gs,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,v,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,ma,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,jnj,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,pfe,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,mrk,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,unh,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,xom,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,cvx,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,ba,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,cat,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,ge,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,wmt,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,hd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,dis,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,mcd,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,
+nq_btc_follow,nke,never tried -> PART 2,IN: never tried; frozen rule runs unchanged on its own clock; cost: yes (provisional model; intraday rules only),,,,,

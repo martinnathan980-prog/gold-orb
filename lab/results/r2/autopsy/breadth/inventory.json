@@ -1,0 +1,1601 @@
+{
+ "counts": {
+  "never tried -> PART 2": 126,
+  "never tried, out of this lens": 213,
+  "sleeve (validated)": 10,
+  "tried and failed": 114,
+  "tried: passed in sample, FAILED validation": 1
+ },
+ "by_rule": {
+  "noise30": {
+   "never tried -> PART 2": 14,
+   "never tried, out of this lens": 1,
+   "sleeve (validated)": 1,
+   "tried and failed": 42
+  },
+  "ocm4": {
+   "never tried -> PART 2": 15,
+   "never tried, out of this lens": 1,
+   "sleeve (validated)": 1,
+   "tried and failed": 41
+  },
+  "donch4h_stop": {
+   "never tried -> PART 2": 6,
+   "never tried, out of this lens": 40,
+   "sleeve (validated)": 1,
+   "tried and failed": 10,
+   "tried: passed in sample, FAILED validation": 1
+  },
+  "orb_asia_2d_buf10": {
+   "never tried -> PART 2": 7,
+   "never tried, out of this lens": 41,
+   "sleeve (validated)": 1,
+   "tried and failed": 9
+  },
+  "GOLD_FRI_PM": {
+   "never tried -> PART 2": 11,
+   "never tried, out of this lens": 46,
+   "sleeve (validated)": 1
+  },
+  "brk72_24h_wd": {
+   "never tried -> PART 2": 7,
+   "never tried, out of this lens": 41,
+   "sleeve (validated)": 2,
+   "tried and failed": 8
+  },
+  "F1_brk_ridge_filter": {
+   "never tried -> PART 2": 12,
+   "never tried, out of this lens": 41,
+   "sleeve (validated)": 2,
+   "tried and failed": 3
+  },
+  "nq_btc_follow": {
+   "never tried -> PART 2": 54,
+   "never tried, out of this lens": 2,
+   "sleeve (validated)": 1,
+   "tried and failed": 1
+  }
+ },
+ "scanned_records": {
+  "orb_asia_2d_buf10|xauusd": {
+   "source": "results/orb/trials.jsonl",
+   "n": 1028,
+   "pf": 1.196,
+   "t": 1.99,
+   "exp_R": 0.1315,
+   "years_pos": "7/9",
+   "extra_params": {
+    "label": "F3_A3_buf0.1",
+    "stage": "4-filters/exits",
+    "exit_tz": "NY",
+    "entry": "stop",
+    "buf_abs": 0.0,
+    "stop_atr": 0.5,
+    "target_R": null,
+    "be_R": null,
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14,
+    "max_cost_R": null,
+    "trend": null,
+    "trend_n": 50,
+    "trail_atr": null
+   }
+  },
+  "brk72_24h_wd|btcusd": {
+   "source": "results/r2/crypto/trials.jsonl",
+   "n": 679,
+   "pf": 1.775,
+   "t": 4.57,
+   "exp_R": 0.3152,
+   "years_pos": "5/5",
+   "extra_params": {}
+  },
+  "brk72_24h_wd|ethusd": {
+   "source": "results/r2/crypto/trials.jsonl",
+   "n": 536,
+   "pf": 1.668,
+   "t": 4.15,
+   "exp_R": 0.2788,
+   "years_pos": "4/4",
+   "extra_params": {}
+  },
+  "donch4h_stop|eurusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 508,
+   "pf": 1.026,
+   "t": 0.21,
+   "exp_R": 0.0094,
+   "years_pos": "5/9",
+   "extra_params": {
+    "name": "A1_donch4h_stop",
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   }
+  },
+  "donch4h_stop|gbpusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 534,
+   "pf": 1.08,
+   "t": 0.65,
+   "exp_R": 0.0274,
+   "years_pos": "7/9",
+   "extra_params": {
+    "name": "A1_donch4h_stop",
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   }
+  },
+  "donch4h_stop|usdjpy": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 499,
+   "pf": 1.094,
+   "t": 0.71,
+   "exp_R": 0.0334,
+   "years_pos": "5/9",
+   "extra_params": {
+    "name": "A1_donch4h_stop",
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   }
+  },
+  "donch4h_stop|audusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 510,
+   "pf": 0.935,
+   "t": -0.59,
+   "exp_R": -0.0244,
+   "years_pos": "3/9",
+   "extra_params": {
+    "name": "A1_donch4h_stop",
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   }
+  },
+  "donch4h_stop|usdcad": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 523,
+   "pf": 1.0,
+   "t": -0.0,
+   "exp_R": -0.0,
+   "years_pos": "6/9",
+   "extra_params": {
+    "name": "A1_donch4h_stop",
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   }
+  },
+  "donch4h_stop|usdchf": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 503,
+   "pf": 0.982,
+   "t": -0.15,
+   "exp_R": -0.0071,
+   "years_pos": "5/9",
+   "extra_params": {
+    "name": "A1_donch4h_stop",
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   }
+  },
+  "donch4h_stop|nzdusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 503,
+   "pf": 0.839,
+   "t": -1.52,
+   "exp_R": -0.0649,
+   "years_pos": "3/9",
+   "extra_params": {
+    "name": "A1_donch4h_stop",
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   }
+  },
+  "donch4h_stop|eurjpy": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 523,
+   "pf": 0.886,
+   "t": -1.03,
+   "exp_R": -0.0452,
+   "years_pos": "4/9",
+   "extra_params": {
+    "name": "A1_donch4h_stop",
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0
+   }
+  },
+  "orb_asia_2d_buf10|eurusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1235,
+   "pf": 0.939,
+   "t": -0.8,
+   "exp_R": -0.0457,
+   "years_pos": "5/9",
+   "extra_params": {
+    "name": "A2_orb_asia_2d_buf10",
+    "entry": "stop",
+    "buf_abs": 0.0,
+    "target_R": null,
+    "be_R": null,
+    "trail_atr": null,
+    "exit_tz": "NY",
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "max_cost_R": null,
+    "trend": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14
+   }
+  },
+  "orb_asia_2d_buf10|gbpusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1278,
+   "pf": 0.976,
+   "t": -0.32,
+   "exp_R": -0.0179,
+   "years_pos": "5/9",
+   "extra_params": {
+    "name": "A2_orb_asia_2d_buf10",
+    "entry": "stop",
+    "buf_abs": 0.0,
+    "target_R": null,
+    "be_R": null,
+    "trail_atr": null,
+    "exit_tz": "NY",
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "max_cost_R": null,
+    "trend": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14
+   }
+  },
+  "orb_asia_2d_buf10|usdjpy": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 889,
+   "pf": 1.122,
+   "t": 1.32,
+   "exp_R": 0.0723,
+   "years_pos": "7/9",
+   "extra_params": {
+    "name": "A2_orb_asia_2d_buf10",
+    "entry": "stop",
+    "buf_abs": 0.0,
+    "target_R": null,
+    "be_R": null,
+    "trail_atr": null,
+    "exit_tz": "NY",
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "max_cost_R": null,
+    "trend": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14
+   }
+  },
+  "orb_asia_2d_buf10|audusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 902,
+   "pf": 0.997,
+   "t": -0.04,
+   "exp_R": -0.002,
+   "years_pos": "5/9",
+   "extra_params": {
+    "name": "A2_orb_asia_2d_buf10",
+    "entry": "stop",
+    "buf_abs": 0.0,
+    "target_R": null,
+    "be_R": null,
+    "trail_atr": null,
+    "exit_tz": "NY",
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "max_cost_R": null,
+    "trend": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14
+   }
+  },
+  "orb_asia_2d_buf10|usdcad": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1213,
+   "pf": 0.889,
+   "t": -1.52,
+   "exp_R": -0.0817,
+   "years_pos": "4/9",
+   "extra_params": {
+    "name": "A2_orb_asia_2d_buf10",
+    "entry": "stop",
+    "buf_abs": 0.0,
+    "target_R": null,
+    "be_R": null,
+    "trail_atr": null,
+    "exit_tz": "NY",
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "max_cost_R": null,
+    "trend": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14
+   }
+  },
+  "orb_asia_2d_buf10|usdchf": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1240,
+   "pf": 0.945,
+   "t": -0.71,
+   "exp_R": -0.0401,
+   "years_pos": "5/9",
+   "extra_params": {
+    "name": "A2_orb_asia_2d_buf10",
+    "entry": "stop",
+    "buf_abs": 0.0,
+    "target_R": null,
+    "be_R": null,
+    "trail_atr": null,
+    "exit_tz": "NY",
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "max_cost_R": null,
+    "trend": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14
+   }
+  },
+  "orb_asia_2d_buf10|nzdusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 937,
+   "pf": 0.945,
+   "t": -0.69,
+   "exp_R": -0.0328,
+   "years_pos": "4/9",
+   "extra_params": {
+    "name": "A2_orb_asia_2d_buf10",
+    "entry": "stop",
+    "buf_abs": 0.0,
+    "target_R": null,
+    "be_R": null,
+    "trail_atr": null,
+    "exit_tz": "NY",
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "max_cost_R": null,
+    "trend": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14
+   }
+  },
+  "orb_asia_2d_buf10|eurjpy": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1021,
+   "pf": 1.087,
+   "t": 0.97,
+   "exp_R": 0.0558,
+   "years_pos": "8/9",
+   "extra_params": {
+    "name": "A2_orb_asia_2d_buf10",
+    "entry": "stop",
+    "buf_abs": 0.0,
+    "target_R": null,
+    "be_R": null,
+    "trail_atr": null,
+    "exit_tz": "NY",
+    "min_width_atr": null,
+    "max_width_atr": null,
+    "max_cost_R": null,
+    "trend": null,
+    "sides": "both",
+    "skip_dow": [],
+    "min_bars_frac": 0.5,
+    "atr_n": 14
+   }
+  },
+  "brk72_24h_wd|eurusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1355,
+   "pf": 0.985,
+   "t": -0.22,
+   "exp_R": -0.0059,
+   "years_pos": "2/9",
+   "extra_params": {
+    "name": "A3_brk72_24h_wd"
+   }
+  },
+  "brk72_24h_wd|gbpusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1361,
+   "pf": 1.055,
+   "t": 0.8,
+   "exp_R": 0.0223,
+   "years_pos": "5/9",
+   "extra_params": {
+    "name": "A3_brk72_24h_wd"
+   }
+  },
+  "brk72_24h_wd|usdjpy": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1302,
+   "pf": 1.118,
+   "t": 1.58,
+   "exp_R": 0.0475,
+   "years_pos": "5/9",
+   "extra_params": {
+    "name": "A3_brk72_24h_wd"
+   }
+  },
+  "brk72_24h_wd|audusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1412,
+   "pf": 0.859,
+   "t": -2.36,
+   "exp_R": -0.0605,
+   "years_pos": "2/9",
+   "extra_params": {
+    "name": "A3_brk72_24h_wd"
+   }
+  },
+  "brk72_24h_wd|usdcad": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1378,
+   "pf": 0.96,
+   "t": -0.62,
+   "exp_R": -0.0174,
+   "years_pos": "4/9",
+   "extra_params": {
+    "name": "A3_brk72_24h_wd"
+   }
+  },
+  "brk72_24h_wd|usdchf": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1395,
+   "pf": 0.858,
+   "t": -2.33,
+   "exp_R": -0.0623,
+   "years_pos": "2/9",
+   "extra_params": {
+    "name": "A3_brk72_24h_wd"
+   }
+  },
+  "brk72_24h_wd|nzdusd": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1386,
+   "pf": 0.854,
+   "t": -2.43,
+   "exp_R": -0.0616,
+   "years_pos": "2/9",
+   "extra_params": {
+    "name": "A3_brk72_24h_wd"
+   }
+  },
+  "brk72_24h_wd|eurjpy": {
+   "source": "results/r2/fx/trials.jsonl",
+   "n": 1343,
+   "pf": 0.995,
+   "t": -0.08,
+   "exp_R": -0.0022,
+   "years_pos": "5/9",
+   "extra_params": {
+    "name": "A3_brk72_24h_wd"
+   }
+  },
+  "noise30|us100": {
+   "source": "results/r2/idx_us/trials.jsonl",
+   "n": 1643,
+   "pf": 1.282,
+   "t": 3.12,
+   "exp_R": 0.0775,
+   "years_pos": "8/8",
+   "extra_params": {}
+  },
+  "noise30|us500": {
+   "source": "results/r2/idx_us/trials.jsonl",
+   "n": 1713,
+   "pf": 1.125,
+   "t": 1.59,
+   "exp_R": 0.0382,
+   "years_pos": "4/8",
+   "extra_params": {}
+  },
+  "noise30|us30": {
+   "source": "results/r2/idx_us/trials.jsonl",
+   "n": 1697,
+   "pf": 0.983,
+   "t": -0.23,
+   "exp_R": -0.0054,
+   "years_pos": "4/8",
+   "extra_params": {}
+  },
+  "ocm4|us100": {
+   "source": "results/r2/idx_us/trials.jsonl",
+   "n": 999,
+   "pf": 1.243,
+   "t": 2.69,
+   "exp_R": 0.1313,
+   "years_pos": "7/8",
+   "extra_params": {
+    "target_r": null
+   }
+  },
+  "ocm4|us500": {
+   "source": "results/r2/idx_us/trials.jsonl",
+   "n": 998,
+   "pf": 1.098,
+   "t": 1.16,
+   "exp_R": 0.0538,
+   "years_pos": "7/8",
+   "extra_params": {
+    "target_r": null
+   }
+  },
+  "nq_btc_follow|btcusd": {
+   "source": "results/r2/leadlag/trials.jsonl",
+   "n": 1063,
+   "pf": 1.409,
+   "t": 3.86,
+   "exp_R": 0.0724,
+   "years_pos": "3/5",
+   "extra_params": {}
+  },
+  "nq_btc_follow|ethusd": {
+   "source": "results/r2/leadlag/trials.jsonl",
+   "n": 930,
+   "pf": 1.139,
+   "t": 1.44,
+   "exp_R": 0.0288,
+   "years_pos": "2/4",
+   "extra_params": {}
+  },
+  "F1_brk_ridge_filter|us100": {
+   "source": "results/r2/ml/trials.jsonl",
+   "n": 773,
+   "pf": 1.004,
+   "t": 0.04,
+   "exp_R": 0.0016,
+   "years_pos": "4/6",
+   "extra_params": {
+    "oof": true
+   }
+  },
+  "F1_brk_ridge_filter|ger40": {
+   "source": "results/r2/ml/trials.jsonl",
+   "n": 750,
+   "pf": 0.971,
+   "t": -0.32,
+   "exp_R": -0.012,
+   "years_pos": "2/6",
+   "extra_params": {
+    "oof": true
+   }
+  },
+  "F1_brk_ridge_filter|xauusd": {
+   "source": "results/r2/ml/trials.jsonl",
+   "n": 756,
+   "pf": 1.048,
+   "t": 0.51,
+   "exp_R": 0.019,
+   "years_pos": "3/6",
+   "extra_params": {
+    "oof": true
+   }
+  },
+  "F1_brk_ridge_filter|btcusd": {
+   "source": "results/r2/ml/trials.jsonl",
+   "n": 631,
+   "pf": 2.035,
+   "t": 4.88,
+   "exp_R": 0.3625,
+   "years_pos": "5/5",
+   "extra_params": {}
+  },
+  "F1_brk_ridge_filter|ethusd": {
+   "source": "results/r2/ml/trials.jsonl",
+   "n": 518,
+   "pf": 1.633,
+   "t": 3.8,
+   "exp_R": 0.2268,
+   "years_pos": "4/4",
+   "extra_params": {}
+  },
+  "GOLD_FRI_PM|xauusd": {
+   "source": "results/r2/overnight/trials.jsonl",
+   "n": 408,
+   "pf": 1.421,
+   "t": 2.53,
+   "exp_R": 0.0314,
+   "years_pos": "7/9",
+   "extra_params": {
+    "min_prev": 0,
+    "skip_early_close": true
+   }
+  },
+  "ocm4|aapl": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 618,
+   "pf": 0.794,
+   "t": -2.36,
+   "exp_R": -0.13,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|msft": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 636,
+   "pf": 0.836,
+   "t": -1.77,
+   "exp_R": -0.1053,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|amzn": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 586,
+   "pf": 1.091,
+   "t": 0.78,
+   "exp_R": 0.057,
+   "years_pos": "4/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|googl": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 612,
+   "pf": 0.819,
+   "t": -2.04,
+   "exp_R": -0.1191,
+   "years_pos": "2/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|fb": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 600,
+   "pf": 0.892,
+   "t": -1.11,
+   "exp_R": -0.0681,
+   "years_pos": "2/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|nvda": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 595,
+   "pf": 1.166,
+   "t": 1.46,
+   "exp_R": 0.0996,
+   "years_pos": "4/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|tsla": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 605,
+   "pf": 1.001,
+   "t": 0.01,
+   "exp_R": 0.0009,
+   "years_pos": "2/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|nflx": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 621,
+   "pf": 0.914,
+   "t": -0.85,
+   "exp_R": -0.0551,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|amd": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 509,
+   "pf": 0.908,
+   "t": -0.85,
+   "exp_R": -0.0604,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|intc": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 599,
+   "pf": 0.458,
+   "t": -8.56,
+   "exp_R": -0.3899,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|csco": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 578,
+   "pf": 0.512,
+   "t": -6.81,
+   "exp_R": -0.3369,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|orcl": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 510,
+   "pf": 0.688,
+   "t": -3.56,
+   "exp_R": -0.2155,
+   "years_pos": "2/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|crm": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 580,
+   "pf": 0.854,
+   "t": -1.44,
+   "exp_R": -0.0984,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|adbe": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 576,
+   "pf": 0.682,
+   "t": -3.73,
+   "exp_R": -0.2222,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|qcom": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 504,
+   "pf": 0.683,
+   "t": -3.49,
+   "exp_R": -0.2201,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|avgo": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 597,
+   "pf": 0.755,
+   "t": -2.87,
+   "exp_R": -0.1631,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|mu": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 510,
+   "pf": 0.77,
+   "t": -2.41,
+   "exp_R": -0.1496,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|pypl": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 503,
+   "pf": 0.863,
+   "t": -1.32,
+   "exp_R": -0.0885,
+   "years_pos": "2/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|baba": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 611,
+   "pf": 0.984,
+   "t": -0.17,
+   "exp_R": -0.0094,
+   "years_pos": "3/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|jpm": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 597,
+   "pf": 0.723,
+   "t": -3.36,
+   "exp_R": -0.1824,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|bac": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 594,
+   "pf": 0.587,
+   "t": -5.38,
+   "exp_R": -0.284,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|c": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 600,
+   "pf": 0.795,
+   "t": -2.24,
+   "exp_R": -0.1297,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|wfc": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 608,
+   "pf": 0.617,
+   "t": -5.13,
+   "exp_R": -0.2628,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|gs": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 606,
+   "pf": 0.705,
+   "t": -3.48,
+   "exp_R": -0.202,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|v": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 601,
+   "pf": 0.719,
+   "t": -3.23,
+   "exp_R": -0.1962,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|ma": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 564,
+   "pf": 0.903,
+   "t": -0.92,
+   "exp_R": -0.065,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|jnj": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 609,
+   "pf": 0.585,
+   "t": -5.23,
+   "exp_R": -0.2986,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|pfe": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 597,
+   "pf": 0.542,
+   "t": -6.01,
+   "exp_R": -0.3283,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|mrk": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 520,
+   "pf": 0.639,
+   "t": -4.21,
+   "exp_R": -0.2482,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|unh": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 510,
+   "pf": 0.637,
+   "t": -4.01,
+   "exp_R": -0.2646,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|xom": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 614,
+   "pf": 0.618,
+   "t": -5.23,
+   "exp_R": -0.2583,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|cvx": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 615,
+   "pf": 0.707,
+   "t": -3.56,
+   "exp_R": -0.1971,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|ba": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 610,
+   "pf": 0.77,
+   "t": -2.49,
+   "exp_R": -0.1537,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|cat": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 574,
+   "pf": 0.638,
+   "t": -4.54,
+   "exp_R": -0.2394,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|ge": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 584,
+   "pf": 0.447,
+   "t": -7.85,
+   "exp_R": -0.4081,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|wmt": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 502,
+   "pf": 0.66,
+   "t": -3.8,
+   "exp_R": -0.2389,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|hd": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 589,
+   "pf": 0.592,
+   "t": -5.24,
+   "exp_R": -0.2949,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|dis": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 613,
+   "pf": 0.7,
+   "t": -3.61,
+   "exp_R": -0.2054,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|mcd": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 499,
+   "pf": 0.576,
+   "t": -5.08,
+   "exp_R": -0.3069,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "ocm4|nke": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 509,
+   "pf": 0.601,
+   "t": -4.77,
+   "exp_R": -0.2808,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "ocm4",
+    "target_r": null
+   }
+  },
+  "noise30|aapl": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 996,
+   "pf": 0.963,
+   "t": -0.42,
+   "exp_R": -0.0104,
+   "years_pos": "3/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|msft": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1023,
+   "pf": 0.795,
+   "t": -2.57,
+   "exp_R": -0.0631,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|amzn": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 956,
+   "pf": 1.095,
+   "t": 0.97,
+   "exp_R": 0.0259,
+   "years_pos": "4/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|googl": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 977,
+   "pf": 0.952,
+   "t": -0.55,
+   "exp_R": -0.0141,
+   "years_pos": "2/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|fb": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1006,
+   "pf": 0.905,
+   "t": -1.08,
+   "exp_R": -0.0259,
+   "years_pos": "2/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|nvda": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 947,
+   "pf": 1.062,
+   "t": 0.64,
+   "exp_R": 0.0152,
+   "years_pos": "3/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|tsla": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 995,
+   "pf": 1.253,
+   "t": 2.36,
+   "exp_R": 0.063,
+   "years_pos": "5/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|nflx": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1079,
+   "pf": 0.858,
+   "t": -1.75,
+   "exp_R": -0.0367,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|amd": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 847,
+   "pf": 0.709,
+   "t": -3.78,
+   "exp_R": -0.0852,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|intc": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 994,
+   "pf": 0.573,
+   "t": -6.52,
+   "exp_R": -0.1421,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|csco": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 986,
+   "pf": 0.406,
+   "t": -10.92,
+   "exp_R": -0.2273,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|orcl": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 758,
+   "pf": 0.625,
+   "t": -4.9,
+   "exp_R": -0.1229,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|crm": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 907,
+   "pf": 0.749,
+   "t": -3.13,
+   "exp_R": -0.0713,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|adbe": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 952,
+   "pf": 0.7,
+   "t": -3.96,
+   "exp_R": -0.0917,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|qcom": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 836,
+   "pf": 0.742,
+   "t": -2.02,
+   "exp_R": -0.0805,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|avgo": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1015,
+   "pf": 0.672,
+   "t": -4.78,
+   "exp_R": -0.1033,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|mu": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 802,
+   "pf": 0.712,
+   "t": -3.67,
+   "exp_R": -0.0797,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|pypl": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 809,
+   "pf": 0.764,
+   "t": -2.92,
+   "exp_R": -0.0648,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|baba": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 929,
+   "pf": 0.903,
+   "t": -1.07,
+   "exp_R": -0.0255,
+   "years_pos": "3/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|jpm": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1007,
+   "pf": 0.639,
+   "t": -4.87,
+   "exp_R": -0.1165,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|bac": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1017,
+   "pf": 0.401,
+   "t": -11.13,
+   "exp_R": -0.2284,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|c": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1026,
+   "pf": 0.582,
+   "t": -6.13,
+   "exp_R": -0.142,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|wfc": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 962,
+   "pf": 0.55,
+   "t": -6.7,
+   "exp_R": -0.1498,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|gs": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1026,
+   "pf": 0.686,
+   "t": -4.33,
+   "exp_R": -0.0948,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|v": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 977,
+   "pf": 0.715,
+   "t": -3.85,
+   "exp_R": -0.0877,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|ma": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 917,
+   "pf": 0.785,
+   "t": -2.64,
+   "exp_R": -0.0636,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|jnj": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1021,
+   "pf": 0.51,
+   "t": -7.99,
+   "exp_R": -0.1628,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|pfe": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1014,
+   "pf": 0.315,
+   "t": -14.47,
+   "exp_R": -0.2787,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|mrk": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 808,
+   "pf": 0.526,
+   "t": -6.91,
+   "exp_R": -0.1506,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|unh": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 825,
+   "pf": 0.766,
+   "t": -2.7,
+   "exp_R": -0.0702,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|xom": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1036,
+   "pf": 0.594,
+   "t": -6.28,
+   "exp_R": -0.1301,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|cvx": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1045,
+   "pf": 0.587,
+   "t": -6.34,
+   "exp_R": -0.1337,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|ba": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1114,
+   "pf": 0.88,
+   "t": -1.29,
+   "exp_R": -0.0357,
+   "years_pos": "1/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|cat": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 966,
+   "pf": 0.634,
+   "t": -5.28,
+   "exp_R": -0.112,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|ge": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 988,
+   "pf": 0.298,
+   "t": -15.6,
+   "exp_R": -0.2973,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|wmt": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 808,
+   "pf": 0.609,
+   "t": -5.26,
+   "exp_R": -0.1156,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|hd": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1101,
+   "pf": 0.567,
+   "t": -6.9,
+   "exp_R": -0.1364,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|dis": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 1033,
+   "pf": 0.649,
+   "t": -5.27,
+   "exp_R": -0.1122,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|mcd": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 860,
+   "pf": 0.549,
+   "t": -6.52,
+   "exp_R": -0.1495,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "noise30|nke": {
+   "source": "results/r2/stocks/trials.jsonl",
+   "n": 810,
+   "pf": 0.628,
+   "t": -4.85,
+   "exp_R": -0.1138,
+   "years_pos": "0/5",
+   "extra_params": {
+    "transfer": "noise30"
+   }
+  },
+  "donch4h_stop|xauusd": {
+   "source": "results/trend/trials.jsonl",
+   "n": 494,
+   "pf": 1.356,
+   "t": 2.37,
+   "exp_R": 0.1251,
+   "years_pos": "8/9",
+   "extra_params": {
+    "target_r": NaN,
+    "sides": "both",
+    "sess": "none",
+    "trend_ma": 0,
+    "_phase": "C-entry",
+    "_note": "stop-entry at channel (OCO, first touch)"
+   }
+  }
+ },
+ "other_records": {
+  "donch4h_stop|eurusd@r1": {
+   "source": "results/audit/crossmarket__trend__donch4h_stop.json (round 1)",
+   "n": 512,
+   "pf": 0.982,
+   "t": -0.15
+  },
+  "noise30|jp225@tokyo": {
+   "source": "results/panel/panel_2026-11-11.json (reviewer replica, NOT the lab engine, Tokyo clock 09:00-15:00 JST)",
+   "n": 785,
+   "gross_bp": 2.88,
+   "note": "net t 0.8-1.2 at 1.6 bp; noise leg dropped"
+  },
+  "ocm4|jp225@tokyo": {
+   "source": "results/panel/panel_2026-11-11.json (reviewer replica, Tokyo clock)",
+   "n": 577,
+   "gross_bp": 7.63,
+   "note": "2020 and 2021 gross +2.5 / +0.8 bp (at or below cost); rank 5, awaiting the FP spread"
+  }
+ }
+}
