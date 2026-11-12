@@ -165,5 +165,80 @@ def gains():
     plt.close(fig)
 
 
-paths(); rule(); falls(); gains()
+YELLOW, YELLOW_T = "#eda100", "#f6d58a"
+# first-year figures read at week ends on all 2,000 paths (independent review, results/r2/stake/growth_final_review.json;
+# recomputed from its week-by-week balances): deepest fall of the first three months (% of the account, median and 1 in 10)
+# and of the first year in euros, at half of the paper edge
+EARLY = {"FS": dict(pct=41.3, pct90=59.1, eur=984, eur90=1591), "A05S": dict(pct=3.7, pct90=6.5, eur=100, eur90=194)}
+# losing runs (same source): share of three-year paths with a run of 4 losing weeks or more, and what the worst such run costs
+# after the first year (median, % of the account), at half of the paper edge
+RUNS = {"A": dict(share=59, cost=24.5), "FS": dict(share=57, cost=12.9), "A05S": dict(share=61, cost=12.9)}
+
+
+def duel():
+    a, b = R["FS"]["0.5"], R["A05S"]["0.5"]
+    wa, wb = R["FS"]["-0.5"], R["A05S"]["-0.5"]
+    e = lambda v: eur(v, True)
+    pc = lambda v, x: f"−{abs(v):.0f} %\n≈ {eur(x)}"
+    p1 = lambda v: f"−{abs(v):.0f} %"
+    fa, fb = a["falls"]["fall_from_high_after_12_months_pct"]["median"], b["falls"]["fall_from_high_after_12_months_pct"]["median"]
+    panels = [
+        ("Gain après 1 an", (a["at_12_months"]["gain_median"], b["at_12_months"]["gain_median"]), None),
+        ("Gain après 3 ans", (a["at_36_months"]["gain_median"], b["at_36_months"]["gain_median"]), None),
+        ("Baisse des 3 premiers mois\n(le plus souvent)", (-EARLY["FS"]["pct"], -EARLY["A05S"]["pct"]),
+         (pc(EARLY["FS"]["pct"], EARLY["FS"]["eur"]), pc(EARLY["A05S"]["pct"], EARLY["A05S"]["eur"]))),
+        ("Baisse des 3 premiers mois\n(une fois sur dix)", (-EARLY["FS"]["pct90"], -EARLY["A05S"]["pct90"]),
+         (pc(EARLY["FS"]["pct90"], EARLY["FS"]["eur90"]), pc(EARLY["A05S"]["pct90"], EARLY["A05S"]["eur90"]))),
+        ("Baisse après la 1re année\n(le plus souvent)", (-fa, -fb), (p1(fa), p1(fb))),
+        ("Si le robot ne vaut rien :\nperte avant l'arrêt", (wa["at_36_months"]["gain_median"], wb["at_36_months"]["gain_median"]), None),
+    ]
+    fig, axes = plt.subplots(3, 2, figsize=(6, 10.2), dpi=200)
+    for ax, (title, vals, labels) in zip(axes.ravel(), panels):
+        labels = labels or (e(vals[0]), e(vals[1]))
+        ax.bar([0, 1], vals, 0.62, color=[AQUA, YELLOW], zorder=3)
+        m = max(abs(v) for v in vals)
+        for xx, v, lab in zip([0, 1], vals, labels):
+            ax.text(xx, v + (m * 0.04 if v >= 0 else -m * 0.04), lab, ha="center", va="bottom" if v >= 0 else "top", fontsize=11,
+                    fontweight="bold", color=INK, linespacing=1.25)
+        ax.axhline(0, color=AXIS, lw=1.2, zorder=2)
+        lo, hi = min(0, min(vals)), max(0, max(vals))
+        ax.set_ylim(lo - m * (0.42 if lo < 0 else 0.05), hi + m * (0.24 if hi > 0 else 0.05))
+        ax.set_xlim(-0.6, 1.6)
+        ax.set_xticks([]); ax.set_yticks([])
+        for sp in ("left", "bottom"):
+            ax.spines[sp].set_visible(False)
+        ax.set_title(title, loc="left", fontsize=10.5, fontweight="bold", pad=8)
+    h = [plt.Rectangle((0, 0), 1, 1, color=AQUA), plt.Rectangle((0, 0), 1, 1, color=YELLOW)]
+    fig.legend(h, ["Rapide puis calme (5 % par trade au départ)", "Calme tout le temps (0,5 % par trade)"], loc="upper left", bbox_to_anchor=(0.04, 0.95),
+               ncol=1, frameon=False, fontsize=11, labelcolor=INK2)
+    fig.suptitle("Deux plans, côte à côte", x=0.05, y=0.988, ha="left", fontsize=15, fontweight="bold")
+    fig.text(0.05, 0.044, "Gains et baisses : si le robot fait la moitié du papier.", fontsize=8.3, color=MUTED)
+    fig.text(0.05, 0.028, "Les deux plans ont un arrêt de sécurité à −25 %.", fontsize=8.3, color=MUTED)
+    fig.text(0.05, 0.012, "Simulation sur les années 2022 à 2025, 2 000 trajectoires de 3 ans. Aucun trade réel.", fontsize=8.3, color=MUTED)
+    fig.subplots_adjust(left=0.05, right=0.97, top=0.85, bottom=0.085, hspace=0.6, wspace=0.18)
+    fig.savefig(f"{OUT}/5_deux_plans.png")
+    plt.close(fig)
+
+
+def runs():
+    plans = [("A", "1 % tout\nle temps", BLUE), ("FS", "Rapide\npuis calme", AQUA), ("A05S", "Calme tout\nle temps", YELLOW)]
+    fig, axes = plt.subplots(2, 1, figsize=(6, 7.6), dpi=200)
+    for ax, key, title, fmt in ((axes[0], "share", "Chances d'avoir au moins une série de 4 semaines\nperdantes en 3 ans", lambda v: f"{v:.0f} %"),
+                                (axes[1], "cost", "Ce que coûte la pire de ces séries, après la\npremière année (part du compte)", lambda v: f"−{v:.0f} %")):
+        for i, (p_, lab, c) in enumerate(plans):
+            v = RUNS[p_][key]
+            ax.bar(i, v, 0.6, color=c, zorder=3)
+            ax.text(i, v, fmt(v), ha="center", va="bottom", fontsize=12, fontweight="bold", color=INK)
+        ax.set_xticks(range(len(plans))); ax.set_xticklabels([p_[1] for p_ in plans], fontsize=10.5, color=INK)
+        ax.set_yticks([]); ax.spines["left"].set_visible(False); ax.tick_params(length=0)
+        ax.set_ylim(0, max(RUNS[p_[0]][key] for p_ in plans) * 1.25)
+        ax.set_title(title, loc="left", fontsize=12, fontweight="bold", pad=10)
+    fig.suptitle("Les séries de pertes : aussi fréquentes,\nmais deux fois moins chères", x=0.05, y=0.985, ha="left", fontsize=15, fontweight="bold")
+    fig.text(0.05, 0.012, "Si le robot fait la moitié du papier. Simulation, 2 000 trajectoires de 3 ans. Aucun trade réel.", fontsize=8.3, color=MUTED)
+    fig.subplots_adjust(left=0.05, right=0.97, top=0.80, bottom=0.11, hspace=0.66)
+    fig.savefig(f"{OUT}/6_series_de_pertes.png")
+    plt.close(fig)
+
+
+paths(); rule(); falls(); gains(); duel(); runs()
 print("done")

@@ -487,3 +487,55 @@ Declared now, before any run (nothing else will be run):
 - **A05S:** 0.5 % per trade always, the same stop at −25 % armed from the start.
 Reported like the other plans, plus the share of paths stopped. The criterion is unchanged; a plan that stops is judged
 on what the user has lost when it stops.
+
+### Addendum G — outcome of the fifth clarification and of its review (2026-11-12, `results/r2/stake/growth.json`, `growth_final_review.json`)
+An independent recomputation reproduces FS and A05S to the cent once the conventions are aligned. One measure was
+wrong: the highest balance "as seen" was first read at the end of week one, so a fall that starts in the first week was
+understated for the fast starts (FS at half edge: 36.8 % typical and 52.6 % one path in ten, not 32.2 % and 50.0 %).
+Robot's gain or loss, median (one path in ten), 36,000 EUR set aside:
+- **FS** (5 % → 2 % → 1 % → 0.5 %, stop at −25 % armed once 12,000 EUR are paid in): at half edge +3,400 (−750) after
+  12 months and +17,200 (+2,200) after 36; stopped in 8.5 % of paths; after the twelfth month the deepest fall is 16 %
+  (24 %). Worthless rules: −3,700 (−5,500) with 12,000 EUR paid in, stopped in 95 % of paths at month 11.
+- **A05S** (0.5 % always, the same stop armed from the start): at half edge +1,200 (−400) and +14,600 (+2,500); deepest
+  fall 15 % (21 %); stopped in 4.2 % of paths. Worthless rules: −4,500 (−6,900) with 22,000 EUR paid in, stopped in 88 %
+  of paths at month 20.
+- By the criterion declared in the third clarification still only A025 qualifies (A05S: 26.5 % with worthless rules,
+  the stop being read at closes).
+What the adversarial reading adds, to be said with these figures: the deep falls of FS are those of its first three
+months — 41 % typical and 59 % one path in ten at half edge (34 % / 52 % on paper, 52 % / 68 % with worthless rules), a
+fall of half the account or more in 12 % (paper), 23 % (half edge) and 58 % (worthless) of paths, on about 1,000 EUR
+(1,600 one path in ten); over the first year the deepest fall is 1,400 to 1,900 EUR typical and 2,200 to 3,200 one path
+in ten (3,800 / 5,300 with worthless rules); the stop fires wrongly in 8.5 % of paths at half edge (those paths end near
+−2,000 EUR and would have ended near +6,100 without it); with worthless rules the stop costs about 31 % of the money
+paid in, not 25 %; a good year followed by worthless rules gives the year's gain back; the robot's own gain stays more
+than a year under its high in 27 % of FS paths at half edge (18 % for A05S); FS is ahead of a flat 1 % only for its
+first six to nine months; hands 1.11 cannot run FS as simulated (no risk schedule, a daily lock in % of the balance
+instead of stakes, no stop armed by the money paid in); on 1,000 EUR a 1 % stake cannot place 54 % of the signals at
+FP's minimum lots (22 % at 2 %, 1.3 % at 5 %). A run of four losing weeks or more happens in 53 to 61 % of three-year
+paths for a flat 1 %, FS and A05S alike (62 to 68 % at 0.25 %): the size of the stake changes what such a run costs
+(the worst one after the first year: 21 to 24 % of the account at 1 %, 11 to 13 % for FS and A05S, 6 % at 0.25 %), not how
+often it comes.
+
+### Addendum G — sixth clarification (2026-11-12), written BEFORE the run: how fast a start, on one ladder
+The user's words stay the rule: "a very fast growth at the start that calms down", "I cannot lose 50 % and wait a year".
+FS breaks the second in its first three months and A05S breaks the first. Declared now, before any run (nothing else
+will be run): the same plan with a slower start, so that the speed of the start is the only thing that changes.
+- **F3:** 3 % under 3,000 EUR, 2 % under 6,000, 1 % under 12,000, then 0.5 %. **F2:** 2 % under 6,000, 1 % under 12,000,
+  then 0.5 %. **F1:** 1 % under 12,000, then 0.5 %. Thresholds read on the larger of the balance and the money paid in,
+  as F. **F3S, F2S, F1S:** the same with the stop of FS (−25 % of the reference capital, armed once 12,000 EUR are paid
+  in). The ladder shown is A05S, F1S, F2S, F3S, FS (a start at 0.5, 1, 2, 3 and 5 %).
+- **Measure corrected:** the highest balance "as seen" counts the starting 1,000 EUR (the defect found by the review).
+- **Measures added on every path, all at week ends:** the deepest fall from the high (payments set aside) of the first
+  13 weeks and of the first 52 weeks, as a share and in euros; the number of runs of four losing weeks or more; what the
+  worst such run costs (loss of the run over the balance at its start), over the three years and among the runs that
+  start after the twelfth month. Reported as shares of paths: a fall of 50 %, 30 % and 25 % or more; the robot's own
+  gain more than 52 weeks under its high; the balance as seen more than 26 and more than 52 weeks under its high; at
+  least one run of four losing weeks.
+- **What "best" means on this ladder, fixed here from the user's words:** a plan qualifies when a fall of 50 % or more
+  from the high (payments set aside, any time in the three years) happens in at most one path in twenty, both on paper
+  and at half edge. Among the plans that qualify, the one with the highest median gain after 12 months at half edge is
+  shown first; the rest of the ladder is shown beside it. With worthless rules every plan loses: what is shown there is
+  the loss when the stop fires.
+- **To be said with it:** this is sizing on simulations of the validation years, not a selection study; the earlier
+  plans must come out unchanged apart from the corrected measure; no sizing changes how long the robot's own gain
+  stays under its high, nor how often losing runs come.
