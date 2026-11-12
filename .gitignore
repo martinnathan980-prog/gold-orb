@@ -1,1 +1,3 @@
 lab/results/pivbb/events.parquet
+# robot spike: generated C++ and the compiled replay binary (rebuilt by lab/robot/spike/check/to_cpp_spike.py)
+lab/robot/spike/out/build/
