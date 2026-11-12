@@ -665,3 +665,19 @@ directory under `r2/tracks/autopsy/` and `results/r2/autopsy/`, each logging eve
   with its criteria, before it is run. The 2026 holdout stays untouched.
 - **To be said with any result:** improvements found by looking at the same in-sample trades that built the rules are
   optimistic by construction; the measure that counts is the validation look, and then the demo account.
+
+### Addendum G — outcome of the eighth clarification (2026-11-12, `results/r2/stake/growth.json`)
+The extended engine reproduces every earlier cell (691,872 compared, none different). At half edge, F2S / F2S+soft /
+F2S+strong (the profile switched on at the start of a server week whose opening balance is at least 20,000 EUR):
+- a run of four losing weeks starting after the twelfth month: 41.2 % / 42.6 % / 15.2 % of paths; winning weeks after the
+  twelfth month 62.9 % / 67.6 % / 72.4 %; worst week after the twelfth month 6.0 % / 6.8 % / 7.8 % of the account (one path
+  in ten 6.4 / 7.2 / 8.1 %); median gain after 36 months +16,987 / +17,368 / +17,528; fall after the twelfth month, one
+  path in ten, 23.3 / 23.9 / 21.9 %; stopped 8.2 / 8.6 / 6.2 %.
+- on paper: runs after the twelfth month 38.5 / 32.5 / 8.7 %; winning weeks 67.6 / 73.3 / 77.1 %; median gain after 36
+  months +43,793 / +37,574 / +32,704 (the strong profile earns a quarter less); with rules that cover their costs
+  −1,968 / −947 / +175; worthless −3,605 / −3,548 / −3,505.
+- By the rule fixed before the run, **F2S+strong is offered as an option** (runs down by 63 %, gain 103 % of F2S's,
+  fall one path in ten lower); **F2S+soft is not** (it does not make the runs rarer). To be said with it: the option
+  turns on only from 20,000 EUR (in the median half-edge path, after about 15 months); it makes losing weeks rarer by
+  making the remaining ones larger (worst week 7.8 % instead of 6.0 %); on paper it costs a quarter of the gain; the
+  hands 1.11 cannot run it (catch-up multipliers up to 5 within the week).

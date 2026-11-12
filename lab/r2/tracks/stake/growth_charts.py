@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
 OUT = sys.argv[1]
-g = json.load(open("results/r2/stake/growth.json"))
+g = json.load(open(sys.argv[2] if len(sys.argv) > 2 else "results/r2/stake/growth.json"))
 R = g["resampled"]
 SURF, INK, INK2, MUTED, GRID, AXIS = "#fcfcfb", "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7"
 BLUE, ORANGE, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
@@ -337,7 +337,37 @@ def ladder():
     plt.close(fig)
 
 
-paths(); rule(); falls(); gains(); duel(); runs(); ladder()
+def green_weeks(base="F2S"):
+    """Eighth clarification: the same plan with a frozen catch-up profile once the account is at 20,000 EUR, at half edge."""
+    plans = [(base, "Plan conseillé\n(départ à 2 %)", BLUE), (base + "+soft", "+ rattrapage\ndoux", AQUA), (base + "+strong", "+ rattrapage\nfort", YELLOW)]
+    if any(p_ not in R for p_, _, _ in plans):
+        return
+    f = "0.5"
+    rows = [
+        ("Chances d'avoir 4 semaines perdantes de suite,\naprès la première année", [R[p_][f]["falls"]["worst_run_cost_after_12_months_pct"].get("paths_with_one_pct", 100.0) for p_, _, _ in plans],
+         lambda v: f"{v:.0f} %"),
+        ("Semaines gagnantes, après la première année", [R[p_][f]["falls"]["win_weeks_after_12_months_pct"]["median"] for p_, _, _ in plans], lambda v: f"{v:.0f} %"),
+        ("La pire semaine, après la première année\n(part du compte)", [R[p_][f]["falls"]["worst_week_after_12_months_pct"]["median"] for p_, _, _ in plans], lambda v: f"−{v:.0f} %"),
+        ("Gain après 3 ans", [R[p_][f]["at_36_months"]["gain_median"] for p_, _, _ in plans], lambda v: eur(v, True)),
+    ]
+    fig, axes = plt.subplots(4, 1, figsize=(6, 12.2), dpi=200)
+    for ax, (title, vals, fmt) in zip(axes, rows):
+        for i, ((p_, lab, c), v) in enumerate(zip(plans, vals)):
+            ax.bar(i, v, 0.6, color=c, zorder=3)
+            ax.text(i, v, fmt(v), ha="center", va="bottom", fontsize=12, fontweight="bold", color=INK)
+        ax.set_xticks(range(len(plans))); ax.set_xticklabels([lab for _, lab, _ in plans], fontsize=10.5, color=INK)
+        ax.set_yticks([]); ax.spines["left"].set_visible(False); ax.tick_params(length=0)
+        ax.set_ylim(0, max(vals) * 1.25)
+        ax.set_title(title, loc="left", fontsize=12, fontweight="bold", pad=10)
+    fig.suptitle("Moins de semaines perdantes :\nce que ça donne, ce que ça coûte", x=0.05, y=0.988, ha="left", fontsize=15, fontweight="bold")
+    fig.text(0.05, 0.026, "Le rattrapage s'active quand le compte atteint 20 000 €. Si le robot fait la moitié du papier.", fontsize=8.3, color=MUTED)
+    fig.text(0.05, 0.01, "Simulation sur les années 2022 à 2025, 2 000 trajectoires de 3 ans. Aucun trade réel.", fontsize=8.3, color=MUTED)
+    fig.subplots_adjust(left=0.05, right=0.97, top=0.885, bottom=0.085, hspace=0.72)
+    fig.savefig(f"{OUT}/10_semaines_gagnantes.png")
+    plt.close(fig)
+
+
+paths(); rule(); falls(); gains(); duel(); runs(); ladder(); green_weeks()
 best = best_of_ladder()
 if best is not None:
     paths(best, f"Ton compte avec un départ à {dict(LADDER)[best]}", "8_compte_plan_conseille.png")

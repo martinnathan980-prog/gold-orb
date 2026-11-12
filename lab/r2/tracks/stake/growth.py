@@ -3,6 +3,7 @@ is small (the user's request). An illustration of sizing on the validated trades
 
     python3 r2/tracks/stake/growth.py dry     # in sample (2018-02..2021): self-checks only, nothing is written
     python3 r2/tracks/stake/growth.py val     # 2022-2025 (one logged access): writes results/r2/stake/growth.json
+                                              # (a second argument gives another path for the result file)
 
 The account loop is the one of account.py (lots rounded down to the lot step, a trade is skipped when even the minimum
 lot is too large for its budget, at most 6 positions and 2 per market, margin check, compounding, the adopted
@@ -74,7 +75,10 @@ PROTECT = {
 STOPPED = {"FS": ("F", 0.25, 12000.0), "A05S": ("A05", 0.25, 0.0),
            "F3S": ("F3", 0.25, 12000.0), "F2S": ("F2", 0.25, 12000.0), "F1S": ("F1", 0.25, 12000.0)}
 LADDER = ("A05S", "F1S", "F2S", "F3S", "FS")     # a start at 0.5, 1, 2, 3 and 5 % (sixth clarification)
-PLANS = tuple(SCHEDULES) + tuple(PROTECT) + tuple(STOPPED)
+# eighth clarification: a plan whose weeks are traded with a frozen catch-up profile of addendum E once the balance at the
+# start of the server week is at least the threshold. name -> (plan it is built on, frozen profile, threshold in EUR)
+GREEN = {"F2S+soft": ("F2S", "soft", 20000.0), "F2S+strong": ("F2S", "strong", 20000.0)}
+PLANS = tuple(SCHEDULES) + tuple(PROTECT) + tuple(STOPPED) + tuple(GREEN)
 EDGES = (1.0, 0.5, 0.25, 0.0, -0.5)
 NO_2024 = "1.0_no2024"                          # edge x1 with the weeks of 2024 left out of the draw
 MILESTONES = (15000.0, 26000.0, 52000.0)
@@ -146,7 +150,7 @@ def _risk(eq, paid, thr, pct, key, rp, hwm):
 @njit(cache=True)
 def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl, risk, entry, upl, minlot, step, lev,
            dep_t, dep_wk, dep_amt, thr, pct, key, rp, gate_free, gate_theta, catch, gate_frac, p, famcap, start, max_pos, max_per_sym,
-           kill_dd, stop_on_kill, kill_arm, usd_eur, nwk):
+           kill_dd, stop_on_kill, kill_arm, usd_eur, nwk, p2, famcap2, scale2, sw_thr):
     """One account. Returns (balance at the end of each week, money paid in at the end of each week, counts) where
     counts = [taken, skipped by the rule, by the minimum lot, by the position caps, by the margin, week of the first
     time the -50 % rule fires (-1 = never), times the balance reached zero, 1 if the account was stopped]."""
@@ -169,6 +173,7 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
     wk_hwm = 0.0                              # the same at the start of the server week
     wk_bal, dy_bal, wk_base, dy_base = start, start, start, start     # *_base = balance at the start + payments since
     prev_wk, prev_res = -2, 0.0
+    use2, wk_scale = False, 1.0               # the week is traded with the second stake profile (p2, famcap2) at scale2
     rec = 0                                   # weeks < rec already have their end-of-week figures
     j, q = 0, 0
     nd = len(dep_t)
@@ -222,8 +227,10 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
                 rec += 1
             if w_ev != cur_wk:
                 if cur_wk >= 0:
-                    prev_wk, prev_res = cur_wk, (eq - wk_base) / max(_risk(wk_bal, wk_paid, thr, pct, key, rp, wk_hwm) / 100.0 * wk_bal, 1e-9)
+                    prev_wk, prev_res = cur_wk, (eq - wk_base) / max(_risk(wk_bal, wk_paid, thr, pct, key, rp, wk_hwm) / 100.0 * wk_bal * wk_scale, 1e-9)
                 cur_wk, wk_bal, wk_base, wk_paid, wk_hwm = w_ev, eq, eq, paid, hwm
+                use2 = eq >= sw_thr
+                wk_scale = scale2 if use2 else 1.0
             if dy_out[k] != cur_dy:
                 cur_dy, dy_bal, dy_base = dy_out[k], eq, eq
             eq += pnl[k] * o_lots[slot] * upl[k] * usd_eur
@@ -258,11 +265,13 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
             continue
         if w_ev != cur_wk:
             if cur_wk >= 0:
-                prev_wk, prev_res = cur_wk, (eq - wk_base) / max(_risk(wk_bal, wk_paid, thr, pct, key, rp, wk_hwm) / 100.0 * wk_bal, 1e-9)
+                prev_wk, prev_res = cur_wk, (eq - wk_base) / max(_risk(wk_bal, wk_paid, thr, pct, key, rp, wk_hwm) / 100.0 * wk_bal * wk_scale, 1e-9)
             cur_wk, wk_bal, wk_base, wk_paid, wk_hwm = w_ev, eq, eq, paid, hwm
+            use2 = eq >= sw_thr
+            wk_scale = scale2 if use2 else 1.0
         if dy_in[i] != cur_dy:
             cur_dy, dy_bal, dy_base = dy_in[i], eq, eq
-        unit = max(_risk(wk_bal, wk_paid, thr, pct, key, rp, wk_hwm) / 100.0 * wk_bal, 1e-9)
+        unit = max(_risk(wk_bal, wk_paid, thr, pct, key, rp, wk_hwm) / 100.0 * wk_bal * wk_scale, 1e-9)
         w = (eq - wk_base) / unit
         d = (eq - dy_base) / unit
         pw = prev_res if prev_wk == w_ev - 1 else 0.0
@@ -275,13 +284,16 @@ def engine(t_in, t_out, order_out, wk_in, dy_in, wk_out, dy_out, fam, symid, pnl
                 used += o_margin[s]
                 if symid[o_idx[s]] == symid[i]:
                     n_sym += 1
-        m, b = _mult(w, d, pw, fam[i], open_boost, p, famcap)
+        if use2:
+            m, b = _mult(w, d, pw, fam[i], open_boost, p2, famcap2)
+        else:
+            m, b = _mult(w, d, pw, fam[i], open_boost, p, famcap)
         if m <= 0.0 or eq <= 0.0:
             cnt[1] += 1.0
             i += 1
             continue
         per_lot = risk[i] * upl[i] * usd_eur
-        lots = np.floor(eq * _risk(eq, paid, thr, pct, key, rp, hwm) * m / 100.0 / per_lot / step[i] + 1e-9) * step[i]
+        lots = np.floor(eq * _risk(eq, paid, thr, pct, key, rp, hwm) * m * wk_scale / 100.0 / per_lot / step[i] + 1e-9) * step[i]
         if lots < minlot[i]:
             cnt[2] += 1.0
             i += 1
@@ -370,6 +382,11 @@ def run_one(pk, pnl, sched, dep_t, dep_wk, dep_amt, start=1000.0, stop_on_kill=F
     """`pk` = pack(...) ; `pnl` = the per-trade result in price units for the whole frame (the edge scenario)."""
     p, famcap = S.params(CFG)
     kill_arm = 0.0
+    p2, famcap2, scale2, sw_thr = p, famcap, 1.0, np.inf
+    if sched in GREEN:
+        sched, prof, sw_thr = GREEN[sched]
+        p2, famcap2 = S.params(S.FROZEN[prof]["config"])
+        scale2 = float(S.FROZEN[prof]["base_scale"])
     if sched in STOPPED:
         sched, kill_dd, kill_arm = STOPPED[sched]
         stop_on_kill = True
@@ -380,7 +397,8 @@ def run_one(pk, pnl, sched, dep_t, dep_wk, dep_amt, start=1000.0, stop_on_kill=F
     thr, pct = (np.array(v, dtype=np.float64) for v in SCHEDULES[base])
     return engine(*pk["head"], pnl[pk["idx"]], *pk["tail"], dep_t, dep_wk, dep_amt, thr, pct, key, np.array(rp, dtype=np.float64),
                   gate_free, gate_theta, catch, gate_frac, p, famcap, start,
-                  A.LIMITS["max_positions"], A.LIMITS["max_per_sym"], kill_dd, stop_on_kill, kill_arm, A.USD_EUR, pk["nwk"])
+                  A.LIMITS["max_positions"], A.LIMITS["max_per_sym"], kill_dd, stop_on_kill, kill_arm, A.USD_EUR, pk["nwk"],
+                  p2, famcap2, scale2, sw_thr)
 
 
 def self_check(x_is_prices, d, period):
@@ -471,8 +489,9 @@ MEASURES = ("fall_from_high_pct", "weeks_under_high", "fall_of_balance_seen_pct"
             "losing_weeks_in_a_row", "losing_months_in_a_row", "fall_from_high_after_12_months_pct",
             "fall_from_high_after_12_months_eur", "fall_from_high_eur", "fall_first_13_weeks_pct", "fall_first_13_weeks_eur",
             "fall_first_52_weeks_pct", "fall_first_52_weeks_eur", "runs_of_4_losing_weeks", "worst_run_cost_pct",
-            "worst_run_cost_after_12_months_pct", "worst_run_cost_after_12_months_eur")
-MEASURES_PCT = (0, 2, 6, 9, 11, 14, 15)         # stored as shares, reported in %
+            "worst_run_cost_after_12_months_pct", "worst_run_cost_after_12_months_eur", "win_weeks_after_12_months_pct",
+            "worst_week_after_12_months_pct")
+MEASURES_PCT = (0, 2, 6, 9, 11, 14, 15, 17, 18)  # stored as shares, reported in %
 RUN = 4                                          # a "losing run": this many losing weeks in a row, or more
 
 
@@ -483,7 +502,9 @@ def path_measures(eq, paid, month_wk, start=1000.0):
     seen, the longest run of losing weeks and of losing months, the deepest fall after the twelfth month (share, euros)
     and over the whole path in euros, the deepest fall of the first 13 and 52 weeks (share, euros), the number of runs
     of RUN losing weeks or more, what the worst of them costs (its loss over the balance at its start; 0 when there is
-    none) and the same among the runs that start after the twelfth month (nan when there is none; share, euros)."""
+    none) and the same among the runs that start after the twelfth month (nan when there is none; share, euros), and after
+    the twelfth month the share of winning weeks among the weeks with a result (nan when there is none) and the worst week
+    (its loss over the balance at its start)."""
     g = eq - paid
     h = np.maximum.accumulate(np.maximum(g, 0.0))
     size = paid + h
@@ -515,10 +536,15 @@ def path_measures(eq, paid, month_wk, start=1000.0):
             if w >= w12 and not (c <= worst_late):                              # also true while worst_late is nan
                 worst_late, worst_late_eur = c, loss
         w = e + 1
+    won, lost = (wk > 1e-9)[w12:], lose[w12:]
+    with_result = int(won.sum() + lost.sum())
+    win_late = won.sum() / with_result if with_result else np.nan
+    before = np.r_[start, eq[:-1]]                                              # balance at the start of each week
+    worst_week = float((np.where(before > 0, -wk / np.where(before > 0, before, 1.0), 0.0)[w12:]).max()) if w12 < n else 0.0
     return (float(fall.max()), float(_longest(g < h - 1e-9)), float(seen.max()), float(_longest(eq < top - 1e-9)),
             float(_longest(lose)), float(_longest(mo < -1e-9)), float(late), float(late_eur), float((h - g).max()),
             float(fall[:13].max()), float((h - g)[:13].max()), float(fall[:52].max()), float((h - g)[:52].max()),
-            float(n_runs), float(worst), float(worst_late), float(worst_late_eur))
+            float(n_runs), float(worst), float(worst_late), float(worst_late_eur), float(win_late), max(worst_week, 0.0))
 
 
 SAMPLE_PATHS = 40
@@ -639,7 +665,7 @@ def summarise(res, fired, zero, paid_m):
             row["month_of_a_lasting_1000_a_month"] = int(np.argmax(later_all_ok)) if later_all_ok.any() else None
             row["gain_per_month_by_year_median_path"] = [round(float((g[12 * (y + 1)] - g[12 * y]) / 12.0), 0) for y in range(3)]
             row["stop_rule_fires_pct"] = round(float(100 * (fired[s][f] >= 0).mean()), 1)
-            if s in STOPPED:
+            if s in STOPPED or (s in GREEN and GREEN[s][0] in STOPPED):
                 wk_ = fired[s][f][fired[s][f] >= 0]
                 row["stopped"] = {"paths_pct": row["stop_rule_fires_pct"],
                                   "median_month": (round(float(np.median(wk_) * 7 / 30.4375), 0) if len(wk_) else None)}
@@ -648,7 +674,7 @@ def summarise(res, fired, zero, paid_m):
     return out
 
 
-def main(period):
+def main(period, out_path=None):
     d = load(period)
     x_is = arrays(d, "is")
     checks = self_check(x_is, d, period)
@@ -667,7 +693,7 @@ def main(period):
     for s in PLANS:
         for f in list(EDGES) + [NO_2024]:
             r = summ[s][str(f)]["at_36_months"]
-            if s in PROTECT or s in STOPPED or s in ("A", "C2", "A05", "A025", "F", "F3", "F2", "F1"):
+            if s in PROTECT or s in STOPPED or s in GREEN or s in ("A", "C2", "A05", "A025", "F", "F3", "F2", "F1"):
                 a = summ[s][str(f)]["at_12_months"]
                 print(f"{s:4s} edge x{str(f):<10}: 36 m gain median {r['gain_median']:>9,.0f} (1 in 10: {r['gain_p10']:>9,.0f} .. {r['gain_p90']:>9,.0f}) paid in {r['paid_in_median']:>7,.0f} "
                       f"in loss {r['in_loss_pct']:5.1f} % worst {r['worst_gain']:>9,.0f} | 12 m gain {a['gain_median']:>8,.0f} (1 in 10: {a['gain_p10']:>8,.0f}) paid {a['paid_in_median']:>6,.0f} | "
@@ -682,6 +708,9 @@ def main(period):
                       f"first 52 weeks {fl['fall_first_52_weeks_eur']['median']:6.0f} EUR ({fl['fall_first_52_weeks_eur']['p90']:6.0f}) | fall >= 50 % {sh['fall_of_50_pct_or_more']:5.1f} % of paths, >= 30 % {sh['fall_of_30_pct_or_more']:5.1f} | "
                       f"gain > 52 weeks under its high {sh['own_gain_over_52_weeks_under_its_high']:5.1f} | balance seen > 26 weeks {sh['balance_seen_over_26_weeks_under_its_high']:5.1f} > 52 {sh['balance_seen_over_52_weeks_under_its_high']:5.1f} | "
                       f"a run of 4 losing weeks {sh['a_run_of_4_losing_weeks_or_more']:5.1f} %, worst costs {fl['worst_run_cost_pct']['median']:5.1f} % ({fl['worst_run_cost_pct']['p90']:5.1f})")
+                late = fl["worst_run_cost_after_12_months_pct"]
+                print(f"       after month 12: winning weeks {fl['win_weeks_after_12_months_pct']['median']} % | worst week {fl['worst_week_after_12_months_pct']['median']} % "
+                      f"({fl['worst_week_after_12_months_pct']['p90']}) | a run of 4 losing weeks in {late.get('paths_with_one_pct', 100.0)} % of paths, costs {late['median']} % ({late['p90']})")
                 continue
             print(f"{s:2s} edge x{str(f):<10}: at 36 months median {r['median']:>10,.0f} (10 %: {r['p10']:>9,.0f}, 90 %: {r['p90']:>10,.0f}) for {r['paid']:,.0f} paid | "
                   f"below paid {r['below_paid_pct']:5.1f} % | lasting 1,000 a month from month {summ[s][str(f)]['month_of_a_lasting_1000_a_month']} | "
@@ -692,11 +721,14 @@ def main(period):
            "keyed_on_max_of_balance_and_paid": list(KEYED_ON_PAID),
            "stopped": {k: {"plan": v[0], "stop_at_fall_of_reference": v[1], "armed_once_paid_in": v[2]} for k, v in STOPPED.items()},
            "ladder_of_starts": list(LADDER), "losing_run_weeks": RUN,
+           "green_weeks": {k: {"plan": v[0], "frozen_profile": v[1], "from_balance_eur": v[2], "base_scale": S.FROZEN[v[1]]["base_scale"],
+                               "config": {c: (list(x) if isinstance(x, (list, tuple)) else x) for c, x in S.FROZEN[v[1]]["config"].items()}}
+                           for k, v in GREEN.items()},
            "protect": {k: {"cap_schedule": v[0], "risk_key": v[1], "risk_params": list(v[2]), "free_monthly_payments": v[3], "steps_threshold": v[4],
                            "catch_up": v[5], "share_paid_under_water": v[6]} for k, v in PROTECT.items()}, "months": MONTHS, "paths": N_PATHS, "block_weeks": BLOCK, "seed": SEED, "payment_eur": 1000.0,
            "paid_by_month": [float(v) for v in paid_m], "self_check": checks, "real_order": ro, "resampled": summ,
            "not_modelled": "slippage on larger sizes, broker margin call, daily-loss lock, minimum stop distance; the -50 % stop is recorded, not applied"}
-    json.dump(out, open(os.path.join(S.OUT, "growth.json"), "w"), indent=1)
+    json.dump(out, open(out_path or os.path.join(S.OUT, "growth.json"), "w"), indent=1)
 
 
 def summarise_small(res, paid_m):
@@ -718,4 +750,4 @@ if __name__ == "__main__":
     if sys.argv[1] == "dump":
         dump(sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 30)
     else:
-        main(sys.argv[1])
+        main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)        # optional: another path for the result file
