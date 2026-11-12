@@ -1,0 +1,528 @@
+{
+ "what": "Robot design workflow wf_4a509482-08c: synthesis (SPEC.md), two adversarial attacks of the spec (verdict buildable_after_fixes), spike report (brk72 BTC replay)",
+ "synth": {
+  "spec_path": "/home/user/gold-orb/lab/robot/SPEC.md",
+  "summary": "The user installs one EA, dist/ClaudeRobot.mq5. tools/amalgam.py builds it from about 20 single-owner .mqh files in lab/robot/src; the user installs it once on the Mac and migrates it to the MetaQuotes VPS.\nEach sleeve keeps a paper chain: a streaming port of goldlab/sim.py run on the broker's closed M1 bars, with ask = bid + the bar's spread. This chain alone decides entries, the one-position rule and exits, so the EA reproduces the lab code on the broker's own bars.\nThe account follows the paper with market orders only, and the broker stop is the paper stop rounded on the tick grid. Gold stop and limit entries go out at market one bar after the paper fill, never as broker pending orders, so real and paper never disagree on which trades exist. In-sample cost: donch −0.023 R a trade, orb and GFP about 0.\nThere is no persistent state, because global variables are not migrated to the VPS. Every start or bar revision replays 120 days of gold and 60 days of the other symbols, rebuilds the ledger from the deals and reconciles positions by magic number 20261200 + id.\nEach rule is a class behind a fixed OnBar/OnMinute/LatestExit interface, dispatched by a switch because the translator refuses pointers. Adding a rule is one file plus one registry row.\nSizing is growth.py's engine applied to real money: the risk table is an input read on max(balance, paid in). The cushion uses the robot's own closed money of the server week with lab time stamps. Lots are floored, a trade too small for the minimum lot is skipped, positions are capped at 6 and 2 per market, and margin is checked. The plan stop fires at −25 % of the reference once 12,000 EUR are paid in.\nThe daily lock and the Friday close ship off, since the validated plan has neither. The only extra protection is a −50 % equity disaster guard.\nProof: the dist file is translated to C++ with the spike's tools and replayed on in-sample bars against make_orders, r2.run and growth.engine, with stated tolerances, scripted restarts and broker faults. The real compiler, a Strategy Tester parity run and FP's specs remain for the user's Mac.\nNote: another session's broad commit (146f125) swept an earlier draft of SPEC.md into git. I ran no git command; the file on disk is the final version.",
+  "modules": [
+   {
+    "file": "lab/robot/src/ClaudeRobot.mq5",
+    "owns": "#property lines, the 11 inputs, include order (the only file with inputs)",
+    "depends_on": "every src/*.mqh"
+   },
+   {
+    "file": "lab/robot/src/CR_Types.mqh",
+    "owns": "constants, CrBar/CrOrder/CrExit/CrEvent/CrIntent structs, journal event codes, byte-order string compare",
+    "depends_on": "nothing"
+   },
+   {
+    "file": "lab/robot/src/CR_Registry.mqh",
+    "owns": "symbol table (names, slippage bps, mask, closures, history depth) and sleeve table (id, code, lab name, kind, symbols, enabled), RulesInit/OnBar/OnMinute dispatch switches",
+    "depends_on": "CR_Types, all CR_Rule_* class declarations"
+   },
+   {
+    "file": "lab/robot/src/CR_Journal.mqh",
+    "owns": "CR|utc|EVENT|code|k=v journal to Print and daily files, French push texts with the hands' rate limits, daily summary",
+    "depends_on": "CR_Types"
+   },
+   {
+    "file": "lab/robot/src/CR_Clock.mqh",
+    "owns": "UTC/server/NY/London conversion with US and UK DST, server day and week, AddTradingDays, NYSE and gold early-close calendars, closure table, ExitMinute (30-min rule), clock check",
+    "depends_on": "CR_Types"
+   },
+   {
+    "file": "lab/robot/src/CR_Math.mqh",
+    "owns": "ring buffers, rolling sum with periodic re-sum, rolling max/min, window median, Wilder step",
+    "depends_on": "nothing"
+   },
+   {
+    "file": "lab/robot/src/CR_Bars.mqh",
+    "owns": "history load by time range, M1 store, ask/mid construction, lab-hours mask, minute barrier, 3-bar revision check (LATEBAR), per-symbol READY",
+    "depends_on": "CR_Types, CR_Clock"
+   },
+   {
+    "file": "lab/robot/src/CR_Paper.mqh",
+    "owns": "streaming port of sim.py _run per sleeve (market/stop/limit/OCO, one-position rule, stops, trail, time exits, stamps), PFILL/PEXIT/PSTOP events",
+    "depends_on": "CR_Types"
+   },
+   {
+    "file": "lab/robot/src/CR_Rule_IdxUS.mqh",
+    "owns": "US100 session grid and 17:00-NY daily ATR; rules N30 noise30 and OC4 ocm4",
+    "depends_on": "CR_Types, CR_Clock, CR_Math"
+   },
+   {
+    "file": "lab/robot/src/CR_Rule_Brk72.mqh",
+    "owns": "BKB/BKE brk72_24h_wd (UTC hour mid bars, 72-close channel, SMA ATR24, D+24h exit)",
+    "depends_on": "CR_Types, CR_Clock, CR_Math"
+   },
+   {
+    "file": "lab/robot/src/CR_Rule_F1.mqh + generated CR_F1Model.mqh",
+    "owns": "F1B/F1E F1_brk_ridge_filter (bid session bars, 15 features, frozen ridge scorecard at %.17g)",
+    "depends_on": "CR_Types, CR_Clock, CR_Math; tools/gen_f1_model.py"
+   },
+   {
+    "file": "lab/robot/src/CR_Rule_NqBtc.mqh",
+    "owns": "NQB nq_btc_follow (per-minute returns of BTC and US100, 28,800-minute RMS, 6-sigma leader impulse)",
+    "depends_on": "CR_Types, CR_Clock, CR_Math"
+   },
+   {
+    "file": "lab/robot/src/CR_Rule_GoldFri.mqh",
+    "owns": "GFP GOLD_FRI_PM (Friday 13:30 NY limit, hourly Wilder ATR, early-close calendar)",
+    "depends_on": "CR_Types, CR_Clock, CR_Math"
+   },
+   {
+    "file": "lab/robot/src/CR_Rule_Orb.mqh",
+    "owns": "ORX orb_asia_2d_buf10 (London 00:00-07:00 range, first touch until 12:00, opposite-level stop); disabled ids 11-12 on BTC/ETH",
+    "depends_on": "CR_Types, CR_Clock"
+   },
+   {
+    "file": "lab/robot/src/CR_Rule_Donch.mqh",
+    "owns": "D4H donch4h_stop (UTC 4h mid bars, 60-bar OCO bracket, Wilder ATR, 2-ATR trail, 5-trading-day exit)",
+    "depends_on": "CR_Types, CR_Clock, CR_Math"
+   },
+   {
+    "file": "lab/robot/src/CR_Ledger.mqh",
+    "owns": "deal history -> payments, robot closes with lab stamps, balance/paid-in/reference at a stamp, week and day units, settle rule and history gap, InpPaidIn, InpRestartAfter",
+    "depends_on": "CR_Types, CR_Clock"
+   },
+   {
+    "file": "lab/robot/src/CR_Sizing.mqh",
+    "owns": "risk table parsing, cushion multiplier, lots floored to step, guard order, min-lot skip, 6/2 caps, OrderCalcMargin check, byte-order ranking of same-stamp intents",
+    "depends_on": "CR_Ledger, CR_Types"
+   },
+   {
+    "file": "lab/robot/src/CR_Broker.mqh",
+    "owns": "the only sender of trade requests: open/close/modify with the hands' DoOpen checks, GridStop, RiskMoney, Resolve, idempotency search, retries",
+    "depends_on": "CR_Types, CR_Journal"
+   },
+   {
+    "file": "lab/robot/src/CR_Follower.mqh",
+    "owns": "intents from paper orders and PFILL, one real position per sleeve, stop sync, exits, startup reconciliation (ADOPT/ORPHAN/DUP/MISSED), NOT_READY fallback via LatestExit",
+    "depends_on": "CR_Paper, CR_Sizing, CR_Broker, CR_Registry"
+   },
+   {
+    "file": "lab/robot/src/CR_Guards.mqh",
+    "owns": "plan stop, -50 % disaster guard, daily lock, Friday close, clock check, TERMINAL_VPS gate, single-instance lock, self-test runner",
+    "depends_on": "CR_Ledger, CR_Clock, CR_Broker, CR_Golden"
+   },
+   {
+    "file": "lab/robot/src/CR_Golden.mqh (generated)",
+    "owns": "self-test vectors (clock, NYSE, AddTradingDays, F1 scores, Wilder and SMA series)",
+    "depends_on": "tools/gen_golden.py and the lab code"
+   },
+   {
+    "file": "lab/robot/src/CR_Main.mqh",
+    "owns": "OnInit/OnTimer(100 ms)/OnTick/OnTradeTransaction/OnDeinit, startup state machine, minute driver shared by live and replay",
+    "depends_on": "all modules"
+   },
+   {
+    "file": "lab/robot/tools/amalgam.py",
+    "owns": "dist/ClaudeRobot.mq5 and dist/ClaudeRobot_debug.mq5 (inlined includes, ASCII check, CR_BUILD sha256)",
+    "depends_on": "src/"
+   },
+   {
+    "file": "lab/robot/tools/gen_f1_model.py",
+    "owns": "CR_F1Model.mqh from B1_ridge_full.json[frozen], refusing a wrong sha256",
+    "depends_on": "lab/r2/tracks/ml/models/B1_ridge_full.json"
+   },
+   {
+    "file": "lab/robot/tools/gen_golden.py",
+    "owns": "CR_Golden.mqh from lab functions",
+    "depends_on": "lab code (zoneinfo, idxus_lib, trend, ml strategy)"
+   },
+   {
+    "file": "lab/robot/check/to_cpp.py, mql5_shim.h, mock_replay.h",
+    "owns": "MQL5-to-C++ translator, MQL5 shim, minute-by-minute replay terminal and hedging broker for N symbols (copied from lab/robot/spike and extended)",
+    "depends_on": "lab/robot/spike/check/*"
+   },
+   {
+    "file": "lab/robot/check/mock_faults.h",
+    "owns": "scripted broker failures (refusals, requotes, timeouts, magic-0 deals, rewritten comments, late bars, short history)",
+    "depends_on": "mock_replay.h"
+   },
+   {
+    "file": "lab/robot/check/export_frames.py, ref_lab.py, compare.py, run_tests.py",
+    "owns": "in-sample broker-format exports and rebuilt lab frames, lab references (make_orders, r2.run, growth.run_one), journal comparison with tolerances, test runner T1-T10",
+    "depends_on": "lab/goldlab, lab/r2/recalc.py, lab/r2/tracks/stake/growth.py"
+   }
+  ],
+  "build_steps": [
+   {
+    "id": "S0",
+    "what": "Contract and skeleton: every src file with final signatures and stubs, registry with all ten rows and dispatch cases, journal, CR_Main skeleton, amalgam, harness (translator, shim, replay mock, exports, lab references, comparator, runner)",
+    "files": "src/ClaudeRobot.mq5, src/CR_Types.mqh, src/CR_Registry.mqh, src/CR_Journal.mqh, src/CR_Main.mqh (skeleton), stubs of all other src files, tools/amalgam.py, check/to_cpp.py, check/mql5_shim.h, check/mock_replay.h, check/mock_faults.h (stub), check/export_frames.py, check/ref_lab.py, check/compare.py, check/run_tests.py",
+    "done_when": "dist builds and compiles under g++ without warnings; an empty EA replays 2021 on four symbols with a parsable journal; ref_lab.py reproduces results/r2/recalc/trades (entries before 2022) on the official frames",
+    "can_run_in_parallel_with": "nothing (first)"
+   },
+   {
+    "id": "A",
+    "what": "Clock: UTC/server/NY/London, DST, server weeks, AddTradingDays, NYSE and gold calendars, closures, ExitMinute",
+    "files": "src/CR_Clock.mqh, check/test_clock.cpp",
+    "done_when": "T1: every hour 2012-2035 and every DST switch ±3 h equal to zoneinfo and pont.server_to_utc; NYSE flags equal to us_holidays; AddTradingDays equal on all in-sample 4h closes; weeks equal to stake.prepare",
+    "can_run_in_parallel_with": "B, C, D, E, F, G, H, I, J"
+   },
+   {
+    "id": "B",
+    "what": "Data: rolling primitives, history load, M1 store, ask/mid, mask, barrier, revisions",
+    "files": "src/CR_Math.mqh, src/CR_Bars.mqh, check/test_bars.cpp",
+    "done_when": "T2: store equals the rebuilt in-sample frame bit for bit, mask drops nothing in sample, aggregates equal the lab functions, barrier and LATEBAR behave as specified in the mock; primitives within 1e-12 of pandas",
+    "can_run_in_parallel_with": "A, C, D, E, F, G, H, I, J"
+   },
+   {
+    "id": "C",
+    "what": "Paper engine: streaming port of sim.py _run with OCO",
+    "files": "src/CR_Paper.mqh, check/test_paper.cpp",
+    "done_when": "T3: at least 10,000 random orders per market (all entry types, OCO, wrong-side stops, trail, break-even, targets, gaps) identical to gl.simulate, plus the simulator map's hand scenarios",
+    "can_run_in_parallel_with": "A, B, D, E, F, G, H, I, J"
+   },
+   {
+    "id": "D",
+    "what": "US100 rules N30 and OC4 with the shared session grid and daily ATR",
+    "files": "src/CR_Rule_IdxUS.mqh, check/test_N30.py, check/test_OC4.py",
+    "done_when": "T4 and T5 on the whole in-sample period: every decision and trade equal to make_orders / r2.run within the tolerances, hole exits classified",
+    "can_run_in_parallel_with": "A, B, C, E, F, G, H, I, J"
+   },
+   {
+    "id": "E",
+    "what": "Crypto rules BKB/BKE and F1B/F1E, F1 constant generator",
+    "files": "src/CR_Rule_Brk72.mqh, src/CR_Rule_F1.mqh, tools/gen_f1_model.py, src/CR_F1Model.mqh (generated), check/test_BKB.py, check/test_F1B.py",
+    "done_when": "T4 and T5 for BKB, BKE, F1B, F1E (scores within 1e-12, razor cases listed); generator refuses a file whose sha256 is not d191cbbc...644e",
+    "can_run_in_parallel_with": "A, B, C, D, F, G, H, I, J"
+   },
+   {
+    "id": "F",
+    "what": "Lead-lag rule NQB",
+    "files": "src/CR_Rule_NqBtc.mqh, check/test_NQB.py",
+    "done_when": "T4 and T5 for NQB; sigma within 1e-12 of the lab's rolling RMS",
+    "can_run_in_parallel_with": "A, B, C, D, E, G, H, I, J"
+   },
+   {
+    "id": "G",
+    "what": "Gold clock rules GFP and ORX",
+    "files": "src/CR_Rule_GoldFri.mqh, src/CR_Rule_Orb.mqh, check/test_GFP.py, check/test_ORX.py",
+    "done_when": "T4 and T5 for GFP and ORX; GFP days dropped by the lab for data holes classified",
+    "can_run_in_parallel_with": "A, B, C, D, E, F, H, I, J"
+   },
+   {
+    "id": "H",
+    "what": "Gold trend rule D4H",
+    "files": "src/CR_Rule_Donch.mqh, check/test_D4H.py",
+    "done_when": "T4 and T5 for D4H; Wilder ATR within 1e-12 after warm-up",
+    "can_run_in_parallel_with": "A, B, C, D, E, F, G, I, J"
+   },
+   {
+    "id": "I",
+    "what": "Account: ledger from deals and sizing",
+    "files": "src/CR_Ledger.mqh, src/CR_Sizing.mqh, check/test_account.cpp",
+    "done_when": "T7: on 2018-02..2021-12, F1S and F2S, payments monthly, growth.engine on the EA's own trades gives the same takes, skip reasons, lots, m and stop week, weekly balances within 0.01 EUR; unit tests of risk table, cushion, lots, min lot, caps, margin, strict stamps, stop latch, InpPaidIn, InpRestartAfter, history gap",
+    "can_run_in_parallel_with": "A, B, C, D, E, F, G, H, J"
+   },
+   {
+    "id": "J",
+    "what": "Execution: broker layer, follower, guards, mock faults, port of the hands' tests",
+    "files": "src/CR_Broker.mqh, src/CR_Follower.mqh, src/CR_Guards.mqh, check/mock_faults.h, check/test_hands_port.cpp",
+    "done_when": "T8 (clean ticks: real = paper, gold one bar late; one scripted world per failure) and T9 (test_mains.py sections 2-4, 7, 9, 11 ported)",
+    "can_run_in_parallel_with": "A, B, C, D, E, F, G, H, I"
+   },
+   {
+    "id": "K",
+    "what": "Integration: final minute driver and startup state machine, golden vectors, release",
+    "files": "src/CR_Main.mqh (final), tools/gen_golden.py, src/CR_Golden.mqh (generated)",
+    "done_when": "T6 (100 restarts per sleeve from the shipped depth and 10 outages: later paper trades unchanged), T10 self-test, full in-sample ten-sleeve run under sanitizers in under 3 min, startup replay under 5 s, dist/ClaudeRobot.mq5 released",
+    "can_run_in_parallel_with": "nothing (after A-J)"
+   }
+  ],
+  "accepted_deviations_from_the_lab": [
+   "D4H, ORX and GFP stop/limit entries are filled for real at the open of the bar after the paper fill (in-sample cost: donch -0.023 R a trade, orb +0.049 USD against the level, GFP +0.002 USD); paper chain and sizing keep the lab fill.",
+   "A lab time exit moved before an unforeseen hole of more than 30 min (gl.exit_index) happens live after the hole (spike: 13 of 645 BTC trades); known closures (weekly, daily breaks, InpExtraClosures, earlier broker sessions) are handled like the lab.",
+   "GOLD_FRI_PM's early-close filter is a calendar (day after Thanksgiving + InpExtraClosures) plus the broker's session, not the lab's after-the-fact test.",
+   "Real stops trigger on real ticks, paper stops on bars with one spread each; the paper decides, so a real stop hit first leaves the sleeve busy until the paper exits.",
+   "Ask = bid + MqlRates.spread on FP's own feed instead of the Dukascopy-based modelled spread; only 'EA = lab code on the broker's bars' is provable, and razor-thin rules will differ trade by trade from the lab history.",
+   "Lots use live EUR tick values and OrderCalcMargin instead of 0.89 EUR/USD and fp_costs.json; for absolute-stop rules the expected fill comes from the quote.",
+   "Late gold intents are sized one minute after their stamp; this changes the byte-order ranking only when caps or margin bind in that minute.",
+   "Rolling sums, means, medians and Wilder averages are incremental, within 1e-12 of pandas; decisions within 1e-9 of a threshold may differ.",
+   "After a restart a paper entry is joined only within 5 min of its stamp; later it is MISSED and the paper chain continues.",
+   "A -50 % equity disaster guard from day one is not in the plan.",
+   "NYSE special closures after 2025-01-09 are known only through InpExtraClosures."
+  ],
+  "needs_the_users_mac": [
+   "MetaEditor compile with 0 errors and 0 warnings, and the OnInit self-test on the real compiler. Default: none, trading blocked until done.",
+   "Strategy Tester run of ClaudeRobot_debug.mq5 on FP history (2021, real ticks, else 1-minute OHLC) with InpTrade=false; the harness replay of the dumped bars must reproduce the journal line for line. Default: none, InpTrade=true blocked until done.",
+   "What MqlRates.spread holds at FP (minimum, open or close; a moderator says minimum), compared with ReleveFP tick files. Default: ask = bid + spread x point on all four prices.",
+   "Server clock = New York + 7 h all year, checked across a DST switch. Default: the rule, new entries blocked on a mismatch over 120 s.",
+   "FP sessions: US100 16:15-18:00 NY, gold 17:00-18:00 NY, crypto weekends, the Friday close minute, holiday hours. Default: the lab-hours mask and closure table, shortened by SymbolInfoSessionTrade.",
+   "Symbol specifications: names with .r, digits and tick size, contract sizes, US100 minimum lot and step, EUR tick values, stops and freeze levels, filling, margin, swaps, hedging mode. Default: read live; the harness uses fp_costs.json and 0.89.",
+   "Deposits recorded as DEAL_TYPE_BALANCE with the amount in DEAL_PROFIT, history complete since opening. Default: deal history, a balance gap booked as an opening payment, InpPaidIn as override.",
+   "Broker stop deals: magic number, DEAL_REASON_SL, whether comments are kept. Default: attribution by position id, matching by magic and time.",
+   "On the VPS: available history depth (120 days gold, 60 others), startup replay time, Max bars migrated, TERMINAL_VPS true. Default: sleeves NOT_READY until the depth is there.",
+   "First-tick timing at minute opens, real slippage, frequency of LATEBAR revisions. Default: 2 s grace, a rebuild on each revision (at most every 5 min).",
+   "Weekend crypto quotes before enabling orb_asia on BTC/ETH (ids 11-12). Default: disabled.",
+   "Two shadow weeks with InpTrade=false on the real account, VPS and Mac journals compared with a harness replay of the same bars, then InpTrade=true."
+  ],
+  "disagreements_between_proposals": [
+   "Gold stop/limit entries: Fidelity used broker pending orders (OCO, BUY LIMIT), Robustness EA tick emulation, Simplicity market at the paper fill bar's close. Chosen: market one bar late, so real and paper never disagree on which trades exist, there are no orphan OCO legs, it fits the existing mock, and the measured cost is small (-0.023 R donch, about 0 orb/GFP).",
+   "History depth: XAU 180 days (F), 70 (R), 60 (S); others 60/70/60. Chosen: XAU 120, others 60, twice every measured warm-up and chain resync, donch ATR within 4e-15, about 120k bars, under the 500k cap.",
+   "State: the spike used global variables plus a rebuild; the proposals used none. Chosen: none, because global variables are not migrated to the VPS and the spike's rebuild path reproduced 20/20 fresh starts.",
+   "Daily lock: off (F, S) vs -8 stakes (R). Chosen: off by default, kept as an input in stakes, because the plan was simulated without a lock.",
+   "Disaster guard at -50 % equity: kept (F, R) vs dropped (S). Chosen: kept as a constant; it fires only after half the money is gone and catches broker or bug failures.",
+   "Hands' 3-spread minimum stop: kept (S) vs dropped (F). Chosen: dropped, since the lab has no minimum; the broker's STOPS_LEVEL is enforced.",
+   "Late join after a restart: 5 min plus 25 % of the stop (F), never past tolerance (R), 2 min (S). Chosen: 5 min (the lab's own entry tolerance), no price test.",
+   "Timer: 200 ms (F), 250 ms plus OnTick (R), 1 s (S). Chosen: 100 ms timer plus OnTick on the same handler.",
+   "Bar-final grace: 1 s (F), 2 s (R), none (S). Chosen: first tick at or after M or M + 2 s, plus a 3-bar re-read each minute with a rebuild on revision.",
+   "Trading only on the VPS (R): adopted for real accounts (demo trades anywhere) so a second local copy can never double-trade.",
+   "Robustness's data-based clock check (us100 opening range): dropped; the hourly TimeTradeServer - TimeGMT check is cheaper and the Mac verifies the offset once.",
+   "Crypto Friday exit: lab 23:54 (F) vs min(lab, broker session end - 1 min) (R, S). Chosen: min, so a position is never held over a weekend if FP closes earlier.",
+   "Folder lab/live_ea (all three). Chosen: lab/robot, next to this spec and the spike.",
+   "Rule dispatch: switch on rule id with one object per sleeve (S, spike), because the translator refuses pointers and virtual calls.",
+   "F1 constants: IEEE bit patterns (F) vs %.17g literals (R, S, spike). Chosen: %.17g, plus golden F1 scores checked by the OnInit self-test.",
+   "Journal: CSV (spike) vs k=v (F). Chosen: a fixed pipe-separated head (utc, event, code) followed by k=v pairs.",
+   "Magic base 26111200 (F) vs 20261200 (R, S). Chosen: 20261200 + id, distinct from the hands' 20261110.",
+   "Account reference test: growth.engine at today's prices (F). Chosen: growth.engine fed the EA's own trades at real prices, since the EA cannot rescale prices.",
+   "Plan-stop timing: every balance change including the arming deposit (R) vs after each booked close (growth.py). Chosen: growth.py, to stay identical to the validated figures.",
+   "Inputs: 2 (S), 7 (R), 8 (F). Chosen: 11, each tied to a stated requirement; no enum inputs, because the translator cannot carry them."
+  ]
+ },
+ "attacks": [
+  {
+   "verdict": "buildable_after_fixes",
+   "findings": [
+    {
+     "id": "P1",
+     "severity": "major",
+     "where_in_spec": "§4.1 (gold intents sent at barrier i+1) together with §4.2 (\"after the fill ... the risk must be ≤ 1.25 × budget, else close (REFUSED)\"); §4.1 cost claim",
+     "what": "The spec keeps the hands' post-fill check (close the trade if its real risk is above 1.25 × budget) and applies it to the gold entries (D4H, ORX, GFP), which it deliberately sends one bar late. The delay alone widens the risk on the fastest breakouts. So the robot would close at once exactly the trades that carry a large share of the edge, while the paper keeps them. The spec's cost figure for the delay (donch −0.023 R a trade, map or-tendance fact 22) was measured without any such refusal.",
+     "evidence": "lab/live_ai/mql5/ClaudeMains.mq5:835 (`risk > cap * 1.25` → close). In-sample check on lab/results/r2/recalc/trades (entry < 2022) against the in-sample gold frame lab/data/fp/xauusd_m1.parquet: real entry = next bar's ask/bid open ± 0.3 bp, measured against the paper stop. |real − stop| / |paper fill − stop| > 1.25 for 16 of 495 donch4h trades (lab R +12.2 of the sleeve's +84.2) and 20 of 1,039 orb_asia trades (+17.6 of +230.1). GFP: 0 of 414. These counts are an upper bound before lot rounding; with fine lot steps the bound is reached. Related pitfalls: mains 9, or-tendance 4 and 13, mains 7.",
+     "fix": "For stop, limit and OCO intents, never close a trade only because the one-bar delay widened its risk. At send time, if |quote ± lab slippage − paper stop| is larger than |paper fill − stop|, size the lots on that larger risk (journal SIZE) and apply the 1.25 check to it. List the resulting lot differences as a known T7 exception."
+    },
+    {
+     "id": "P2",
+     "severity": "major",
+     "where_in_spec": "§7 References (ref_lab.py) and §7 Data (\"references use it\")",
+     "what": "The NQB reference is built through recalc.sleeves() and r2.run with no set_leader call. leadlag's default loader then supplies the unrounded research US100 file, not the rebuilt US100 frame the EA reads. The reference and the EA therefore see different leader prices on a razor-thin rule.",
+     "evidence": "Map leadlag, pitfall 5. lab/r2/tracks/leadlag/strategy.py:89-94: when set_leader was not called, `_leader` reads data/fp/us100_m1.parquet up to 2026-01-01. The rebuilt bars round the bid to 2 digits and the spread to whole points (§7 Data). Map leadlag fact 21: 80 of 699 signals in 2021 sit within 6.0-6.2 σ, and 0.2 bp of noise keeps only 94 % of trades. T4/T5 for NQB would therefore fail outside the 1e-9 razor rule. The default loader also loads the 2022-2025 rows into memory.",
+     "fix": "In ref_lab.py, call strategy.set_leader(\"us100\", <rebuilt US100 frame, end 2022-01-01>) before every NQB make_orders or r2.run, and clear_leaders() after. Assert that \"us100\" is in _LEADERS so the default loader can never run."
+    },
+    {
+     "id": "P3",
+     "severity": "major",
+     "where_in_spec": "§6 Disaster guard; §0.3 (no persistent state); §4.6",
+     "what": "GUARD (equity ≤ 50 % of ref → close all, stopped for good) is the only permanent protection until 12,000 EUR have been paid in. It cannot be rebuilt from history, because equity is not in the deal history. After the close-all, slippage, or a deposit (ref + A against B + A), can leave the balance above 50 % of ref. The next terminal restart then forgets GUARD and the robot trades again. The plan stop only latches once P ≥ 12,000.",
+     "evidence": "Spec §0.3; §6 says \"Derived from history, it survives restarts\" of the plan stop only. Map mains, pitfall 11. The hands persisted their kill in globals plus a file (ClaudeMains.mq5:188-195 and 664-671); the spec drops both. MetaQuotes VPS rules (mql5.com/en/vps/rules) allow maintenance of up to 4 h a day at weekends and 15 min a day on weekdays; MQL5 article 994 says terminal global variables are not migrated. Sixth review (results/r2/stake/growth_sixth_review.json): with worthless rules, F2S falls 50 % before the plan stop is armed in 11.5 % of paths.",
+     "fix": "Make GUARD derivable from history like STOP: at rebuild, latch it if any booked robot close left B ≤ 0.5 × ref × 1.05 (the margin covers close-all slippage). Alternatively, keep a server-side marker such as a non-fillable pending order with a reserved magic number. State that InpRestartAfter clears it."
+    },
+    {
+     "id": "P4",
+     "severity": "minor",
+     "where_in_spec": "§2.1 ExitMinute and closures; §2.4 x_sched; §9.2; InpExtraClosures",
+     "what": "For a time exit that falls in a known closure, the spec's ExitMinute targets the first bar at or after c0 − 1 minute. The lab instead exits at the open of the last bar that actually exists before the closure. When the c0 − 1 bar is missing (no tick, or a masked bid-flat bar), the paper exit moves past the closure, to Monday. Separately, the known-closure set has no gold or crypto holiday closures. SymbolInfoSessionTrade gives only the weekly schedule, and InpExtraClosures is one untyped list of NYSE closures and gold early-close Fridays. Foreseeable holiday closures are therefore handled as unforeseen holes, and the trade is held through them.",
+     "evidence": "lab/goldlab/data.py:95-104 (returns xi − 1, the last existing bar). In-sample recalc trades: 13 brk72 time exits moved before the weekend closure sit on bars between 22:00 and 23:53 server, not 23:54. BTC 8, e.g. 2017-08-04 23:53, 2018-03-09 23:29, 2020-07-31 22:59; ETH 5, e.g. 2018-11-09 22:00, 2019-03-15 23:51. The 8 BTC cases plus 5 non-weekend BTC holes are exactly the 13 spike mismatches that §0.4 calls unforeseeable. Holiday exits: 2018-12-25 (BTC, ETH) and 2021-01-01 (BTC, the spike's 70-hour hold). Related: map simulateur pitfall 1; crypto pitfall 14 and open question 7; or-tendance pitfall 14 and open question 9; us100 open question 6.",
+     "fix": "Define ExitMinute as 'the last kept bar starting before c0'. If no kept bar starts in [c0 − 1, c0), the paper books the exit at the open of the last kept bar before c0 once the barrier reaches c0; the real close stays at barrier c0 − 1. Make InpExtraClosures typed (family, date, NY time window, kind: nyse_full, nyse_half, gold_early, gold or crypto closure) so that holiday closures become known closures."
+    },
+    {
+     "id": "P5",
+     "severity": "minor",
+     "where_in_spec": "§4.1 (\"becomes an intent at its PFILL on bar i ... sent at barrier i+1\") and §4.4",
+     "what": "The follower does not say what to do when the paper trade behind a one-bar-late intent has already exited before the send, for example stopped on its own fill bar. As written, the robot would open a full-size position at barrier i+1 and close it at once on PEXIT. That costs a round trip and puts that money into w, while the lab books a −1 R stop.",
+     "evidence": "Map simulateur, pitfall 7 (the lab counts the whole fill bar's low or high). lab/goldlab/sim.py:144-157 (stop checked on the fill bar). In sample, 1 of 495 donch4h trades exits on its fill bar; ORX and GFP have none.",
+     "fix": "Do not send an intent whose paper trade has already exited; journal it as MISSED with reason=exited. It still counts as the week's sizing event for the week unit."
+    },
+    {
+     "id": "P6",
+     "severity": "minor",
+     "where_in_spec": "§2.2 Mask; §3 N30 and OC4",
+     "what": "The mask drops US100 bars only from 16:15 to 17:59 NY. On NYSE half days the lab frames stop around 13:15 NY. P(16:00) is then NaN, so the next session's noise30 band centre and stop use O alone, and OC4's daily ATR closes on the 13:1x bar. If FP quotes US100 after 13:15 on those days, the EA's pc, the N30 bands and stops, and the OC4 ATR all differ from the lab.",
+     "evidence": "Map us100: pitfall 10, open question 2, fact 24. In-sample US100 frame, last bar of the day: 13:15 (2019-11-29), 13:14 (2019-12-24, 2020-11-27, 2020-12-24), 13:13 (2021-11-26). lab/r2/tracks/idx_us/idxus_lib.py:151 (P is NaN when the last bar is more than 11 min old); lab/r2/tracks/idx_us/strategy.py:223-226 (pc from the previous row's P(16:00)).",
+     "fix": "Add to the §2.2 mask: on NYSE half days (us_holidays half set plus typed InpExtraClosures), drop US100 bars from after 13:15 NY until 18:00."
+    },
+    {
+     "id": "P7",
+     "severity": "minor",
+     "where_in_spec": "§2.2 (ask = bid + spread × point); §9.5",
+     "what": "The lab's gold quotes include the Raw-account commission inside the spread (0.19 = 0.13 spread + 0.06 commission). The paper builds its ask from the broker's raw spread and never adds the commission. Paper limits, stops and touches on gold therefore run on a spread about 30 % narrower than the validated model. The spec answers neither option of simulateur open question 3.",
+     "evidence": "Map simulateur: pitfall 5, open question 3, fact 20. lab/r2/fp_costs.json: the _model note says \"plus the Raw commission where there is one\"; xauusd spread 0.19. Measured on the in-sample gold frame with the spread scaled by 0.13/0.19: GOLD_FRI_PM gives 419 trades instead of 414 from the same 443 orders (5 extra limit fills, none lost). These are trades the validation never saw.",
+     "fix": "For symbols with a Raw commission, widen the paper quotes: bid −= c/2 and ask += c/2, where c is the round-trip commission per unit (read live; default 0.06 for XAU). If that is not wanted, list the deviation in §9 with this count."
+    },
+    {
+     "id": "P8",
+     "severity": "minor",
+     "where_in_spec": "§7 References; T5; T7",
+     "what": "ref_lab will process the original frames (S0 check) and the rebuilt frames (T5) of the same symbol. Both have the same length and the same first and last timestamps. The ml, trend and orb caches are keyed on id(frame), so if a frame's memory address is reused, the cache silently returns the other frame's bars. Separately, growth.arrays rescales prices to today's level by default, which would break T7.",
+     "evidence": "Map ml, pitfall 1. lab/r2/tracks/ml/strategy.py:75-79, lab/tracks/trend/strategy.py:58-62 and lab/tracks/orb/strategy.py:127 all key on (id, len, first, last). lab/r2/tracks/stake/growth.py:336 defaults to price_level=\"today\" (map mains fact 23: a simulation device only).",
+     "fix": "Run each (sleeve, frame) reference in a fresh process, or clear these caches before each call. Build T7's growth arrays with price_level=\"is\"."
+    },
+    {
+     "id": "P9",
+     "severity": "minor",
+     "where_in_spec": "§4.6 (\"closes at LatestExit(dec) from the comment\"); §2.3",
+     "what": "When a sleeve is NOT_READY, its open position exits at a time read from the order comment. Yet §2.3 calls comments informative only, T8 scripts rewritten comments, and §10.8 leaves 'comments kept' unverified. If the broker rewrites the comment, the position has no time exit until the sleeve becomes ready.",
+     "evidence": "Spec §2.3, §4.6, T8 and §10.8. Map mains, pitfall 15 (the sleeve mapping must live in the robot's own records, not in the tag).",
+     "fix": "Compute LatestExit from POSITION_TIME, since the open comes at most one bar plus 5 min after the decision, and apply the sleeve's exit rule from there. Use the comment only as a cross-check."
+    },
+    {
+     "id": "P10",
+     "severity": "minor",
+     "where_in_spec": "§6 (\"kept: ... Capital's settle and reference rules\") against §5 ref",
+     "what": "§6 tells the builder to keep the hands' reference rule, which uses equity: start = max(start + A, eq − rest). §5 and the lab use the balance right after the payment. A builder who copies Capital would let floating P&L move the plan stop's reference.",
+     "evidence": "lab/live_ai/mql5/ClaudeMains.mq5:609, where Capital is called with ACCOUNT_EQUITY (line 627). lab/r2/tracks/stake/growth.py:212 `ref = max(ref + amt, eq)`, where eq is the realised balance.",
+     "fix": "In §6, keep only Capital's settle rule; the reference follows §5's balance rule (growth.py:212)."
+    }
+   ],
+   "pitfalls_not_covered": [
+    "leadlag pitfall 5 (set_leader before each make_orders): the NQB reference uses the default research leader file (P2)",
+    "simulateur pitfall 1 (exit at the last bar before a closure): replaced by a fixed c0 − 1 minute, not the lab's last existing bar (P4)",
+    "crypto open question 7, or-tendance pitfall 14 and open question 9 (holiday closures for time exits): no gold or crypto holiday calendar, and InpExtraClosures is an untyped date list (P4)",
+    "us100 open question 6 (who maintains one-off closures): InpExtraClosures exists but no owner or update process is defined",
+    "simulateur pitfall 7 (stopped on the entry bar) combined with the one-bar-late real entry: follower behaviour undefined (P5)",
+    "us100 pitfall 10 and open question 2 (half-day US100 quotes after 13:15 NY): no mask (P6)",
+    "simulateur pitfall 5 and open question 3 (gold commission inside the lab spread): not decided; the paper uses the raw spread (P7)",
+    "ml pitfall 1 (caches keyed on id(frame)) in the reference harness (P8)",
+    "mains pitfall 11 (equity-based permanent stop with no lab equivalent): the spec keeps one but cannot persist it across restarts (P3)",
+    "mains pitfall 9, or-tendance pitfall 4 and open question 0 (cost of one-bar-late entries): understated once the 1.25× post-fill refusal is kept (P1)",
+    "mains pitfall 15 (sleeve mapping in the robot's own records): the magic number is fine, but NOT_READY exits still read the comment (P9)",
+    "simulateur open question 4 (stops_level and freeze_level): freeze_level is never mentioned; a refused trailing stop move falls back to PEXIT only implicitly"
+   ]
+  },
+  {
+   "verdict": "buildable_after_fixes",
+   "findings": [
+    {
+     "id": "R1",
+     "severity": "major",
+     "what": "Lens: a withdrawal read as a loss, and a stop that disarms. The spec defines P = Σ DEAL_TYPE_BALANCE, which nets out withdrawals. A withdrawal therefore lowers P, which (a) disarms the plan stop, because 'P ≥ InpStopArmPaid' is re-tested at every close with no latch, and (b) raises the risk rung, because the table is keyed on max(B, P). On top of that, ref = max(ref + A, B_after) with A < 0 cuts ref by the full amount, so a withdrawal made during a drawdown moves B/ref toward the STOP and GUARD lines. Worked example with the spec's formulas and F3S: 13,000 paid in, ref 13,000, B 10,000. The user withdraws 2,000. P becomes 11,000 < 12,000, so the stop is disarmed. ref becomes 11,000 and B 8,000, and 8,000 ≤ 0.75 × 11,000 = 8,250, so the stop condition now holds but cannot fire. The rung becomes rate(max(8,000, 11,000)) = 1 % instead of 0.5 %. Result: a losing account takes double risk with no plan stop. The lab never sees this because it has no withdrawals.",
+     "evidence": "SPEC l.131-132: payments = DEAL_TYPE_BALANCE (Capital() takes both signs, ClaudeMains.mq5:547-552, 609); P = Σ payments; ref = max(ref + A, …). SPEC l.141: arming tested at each close, no latch. Lab growth.py:195-212: payments are deposits only (paid += amt never decreases), so 'paid >= kill_arm' (:245) works as a latch there. T8 (l.156) checks only 'w unchanged' on a withdrawal.",
+     "fix": "Let P_in = Σ positive balance deals (gross money paid in). Use P_in both for arming (or latch 'armed' once P_in ≥ InpStopArmPaid and never disarm) and for the table key. On a withdrawal, scale the reference: ref ← ref × B_after / B_before (deposits keep max(ref + A, B_after)), so a withdrawal moves neither B/ref nor the rung. The lead must write this policy down. Add T8 worlds 'withdrawal during a drawdown after arming' and 'withdrawal of gains'.",
+     "where_in_spec": "§5 Ledger / At stamp S (l.131-132); §6 Plan stop (l.141); §7 T8"
+    },
+    {
+     "id": "R2",
+     "severity": "major",
+     "what": "Lens: a stop that un-fires. The disaster guard cannot survive a restart. It fires on equity, which is not in the deal history. §0.3 forbids persistent state, and §6 drops the hands' persisted kill (the CM_killed global plus ClaudeMains_arret.txt) and InpResetLocks. After a GUARD close-all, B ends near 50 % of ref, and above it if prices bounce while the positions are being closed. At the next VPS restart the replay finds no STOP, because the plan stop is unarmed while P < 12,000 (all of year one at 1,000 EUR a month), and equity is above 50 %. The robot then trades again, at the full rung. VPS restarts are routine: maintenance can take up to 15 minutes on any weekday and 4 hours a day at weekends, and LiveUpdate also restarts the terminal.",
+     "evidence": "SPEC l.9 (no persistent state). SPEC l.141-142: 'Derived from history, it survives restarts' is said of the plan stop only. SPEC l.146 drops the −50 % equity kill and InpResetLocks. ClaudeMains.mq5:186-195, 664-672, 1101-1107: the hands persisted this latch in a global variable and a file. mql5.com/en/vps/rules II.3 (maintenance); mql5.com/en/articles/994 (restarts on LiveUpdate).",
+     "fix": "Latch GUARD (and STOP) in a terminal global variable, flushed at once, and in a file under MQL5/Files/ClaudeRobot. Read both at OnInit. Also re-derive the latch from history as 'B ≤ 50 % × ref after any booked close'. Allow it to be cleared only by InpRestartAfter. Add a T8 world: guard fires, then a restart with equity just above 50 % of ref.",
+     "where_in_spec": "§0.3; §6 Disaster guard (l.142) and the dropped list (l.146)"
+    },
+    {
+     "id": "R3",
+     "severity": "major",
+     "what": "Lens: a stop that fires at once or never arms. By default the plan starts at the beginning of the account history (InpRestartAfter = 0), and the install procedure never sets a start. Manual trades, the hands' trades and old payments made before the robot therefore feed B, P, ref, STOP and GUARD. Example: 12,000 paid in earlier and 3,500 lost by hand gives B 8,500, ref 12,000, P ≥ 12,000, so the stop is armed; since 8,500 ≤ 9,000, the first robot close stops the robot for good, and GUARD at 6,000 leaves only 2,500 of room. After earlier gains, ref stays at the deposits and the stop sits far below the balance, so in practice it never fires. The install also removes ClaudeMains without checking for open hands positions. Those carry magic 20261110, which the robot does not own, so after removal nobody manages them.",
+     "evidence": "SPEC l.53: InpRestartAfter default 0, 'restarts the plan after a permanent stop'. SPEC l.131-132, 137. SPEC l.42: Install has no plan-start step. SPEC l.125: ownership is magic 20261201-20261299 only. growth.py:162-164 starts from a clean account (eq = paid = ref = start).",
+     "fix": "Add a required plan-start input (for example InpPlanStart, a date), set during install to the go-live time, with InpRestartAfter's rule: history before it counts as one payment of B(T). Refuse to trade while it is unset on an account that has deals under other magics. Add an install step: the hands have no open position before ClaudeMains is removed.",
+     "where_in_spec": "Inputs (l.53); Install (l.42); §5 (l.137)"
+    },
+    {
+     "id": "R4",
+     "severity": "major",
+     "what": "Lens: a position left without a stop. Nothing checks continuously that every robot position carries a broker stop. The hands closed any robot position still without an SL after 5 s (MustClose), and DoOpen verifies the SL only if the new position is already listed. The spec keeps DoOpen's post-fill check and only 'Watch's rhythm'; MustClose's no-stop rule is neither kept nor named. GFP and ORX positions get their SL only in the opening request: their PFILL comes before the send, and they have no PSTOP. So if the SL is missing (stripped, or removed by hand on the phone) and the position was not yet listed at the post-fill check, nothing looks again until a rebuild. An ORX position can then sit without a broker stop for two trading days; a D4H position until its next trail move.",
+     "evidence": "ClaudeMains.mq5:689 (MustClose: 'Position sans stop chez le courtier' after 5 s); ClaudeMains.mq5:823-840 (post-fill SL check only if 'seen'; comment: 'MT5 peut ne la lister qu'un instant plus tard'). SPEC l.122 (post-fill check), l.123 (stop moves only at PFILL/PSTOP), l.146 (kept list).",
+     "fix": "Add an invariant checked on every timer pass, for every robot position, NOT_READY sleeves included: SL > 0 and equal to GridStop(paper stop), or to the quote-based stop before PFILL. If missing or different, PositionModify. If refused, or if the stop is already on the wrong side, close and push. Add a T8 world: the position is listed 3 s after the fill and the broker drops the SL.",
+     "where_in_spec": "§4.2-4.3 (l.122-123); §6 kept list (l.146)"
+    },
+    {
+     "id": "R5",
+     "severity": "major",
+     "what": "Lens: a duplicate order after a restart. The one-intent-one-trade check can both duplicate and wrongly suppress. (a) It reads positions and deals only, not open orders (ORDER_STATE_STARTED/PLACED) or history orders. An 'unknown result re-checked after 2 s' then stays re-sendable for 5 minutes, so a slow server reply leaves two positions on one sleeve. (b) After a restart, step (a) waits only for 'connection and history'. Reconcile can then run before the position list is loaded and re-send an intent that is still inside its window. (c) DUP is detected only in (b)-(d), which run at startup, on LATEBAR or after a reconnection, so a duplicate keeps double risk and takes one of the 2 per-symbol slots for hours. (d) 'Deals of the magic since the stamp' also matches the previous trade's closing deal, for example an N30 reversal whose close was retried into the new stamp's minute, so a valid entry is suppressed without any MISSED. (e) HistorySelect(0, now) misses a deal timed a moment after TimeTradeServer(); the hands use +86400 for that reason. By contrast, a rule re-entering after losing its own position is prevented: the paper chain decides (§0.1, §4.4).",
+     "evidence": "SPEC l.122 ('Positions and deals of the magic since the stamp… unknown result re-checked after 2 s'); l.126 (DUP only at reconcile); l.131 (HistorySelect(0, now)). ClaudeMains.mq5:342, 568 (HistorySelect up to TimeTradeServer() + 86400); :823.",
+     "fix": "Before any send, require that the sleeve's magic has no open order, history order, DEAL_ENTRY_IN deal or position at or after the stamp. After an unknown result, do not re-send until connected, Σ deals = ACCOUNT_BALANCE, and two reads of positions and orders 2 s apart agree; otherwise MISSED. Gate reconcile on the same settle. At every barrier check at most one robot position per sleeve; close any newer extra one (DUP). Use HistorySelect(0, TimeTradeServer() + 86400).",
+     "where_in_spec": "§4.2 (l.122); §4.6 (l.126); §5 Ledger (l.131)"
+    },
+    {
+     "id": "R6",
+     "severity": "major",
+     "what": "Lens: wrong lot size (the schedule). The spec predates the user's choice of plan. PROTOCOL_V3 Addendum G (commit f1549ac at 19:21 UTC; SPEC.md was last edited at 19:07) records F3S as the robot's stake plan: 3 % below 3,000 EUR, 2 % below 6,000, 1 % below 12,000, then 0.5 %. Yet the default InpRiskTable is F1S, T7 tests only F1S and F2S, and the 50 % guard is justified by 'F1S falls 50 % in no path'. Under F3S the protocol reports losing half within 3 years in 2.5 % of half-edge paths, and in 21.9 % if the rules are worthless. These falls happen mostly in year one, before the plan stop is armed. So the constant 50 %-equity guard binds there and changes the plan the user chose, or else it is that plan's only year-one stop (see R2).",
+     "evidence": "SPEC l.47 (default F1S), l.142 (guard rationale), l.155 (T7 F1S/F2S). PROTOCOL_V3.md:872-883 (Addendum G: 'F3S becomes the stake plan of the robot unless the user changes it'). growth.py:46 (F3), :75-76 (F3S).",
+     "fix": "Set the default InpRiskTable to '0:3;3000:2;6000:1;12000:0.5' (F3S) and keep F1S and F2S as documented alternatives. Run T7 with F3S as well as F1S and F2S. Have the lead decide, write down, and tell the user whether the 50 % equity guard stays under F3S; it would bind in about 2.5 % of half-edge paths.",
+     "where_in_spec": "Inputs (l.47); §6 (l.142); §7 T7 (l.155)"
+    },
+    {
+     "id": "R7",
+     "severity": "minor",
+     "what": "Lens: wrong clock around a DST change. A clock mismatch blocks entries only. If FP's server does not follow New York (open question 10.4), every bar is labelled an hour off during the US/EU gap weeks. Open positions (D4H up to 5 days, ORX past 2 days, GFP) then take their time exits and trail from a paper chain on the wrong clock, the UTC 4h grid shifts, and reconcile may close positions as ORPHAN. The check also runs only hourly, so a mismatch present at start-up can go unseen for up to an hour.",
+     "evidence": "SPEC l.145 ('→ no entries'), l.61, l.196. Map leadlag pitfall 14; mains pitfall 12.",
+     "fix": "Run the check at start-up, after the first tick of each session, and every 10 minutes. If a mismatch lasts 10 minutes, block entries, close robot positions (their exits are on a wrong clock) and push. Stay flat until the measured offset matches the rule again.",
+     "where_in_spec": "§6 Clock (l.145); §10.4"
+    },
+    {
+     "id": "R8",
+     "severity": "minor",
+     "what": "Lens: positions stuck over a closure. The gold rules do not know holiday closures. (a) GFP skips only the day after Thanksgiving plus InpExtraClosures. NYSE full-holiday Fridays (July 4 observed, Dec 25 and Jan 1 observed, Good Friday) are not skipped. In sample, gold had no 13:30 bar on any of those Fridays: the last bar was 12:59-13:00 NY on 2014-07-04, 2015-07-03 and 2020-07-03, and the others had no bars at all. The lab therefore never traded them. If FP quotes gold past 13:30 on such a Friday, the EA buys and holds through the holiday close, likely over the weekend, protected only by a 3 × ATR(1h) stop. (b) ExitMinute knows only daily and weekly closures. A D4H time exit falling on Good Friday, Dec 25 or Jan 1 is executed after a 2-3 day closure, where the lab's gap rule exits before it.",
+     "evidence": "SPEC l.64-66, l.112. I scanned data/fp/xauusd_m1 (sliced to bars before 2022-01-01) on every us_holidays Friday from 2013 to 2021. idxus_lib.py:55-83; trend/strategy.py:114-122 (exit_index). Maps or-seances pitfall 0, or-tendance pitfall 14.",
+     "fix": "Have GFP skip every Friday in us_holidays (full or half day) plus InpExtraClosures; in sample this matches the lab exactly. Add Good Friday, Dec 25 and Jan 1 (observed) as known gold and US100 full closures for ExitMinute; the lab data has no bars on those days.",
+     "where_in_spec": "§2.1 (l.64-66); §3 GFP (l.112)"
+    },
+    {
+     "id": "R9",
+     "severity": "minor",
+     "what": "§4.6 closes a NOT_READY sleeve's position at LatestExit(dec) 'from the comment'. §2.3 calls the comment informative only, and T8 rewrites comments. If the comment cannot be read, a D4H or ORX position has no defined exit and keeps a stale stop.",
+     "evidence": "SPEC l.85 (informative only), l.126 ('from the comment'), l.156 (rewritten comments), §10.8 (default: position id, magic and time).",
+     "fix": "Bound the decision from POSITION_TIME: it lies at most the rule's activation window before the open (0-5 min for market rules, up to 4 h for D4H, the same London date for ORX). Derive LatestExit from that bound, and use the comment only when it parses and agrees.",
+     "where_in_spec": "§4.6 (l.126)"
+    },
+    {
+     "id": "R10",
+     "severity": "minor",
+     "what": "Lens: out of control. The GlobalVariableTemp + SetOnCondition lock is not released if the EA dies on a critical runtime error, because OnDeinit is reported not to run then. Re-attaching the EA is then refused as a 'second instance' until the terminal restarts. Nothing notices a dead EA either: positions keep only their broker stops, with no time exits, no trailing and no push. The hands' TTL, the only exit that worked without the brain, is dropped.",
+     "evidence": "SPEC l.127 (lock), l.146 (TTL globals dropped). Map mains pitfall 10. mql5.com forum 393733 p.3060 (OnDeinit not called after a critical error).",
+     "fix": "Use a heartbeat lock: the value (GetTickCount or TimeLocal) is refreshed every pass, a lock older than 10 s is stale and may be taken over, and OnDeinit releases it. Have the observing Mac copy push an alert when a robot position outlives its paper exit or LatestExit by more than 5 minutes.",
+     "where_in_spec": "§4.7 (l.127)"
+    },
+    {
+     "id": "R11",
+     "severity": "minor",
+     "what": "InpPaidIn > 0 replaces the history's P with a constant. Each monthly payment then needs an input change and a re-migration. Otherwise the table key and the stop's arming stay frozen, and the stop never arms if the constant is below 12,000. The spec also does not say how ref is formed under InpPaidIn.",
+     "evidence": "SPEC l.48 ('> 0 = this constant'), l.132.",
+     "fix": "Make it InpPaidBefore: the amount paid in before the account history begins, added to the history's deposits and to ref's starting value.",
+     "where_in_spec": "Inputs (l.48); §5 (l.132)"
+    },
+    {
+     "id": "R12",
+     "severity": "minor",
+     "what": "The §10.2 acceptance gate cannot pass as written. In the Strategy Tester, TimeGMT() always equals TimeTradeServer(), so |TimeTradeServer − TimeGMT − rule| is 2-3 h: the CLOCK guard fires at once and every intent is journalled as a CLOCK skip. There, TimeTradeServer() also equals TimeCurrent(), so the barrier's 'M + 2 s' becomes tick-driven. And a 100 ms timer over a year on four symbols is very slow.",
+     "evidence": "SPEC l.145, l.194. MQL5 docs: mql5.com/en/docs/dateandtime/timegmt ('During testing … TimeGMT() is always equal to TimeTradeServer()') and /timetradeserver ('in the tester … always equal to TimeCurrent()').",
+     "fix": "Under MQL_TESTER, skip the CLOCK check and use a 1 s timer. Make the harness reproduce the tester's time semantics for the line-for-line comparison.",
+     "where_in_spec": "§6 Clock; §10.2"
+    },
+    {
+     "id": "R13",
+     "severity": "minor",
+     "what": "Lens: trading on missing bars. 'History covers the depth and two reads 2 s apart agree' does not prove the series is complete. A terminal still synchronizing can return a window that is stable but has holes. Rules then compute over fewer bars spread across more time (BK*'s 72 hour closes, F1's 280 session bars) and can send a real order the lab would never send.",
+     "evidence": "SPEC l.73.",
+     "fix": "Also require SeriesInfoInteger(sym, PERIOD_M1, SERIES_SYNCHRONIZED), and scan the window for holes: none over 30 minutes inside known sessions, otherwise NOT_READY plus a GAP push.",
+     "where_in_spec": "§2.2 Depth (l.73)"
+    },
+    {
+     "id": "R14",
+     "severity": "minor",
+     "what": "'Orders need InpTrade' blocks closes as well. If the user sets InpTrade = false on the VPS to pause the robot, open positions keep their last stop and get no time exit; ORX and D4H positions can then stay open for days.",
+     "evidence": "SPEC l.46, l.127.",
+     "fix": "On the VPS copy, make InpTrade = false block entries only; exits, stop upkeep and CloseAll still run. The non-VPS observer still sends nothing.",
+     "where_in_spec": "Inputs (l.46); §4.7 (l.127)"
+    },
+    {
+     "id": "R15",
+     "severity": "minor",
+     "what": "A stop, limit or OCO intent is sent at barrier i+1 even when its paper trade also ended on fill bar i (the stop was hit inside the touch bar). The EA then opens and immediately closes, paying spread and commission for a trade that no longer exists on paper.",
+     "evidence": "SPEC l.121 ('becomes an intent at its PFILL on bar i … sent at barrier i+1').",
+     "fix": "Drop the intent, journalled as MISSED 'exited', when its paper trade has already ended at barrier i+1.",
+     "where_in_spec": "§4.1 (l.121)"
+    },
+    {
+     "id": "R16",
+     "severity": "minor",
+     "what": "Lens: wrong lot size after a payment. 'Σ deals must equal ACCOUNT_BALANCE within 60 s' has no stated consequence. MT5 can show a withdrawal in the balance before its deal appears in the history, or the reverse, so sizing inside that window uses a B that is off by the withdrawal.",
+     "evidence": "SPEC l.131. ClaudeMains.mq5:596-603: Capital() concludes nothing while the gap moves, for SETTLE_SEC at most.",
+     "fix": "Do as Capital() does: while the gap moves, size nothing and draw no STOP/GUARD conclusion; intents wait inside their window. After 60 s, accept the gap as an opening payment and push.",
+     "where_in_spec": "§5 Ledger (l.131)"
+    }
+   ],
+   "pitfalls_not_covered": [
+    "us100 pitfall 10: on an early-close day, if FP's US100 keeps quoting until 16:00 NY, P(16:00) is finite and the next session's N30 band is centred on it. The lab has NaN there and uses the open alone. The spec neither masks this nor tests it; half days are only marked non-tradable.",
+    "or-seances pitfall 12: a broker spread spike inside the 00:00-07:00 London range raises ORX's ask-high level and its stop by 10-15 USD. The spec uses the raw bar spread, with no clip like the lab's 6x daily-median shape, and has no spike world in T2 or T8.",
+    "simulateur pitfall 1 / or-tendance pitfall 14 / crypto open question 7: time exits that fall in holiday closures (Good Friday, Dec 25, Jan 1, crypto's Jan 1 hole) are not in the known-closure list. Live exits after the closure where the lab exits before it (see R8).",
+    "or-seances pitfall 0, only partly covered: GFP's early-close calendar lacks the NYSE full-holiday Fridays (see R8).",
+    "mains pitfall 10: the hands' TTL was the only exit that worked without the brain. The spec drops it and adds nothing for a dead EA (see R10).",
+    "leadlag pitfall 14 / mains pitfall 12: a server clock that is not NY+7 during the US/EU gap weeks shifts every session window. The spec only blocks entries; open positions keep running on the wrong clock (see R7).",
+    "Note (not a pitfall): checked and prevented by the spec. Three rules on one market: CAP of 2 per symbol counting closes stamped ≥ S, §5 l.136, plus the hedging check. Pending orders left over a weekend: market orders only, §0.2, §4.1. A rule re-entering after losing its own position: the paper chain decides, §0.1, §4.4."
+   ]
+  }
+ ],
+ "spike_report": "# Spike: testing rules written in MQL5 offline (brk72_24h_wd on bitcoin)\n\n**Verdict: the approach works for this rule.** I wrote the rule in MQL5 the way it would sit inside the EA, translated it to C++ with an extended copy of the shim, and replayed it minute by minute against a mock terminal and broker. The independent MQL5 code reproduces the lab's registered sleeve bit for bit:\n- every hour bar and every decision matches;\n- 632 of the 645 in-sample trades match on entry, stop, exit price, exit minute and reason;\n- the other 13 all differ for one reason: the lab exits before market closures it can see in the data (Fridays that closed early, holidays, data holes), and a live robot cannot see those coming;\n- rounding prices to the broker's grid changes no trade.\n\nNot proven: that MetaEditor compiles the file (it is not available here), and that the mock behaves like the real terminal. Section 8 says how to close that gap on the Mac.\n\n## 1. What I built\n\nEverything is under `/home/user/gold-orb/lab/robot/spike/`. No existing file was modified (the md5 of `live_ai/check/mql5_shim.h` and `to_cpp.py` are unchanged). In-sample data only: the parquet files are filtered at read time, so no 2022+ row is ever loaded.\n\n**MQL5 code (what would ship):**\n- `mql5/Brk72Rule.mqh` — the rule as a class `CBrk72`, one object per market. It:\n  - reads M1 bars with `CopyRates` and builds UTC hour bars from mid prices (mid = bid + spread/2, spread in points, ask put back on the price grid);\n  - computes the 72-close channel and the simple-mean ATR of 24 true ranges;\n  - decides at the first bar at or after the end D of a complete hour (Monday to Friday by the UTC weekday of D, entry dropped if more than 5 minutes late);\n  - keeps a paper position with the simulator's conventions (stop 3 x ATR from the fill, exit at D + 24 h or at the Friday 23:54 server bar, skips signals while its trade is open and on its exit bar);\n  - saves its state in global variables and, when there is none, rebuilds the chain from 20 days of history.\n- `mql5/RobotClock.mqh` — server clock to UTC (New York + 7 h, US daylight-saving rule).\n- `mql5/RobotJournal.mqh` — one CSV journal (times as integer seconds, prices with 17 significant digits).\n- `mql5/SpikeRobot.mq5` — the host EA:\n  - one `CTrade`, one object per (rule, market): bitcoin, and ether when `InpSymEth` is set;\n  - turns module requests into real orders: market order with an estimated stop, then the stop is moved to fill -/+ 3 ATR rounded to the 0.01 grid away from the price;\n  - closes the real position when the paper one ends.\n  - Fixed lots: no sizing, no protections.\n\n**Test harness:**\n- `check/to_cpp_spike.py` — extended translator: translates included `.mqh` files too, wraps inputs so a run can override them, and refuses constructs it cannot carry (see section 7).\n- `check/mql5_shim.h` — verbatim copy of the original; no new declaration was needed.\n- `check/mock_replay.h` — the mock terminal and broker:\n  - simulated clock, one event per bar start; MT5 semantics for the forming bar and the closed bars; the three `CopyRates` overloads;\n  - hedging broker with the lab's fill model, per-symbol slippage, stop triggered on the bid low (long) or ask high (short), stops off the price grid refused;\n  - files, global variables, broker state saved across process restarts;\n  - fault injection: random `CopyRates` failures, several timer calls per minute.\n- `run_spike.py` — does everything: export the bars, translate and compile, replay, run the lab, compare, run the robustness tests. `python3 -B lab/robot/spike/run_spike.py --long` takes about 1 min 40 s.\n- Output: `out/results.json` (every table below); journals and the mock's deals in `out/run_*/`; `.gitignore` keeps only `results.json`.\n\n**Bars:** exported from `data/fp/btcusd_m1.parquet` as the broker publishes them: server time, bid OHLC rounded to 2 digits, spread in whole points (one per bar, as in the lab frame). The lab side runs `recalc.sleeves()`'s own entry for (brk72_24h_wd, btcusd), i.e. the wrapper + `r2.run(..., \"fp\", True)`, on a frame rebuilt from those exact numbers.\n\n## 2. Match table (a): EA against the lab on the same numbers\n\n| Layer | Window 2020-12-01 to 2021-06-30 (217,308 bars) | Whole in-sample 2017-05-07 to 2021-12-31 (1,699,217 bars) |\n|---|---|---|\n| Hour bars (o, h, l, c, count) | 3,625 / 3,625 bitwise equal (the lab's 3,626th is the file's last hour, which the EA completes only when a later bar arrives) | 28,700 / 28,700 bitwise |\n| Hourly evaluations | 3,553: side and channel bitwise equal; ATR bitwise on 3,531, otherwise within 3 ulps (4e-16) | 28,628: same; ATR bitwise on 28,568 |\n| Decisions | 373 = 373: same sides, same entry bars, stop distances bitwise | 2,915 = 2,915, same |\n| Paper trades | 82 vs 82: 81 identical (prices bitwise), 1 different | 645 vs 645, all entries identical: 632 identical, 13 different at the exit only |\n| Broker trades (mock's deals) | 82: same entries and exit minutes as the paper on 81; time exits bitwise; stop exits within 0.0099 USD (stop on the 0.01 grid, triggered on the same bars) | 645: 632 same; time exits bitwise 438/438; stop exits within 0.00996 |\n\nThe ATR is a fresh sum of 24 true ranges in MQL5, but pandas' running rolling mean in the lab, hence the ulp differences. They never touched a traded decision. On ether, 2 of 361 decisions differ by 2.8e-14.\n\n**Every mismatch has the same cause.** The lab moves a time exit to the last bar before any gap of more than 30 minutes (`gl.exit_index`), which needs future data. The EA only knows the regular weekly closure.\n\n| Trades | Case |\n|---|---|\n| 8 | The weekly closure came early. Last Friday bar was 23:53 (4 times), 23:52, 23:29, and 22:59 twice (2017-08-04, 2017-08-11, 2018-03-09, 2019-03-08, 2019-03-15, 2019-12-13, 2020-07-31, 2020-08-14). The lab exits on that bar; the EA waits for 23:54 and exits at the reopening. |\n| 5 | Unscheduled closures: 2017-06-27 (61 min), 2017-07-21 (19 h), 2017-09-01 (long weekend), 2018-12-25 (Christmas), 2021-01-01 (New Year). |\n\nOn 2018-12-24 the EA's stop is hit in the very bar where the lab exits by time. None of the 13 changed a later trade.\n\n## 3. Match table (b): official lab frame against the rounded export (lab against lab)\n\n| | Window | Whole in-sample |\n|---|---|---|\n| Trades identical (entry minute, side, exit minute, reason) | 82 / 82 | 645 / 645 |\n| Signals | 373 vs 373 | 2,914 vs 2,915 (one extra signal on the rounded frame, skipped because a trade was open) |\n| Price differences | entry 0.0075 at most, stop and exit 0.0122 at most | entry 0.0075, stop 0.0128 |\n| Sum of R | 12.3966 vs 12.3966 | 172.874 vs 172.871 |\n\n**Rounding alone changes 0 trades.** If FP turns out to quote BTCUSD with fewer digits (2 is my assumption, still to be read):\n- 1 digit: 3 trades change (642 / 645 identical);\n- 0 digits: 15 trades change and 40 signals are lost (630 identical).\n\nThe official chain run from the frame's start (645 trades, R 172.874, the frozen count) and the window run that starts flat give identical trades on the window (82 / 82). The EA against the official frame directly: 81 / 82 and 632 / 645, the same closure cases.\n\n## 4. Robustness (window, all automatic)\n\n- **Restarts:** 25 restarts at random minutes with no downtime (`OnDeinit`, new process, `OnInit`): trades and decisions identical.\n- **Outages:** 10 outages of 81 to 320 minutes. The paper chain stays identical. One entry is missed for real (paper only) and one time exit is done 2 h late, at the restart.\n- **CopyRates failing 5 % of the time** (timer called 3 times a minute): identical.\n- **CopyRates failing 30 % of the time:** the paper chain is identical, but 14 of 82 real entries are missed (all three calls of that minute failed).\n- **Fresh start with no saved state** (the VPS case: the terminal's global variables are not migrated):\n  - rebuilding the chain from 20 days of history: 20 / 20 starts identical to the uninterrupted run;\n  - starting flat: 16 / 20 identical; the other 4 have one different trade each and rejoin within 0.69 days.\n- **Ether as a second instance of the same class**, two symbols on one clock:\n  - the bitcoin journal is byte-identical to the bitcoin-only run;\n  - ether: 361 / 361 decisions and 78 / 78 trades bitwise equal to the lab's ether sleeve;\n  - adding it took one object and one line each in `OnInit`, `OnTimer` and `OnDeinit`.\n- **Sanitizer build** (memory errors, undefined behaviour, bounds-checked arrays) on 1.7 M events with 10 % injected failures: clean.\n\n## 5. Speed\n\nBest of three, one sleeve on one market, whole in-sample history (55.8 months):\n- 1.54 s of replay: **about 36 simulated months per second**;\n- 2.39 s including process start and CSV parsing: **about 23 months per second**.\n\nTwo sleeves on two markets: 0.42 s for 6.9 months (16.5 months/s), 0.65 s wall time. The lab's vectorised Python takes 0.15 to 0.5 s on the same frames. For ten sleeves on four markets over 2013 to 2021 I would estimate tens of seconds per full replay; CSV parsing then dominates, so a binary bar file would help.\n\n## 6. What does not work or is not proven\n\n- **No MetaEditor compile.** g++ acceptance does not prove MQL5 validity. Risks I hedged:\n  - explicit `(datetime)` casts on the `CopyRates` date-range calls, so MQL5 cannot pick the (start position, count) version;\n  - no struct passed by value;\n  - no object pointers;\n  - signed casts on time differences;\n  - the price helper renamed `AskOf` to avoid any name clash.\n- **Mock built from the documentation, not checked against a real terminal:**\n  - real tick timing and latency are not modelled;\n  - partial history after a restart is not modelled (only a failing read is);\n  - the meaning of `MqlRates.spread` at FP is unknown (open, minimum or last?): ask = bid + spread is a convention;\n  - `NormalizeDouble` is assumed to return the nearest grid price;\n  - bitwise equality also assumes the MetaTrader compiler does not reorder or fuse floating-point operations.\n- **Closures:** no holiday or early-close calendar, hence the 13 in-sample exits. Which convention to keep (the lab's, a calendar, or an earlier fixed Friday exit like the hands' 23:50) is the lead's choice.\n- **Missing pieces of a real robot:**\n  - no sizing, stake rule or protections;\n  - no adoption of a position opened before a migration (search by magic number and comment), so after a migration that position would never be closed by the robot;\n  - after 30 failed reads `Step` moves on without logging the lost bar;\n  - history trades replayed by the rebuild are journaled without a marker.\n- **Hard-coded weekly closure** (Friday 23:55 to Monday 00:00 server); FP's real crypto sessions are still unread.\n\n## 7. Shim pitfalls hit\n\n- The original `to_cpp.py` did not translate local `#include \"x.mqh\"` files, so modules were impossible. It also appends `_Symbol`/`_Point` for XAUUSD, which a multi-symbol EA must not use. Both fixed.\n- Inputs were made constant (`test_mains.py` re-wraps them in a second pass); I folded that in. Inputs of enum types are still not covered.\n- **Object pointers:** MQL5 reaches members through a pointer with `.`; C++ needs `->`. The translator cannot tell a pointer from an object, so it now refuses `->`, `new`, `delete`, `this.` and `#import`. Consequence: no polymorphic `CRule*` array. Use one object per (rule, market) with explicit calls; this still keeps adding a rule a local change.\n- The shim's `CTrade` has no state; the mock keeps a single result, so the EA must use exactly one `CTrade`.\n- g++ accepts things MetaEditor rejects (structs passed by value). Worse, `\"text\" + 5` compiles in both languages with different meanings (pointer arithmetic in C++).\n- `SEEK_*` macros from `<cstdio>` clash with the shim's enum (handled with `#undef`).\n- Exact equality needs `-ffp-contract=off`; it is used in the build.\n\n## 8. VPS beliefs checked (sources)\n\n| Belief | What I found |\n|---|---|\n| DLL calls forbidden | Confirmed, official help: \"completely forbidden\" |\n| EAs and indicators migrate with their charts, scripts do not | Confirmed, official help |\n| Charts on non-standard symbols or timeframes | Not transferred (official help) |\n| WebRequest works for allowed URLs | The URLs must be listed in the Expert Advisors tab before migration |\n| History available | At most 500,000 bars per chart, enough for warm-up |\n| The terminal can restart at any time | MetaQuotes' article: it can restart automatically during updates and hosting maintenance |\n| Global variables | **Not migrated** (MetaQuotes' article). Hence the rebuild-from-history design, tested above |\n| File writes stay in the VPS sandbox | Forum only: no reverse transfer of files; MetaQuotes staff point to `#property tester_file` (64 MB max) to send files in. Hence the journal should also go to `Print` |\n| One EA can read and trade several symbols | Standard MQL5, demonstrated in the mock, not documented as restricted; MetaQuotes advises setting the Market Watch list before migration |\n\nSources:\n- [MT5 help, migration](https://www.metatrader5.com/en/terminal/help/virtual_hosting/virtual_hosting_migration)\n- [MQL5 article 994, preparing an account for virtual hosting](https://www.mql5.com/en/articles/994)\n- [Forum: files and global variables on the VPS](https://www.mql5.com/en/forum/363057)\n- [Forum: VPS file management](https://www.mql5.com/en/forum/327823)\n- [Forum: cannot read data file on VPS](https://www.mql5.com/en/forum/358688)\n- [MQL5 blog: moving an EA to a VPS](https://www.mql5.com/en/blogs/post/778540)\n\n## 9. Recommendation for the real harness\n\n**Keep this design:**\n- one class per rule in its own `.mqh`, journal lines as the contract;\n- the C++ replay mock;\n- a Python comparator against `recalc.sleeves()` on frames rebuilt from broker-format exports;\n- seven test layers per module: bar aggregates (bitwise), evaluations (ulp tolerance), decisions, paper trades (exact), broker deals (grid tolerance), restarts / outages / faults / fresh starts, sanitizers.\n\n**To generalise to the other nine rules:**\n- **Session clocks:** New York and London wall clocks with daylight saving (UK rule too), tested against pandas on every bar from 2013 to 2021. Holiday and early-close calendar as an input table (Thanksgiving Friday for GOLD_FRI_PM, US100 half days, the special-closures list), compared with the lab's after-the-fact removals.\n- **Two symbols at once (nq_btc_follow):** the mock already serves N symbols on one clock. It still needs per-symbol first-tick timing inside a minute, to test the leader/follower race, and it must keep US100's holes exactly.\n- **Pending stop and limit orders (donch4h_stop, orb_asia_2d_buf10, GOLD_FRI_PM):** either real pending orders in the mock (intrabar trigger, the lab's fill rule, expiry, one-position test on the activation bar), or virtual orders plus a market order on touch, keeping the lab's touch rule on paper and measuring the delay on the broker side.\n- **Trailing stops:** a stop modification refused when it crosses the price must fall back to a market close.\n- **Daily and session bars from M1 inside the EA**, never the broker's server-time D1/H1:\n  - trading day rolling at 17:00 New York, days with fewer than 600 bars dropped (ocm4);\n  - 280 session bars for F1.\n- **Warm-up per rule:**\n  - ocm4: 45 days;\n  - leadlag: 21 days on both markets;\n  - Wilder ATR (donch4h_stop, GOLD_FRI_PM): path-dependent, so compare with a tolerance or start both sides at the same point.\n- **F1 ridge constants:** 17 significant digits, plus a score-level test on every candidate.\n- **Stake, sizing and protections:** tested on the same mock (deposits as `DEAL_TYPE_BALANCE`) against `stake.py`, `account.py` and `growth.py`.\n\n**Closing the loop on the Mac** (the one test this spike cannot do):\n1. Compile in MetaEditor.\n2. Run the EA in the Strategy Tester on FP's own history for a few months with the journal on.\n3. Export the same bars (time, bid OHLC, spread) and replay them in the harness. The two journals must match line for line; that validates the mock and the real compiler's arithmetic.\n\n## Note on git\n\nI ran no git command that changes the repository. Another session's periodic commits (\"Agents' work in progress\", \"Robot spike: replay outputs in progress\") have committed `lab/robot/spike`, including `out/run_*/` journals, logs and deals (40 files). My `.gitignore` stops new generated files, but those 40 stay tracked and change on every run. Whoever commits may want `git rm -r --cached lab/robot/spike/out/run_*`.\n"
+}
