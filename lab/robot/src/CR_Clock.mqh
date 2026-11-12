@@ -200,8 +200,8 @@ int ClkDowOfDay(const long day_no) { return (int)(((day_no + 4) % 7 + 7) % 7); }
 
 int ClkMonthDays(const int y, const int m)
   {
-   long next = (m == 12) ? ClkDaysFromCivil(y + 1, 1, 1) : ClkDaysFromCivil(y, m + 1, 1);
-   return (int)(next - ClkDaysFromCivil(y, m, 1));
+   long next_first = (m == 12) ? ClkDaysFromCivil(y + 1, 1, 1) : ClkDaysFromCivil(y, m + 1, 1);
+   return (int)(next_first - ClkDaysFromCivil(y, m, 1));
   }
 
 // day number of the n-th weekday wd (0 = Sunday ... 6 = Saturday) of a month; n = -1: the last one
@@ -209,8 +209,8 @@ long ClkNthWeekday(const int y, const int m, const int wd, const int n)
   {
    if(n < 0)
      {
-      long last = ((m == 12) ? ClkDaysFromCivil(y + 1, 1, 1) : ClkDaysFromCivil(y, m + 1, 1)) - 1;
-      return last - (ClkDowOfDay(last) - wd + 7) % 7;
+      long last_day = ((m == 12) ? ClkDaysFromCivil(y + 1, 1, 1) : ClkDaysFromCivil(y, m + 1, 1)) - 1;
+      return last_day - (ClkDowOfDay(last_day) - wd + 7) % 7;
      }
    long first = ClkDaysFromCivil(y, m, 1);
    return first + (wd - ClkDowOfDay(first) + 7) % 7 + 7 * (n - 1);
@@ -597,9 +597,9 @@ void ClkSegCompute(const int fam, const datetime t, const int s)
          if(g_clk_wa[i] > t) break;
          j = i;
         }
-      bool last = (pass == 5);
+      bool final_pass = (pass == 5);
       bool inside = (j >= 0 && t < g_clk_wb[j]);
-      if(inside && (last || (g_clk_wa[j] > lo + 86400 && g_clk_wb[j] < hi - 86400)))
+      if(inside && (final_pass || (g_clk_wa[j] > lo + 86400 && g_clk_wb[j] < hi - 86400)))
         {
          g_clk_si[s] = true;
          g_clk_sa[s] = g_clk_wa[j];
@@ -608,14 +608,14 @@ void ClkSegCompute(const int fam, const datetime t, const int s)
          g_clk_snb[s] = g_clk_wb[j];
          return;
         }
-      bool next = (j + 1 < g_clk_wn);
-      if(!inside && (last || (next && g_clk_wb[j + 1] < hi - 86400)))
+      bool has_next = (j + 1 < g_clk_wn);
+      if(!inside && (final_pass || (has_next && g_clk_wb[j + 1] < hi - 86400)))
         {
          g_clk_si[s] = false;
          g_clk_sa[s] = (j >= 0) ? g_clk_wb[j] : lo;
-         g_clk_sb[s] = next ? g_clk_wa[j + 1] : hi;
-         g_clk_sna[s] = next ? g_clk_wa[j + 1] : (datetime)0;
-         g_clk_snb[s] = next ? g_clk_wb[j + 1] : (datetime)0;
+         g_clk_sb[s] = has_next ? g_clk_wa[j + 1] : hi;
+         g_clk_sna[s] = has_next ? g_clk_wa[j + 1] : (datetime)0;
+         g_clk_snb[s] = has_next ? g_clk_wb[j + 1] : (datetime)0;
          return;
         }
       w *= 2;
@@ -681,7 +681,8 @@ bool ClkNextClosure(const int family, const datetime utc, datetime &c0, datetime
 //   crypto with fri_end_utc > 0, result in [e0 - 1 min, c1) -> e0 - 1 min (never after the broker's Friday
 //                                                          session end - 1 min)
 //   else x (an exit in the last 30 min of a closure waits for the reopening, as the lab's exit does)
-// It depends on x only while x stays the same: the follower may compute it once per trade (again after HOLD).
+// For a given x and session end it never changes (the closures are fixed after ClkInit): the follower may compute it
+// once per trade, and again after a HOLD moves x.
 datetime ClkRealExitMinute(const datetime x, const int family, const bool gap_rule, const datetime fri_end_utc)
   {
    datetime c0 = 0, c1 = 0;
@@ -733,19 +734,19 @@ int ClkParseHhmm(const string s, const int pos)
 string ClkNormalize(const string s)
   {
    string out = "";
-   bool gap = false;
+   bool blank = false;
    int n = StringLen(s);
    for(int i = 0; i < n; i++)
      {
       ushort c = StringGetCharacter(s, i);
       if(c == ' ' || c == '\t' || c == '\r' || c == '\n')
         {
-         gap = true;
+         blank = true;
          continue;
         }
       int len = StringLen(out);
-      if(gap && len > 0 && c != '-' && StringGetCharacter(out, len - 1) != '-') out = out + " ";
-      gap = false;
+      if(blank && len > 0 && c != '-' && StringGetCharacter(out, len - 1) != '-') out = out + " ";
+      blank = false;
       out = out + StringSubstr(s, i, 1);
      }
    return out;

@@ -1,4 +1,4 @@
-#define CR_BUILD "aca5c341a82b"
+#define CR_BUILD "1c83aea7fde7"
 #define CR_DEBUG
 // ==== begin src/ClaudeRobot.mq5
 //+------------------------------------------------------------------+
@@ -716,8 +716,8 @@ int ClkDowOfDay(const long day_no) { return (int)(((day_no + 4) % 7 + 7) % 7); }
 
 int ClkMonthDays(const int y, const int m)
   {
-   long next = (m == 12) ? ClkDaysFromCivil(y + 1, 1, 1) : ClkDaysFromCivil(y, m + 1, 1);
-   return (int)(next - ClkDaysFromCivil(y, m, 1));
+   long next_first = (m == 12) ? ClkDaysFromCivil(y + 1, 1, 1) : ClkDaysFromCivil(y, m + 1, 1);
+   return (int)(next_first - ClkDaysFromCivil(y, m, 1));
   }
 
 // day number of the n-th weekday wd (0 = Sunday ... 6 = Saturday) of a month; n = -1: the last one
@@ -725,8 +725,8 @@ long ClkNthWeekday(const int y, const int m, const int wd, const int n)
   {
    if(n < 0)
      {
-      long last = ((m == 12) ? ClkDaysFromCivil(y + 1, 1, 1) : ClkDaysFromCivil(y, m + 1, 1)) - 1;
-      return last - (ClkDowOfDay(last) - wd + 7) % 7;
+      long last_day = ((m == 12) ? ClkDaysFromCivil(y + 1, 1, 1) : ClkDaysFromCivil(y, m + 1, 1)) - 1;
+      return last_day - (ClkDowOfDay(last_day) - wd + 7) % 7;
      }
    long first = ClkDaysFromCivil(y, m, 1);
    return first + (wd - ClkDowOfDay(first) + 7) % 7 + 7 * (n - 1);
@@ -1113,9 +1113,9 @@ void ClkSegCompute(const int fam, const datetime t, const int s)
          if(g_clk_wa[i] > t) break;
          j = i;
         }
-      bool last = (pass == 5);
+      bool final_pass = (pass == 5);
       bool inside = (j >= 0 && t < g_clk_wb[j]);
-      if(inside && (last || (g_clk_wa[j] > lo + 86400 && g_clk_wb[j] < hi - 86400)))
+      if(inside && (final_pass || (g_clk_wa[j] > lo + 86400 && g_clk_wb[j] < hi - 86400)))
         {
          g_clk_si[s] = true;
          g_clk_sa[s] = g_clk_wa[j];
@@ -1124,14 +1124,14 @@ void ClkSegCompute(const int fam, const datetime t, const int s)
          g_clk_snb[s] = g_clk_wb[j];
          return;
         }
-      bool next = (j + 1 < g_clk_wn);
-      if(!inside && (last || (next && g_clk_wb[j + 1] < hi - 86400)))
+      bool has_next = (j + 1 < g_clk_wn);
+      if(!inside && (final_pass || (has_next && g_clk_wb[j + 1] < hi - 86400)))
         {
          g_clk_si[s] = false;
          g_clk_sa[s] = (j >= 0) ? g_clk_wb[j] : lo;
-         g_clk_sb[s] = next ? g_clk_wa[j + 1] : hi;
-         g_clk_sna[s] = next ? g_clk_wa[j + 1] : 0;
-         g_clk_snb[s] = next ? g_clk_wb[j + 1] : 0;
+         g_clk_sb[s] = has_next ? g_clk_wa[j + 1] : hi;
+         g_clk_sna[s] = has_next ? g_clk_wa[j + 1] : (datetime)0;
+         g_clk_snb[s] = has_next ? g_clk_wb[j + 1] : (datetime)0;
          return;
         }
       w *= 2;
@@ -1197,7 +1197,8 @@ bool ClkNextClosure(const int family, const datetime utc, datetime &c0, datetime
 //   crypto with fri_end_utc > 0, result in [e0 - 1 min, c1) -> e0 - 1 min (never after the broker's Friday
 //                                                          session end - 1 min)
 //   else x (an exit in the last 30 min of a closure waits for the reopening, as the lab's exit does)
-// It depends on x only while x stays the same: the follower may compute it once per trade (again after HOLD).
+// For a given x and session end it never changes (the closures are fixed after ClkInit): the follower may compute it
+// once per trade, and again after a HOLD moves x.
 datetime ClkRealExitMinute(const datetime x, const int family, const bool gap_rule, const datetime fri_end_utc)
   {
    datetime c0 = 0, c1 = 0;
@@ -1249,19 +1250,19 @@ int ClkParseHhmm(const string s, const int pos)
 string ClkNormalize(const string s)
   {
    string out = "";
-   bool gap = false;
+   bool blank = false;
    int n = StringLen(s);
    for(int i = 0; i < n; i++)
      {
       ushort c = StringGetCharacter(s, i);
       if(c == ' ' || c == '\t' || c == '\r' || c == '\n')
         {
-         gap = true;
+         blank = true;
          continue;
         }
       int len = StringLen(out);
-      if(gap && len > 0 && c != '-' && StringGetCharacter(out, len - 1) != '-') out = out + " ";
-      gap = false;
+      if(blank && len > 0 && c != '-' && StringGetCharacter(out, len - 1) != '-') out = out + " ";
+      blank = false;
       out = out + StringSubstr(s, i, 1);
      }
    return out;
@@ -1304,7 +1305,7 @@ bool ClkParseEntry(const string raw, string &why)
          why = "the date is a Saturday or a Sunday";
          return false;
         }
-      ClkTypedAdd((kind == "NYSE") ? 0 : 1, -1, dn, 0, 0);
+      ClkTypedAdd((kind == "NYSE") ? 0 : 1, -1, dn, (datetime)0, (datetime)0);
       return true;
      }
    string f3 = StringSubstr(p, 0, 3);
@@ -1871,7 +1872,7 @@ public:
          m_qc--;
         }
       bool ok = MathIsValidNumber(x);
-      m_ok[slot] = ok ? 1 : 0;
+      m_ok[slot] = (uchar)(ok ? 1 : 0);
       if(ok)
         {
          m_nobs++;
@@ -2973,8 +2974,9 @@ bool RegReads(const int sl, const int sym) { return g_sl[sl].sym == sym || g_sl[
 #define CR_BARS_NOTREADY_PUSH_S 600    // NOT_READY for 10 min: one push
 #define CR_BARS_KEEP 150000            // fed bars kept by the compaction
 #define CR_BARS_COMPACT 300000         // compaction when this many bars were fed
-#define CR_BARS_MAXHOLES 64
+#define CR_BARS_MAXHOLES 256           // holes remembered per symbol while NOT_READY (the oldest go first)
 #define CR_BARS_MAXTICK 8
+#define CR_BARS_MAXACC 64              // accepted holes remembered across rebuilds, per symbol
 
 // mask reasons (BarsMasked)
 #define CR_MASK_KEPT 0
@@ -3011,7 +3013,38 @@ datetime g_bars_late_last = 0;         // server time of the last CR_POLL_LATEBA
 datetime g_bars_rev_M = 0;             // the barrier whose last-3 re-read was done
 datetime g_bars_first_try = 0;         // first call of a load whose reads all failed (CR_LOAD_RETRY)
 long     g_bars_late_n = 0;            // rebuilds asked for
+datetime g_bars_bar_now = 0;           // BarsBarrier's last call (server time) and its answer: one answer per second, so
+datetime g_bars_bar_M = 0;             // that the load and the replay of one pass agree even if a tick comes in between
 long     g_bars_gap_live = 0;          // live missing minutes given up (GAP)
+// holes accepted as the broker's own (UTC bounds), kept across rebuilds (BarsInit clears them): after a rebuild the
+// same hole is accepted at once, without a new GAP push or three more re-reads
+datetime g_bars_acc_a[CR_NSYM][CR_BARS_MAXACC];
+datetime g_bars_acc_b[CR_NSYM][CR_BARS_MAXACC];
+int      g_bars_nacc[CR_NSYM];
+
+bool BarsAccepted(const int sym, const datetime a, const datetime b)
+  {
+   for(int i = 0; i < g_bars_nacc[sym]; i++)
+      if(g_bars_acc_a[sym][i] == a && g_bars_acc_b[sym][i] == b) return true;
+   return false;
+  }
+
+void BarsAccept(const int sym, const datetime a, const datetime b)
+  {
+   if(BarsAccepted(sym, a, b)) return;
+   if(g_bars_nacc[sym] >= CR_BARS_MAXACC)
+     {
+      for(int i = 1; i < g_bars_nacc[sym]; i++)
+        {
+         g_bars_acc_a[sym][i - 1] = g_bars_acc_a[sym][i];
+         g_bars_acc_b[sym][i - 1] = g_bars_acc_b[sym][i];
+        }
+      g_bars_nacc[sym]--;
+     }
+   g_bars_acc_a[sym][g_bars_nacc[sym]] = a;
+   g_bars_acc_b[sym][g_bars_nacc[sym]] = b;
+   g_bars_nacc[sym]++;
+  }
 
 //+------------------------------------------------------------------+
 //| helpers (no state)                                               |
@@ -3082,13 +3115,13 @@ long BarsOpenSecs(const int family, const datetime a, const datetime b, const lo
   }
 
 // FNV-1a over 64-bit words (unsigned arithmetic wraps the same way in MQL5 and C++)
-ulong BarsMix(const ulong h, const ulong v) { return (h ^ v) * 1099511628211; }
+ulong BarsMix(const ulong h, const ulong v) { return (h ^ v) * (ulong)1099511628211; }
 
 // a fingerprint of the broker bars of r[0..k) starting before before_srv: time, prices in points, spread
 void BarsChk(const int sym, const MqlRates &r[], const int k, const datetime before_srv, ulong &h, long &cnt)
   {
    double pt = g_sym[sym].point;
-   h = 1469598103934665603;
+   h = (ulong)1469598103934665603;
    cnt = 0;
    for(int i = 0; i < k; i++)
      {
@@ -3251,11 +3284,12 @@ public:
          for(int i = 1; i < nholes; i++) holes[i - 1] = holes[i];
          nholes--;
         }
+      bool known = BarsAccepted(sym, a, bnd);          // accepted before a rebuild: the broker's own already
       holes[nholes].a = a;
       holes[nholes].b = bnd;
-      holes[nholes].reads = 0;
-      holes[nholes].said = false;
-      holes[nholes].accepted = false;
+      holes[nholes].reads = known ? CR_BARS_ACCEPT : 0;
+      holes[nholes].said = known;
+      holes[nholes].accepted = known;
       nholes++;
       holes_seen++;
      }
@@ -3561,6 +3595,7 @@ public:
                   if(holes[i].reads >= CR_BARS_ACCEPT)
                     {
                      holes[i].accepted = true;
+                     BarsAccept(sym, holes[i].a, holes[i].b);
                      Jrn(CR_EV_GAP, g_sym[sym].base, KT("from", holes[i].a) + KT("to", holes[i].b)
                          + KI("min", (long)(holes[i].b - holes[i].a) / 60) + KI("reads", holes[i].reads) + KI("accepted", 1));
                     }
@@ -3619,6 +3654,8 @@ void BarsReset()
    g_bars_late = false;
    g_bars_rev_M = 0;
    g_bars_first_try = 0;
+   g_bars_bar_now = 0;
+   g_bars_bar_M = 0;
   }
 
 bool BarsInit(string &err)
@@ -3628,6 +3665,7 @@ bool BarsInit(string &err)
    g_bars_late_last = 0;
    g_bars_late_n = 0;
    g_bars_gap_live = 0;
+   for(int s = 0; s < CR_NSYM; s++) g_bars_nacc[s] = 0;
    for(int s = 0; s < CR_NSYM; s++)
       if(g_sym[s].depth_days <= 0 || !(g_sym[s].point > 0.0))
         {
@@ -3653,21 +3691,28 @@ void BarsTicks()
 
 datetime BarsBarrier(const datetime now_srv)
   {
+   if(now_srv == g_bars_bar_now && g_bars_bar_now > 0) return g_bars_bar_M;
    BarsTicks();
    datetime u = ClkServerToUtc(now_srv);
    datetime cur = u - u % 60;                     // the minute in progress
    datetime mt = (u - 2) - (u - 2) % 60;          // TimeTradeServer() >= M + 2 s
-   if(mt >= cur) return mt;
-   datetime cur_srv = ClkUtcToServer(cur);
-   for(int s = 0; s < CR_NSYM; s++)
+   datetime M = cur;                              // every symbol ticked in the new minute, or is closed ...
+   if(mt >= cur) M = mt;
+   else
      {
-      if(!g_sym[s].ok) continue;
-      if(g_bs[s].tick_srv >= cur_srv) continue;
-      datetime c0 = 0, c1 = 0;
-      if(ClkInClosure(g_sym[s].family, cur, c0, c1)) continue;
-      return mt;
+      datetime cur_srv = ClkUtcToServer(cur);
+      for(int s = 0; s < CR_NSYM && M == cur; s++)
+        {
+         if(!g_sym[s].ok) continue;
+         if(g_bs[s].tick_srv >= cur_srv) continue;
+         datetime c0 = 0, c1 = 0;
+         if(ClkInClosure(g_sym[s].family, cur, c0, c1)) continue;
+         M = mt;                                  // ... else the minute that started at least 2 s ago
+        }
      }
-   return cur;                                    // every symbol ticked in the new minute, or is closed
+   g_bars_bar_now = now_srv;
+   g_bars_bar_M = M;
+   return M;
   }
 
 int BarsLoad(const datetime now_srv)
@@ -3677,6 +3722,7 @@ int BarsLoad(const datetime now_srv)
       g_bs[s].sym = s;
       g_bs[s].Reset();
      }
+   g_bars_bar_now = 0;                            // read the ticks again for the fresh stores
    datetime M = BarsBarrier(now_srv);
    datetime Msrv = ClkUtcToServer(M);
    int ok = 0, want = 0;

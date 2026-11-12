@@ -142,6 +142,8 @@ datetime g_bars_late_last = 0;         // server time of the last CR_POLL_LATEBA
 datetime g_bars_rev_M = 0;             // the barrier whose last-3 re-read was done
 datetime g_bars_first_try = 0;         // first call of a load whose reads all failed (CR_LOAD_RETRY)
 long     g_bars_late_n = 0;            // rebuilds asked for
+datetime g_bars_bar_now = 0;           // BarsBarrier's last call (server time) and its answer: one answer per second, so
+datetime g_bars_bar_M = 0;             // that the load and the replay of one pass agree even if a tick comes in between
 long     g_bars_gap_live = 0;          // live missing minutes given up (GAP)
 // holes accepted as the broker's own (UTC bounds), kept across rebuilds (BarsInit clears them): after a rebuild the
 // same hole is accepted at once, without a new GAP push or three more re-reads
@@ -781,6 +783,8 @@ void BarsReset()
    g_bars_late = false;
    g_bars_rev_M = 0;
    g_bars_first_try = 0;
+   g_bars_bar_now = 0;
+   g_bars_bar_M = 0;
   }
 
 bool BarsInit(string &err)
@@ -816,21 +820,28 @@ void BarsTicks()
 
 datetime BarsBarrier(const datetime now_srv)
   {
+   if(now_srv == g_bars_bar_now && g_bars_bar_now > 0) return g_bars_bar_M;
    BarsTicks();
    datetime u = ClkServerToUtc(now_srv);
    datetime cur = u - u % 60;                     // the minute in progress
    datetime mt = (u - 2) - (u - 2) % 60;          // TimeTradeServer() >= M + 2 s
-   if(mt >= cur) return mt;
-   datetime cur_srv = ClkUtcToServer(cur);
-   for(int s = 0; s < CR_NSYM; s++)
+   datetime M = cur;                              // every symbol ticked in the new minute, or is closed ...
+   if(mt >= cur) M = mt;
+   else
      {
-      if(!g_sym[s].ok) continue;
-      if(g_bs[s].tick_srv >= cur_srv) continue;
-      datetime c0 = 0, c1 = 0;
-      if(ClkInClosure(g_sym[s].family, cur, c0, c1)) continue;
-      return mt;
+      datetime cur_srv = ClkUtcToServer(cur);
+      for(int s = 0; s < CR_NSYM && M == cur; s++)
+        {
+         if(!g_sym[s].ok) continue;
+         if(g_bs[s].tick_srv >= cur_srv) continue;
+         datetime c0 = 0, c1 = 0;
+         if(ClkInClosure(g_sym[s].family, cur, c0, c1)) continue;
+         M = mt;                                  // ... else the minute that started at least 2 s ago
+        }
      }
-   return cur;                                    // every symbol ticked in the new minute, or is closed
+   g_bars_bar_now = now_srv;
+   g_bars_bar_M = M;
+   return M;
   }
 
 int BarsLoad(const datetime now_srv)
@@ -840,6 +851,7 @@ int BarsLoad(const datetime now_srv)
       g_bs[s].sym = s;
       g_bs[s].Reset();
      }
+   g_bars_bar_now = 0;                            // read the ticks again for the fresh stores
    datetime M = BarsBarrier(now_srv);
    datetime Msrv = ClkUtcToServer(M);
    int ok = 0, want = 0;

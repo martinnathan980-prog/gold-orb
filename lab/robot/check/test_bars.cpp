@@ -581,7 +581,8 @@ static void world_hole_stays()
       for(const JLine &j : J)
          if(j.ev == "READY" && j.code == "XAUUSD") r2 = &j;
       long l2 = ClkServerToUtc(d.load_at[1]);
-      check(r2 && r2->utc == l2 + 2, "after the rebuild gold is READY at the first check (the hole stays accepted)",
+      // the first pass at least 2 s after the rebuild (next minute here), not 3 re-reads later
+      check(r2 && r2->utc >= l2 + 2 && r2->utc <= l2 + 62, "after the rebuild gold is READY at the first check (the hole stays accepted)",
             r2 ? S(r2->utc - l2) : "none");
       check(count_ev(J, "GAP", "XAUUSD") == 2, "no new GAP line after the rebuild", S(count_ev(J, "GAP", "XAUUSD")));
      }

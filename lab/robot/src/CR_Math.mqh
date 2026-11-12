@@ -259,7 +259,7 @@ public:
          m_qc--;
         }
       bool ok = MathIsValidNumber(x);
-      m_ok[slot] = ok ? 1 : 0;
+      m_ok[slot] = (uchar)(ok ? 1 : 0);
       if(ok)
         {
          m_nobs++;
