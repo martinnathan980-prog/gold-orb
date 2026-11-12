@@ -666,6 +666,19 @@ directory under `r2/tracks/autopsy/` and `results/r2/autopsy/`, each logging eve
 - **To be said with any result:** improvements found by looking at the same in-sample trades that built the rules are
   optimistic by construction; the measure that counts is the validation look, and then the demo account.
 
+### Addendum H — clarification (2026-11-12, 13:15 UTC), written BEFORE these runs: gain per unit of swing
+The payoff lens ranked its qualifiers by expectancy with costs × 1.5, as declared. That ranking favours a larger position
+(a tighter stop at the same money risk) or a longer exposure (a longer hold): both raise R per trade and the swings
+alike. What the user asks, fast growth with small falls, depends on the gain per unit of swing. A supplementary round
+therefore attacks, with the same attack text, each sleeve's qualifier of rank 1 by the lens's own per-trade Sharpe
+ranking (`rank_by_sharpe_info_only` in `results/r2/autopsy/payoff/candidates.json`, reported by the lens as information
+before any attack) where that qualifier was not attacked already: ocm4 T1, nq_btc_follow T1, donch4h_stop S0.75r,
+brk72_24h_wd btcusd S0.75r, orb_asia_2d_buf10 S0.75r, noise30 S0.25. This ranking was made the selection rule after the
+lens's table was seen: post hoc, and said so; each attacker counts the sleeve's variants of the lens as the selection
+family. Besides the Addendum H criteria, each verdict reports the change in the sleeve's weekly Sharpe and in the
+portfolio's weekly Sharpe at equal weekly volatility (2018-02 to 2021-12, FP costs and × 1.5). In sample only; no
+validation look; the rule "at most one change per sleeve" still holds.
+
 ### Addendum G — outcome of the eighth clarification (2026-11-12, `results/r2/stake/growth.json`)
 The extended engine reproduces every earlier cell (691,872 compared, none different). At half edge, F2S / F2S+soft /
 F2S+strong (the profile switched on at the start of a server week whose opening balance is at least 20,000 EUR):
