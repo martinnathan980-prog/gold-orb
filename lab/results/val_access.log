@@ -497,3 +497,6 @@
 {"time": "2026-11-12T13:42:41+00:00", "track": "stake", "label": "growth_paths:sixth_robust:draws_b4", "period": "val"}
 {"time": "2026-11-12T13:42:42+00:00", "track": "stake", "label": "growth_paths:sixth_robust:draws_b16", "period": "val"}
 {"time": "2026-11-12T13:44:01+00:00", "track": "stake", "label": "growth_paths:sixth_robust:real_order", "period": "val"}
+{"time": "2026-11-12T13:46:12+00:00", "track": "stake", "label": "growth_paths:sixth_robust:minlots", "period": "val"}
+{"time": "2026-11-12T13:50:25+00:00", "track": "stake", "label": "growth_paths:sixth_robust:draws_b1", "period": "val"}
+{"time": "2026-11-12T13:50:26+00:00", "track": "stake", "label": "growth_paths:sixth_robust:draws_b26", "period": "val"}
