@@ -1,14 +1,14 @@
 {
- "written": "2026-11-12T15:18:46Z",
+ "written": "2026-11-12T15:19:33Z",
  "sym": "xauusd",
  "donch4h_stop:xauusd": {
   "variant": "S0.75r",
   "sampled_acting": 15,
-  "sampled_other": 0,
-  "a_tested": 15,
-  "a_identical": 15,
-  "b_tested": 15,
-  "b_identical": 15,
+  "sampled_other": 15,
+  "a_tested": 30,
+  "a_identical": 30,
+  "b_tested": 30,
+  "b_identical": 30,
   "c_tested": 0,
   "c_identical": 0,
   "mismatches": []
