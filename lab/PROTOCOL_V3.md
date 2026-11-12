@@ -868,3 +868,15 @@ the official 2022–2025 trades. Trades entered 2022–2025, FP costs:
   first, never straight to real money. The two families were not measured together by this look and no new measure is
   made on these years. Whatever their sum, it is a few percent on a weekly Sharpe of about 2.0, against about 8.9 for
   the user's demand. The 2026 holdout was not touched.
+
+### Addendum G — the user's choice of start (2026-11-12, evening): "the one that earns the most"
+Asked to choose between the 1 % start (F1S) and the 2 % start (F2S), the user answered: "je veux celui qui gagne le plus".
+On `results/r2/stake/growth.json` the start that earns the most is **F3S** (3 % per trade below 3,000 EUR, 2 % below
+6,000, 1 % below 12,000, then 0.5 %, read on the larger of the balance and the money paid in; the −25 % stop armed once
+12,000 EUR are paid in): highest or tied-highest median gain in every case (3 years: paper +44,259, half +17,262, quarter
++6,473, covers costs −2,057, worthless −3,605 EUR), and the winner of the rule fixed before the sixth clarification's run.
+The 5 % start (FS) earns no more (half: +17,228 EUR in 3 years) and loses half the account in 23.7 % of half-edge paths.
+Told to the user with the choice: F3S's first-year fall is 29 % typical (1,840 EUR) and 42 % one path in ten, above the
+10–20 % he first named; losing half within 3 years happens in 2.5 % of half-edge paths and 21.9 % if the rules are
+worthless; the 2 % start earns almost the same (−275 EUR over 3 years at half edge) with fewer deep falls. F3S becomes
+the stake plan of the robot unless the user changes it. A user decision, not a test: nothing was run.
