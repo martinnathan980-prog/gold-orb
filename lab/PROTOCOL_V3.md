@@ -427,3 +427,31 @@ against −2,300) nor in the first year; the −50 % stop of the hands must be o
 of four at half edge); the quarter-edge median is about zero (−900 to +1,500 across draws). A trial budget at 1 %
 instead of 5 % (diagnostic, not a declared plan) loses about 1,000 EUR in the first year instead of 2,500 when the
 rules are worthless and gains about 22,000 instead of 29,000 at half edge.
+
+### Addendum G — third clarification (2026-11-12, night), written BEFORE any run: a loss that cannot go deep, a fast start that calms down
+The user: "I need a very fast growth at the start that calms down with time; the losses must be limited; the worst is
+consecutive losses; I cannot lose 50 % and wait a year for it to come back; you have a free hand". No sizing rule adds
+edge: what a sizing rule can do is decide how deep a fall may go and how the risk moves with the size of the account.
+Declared plans (the same ten rules, the same 2,000 draws, the same six scenarios; nothing else will be run):
+- **Loss budget with a ratchet (R).** The robot may only risk what is left of a loss budget. Reference size = money paid
+  in + the highest gain reached so far (the account's high, payments set aside). Budget = a share of that size, by
+  brackets: **R1** 50 % of the first 3,000 EUR, 30 % of the next 7,000, 20 % of the next 10,000, 15 % beyond; **R2** 30 %,
+  20 %, 15 %, 10 % on the same brackets. What is left = budget minus the fall already made from the high. Risk per trade =
+  15 % of what is left (at most 6 positions: never more than 90 % of it at risk at once), capped by the C2 percentage for
+  the size (5 % / 3 % / 2 % / 1 %). No trade when nothing is left, until a payment or a new high rebuilds it. So the fall
+  from the high cannot exceed the budget (gaps aside), and gains once made are locked in the same proportion.
+- **Payments:** `a` every month; `p` by steps (the first three whatever happens, then only when the balance is at
+  least the money paid in); `s` soft steps (when under water, a quarter of the month's 1,000 EUR is paid and the rest
+  stays outside). Plans: R1a, R1p, R1s, R2a, R2p, R2s.
+- **Da:** the C2 schedule multiplied by max(0.2, 1 − fall from the high / 25 %), payments every month (the usual
+  "trade smaller in a drawdown"; no hard limit).
+- **Measured on every path, for these and for A, C2, P, K70:** the deepest fall from the high, payments set aside, at
+  week ends (the high being paid-in money + best gain so far); the deepest fall of the balance as the user sees it
+  (payments included) and the weeks it takes to see the previous high again; the longest run of losing weeks and of
+  losing months; and the gains as before.
+- **What "best" means, fixed here:** among all plans whose deepest fall stays at or under 25 % in 9 paths out of 10 both
+  when the robot does half of its paper result and when the rules are worthless, the plan with the highest median gain
+  after 12 months at half edge; ties and runners-up are shown.
+- **To be said with it:** a limited fall is paid for by a robot that trades small, or not at all, after a bad run, so
+  it climbs back more slowly; all of this is sizing on simulations of the validation years; figures rounded to two
+  significant digits.
