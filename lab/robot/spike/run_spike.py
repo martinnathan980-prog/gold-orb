@@ -41,15 +41,16 @@ sys.path.insert(0, str(LAB / "live_ai"))
 NY = "America/New_York"
 IS_END = pd.Timestamp("2022-01-01", tz="UTC")
 FP = LAB / "data" / "fp" / "btcusd_m1.parquet"
+FP_ETH = LAB / "data" / "fp" / "ethusd_m1.parquet"
 DIGITS = 2
 SYM = "BTCUSD"
 
 
 # ----------------------------------------------------------------------------------------------- data
-def load_official(start, end):
+def load_official(start, end, path=FP):
     """the lab frame, sliced at read time (never a 2022+ row in memory)"""
     lo, hi = pd.Timestamp(start, tz="UTC"), min(pd.Timestamp(end, tz="UTC"), IS_END)
-    m1 = pd.read_parquet(FP, filters=[("ts", ">=", lo), ("ts", "<", hi)])
+    m1 = pd.read_parquet(path, filters=[("ts", ">=", lo), ("ts", "<", hi)])
     assert len(m1) and m1.index.max() < IS_END and m1.index.is_monotonic_increasing and m1.index.is_unique
     return m1
 
@@ -105,15 +106,15 @@ def lab():
         import recalc
         import goldlab as gl
         from goldlab import r2
-        reg = [s for s in recalc.sleeves() if s[1] == "brk72_24h_wd" and s[2] == "btcusd"]
-        assert len(reg) == 1
-        _LAB.update(gl=gl, r2=r2, entry=reg[0], strat=sys.modules["r2_crypto_strategy"])
+        reg = {s[2]: s for s in recalc.sleeves() if s[1] == "brk72_24h_wd"}
+        assert set(reg) == {"btcusd", "ethusd"}
+        _LAB.update(gl=gl, r2=r2, entry=reg, strat=sys.modules["r2_crypto_strategy"])
     return _LAB
 
 
-def lab_run(m1):
+def lab_run(m1, sym="btcusd"):
     L = lab()
-    track, name, sym, make_orders, params = L["entry"]
+    track, name, sym, make_orders, params = L["entry"][sym]
     orders = make_orders(m1, **params)
     trades = L["r2"].run(sym, make_orders, params, "fp", True, m1)            # recalc.py:98, the official call
     return orders, trades
@@ -157,13 +158,16 @@ def build(work):
 
 
 def replay(exe, bars, files, frm=None, to=None, debug=True, extra_env=None, fresh=True):
+    """bars: a path (bitcoin only) or {symbol: path}"""
     files = Path(files)
     if fresh and files.exists():
         for p in sorted(files.rglob("*"), reverse=True):
             p.unlink() if p.is_file() else p.rmdir()
     files.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, MOCK_FILES=str(files), MOCK_SYMS=SYM, **{f"MOCK_BARS_{SYM}": str(bars), f"MOCK_DIGITS_{SYM}": str(DIGITS)},
-               MOCK_INPUT_InpDebugHours="1" if debug else "0")
+    bars = bars if isinstance(bars, dict) else {SYM: bars}
+    env = dict(os.environ, MOCK_FILES=str(files), MOCK_SYMS=",".join(bars), MOCK_INPUT_InpDebugHours="1" if debug else "0")
+    for k, v in bars.items():
+        env[f"MOCK_BARS_{k}"], env[f"MOCK_DIGITS_{k}"] = str(v), str(DIGITS)
     if frm is not None:
         env["MOCK_FROM"] = str(int(frm))
     if to is not None:
@@ -177,11 +181,12 @@ def replay(exe, bars, files, frm=None, to=None, debug=True, extra_env=None, fres
     return r.stdout.strip(), wall
 
 
-def read_journal(files):
+def read_journal(files, code="B72B"):
     rows = {"HB": [], "EV": [], "DEC": [], "TRD": [], "REAL": [], "INIT": []}
     for ln in (Path(files) / "spike_journal.csv").read_text().splitlines():
         f = ln.split(",")
-        rows.setdefault(f[0], []).append(f[1:])
+        if f[1] == code:
+            rows.setdefault(f[0], []).append(f[1:])
     u = lambda s: pd.to_datetime(pd.Series(s, dtype="int64"), unit="s", utc=True)
     out = {}
     if rows["HB"]:
@@ -216,10 +221,11 @@ def read_journal(files):
     return out
 
 
-def read_deals(files):
+def read_deals(files, code="B72B"):
     p = Path(files) / "_mock" / "deals.csv"
     d = pd.read_csv(p, header=None, names=["deal", "position", "time", "symbol", "type", "entry", "volume", "price", "reason", "magic",
                                            "comment"], float_precision="round_trip")
+    d = d[d.comment == code]
     import pont
     d["utc"] = pont.server_to_utc((d["time"] - d["time"] % 60).to_numpy())       # the minute of the deal = its bar
     ins, outs = d[d.entry == 0].set_index("position"), d[d.entry == 1].set_index("position")
@@ -315,9 +321,10 @@ def classify(m, m1, n0="lab", n1="ea"):
             gap = (idx[i + 1] - idx[i]) / pd.Timedelta(minutes=1) if i + 1 < len(idx) else float("nan")
             sched = r.get(f"sched_exit_{n0}", r.get("sched_exit"))
             s = srv[i]
-            if s.dayofweek == 4 and s.hour == 23 and s.minute < 54 and gap > 30:
-                row["why"] = (f"Friday whose last bar is {s:%H:%M} server, not 23:54: the lab exits on it (it sees the closure in the "
-                              f"data), the EA waits for 23:54 and exits at the reopening")
+            nxt = srv[i + 1] if i + 1 < len(idx) else s
+            if s.dayofweek == 4 and s.hour >= 20 and gap > 30 and nxt.dayofweek == 0:
+                row["why"] = (f"weekly closure earlier than usual: last Friday bar {s:%Y-%m-%d %H:%M} server, not 23:54; the lab exits "
+                              f"on it (it sees the closure in the data), the EA waits for 23:54 and exits at the reopening")
             elif gap > 30:
                 row["why"] = (f"unscheduled closure of {gap:.0f} min after {s:%a %Y-%m-%d %H:%M} server (scheduled exit {sched}): the lab "
                               f"exits on the last bar before it (gl.exit_index, 30-minute rule, needs future data); the EA has no "
@@ -430,7 +437,49 @@ def window_run(exe, start, end, tag, restarts=True):
     # ---- restarts
     if restarts:
         rep["restarts"] = restart_tests(exe, bars, t_srv, J)
+        rep["faults"] = fault_test(exe, bars, J)
     return rep
+
+
+def same_journal(J1, J2):
+    f = lambda J, k: J[k].drop(columns=["code"]).astype(str).to_csv(index=False)
+    return f(J1, "TRD") == f(J2, "TRD"), f(J1, "DEC") == f(J2, "DEC")
+
+
+def fault_test(exe, bars, J_full):
+    """5 % of CopyRates calls fail; the timer fires 3 times a minute (at T, T+1 s, T+2 s), as the real 1-second timer would"""
+    out = {}
+    for p in ("0.05", "0.3"):
+        files = OUT / f"run_fault_{p}"
+        so, _ = replay(exe, bars, files, debug=False, extra_env={"MOCK_COPY_FAIL": p, "MOCK_TIMER_CALLS": "3", "MOCK_SEED": "7"})
+        J = read_journal(files)
+        tr, dec = same_journal(J_full, J)
+        out[p] = {"stdout": so, "paper_trades_identical": tr, "decisions_identical": dec,
+                  "status": J["DEC"].status.value_counts().to_dict(), "broker_trades": int(len(read_deals(files)))}
+    return out
+
+
+def eth_run(exe, start, end, tag, btc_bars, J_btc):
+    """bitcoin + ether in one EA (two instances of the module, two symbols on one clock)"""
+    m1_off = load_official(start, end, FP_ETH)
+    bars = OUT / f"ethusd_m1_{tag}.csv"
+    export(m1_off, bars)
+    m1_reb = rebuild(bars)
+    files = OUT / f"run_{tag}_btc_eth"
+    so, wall = replay(exe, {SYM: btc_bars, "ETHUSD": bars}, files, debug=False, extra_env={"MOCK_INPUT_InpSymEth": "ETHUSD"})
+    Jb, Je = read_journal(files, "B72B"), read_journal(files, "B72E")
+    tr, dec = same_journal(J_btc, Jb)
+    reb_o, reb_t = lab_run(m1_reb, "ethusd")
+    lt = lab_trades_table(reb_t, m1_reb)
+    res, m = cmp_trades(lt[~lt.artefact], Je["TRD"])
+    res["mismatches"] = classify(m, m1_reb)
+    res["lab_trades_excluded_as_frame_end_artefacts"] = int(lt.artefact.sum())
+    cut = m1_reb.index[-1] - pd.Timedelta(days=1)
+    deals = read_deals(files, "B72E")
+    resb, _ = cmp_trades(lt[~lt.artefact][["entry_time", "side", "entry", "exit", "exit_bar", "reason"]], deals, names=("lab", "broker"))
+    return {"stdout": so, "wall_s": round(wall, 3), "btc_trades_identical_to_btc_only_run": tr, "btc_decisions_identical": dec,
+            "eth_frame_bars": int(len(m1_off)), "eth_decisions": cmp_decisions(Je["DEC"], reb_o, m1_reb, cut), "eth_trades": res,
+            "eth_broker": resb}
 
 
 def restart_tests(exe, bars, t_srv, J_full):
@@ -490,6 +539,9 @@ def main():
     exe, warn = build(OUT / "build")
     report = {"build": {"seconds": round(time.perf_counter() - t0, 2), "warnings": warn}}
     report["window"] = window_run(exe, "2020-12-01", "2021-07-01", "2020-12_2021-06")
+    files = OUT / "run_2020-12_2021-06_nodebug"
+    report["window_eth"] = eth_run(exe, "2020-12-01", "2021-07-01", "2020-12_2021-06", OUT / "btcusd_m1_2020-12_2021-06.csv",
+                                   read_journal(files))
     if a.long:
         report["long"] = window_run(exe, "2017-01-01", "2022-01-01", "is_all", restarts=False)
     (OUT / "results.json").write_text(json.dumps(report, indent=1, default=str))
