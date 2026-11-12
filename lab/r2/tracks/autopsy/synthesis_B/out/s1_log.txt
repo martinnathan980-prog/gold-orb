@@ -1,0 +1,22 @@
+== us100: 2513306 bars 2013-01-01 00:00:00+00:00 .. 2021-12-31 21:14:00+00:00 [1s]
+ocm4                   us100   n 999/999 totR 136.879/136.879 matched 999 diff 0 (exits 2022: 0) OK | fp window 492 53.78 refused 0/0 [2.6s]
+noise30                us100   n 1643/1643 totR 134.401/134.401 matched 1643 diff 0 (exits 2022: 0) OK | fp window 795 85.24 refused 0/0 [0.9s]
+== xauusd: 3172985 bars 2012-12-31 00:00:00+00:00 .. 2021-12-31 21:59:00+00:00 [1s]
+donch4h_stop           xauusd  n 495/495 totR 85.056/84.235 matched 495 diff 1 (exits 2022: 1) OK | fp window 207 30.03 refused 0/0 [2.2s]
+orb_asia_2d_buf10      xauusd  n 1039/1039 totR 232.78/230.065 matched 1039 diff 1 (exits 2022: 1) OK | fp window 464 27.06 refused 0/0 [2.4s]
+GOLD_FRI_PM            xauusd  n 414/414 totR 13.921/13.921 matched 414 diff 0 (exits 2022: 0) OK | fp window 183 -1.3 refused 0/0 [0.6s]
+== btcusd: 1699217 bars 2017-05-07 23:59:00+00:00 .. 2021-12-31 16:58:00+00:00 [0s]
+brk72_24h_wd           btcusd  n 645/645 totR 172.874/172.874 matched 645 diff 0 (exits 2022: 0) OK | fp window 549 140.68 refused 0/0 [0.7s]
+F1_brk_ridge_filter    btcusd  n 631/631 totR 226.389/226.389 matched 631 diff 0 (exits 2022: 0) OK | fp window 545 187.92 refused 0/0 [0.4s]
+nq_btc_follow          btcusd  n 1063/1063 totR 66.346/66.346 matched 1063 diff 0 (exits 2022: 0) OK | fp window 943 55.54 refused 0/0 [2.3s]
+N2 orb_asia_2d_buf10 btcusd fp {'n': 375, 'exp': 0.5182, 'total': 194.34, 'win': 0.3787, 'avg_win': 3.0053, 'avg_loss': -0.9975, 'pf': 1.836, 'sd': 2.878, 'mean_over_sd': 0.1801} {2018: 93.55, 2019: 68.3, 2020: 32.1, 2021: 0.39} refused 0
+N2 orb_asia_2d_buf10 btcusd stress {'n': 374, 'exp': 0.4963, 'total': 185.62, 'win': 0.3797, 'avg_win': 2.9424, 'avg_loss': -1.0009, 'pf': 1.799, 'sd': 2.8251, 'mean_over_sd': 0.1757} {2018: 90.41, 2019: 65.13, 2020: 29.74, 2021: 0.35} refused 0
+== ethusd: 1397208 bars 2018-01-01 00:00:00+00:00 .. 2021-12-31 16:58:00+00:00 [0s]
+brk72_24h_wd           ethusd  n 519/519 totR 103.687/103.687 matched 519 diff 0 (exits 2022: 0) OK | fp window 511 106.61 refused 0/0 [0.3s]
+F1_brk_ridge_filter    ethusd  n 517/517 totR 104.407/104.407 matched 517 diff 0 (exits 2022: 0) OK | fp window 516 103.02 refused 0/0 [0.3s]
+C1 fp {'base_2019_2021': {'n': 395, 'exp': 0.1243, 'total': 49.08, 'win': 0.438, 'avg_win': 1.1877, 'avg_loss': -0.7045, 'pf': 1.314, 'sd': 1.2804, 'mean_over_sd': 0.097}, 'var_2019_2021': {'n': 304, 'exp': 0.2101, 'total': 63.86, 'win': 0.4836, 'avg_win': 1.2043, 'avg_loss': -0.7209, 'pf': 1.564, 'sd': 1.3356, 'mean_over_sd': 0.1573}, 'skipped_by_year': {2018: 0, 2019: 138, 2020: 113, 2021: 267}} {2019: 505.85, 2020: 496.75, 2021: 465.12}
+C1 stress {'base_2019_2021': {'n': 397, 'exp': 0.1029, 'total': 40.86, 'win': 0.4257, 'avg_win': 1.1947, 'avg_loss': -0.7064, 'pf': 1.254, 'sd': 1.2744, 'mean_over_sd': 0.0808}, 'var_2019_2021': {'n': 306, 'exp': 0.1843, 'total': 56.4, 'win': 0.4673, 'avg_win': 1.2153, 'avg_loss': -0.7201, 'pf': 1.48, 'sd': 1.3295, 'mean_over_sd': 0.1386}, 'skipped_by_year': {2018: 0, 2019: 138, 2020: 113, 2021: 267}} {2019: 505.85, 2020: 496.75, 2021: 465.12}
+N1 orb_asia_2d_buf10 ethusd fp {'n': 344, 'exp': 0.4519, 'total': 155.47, 'win': 0.4128, 'avg_win': 2.4843, 'avg_loss': -0.9768, 'pf': 1.788, 'sd': 2.3389, 'mean_over_sd': 0.1932} {2018: 70.94, 2019: 33.93, 2020: 32.04, 2021: 18.56} refused 0
+N1 orb_asia_2d_buf10 ethusd stress {'n': 344, 'exp': 0.4078, 'total': 140.29, 'win': 0.4041, 'avg_win': 2.4328, 'avg_loss': -0.9652, 'pf': 1.709, 'sd': 2.2604, 'mean_over_sd': 0.1804} {2018: 66.63, 2019: 30.08, 2020: 27.98, 2021: 15.61} refused 0
+I3 donch4h_stop ethusd fp {'n': 223, 'exp': 0.329, 'total': 73.36, 'win': 0.4933, 'avg_win': 1.3141, 'avg_loss': -0.6301, 'pf': 2.03, 'sd': 1.2902, 'mean_over_sd': 0.255} {2018: 24.8, 2019: 15.36, 2020: 31.25, 2021: 1.94} refused 0
+I3 donch4h_stop ethusd stress {'n': 226, 'exp': 0.2971, 'total': 67.15, 'win': 0.4867, 'avg_win': 1.3013, 'avg_loss': -0.6551, 'pf': 1.884, 'sd': 1.2924, 'mean_over_sd': 0.2299} {2018: 22.59, 2019: 13.7, 2020: 30.52, 2021: 0.34} refused 0

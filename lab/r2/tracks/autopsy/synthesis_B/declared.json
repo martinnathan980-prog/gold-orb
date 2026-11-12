@@ -1,0 +1,51 @@
+{
+ "written_utc": "2026-11-12T13:26:00Z",
+ "who": "synthesis_B (lead analyst for the lenses context, cluster, breadth of PROTOCOL_V3 Addendum H)",
+ "status_when_written": "No simulation has been run by this synthesis. Only the lens reports, the verifiers' verdicts (given in the task), the lens summary files and the code of the lenses have been read. Nothing dated 2022-01-01 or later has been read.",
+ "data_rules": {
+  "frames": "lab/data/fp/<sym>_m1.parquet read with the pyarrow row filter ts < 2022-01-01 00:00 UTC; an assert checks the last bar; the slice is passed explicitly to every rule and simulation (r2.run / recalc are never called on a full frame)",
+  "official_trades": "lab/results/r2/recalc/trades/<name>__<sym>.parquet read with the row filter entry_time < 2022-01-01 in the read itself",
+  "leader": "nq_btc_follow: the in-sample us100 slice registered with set_leader before each call",
+  "never_opened": "lab/holdout_raw, lab/data/holdout, anything dated 2026, any 2022+ row"
+ },
+ "selection_from_the_verdicts_made_before_any_run": {
+  "rule": "keep a change only if its verdict is confirmed, or weakened with an effect still positive after the attacks (verifier's numbers); at most one change per sleeve, the largest total-R gain after the attacks. For breadth, a new pair is a new sleeve on an instrument; the lens ranked its qualifiers per instrument ('rank_for_its_sleeve'), and this synthesis keeps at most one new pair per instrument (the hands allow 2 positions per symbol; pairs on the same instrument are largely the same bet).",
+  "kept": {
+   "K1": "context-ETH-brk72-riskbp: brk72_24h_wd on ethusd, skip a signal when 10,000 x (3 x ATR24) / P >= T(Y), T(Y) refitted every 1 January by the declared walk-forward (q = 1/3, 7-day purge, >= 100 training signals, history from 31 January of Y-1). Verdict weakened; verifier's remaining effect +0.03 to +0.06 R per trade (+4 to +9 R over 2019-2021), zero possible.",
+   "K2": "B1: orb_asia_2d_buf10 (frozen gold rule) on ethusd as a new sleeve. Verdict weakened; verifier: +0.452 R per trade as specified (345 trades 2018-02..2021-12), +0.363 R per trade run as the live program would (entry 1 minute late, Friday 16:50 New York close), 2020-2021 +0.19 to +0.26 R per trade; judgement +0.15 to +0.25 R per trade forward.",
+   "K3": "B2: orb_asia_2d_buf10 (frozen gold rule) on btcusd as a new sleeve. Verdict weakened; verifier: +0.518 R per trade as specified (376 trades), 2020-2021 +0.163 R per trade, 2021 +0.007; at the historical quotes +0.05 R per trade; judgement at most +0.10 to +0.16 R per trade forward, zero plausible."
+  },
+  "dropped": {
+   "B3_donch4h_stop__ethusd": "weakened with a positive effect (+0.220 R per trade, +53.2 R with costs x1.5, delays and the Friday close), but second on ethusd: B1 keeps the larger total-R gain after the attacks on the same instrument (+127.9 R with costs x1.5, entry late and the Friday close). Same bet as the ETH sleeves (weekly correlation 0.49 with brk72 ethusd). Run here for information only (I3, P3).",
+   "B4_brk72_24h_wd__jp225": "refuted",
+   "B5_donch4h_stop__us100": "refuted",
+   "B7_F1_brk_ridge_filter__xagusd": "refuted",
+   "B6_donch4h_stop__jp225, B8_donch4h_stop__btcusd, B9_ocm4__btcusd": "never attacked (no verdict): cannot be kept",
+   "cluster": "no candidate (29 guards, none passed)",
+   "context_other": "no other context variant passed (a)-(e)"
+  }
+ },
+ "variants": {
+  "R0": "first check: the ten official sleeves rebuilt from in-sample slices (make_orders and params of r2/recalc.py::sleeves()), FP costs, no_overlap, no 3-spread refusal; compared trade by trade with the official rows before 2022. Then the same with the 3-spread refusal (fp and x1.5) as the reference sleeves.",
+  "C1": "K1 on brk72_24h_wd ethusd, FP and x1.5 (labels, thresholds and chain rebuilt in each cost mode). Expected from the verifier: 2019-2021 FP 395 -> 304 trades, +49.08 -> +63.86 R; x1.5 397 -> 306, +40.86 -> +56.40 R; T(2019) 505.85, T(2020) 496.75, T(2021) 465.12 bp.",
+  "N1": "K2 orb_asia_2d_buf10 on ethusd, FP and x1.5, 3-spread refusal. Expected: 345 trades, +156.0 R (x1.5 +140.7 R) on 2018-02..2021-12.",
+  "N2": "K3 orb_asia_2d_buf10 on btcusd, FP and x1.5, 3-spread refusal. Expected: 376 trades, +194.66 R (x1.5 375 trades, +185.92 R).",
+  "I3": "information only, NOT kept: donch4h_stop on ethusd, FP and x1.5. Expected 223 trades, +73.36 R (x1.5 226, +67.15 R).",
+  "P0": "portfolio of the ten unchanged sleeves (R0 with refusal), FP and x1.5",
+  "P1": "the ten with K1 only (the only kept change to the trades of an existing sleeve), FP and x1.5",
+  "P2": "the ten with K1 + K2 + K3 (all kept changes), FP and x1.5",
+  "P3": "information only: P2 + I3, FP and x1.5"
+ },
+ "budget": "at most 9 variant lines (R0, C1, N1, N2, I3, P0, P1, P2, P3), each run once in fp and once in x1.5; plus non-variant lines (truncation tests, descriptive anatomy). Nothing is tuned: every rule and parameter is frozen as attacked.",
+ "portfolio_metrics": {
+  "window": "trades entered 2018-02-01 .. 2021-12-31 (the common in-sample window of the ten sleeves); trades still open at the end of their in-sample slice are excluded (no in-sample result). Earlier years reported separately where a frame starts earlier.",
+  "stake": "constant: every trade risks 1 R; no compounding, no position cap (each sleeve one position at a time)",
+  "metrics": "number of trades; expectancy per trade in R (and x 100 = euros earned per 100 euros risked); win rate; average win; average loss; profit factor; total R; worst week (server week Monday-Sunday, server time = New York + 7 h, booked at exit); maximum drawdown in R on the cumulative R in exit order and on the weekly sums; longest run of consecutive losing weeks (weeks with no exit count as 0, not losing); mean / standard deviation of R per trade; weekly mean / standard deviation; per year 2018-2021; halves 2018-02..2019-12 and 2020-01..2021-12",
+  "costs": "FP (r2.costs(sym), frame as stored) and x1.5 (spread and slippage x1.5 around the mid, orders rebuilt on the widened quotes); a stop closer than 3 spreads of the fill bar is not taken (order removed, sleeve re-simulated)"
+ },
+ "truncation_tests": {
+  "T1": "K1: for 30 brk72 ethusd signals of 2019-2021 (15 skipped, 15 kept, the nearest to the threshold, plus random, seed 7), the frame is cut to the bars that start before the decision time D, plus 1 provisional bar at D; stop_dist, P, riskbp, T(Y) and the skip decision are recomputed and must be identical.",
+  "T2": "K2/K3: for 20 orb trades per instrument (seed 7), the frame is cut right after the touch bar plus 3 flat provisional bars; the order of that day (entry bar time, side, level, stop) must be identical."
+ },
+ "descriptive_anatomy_no_variant": "on the R0 trades, 2018-02..2021-12, FP: per sleeve losers, average loss, share of losses at a full stop (R <= -0.9), share of the gross loss from them, winners whose adverse excursion reached 0.5 R before they won, losers whose favourable excursion reached 1 R before they lost (simulator mfe / mae divided by the initial risk)."
+}

@@ -1,0 +1,6 @@
+{
+ "written_utc": "2026-11-12T13:37:00Z",
+ "status_when_written": "step 1 (R0, C1, N1, N2, I3) and step 2 (P0-P3, anatomy) have run; the truncation tests T1 and T2 have NOT run yet",
+ "change_to_T1": "two flat provisional bars (stamped D and D + 1 minute) are appended to the cut frame instead of one: with a single bar at D the FP-hours wrapper of brk72_24h_wd drops the newest order (its exit bar equals its entry bar on a cut frame), as the crypto brain map warns. The bars carry the last real close only, so no information after D enters. Nothing else changes.",
+ "note_on_N1_N2": "step 1 drops, as declared, the trade still open at the end of the in-sample slice (one per new sleeve: orb ethusd and orb btcusd, each entered in the last days of 2021); the lens and the verifiers counted it (closed at the last bar). This explains 344 vs 345 trades (+155.47 vs +156.0 R) on ethusd and 375 vs 376 (+194.34 vs +194.66 R) on btcusd."
+}
