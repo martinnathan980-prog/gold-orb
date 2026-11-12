@@ -1,0 +1,201 @@
+{
+ "window": "calendar Sundays 2014-01-05 .. 2021-12-26 (and the weekdays / Fridays of the same span)",
+ "rule": "pair dropped before the run if the Sunday 20:00 NY coverage is below 90 %",
+ "pairs": {
+  "eurusd": {
+   "sundays": 417,
+   "sunday_19:00_coverage_pct": 99.76,
+   "sunday_20:00_coverage_pct": 99.76,
+   "sunday_21:00_coverage_pct": 99.76,
+   "friday_1650_coverage_pct": 99.04,
+   "spread_bp_sunday_2000": {
+    "median": 0.645,
+    "p25": 0.645,
+    "p75": 0.86,
+    "p90": 1.075,
+    "n": 416
+   },
+   "spread_bp_mon_thu_2000": {
+    "median": 0.645,
+    "p25": 0.645,
+    "p75": 0.86,
+    "p90": 1.074,
+    "n": 1659
+   },
+   "sunday_over_weekday_median": 1.0,
+   "dropped": false
+  },
+  "gbpusd": {
+   "sundays": 417,
+   "sunday_19:00_coverage_pct": 99.76,
+   "sunday_20:00_coverage_pct": 99.76,
+   "sunday_21:00_coverage_pct": 99.76,
+   "friday_1650_coverage_pct": 99.04,
+   "spread_bp_sunday_2000": {
+    "median": 0.92,
+    "p25": 0.753,
+    "p75": 1.069,
+    "p90": 1.197,
+    "n": 416
+   },
+   "spread_bp_mon_thu_2000": {
+    "median": 0.89,
+    "p25": 0.753,
+    "p75": 1.004,
+    "p90": 1.129,
+    "n": 1659
+   },
+   "sunday_over_weekday_median": 1.03,
+   "dropped": false
+  },
+  "usdjpy": {
+   "sundays": 417,
+   "sunday_19:00_coverage_pct": 99.76,
+   "sunday_20:00_coverage_pct": 99.76,
+   "sunday_21:00_coverage_pct": 99.76,
+   "friday_1650_coverage_pct": 99.04,
+   "spread_bp_sunday_2000": {
+    "median": 0.712,
+    "p25": 0.711,
+    "p75": 0.949,
+    "p90": 1.186,
+    "n": 416
+   },
+   "spread_bp_mon_thu_2000": {
+    "median": 0.712,
+    "p25": 0.711,
+    "p75": 0.949,
+    "p90": 1.185,
+    "n": 1659
+   },
+   "sunday_over_weekday_median": 1.0,
+   "dropped": false
+  },
+  "audusd": {
+   "sundays": 417,
+   "sunday_19:00_coverage_pct": 99.76,
+   "sunday_20:00_coverage_pct": 99.76,
+   "sunday_21:00_coverage_pct": 99.76,
+   "friday_1650_coverage_pct": 99.04,
+   "spread_bp_sunday_2000": {
+    "median": 1.372,
+    "p25": 1.235,
+    "p75": 1.524,
+    "p90": 1.676,
+    "n": 416
+   },
+   "spread_bp_mon_thu_2000": {
+    "median": 1.372,
+    "p25": 1.234,
+    "p75": 1.524,
+    "p90": 1.676,
+    "n": 1659
+   },
+   "sunday_over_weekday_median": 1.0,
+   "dropped": false
+  },
+  "usdcad": {
+   "sundays": 417,
+   "sunday_19:00_coverage_pct": 99.76,
+   "sunday_20:00_coverage_pct": 99.76,
+   "sunday_21:00_coverage_pct": 99.76,
+   "friday_1650_coverage_pct": 99.04,
+   "spread_bp_sunday_2000": {
+    "median": 1.024,
+    "p25": 0.896,
+    "p75": 1.172,
+    "p90": 1.379,
+    "n": 416
+   },
+   "spread_bp_mon_thu_2000": {
+    "median": 0.986,
+    "p25": 0.896,
+    "p75": 1.141,
+    "p90": 1.294,
+    "n": 1659
+   },
+   "sunday_over_weekday_median": 1.04,
+   "dropped": false
+  },
+  "usdchf": {
+   "sundays": 417,
+   "sunday_19:00_coverage_pct": 99.76,
+   "sunday_20:00_coverage_pct": 99.76,
+   "sunday_21:00_coverage_pct": 99.76,
+   "friday_1650_coverage_pct": 98.8,
+   "spread_bp_sunday_2000": {
+    "median": 1.478,
+    "p25": 1.251,
+    "p75": 1.668,
+    "p90": 1.877,
+    "n": 416
+   },
+   "spread_bp_mon_thu_2000": {
+    "median": 1.478,
+    "p25": 1.251,
+    "p75": 1.626,
+    "p90": 1.807,
+    "n": 1659
+   },
+   "sunday_over_weekday_median": 1.0,
+   "dropped": false
+  },
+  "nzdusd": {
+   "sundays": 417,
+   "sunday_19:00_coverage_pct": 99.76,
+   "sunday_20:00_coverage_pct": 99.76,
+   "sunday_21:00_coverage_pct": 99.76,
+   "friday_1650_coverage_pct": 98.8,
+   "spread_bp_sunday_2000": {
+    "median": 2.08,
+    "p25": 1.76,
+    "p75": 2.262,
+    "p90": 2.561,
+    "n": 416
+   },
+   "spread_bp_mon_thu_2000": {
+    "median": 1.921,
+    "p25": 1.76,
+    "p75": 2.24,
+    "p90": 2.401,
+    "n": 1659
+   },
+   "sunday_over_weekday_median": 1.08,
+   "dropped": false
+  },
+  "eurjpy": {
+   "sundays": 417,
+   "sunday_19:00_coverage_pct": 99.76,
+   "sunday_20:00_coverage_pct": 99.76,
+   "sunday_21:00_coverage_pct": 99.76,
+   "friday_1650_coverage_pct": 98.8,
+   "spread_bp_sunday_2000": {
+    "median": 0.985,
+    "p25": 0.766,
+    "p75": 1.148,
+    "p90": 1.345,
+    "n": 416
+   },
+   "spread_bp_mon_thu_2000": {
+    "median": 0.985,
+    "p25": 0.861,
+    "p75": 1.138,
+    "p90": 1.292,
+    "n": 1659
+   },
+   "sunday_over_weekday_median": 1.0,
+   "dropped": false
+  }
+ },
+ "kept": [
+  "eurusd",
+  "gbpusd",
+  "usdjpy",
+  "audusd",
+  "usdcad",
+  "usdchf",
+  "nzdusd",
+  "eurjpy"
+ ],
+ "dropped": []
+}

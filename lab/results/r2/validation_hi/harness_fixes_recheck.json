@@ -1,0 +1,209 @@
+{
+ "fixed": {
+  "done": [
+   {
+    "fix": "F1 (blocking): bind the declaration to the spec",
+    "how": "vhi_guard.resolve_cut(cut, env, spec_sha) refuses any CUT after 2022-01-01 unless LOOK_DECLARED names a readable file whose text contains the string 'autopsy_HI_look' AND the full 64-hex sha256 of the spec file. The hex match ignores case. The old 'declared' word gate is removed. look.py hashes the exact bytes it then parses and runs, and passes that sha to look.plan() and again to G.open_run(). Both check before the log line, the marker or any read. The declared file's own sha256 and the check result are written into the output meta.",
+    "proof": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json. self_test (37 rows) runs CUT cases on env dicts with temporary texts that quote a DUMMY sha. These are refused: the word 'declared' only, the track only, the sha only, the track plus sha[:12], the track plus another spec's sha, an unwritten text, a missing or short spec sha, CUT 2026-01-02 and 2027. Track plus full sha is allowed (resolve only). 'LOOK_DECLARED=PROTOCOL_V3.md as it stands is refused' is checked via resolve_cut and via look.plan on the real spec. PROTOCOL_V3.md (sha256 2cadb7df8c279b39b1b882726acff72401eba17a184e0cf1ed17b12016ccd095) contains neither string."
+   },
+   {
+    "fix": "F2: run once, fixed output, '.started' marker, --second-access",
+    "how": "vhi_guard.check_run_once refuses a look in two cases: val_access.log holds a line whose track is autopsy_HI_look (JSON-parsed; an unparseable line that contains the name also counts), or a *.started marker exists in results/r2/validation_hi/look/. The exception is --second-access '<reason>', allowed only after an earlier access and with a non-empty reason. The label becomes 'look:<name>:<sha12>:second_access:<reason>' and the output stem gets the suffix __access<N>. look.plan refuses --out for a look; the output is fixed at results/r2/validation_hi/look/<name>__cut<date>.json. G.open_run runs in this order: CUT and declaration check, run-once check, the single log line, the '<stem>.started' marker (exclusive create, JSON with time, label, cut, spec sha256, declared file, pid), then the read guard. All of this happens before any read.",
+    "proof": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json has 15 pure look.plan tests on a dummy spec with a temporary log and look directory. These are refused: --out on a look, an earlier log line, an existing marker, an empty reason, a second access with no first access, --second-access on a rehearsal. The plan's paths are fixed and it creates nothing. A second access is allowed, with the reason in the label and the __access2 suffix. A rehearsal with --out is allowed. The real log has 0 lines and there is no marker, before and after."
+   },
+   {
+    "fix": "F3: harden the read guard",
+    "how": "These read paths are wrapped (re-entrancy flag, so library-internal nested calls of an already-checked read pass without a second check): pandas.read_parquet (also pandas.io.parquet), read_csv, read_table and read_fwf; pyarrow.parquet and pyarrow.parquet.core read_table, read_pandas, ParquetFile and ParquetDataset (guarded subclasses), and read_metadata; pyarrow.dataset.dataset and parquet_dataset; builtins.open and io.open, which covers pathlib. Sources must be str or os.PathLike, resolved with realpath. File objects, bytes, buffers, lists, '~', '://' and 'scheme:' URIs, and a filesystem argument are refused. EVERY parquet read anywhere needs a top-level filter (col,'<',t) with t <= CUT: col 'ts' under lab/data, col in ts / entry_time / t_dec elsewhere. ParquetFile, read_metadata and dataset() are refused outright. CSVs are recorded, and refused under lab/ except results/r2/autopsy/payoff/variants_table.csv. open() is refused on lab/data/** and the holdout dirs in any mode, and on files named with 2026 in reading modes. Every reading open under lab/ is recorded; each record carries its filter bound.",
+    "proof": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_i_guard.json has 28 in-process probes, all refused before any byte is read: an open() handle on an FP frame, BytesIO, a bytes path, a file:// URI, a symlink to a frame, stat_skeptic every_val_ethusd with no filter or a 2023 bound, pq.core.read_table, read_pandas, ParquetFile, ParquetDataset, pyarrow.dataset.dataset, read_metadata, a lab CSV off the allowlist, a CSV buffer, lab/data VX_2026 CSV, a pathlib read of a frame, holdout_raw, a 2026-dated results file, the nq default leader loader, a frame filtered on entry_time, a filesystem argument, and open_run of a look. All 48 parquet reads of the proofs process have a bound at or before 2022-01-01. The only CSV read is the allowlisted one. Of the opens under lab/, none is in data, the holdout, or dated 2026."
+   },
+   {
+    "fix": "F4: K1 labels with FP costs in both cost modes",
+    "how": "look_spec K1 labels_mode is 'fp'. vhi_sleeves.change_k1 fits the folds on the FP signal table (labels, training refusals, riskbp). In the x1.5 run it builds a second, x1.5 table: the skip uses each signal's x1.5 riskbp, and the chain's refused-alone orders come from x1.5. The diagnostics record labels_mode, the refusals of both modes, and the maximum riskbp difference between modes (2.3e-13 bp).",
+    "proof": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_b_K1.json (468 checks). FP: every field equals synthesis_B C1. x1.5: every field equals C1 except E_lo / E_hi. Against a rerun with x1.5 labels: folds identical (q to 1e-9 bp; side and counts exact), T(2022) = 478.28395861996614 bp in both, skip mask identical, x1.5 chain and base chain identical trade for trade (2019-2021: 397 -> 306 trades, +40.86 -> +56.40 R). The x1.5-labels rerun reproduces C1 x1.5 in every field, E included. FP-label E values keep their signs: for 2022, E_lo +0.3424 vs +0.3187 and E_hi -0.1309 vs -0.1449."
+   },
+   {
+    "fix": "F5: T(2022) binding",
+    "how": "vhi_sleeves.bind_declared_T runs in change_k1 in every run and cost mode. If a declared year fitted at the CUT (a fold, or the fit for the year starting at the CUT) is more than 0.01 bp from the declared value, it raises DeclaredThresholdError: the run stops with no result. A declared year up to the last fold year with no fit also raises. A later year is recorded as 'not checkable'. The spec declares {'2022': 478.284}.",
+    "proof": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_b_K1.json. The run's T(2022) = 478.28396 bp, 4.1e-5 bp from the declared value, in FP and x1.5. Accepted: 478.28 (synthesis_B's text, 0.004 bp off) and 2021 = 465.1178 via a fold. Raise: 478.3 (0.016 bp off), 2020 = 496.0 via a fold, 2018 with no fit. SL.run itself with declared 478.3 raises DeclaredThresholdError. /home/user/gold-orb/lab/results/r2/validation_hi/proof_k_moving_the_cut.json shows the binding at CUT 2021 on T(2021) = 465.1178."
+   },
+   {
+    "fix": "F6: '<sleeve>@payoff' references with the 3-spread refusal, and a diagnostic against the sB sleeve",
+    "how": "'refuse': true is set on the 7 @payoff references. vhi_sleeves.reference_refusal removes, before the simulation, every order where the payoff lens's variants.refuse(info.r0, info.spread) is true, exactly as the variants get it. vhi_run.payoff_reference_vs_sB writes res['payoff_reference_vs_sB']: each reference against its sB sleeve inside the window, matched on entry time and side (trades in only one, matched trades with a different exit, reason or R, examples), for every mode and execution.",
+    "proof": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_d_payoff_variants.json (465 checks). The references still equal variants_table.csv. All 7 references are identical to their sB sleeves trade by trade in lab FP and x1.5, and also in live (reported). The refusal removed one F1 eth x1.5 order that was never taken."
+   },
+   {
+    "fix": "F7: live semantics, the Friday block on the decision instant, us100 Friday close",
+    "how": "'entry_bar' is kept as the one-position rule. live_orders(friday_block='decision_and_entry'), set in the spec as 'live_friday_block', refuses a signal whose decision instant (close of the lab fill bar, idx[fb]+1 min) OR delayed entry bar falls between Friday 16:50 and Sunday 17:00 New York; 'entry_bar' remains available as an option. A us100 position still open at Friday 16:50 New York is closed at the open of the next (reopen) bar, counted in the live info 'friday_close_orders_at_a_later_reopen'. The block counts by test are also in the live info. Both choices and the us100 rule are in look_spec.json notes.live.",
+    "proof": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_g_live_execution.json (20 checks). Synthetic orders on the ethusd frame: one filled on Friday 2021-01-08 16:54 New York, decided at 16:55, next bar Sunday 17:00. 'entry_bar' enters it at the reopen; 'decision_and_entry' refuses it. A 16:40 order is taken under both. Across all 56 live runs, 0 signals are blocked by the decision-instant test alone (matches the review's census). In-sample figures are unchanged: K2 the verifiers' way 392 trades / +142.1 R (x1.5 +127.9), harness 391 / +141.8. ocm4 T1 has 801 orders whose Friday close falls at the us100 reopen."
+   },
+   {
+    "fix": "F10: verdicts block with hooks",
+    "how": "New /home/user/gold-orb/lab/r2/tracks/validation_hi/vhi_verdicts.py provides register_criterion and the kinds 'k1_skip' and 'new_sleeve'. Every value is computed from the run's trades, unrounded. 'k1_skip': with the skip, expectancy is higher and total R not lower, FP and x1.5 (lab); the skipped signals taken alone (FP labels) earn less on average than the kept ones. 'new_sleeve': FP PF >= 1.06, expectancy > 0, every-signal expectancy > 0, total R > 0 in at least 3 of the 4 years, x1.5 expectancy > 0, and the weekly mean / sd of the ten plus the sleeve (plain sum, FP, lab) at least the ten's. The 'as the live program would' reading (FP, live) is reported apart from the criteria. spec 'criteria' holds K1, K2, K3 with synthesis_B's text. res['verdicts'] has one entry per listed change. A listed change without a criterion is reported as 'declared: false'. The hook is documented in the spec ('_criteria') and in example_plugins.py.",
+    "proof": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_l_verdicts.json (33 checks). Every value equals the run's statistics and synthesis_B's figures. K1 FP: 0.2086 -> 0.2890 R per trade, 106.61 -> 121.39 R. K1 x1.5: 0.1875 -> 0.2648. Skipped signals alone -0.1051 R vs kept +0.2159. K2: PF 1.788, expectancy 0.4519, every-signal 0.4022, 4 of 4 years positive, x1.5 0.4078, weekly mean/sd 0.4371 vs P0 0.3984. K3: PF 1.836, expectancy 0.5182, every-signal 0.4663, x1.5 0.4963, weekly mean/sd 0.4326. Each pass flag equals its rule applied to its values. The payoff variants show 'declared: false'."
+   },
+   {
+    "fix": "The changes in the look are a list the lead edits; the default list is K1, K2, K3; equal-weekly-swing scale recomputed on the window",
+    "how": "look_spec.json has 'changes_in_look': ['K1','K2','K3'], an 'available_changes' table (the 5 payoff variants synthesis_A kept, and its 2 refuted ones marked 'do not list'), unique change ids (the lens variant id is kept as 'variant'), and notes.equal_weekly_swing. vhi_run.select_changes keeps: a changed sleeve if its id is listed; an @payoff reference if a listed variant uses it; the ten always; a portfolio if all its sleeves and stake-rule ids are kept; a comparison or sleeve comparison if both sides are kept. Unknown or duplicate ids are refused. A look spec without the list is refused. Every stake rule must carry an id. The selection is recorded in res['changes'].",
+    "proof": "/home/user/gold-orb/lab/results/r2/validation_hi/proof_j_entry_point_rehearsal.json (11 checks). look.py --cut 2022-01-01 on the spec as it stands, in its own process, runs exactly the ten + K1 + K2 + K3, portfolios P0, P1, P2, P0+orb_eth and P0+orb_btc, the 4 comparisons, the K1 sleeve comparison and verdicts K1/K2/K3. It equals the proofs' all-changes run on everything both contain, logs nothing, reads 24 parquet files all filtered at 2022-01-01, and reads no CSV. The proofs index records both lists."
+   },
+   {
+    "fix": "Every proof re-run at CUT 2022-01-01, plus the CUT 2021 check",
+    "how": "env -u LOOK_DECLARED NUMBA_CACHE_DIR=/tmp/numba_validation_hi PYTHONDONTWRITEBYTECODE=1 python3 /home/user/gold-orb/lab/r2/tracks/validation_hi/proofs.py, one heavy process at a time (the look.py children run while the parent waits). The proofs run every available change by replacing the list in memory only; proof j runs the file's own list. The last run was made after the final edit of every harness file. Its index records each harness file's sha256 and the protocol's sha256.",
+    "proof": "/home/user/gold-orb/lab/results/r2/validation_hi/proofs.json: all_ok true, 12 proofs a..l, 2,612 checks, 0 failed, 170 s. Proof k at CUT 2021: 124 chains and 85,145 trades identical to the CUT 2022 run. Against the reviewed build: in-sample sleeve-run windows, portfolios, comparisons and the official check are identical to the committed rehearsal_in_sample.json, and proofs a, c, e, f, h are byte-identical files."
+   }
+  ],
+  "proofs_all_pass": true,
+  "spec_sha256": "f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6",
+  "command_for_the_look": "LOOK_DECLARED=/home/user/gold-orb/lab/PROTOCOL_V3.md NUMBA_CACHE_DIR=/tmp/numba_validation_hi PYTHONDONTWRITEBYTECODE=1 python3 /home/user/gold-orb/lab/r2/tracks/validation_hi/look.py --spec /home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json --cut 2026-01-01",
+  "notes_for_the_declaration": "BINDING. The addendum named by LOOK_DECLARED must contain the string autopsy_HI_look and the full sha256 of /home/user/gold-orb/lab/r2/tracks/validation_hi/look_spec.json: today f097ab176413972beec5ee32c729a796ba99bb1dcaad0bcf509ff3ea58eb67d6. Any edit of the file, the list included, changes that value: quote the sha256 of the final file.\n\nCHANGES. changes_in_look = K1, K2, K3: no payoff variant, no stake rule. P0 = the ten unchanged sleeves; P1 = P0 with K1; P2 = P0 with K1 + K2 + K3; P0+orb_eth = P0 with K2; P0+orb_btc = P0 with K3. Rules and parameters come from r2/recalc.py::sleeves(); orb_asia_2d_buf10 = FINALISTS['orb_asia_2d_buf10'].\n\nLABELS (K1).\n- Every signal taken alone with FP costs, in both cost modes (labels_mode 'fp').\n- Thresholds are fitted on that FP table: signals decided before 1 January Y minus 7 days; usable = filled, not refused, not still open at the frame end; terciles, q = 1/3; the worse side is skipped only if min(E_lo, E_hi) < 0; at least 100 training signals; history from 31 January of Y-1.\n- In the x1.5 run the skip is applied with each signal's own x1.5 riskbp, and the chain's 3-spread refusals are those of x1.5.\n- T(2022) = 478.284 bp is binding: the 2022 fold must be within 0.01 bp of it (478.28 is within), else the run stops before any result is written.\n- T(2023), T(2024) and T(2025) are refitted on each 1 January.\n\nLIVE SEMANTICS ('as the live program would').\n- Every lab-filled order is entered one minute late at market: the open of the bar after its lab fill bar, ask/bid x (1 +/- market slippage).\n- An absolute stop stays at its price; a stop distance stays a distance from the new fill. Time exits, trailing and break-even are unchanged.\n- One position per sleeve, 'entry_bar' (the synthesis_B verifiers' 'run as the current hands would'): the chain is re-simulated with the live exits and the one-position test is made at the delayed entry bar.\n- Every open position is closed at market at the open of the first bar at or after Friday 16:50 New York (InpFridayClose 23:50 server) of the first Friday on or after its entry's New-York date. A us100 position still open on Friday 16:50 New York (us100 already shut, about 16:15) is closed at the next reopen.\n- No new position when the decision instant (the close of the lab fill bar) OR the delayed entry bar falls at or after Friday 16:50 and before Sunday 17:00 New York ('live_friday_block' = 'decision_and_entry').\n- The broker's 3-spread refusal is applied at the live fill bar with that bar's open spread; a refused order never blocks the sleeve.\n- The K1 skip is decided as in lab.\n\nSCALING. Equal weekly swing: k = weekly sd of the reference / weekly sd of the variant, both measured on the judged window 2022-01-01 .. 2025-12-31, in the row's cost mode, execution and account. The factor is recomputed on the window, not fixed in sample.\n\nACCOUNT.\n- The criteria are judged on the plain sum: every trade of every sleeve's own one-position chain at 1 R, no position cap, no compounding (synthesis_B's portfolio metrics).\n- Reported beside it, not judged: the capped account. At most 6 positions and 2 per market, trades offered in entry order with ties in ASCII order of '<rule>_<sym>'. A position blocks a new entry until its exit time is strictly before that entry. Run over the whole frame, judged on the window.\n\nWEEKS.\n- Server weeks Monday to Sunday, server time = New York + 7 h; a trade is booked in the week of its exit.\n- The series runs from the week of 2022-01-01 to the week of 2025-12-31 23:59, every week counted (a week with no exit is 0). The first week (27 Dec 2021 - 2 Jan 2022) is therefore 0.\n- sd uses ddof 1; weekly Sharpe = mean / sd x sqrt(52).\n- By year: trades entered in the year, over the weeks whose Thursday falls in it; the window's first and last weeks are clipped into 2022 and 2025.\n\nCOSTS AND CONVENTION. FP (r2.costs) and x1.5 (spread and slippage x1.5 around the mid, orders rebuilt on the widened quotes). sB convention: an order whose stop is under 3 spreads of its fill bar is not taken (iterative re-simulation); trades still open at the last bar are dropped. Trades entered 2022-01-01 .. 2025-12-31 are judged; K2 and K3 are held through weekends (lab).\n\nCRITERIA. synthesis_B's text, computed mechanically in res['verdicts']: the k1_skip criteria for K1, the new_sleeve criteria for K2 and K3, and the FP live reading (not a criterion).\n\nRUN ONCE. Refused if val_access.log already holds an autopsy_HI_look line or a '.started' marker exists, unless --second-access '<reason>' is given (the reason goes into the label and the output gets the suffix __access<N>). --out is refused. The output is results/r2/validation_hi/look/autopsy_HI_look__cut2026-01-01.json (+ __trades.parquet). The access line, then the marker, are written before any read.",
+  "caveats": [
+   "The look was not run. LOOK_DECLARED was never set in any process; the declaration tests use environment dicts and temporary texts that quote a dummy sha256. val_access.log still has 502 lines, 0 of them autopsy_HI_look, and there is no look directory or marker. Every run was in sample: CUT 2022-01-01 and 2021-01-01.",
+   "PROTOCOL_V3.md as it stands (sha256 2cadb7df...d095) contains neither 'autopsy_HI_look' nor the spec sha256, so the documented command is refused until the addendum quotes both. If the lead edits changes_in_look or anything else in look_spec.json, the sha256 changes: recompute it, re-run proofs.py (recommended), and quote the new value.",
+   "F8 (descriptor hook for stake rules; trade_table refusing a default inside the look window) and F9 (generic causality test for change kinds and stake plugins) were not part of the decisions and are not implemented. The selection mechanism would technically accept a stake rule or a new change kind with an id: both fixes are still needed before either enters the list.",
+   "The read guard is not a sandbox. pyarrow.fs file objects, os.open / mmap, C-level numpy file reads and subprocesses are not covered. JSON and other non-CSV files under lab/ (e.g. results/r2/recalc/summary.json) can still be opened, but each reading open is recorded in reads(). Files named with 2026 are refused for reading only, because the look writes its own outputs named cut2026-01-01. lab/data accepts only a 'ts' filter, which is stricter than the ts / entry_time / t_dec rule.",
+   "Run-once is slightly stricter than asked: an existing '.started' marker also blocks a look without --second-access. A second access writes to <stem>__access<N>.",
+   "In sample the verdicts show K1, K2 and K3 'adopted' on 2018-02..2021-12. These changes were selected on this data, so this only checks the machinery and says nothing about 2022-2025.",
+   "The x1.5 K1 run now builds two signal tables: FP for the fit, x1.5 for the refusals and the skip. A signal's riskbp differs between the modes by at most 2.3e-13 bp (float rounding of the mid), so thresholds are compared to 1e-9 bp. The 2023-2025 refits may differ from x1.5-label refits, as the review noted.",
+   "The 'friday_close_orders_at_a_later_reopen' diagnostic counts orders, not trades. Among us100 sleeves only weekend-holding variants are concerned (ocm4 T1: 801 orders); none of the default list.",
+   "rehearsal_in_sample.json and proofs a..i, k, l come from the all-changes rehearsal (the list was replaced in memory), so they include the payoff variants. The spec as it stands is rehearsed in rehearsal/autopsy_HI_look__cut2022-01-01.json (proof j).",
+   "The build summary quoted 84,931 trades for proof k. Both the committed proof file and this run have 124 chains and 85,145 trades; the CUT-2021 trade file is identical chain by chain.",
+   "Files changed, only in the allowed folders. In /home/user/gold-orb/lab/r2/tracks/validation_hi/: look.py, look_spec.json, proofs.py, vhi_guard.py, vhi_sleeves.py, vhi_run.py, the new vhi_verdicts.py, and docstrings only in vhi_stakes.py and example_plugins.py. In /home/user/gold-orb/lab/results/r2/validation_hi/: the proof files, proofs.json, rehearsal_in_sample.json and rehearsal/. No git command that changes anything was run, and no bytecode was written. The lead's periodic commits may pick these files up."
+  ]
+ },
+ "recheck": {
+  "verdict": "ready_with_fixes",
+  "checks": [
+   {
+    "what": "1. Proofs re-run myself: proofs.py run unchanged, outputs sent to the re-check folder, look.py rehearsal children given --out there",
+    "ok": true,
+    "note": "12 of 12 proofs pass: 2,612 checks, 0 failed, 168 s, at CUT 2022-01-01 (proof k at CUT 2021-01-01). Compared value by value with the engineer's published files. Proofs a-h and l are identical. Proofs i, j, k, proofs.json and the rehearsals differ only in timings, output paths and the protocol's sha256. That sha changed because the lead added Addendum J to PROTOCOL_V3.md at 16:18 (new sha 97c1569a...); the new text still contains neither string. Both rehearsal trade files are identical to the engineer's (52,548 and 85,145 trades, every exit before its CUT). Files: /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/validation_hi_recheck/out/proofs.json and /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/validation_hi_recheck/out/compare_with_engineer.json"
+   },
+   {
+    "what": "My own recomputation inside the proofs' process, written in plain pandas without vhi_book or vhi_verdicts",
+    "ok": true,
+    "note": "143 checks, 0 failed (/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/validation_hi_recheck/out/recheck_inprocess.json). Every verdict value matches what I computed from the trades. K1: FP 0.2086 -> 0.2890 R per trade and 106.61 -> 121.39 R; x1.5 0.1875 -> 0.2648; skipped signals alone -0.1051 vs kept +0.2159. K2: PF 1.788, weekly mean/sd 0.4371 vs P0 0.3984. K3: PF 1.836, weekly mean/sd 0.4326. All 88 equal-swing scale factors equal sd(reference) / sd(variant) recomputed on the judged window (sum and capped, lab and live). T(2022) from the FP table = 478.28395862 bp (n_train 2345, E_hi -0.1309, E_lo +0.3424, skip side hi). The x1.5 run carries the same FP labels."
+   },
+   {
+    "what": "2. Guard probe L1: LOOK_DECLARED set to PROTOCOL_V3.md as it stands, to a file naming the spec sha256 but not autopsy_HI_look, and to a file naming autopsy_HI_look but not the sha256",
+    "ok": true,
+    "note": "All three refused, through resolve_cut and look.plan with environment dicts, and end to end through look.main in a separate process. In that process LOOK_DECLARED was never set: resolve_cut was fed a dict, VAL_LOG and LOOK_DIR pointed to scratch files, and vhi_run was a stub. Result: REFUSED, no log line, no marker, read guard not installed, real log unchanged. Also refused: the sha minus one character, the sha with one character changed, the word 'declared' alone, a directory, a missing file, no LOOK_DECLARED, CUT 2022-01-01T00:01 and CUT 2026-01-02. File: /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/validation_hi_recheck/out/entry_probes.json"
+   },
+   {
+    "what": "New L1b: files the harness wrote itself pass the declaration test",
+    "ok": false,
+    "note": "results/r2/validation_hi/proofs.json, rehearsal/autopsy_HI_look__cut2022-01-01.json and proof_i_guard.json each contain both 'autopsy_HI_look' and the full spec sha256. With LOOK_DECLARED pointing at proofs.json or at the rehearsal JSON, look.main passed every gate for the REAL spec: it wrote the access line and the .started marker (to scratch) and reached run_spec (the stub). A real run would have used up the single look without any addendum. Copies of these outputs pass too, my re-run's included."
+   },
+   {
+    "what": "F2 run once, end to end (dummy spec, a declaration quoting the dummy sha256, scratch log and look folder)",
+    "ok": true,
+    "note": "First access: one log line (track autopsy_HI_look, label look:<name>:<sha12>), then the .started marker (same label, spec sha256 and CUT), then the guard is installed, then run_spec. A second run is refused. --second-access 'reason' is allowed: the reason goes into the label and the marker becomes __access2. Refused: an empty reason, --second-access with no earlier access, --out on a look, an existing marker, a non-JSON log line naming the track, CUT 2026-01-02, --second-access on a rehearsal. A JSON line of another track whose label only mentions the name is not counted, as decided."
+   },
+   {
+    "what": "Guard probe L2 (parquet files outside lab/data and lab/results)",
+    "ok": true,
+    "note": "Closed. Refused: stat_skeptic fp_val_ethusd with no filter and with entry_time < 2023; a synthetic parquet outside lab with no filter; a frame filtered with ts <= CUT, with ts < CUT + 1 min, with an OR of two conjunctions, or on t_dec; official trades filtered on exit_time only; a lab/audit/scratch CSV through pandas. Allowed only within the rule (ts or entry_time < 2022-01-01). In every probe the readers were stubbed under the guard, so nothing was read."
+   },
+   {
+    "what": "Guard probe L3 (other source forms and pyarrow entry points)",
+    "ok": true,
+    "note": "Closed. Refused: a file object, BytesIO, a bytes path, file:// and file: URIs, a list of paths, a symlink (resolved by realpath), a filesystem argument, a pyarrow NativeFile, pq.core.read_table, read_pandas, positional arguments after the source, ParquetFile, ParquetDataset (with no filter, or ts < 2023), pyarrow.dataset.dataset and parquet_dataset, read_metadata, read_schema. The pandas.io.api.read_parquet alias is not wrapped itself but is caught by the nested pyarrow wrapper."
+   },
+   {
+    "what": "Guard probe L4 (CSV and open())",
+    "ok": true,
+    "note": "CSV reads are recorded. pandas CSV reads under lab/ are refused except variants_table.csv. open() and pathlib reads of lab/data, lab/data/holdout, holdout_raw and files with 2026 in their name are refused. results/r2/recalc/summary.json can still be opened and is only recorded, as the engineer documented. File: /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/validation_hi_recheck/out/guard_probes.json (85 probes)"
+   },
+   {
+    "what": "New L4b: outputs of the 2026 holdout run",
+    "ok": false,
+    "note": "open() and pathlib reads of results/holdout/results.json, results/holdout/trades__orb__*.csv, results/holdout/holdout_stdout.txt and results/holdout_run.log pass the guard at any CUT and are only recorded. My safety net stopped them, so nothing was read."
+   },
+   {
+    "what": "New L4c: CSVs under lab/ read through open()",
+    "ok": false,
+    "note": "csv.reader(open('results/trend/trades_val_donch4h_stop.csv')), a file of validation trades, and open() of a lab/audit/scratch CSV both pass and are only recorded. This contradicts 'refuse CSVs under lab/ except an allowlist', and the engineer's caveat implies that only non-CSV files can still be opened."
+   },
+   {
+    "what": "New: readers the guard neither wraps nor records (shown on synthetic files only)",
+    "ok": false,
+    "note": "pyarrow._parquet.ParquetReader on a pyarrow.fs file; ParquetFileFormat().make_fragment().to_table(); FileSystemDataset.from_paths().to_table(); pyarrow.csv.read_csv; pyarrow.json.read_json; numpy.fromfile; io.FileIO; _io.open; io.open_code; os.open (the last one is documented). None of them appears in the harness, lens, strategy or goldlab modules on the look's code path."
+   },
+   {
+    "what": "New: nested reads inside a checked read",
+    "ok": false,
+    "note": "Inside a read the guard has already checked (here a pandas.read_csv converter on a synthetic CSV), a nested open() of lab/data passes the guard (my net stopped it), and a parquet read with no filter returns rows without being recorded. Exotic: it needs code running inside a read. File: /tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/validation_hi_recheck/out/reentrancy_probe.json"
+   },
+   {
+    "what": "3. F1 implemented exactly",
+    "ok": true,
+    "note": "resolve_cut requires a readable LOOK_DECLARED whose text contains 'autopsy_HI_look' and the full 64-hex sha of the spec (case-insensitive match), for any CUT after 2022-01-01. look.py hashes the exact bytes it then runs. plan() and open_run() both check before the log line, the marker and any read. The old 'declared' gate is gone. Proof i shows PROTOCOL_V3.md as it stands is refused. The decision itself is too weak: see L1b."
+   },
+   {
+    "what": "F2 implemented exactly",
+    "ok": true,
+    "note": "A look is refused if the log has a line with track autopsy_HI_look, unless --second-access '<reason>' is given; the reason is written into the label. --out is refused for a look, whose output path is fixed under results/r2/validation_hi/look/. The marker is created exclusively right after the log line. An existing marker also blocks a look, which is stricter than asked."
+   },
+   {
+    "what": "F3 implemented as decided for the wrapped readers",
+    "ok": true,
+    "note": "Only str or PathLike paths, resolved with realpath. Every parquet read anywhere needs a ts / entry_time / t_dec '<' filter with bound <= CUT (only ts under lab/data). The required wraps are in place (ParquetFile, dataset() and read_metadata are refused outright). CSV reads are recorded and refused under lab/ except the allowlist. open() is refused on lab/data, the holdout folders and 2026-named files in reading modes. Gaps: L4b, L4c, and the unwrapped readers listed above."
+   },
+   {
+    "what": "F4 implemented exactly",
+    "ok": true,
+    "note": "labels_mode is 'fp' in the spec. The fit uses the FP signal table; the x1.5 run applies its own riskbp and refusals. In sample: folds identical, T(2022) = 478.28396 bp in both cost modes, x1.5 chain and base chain identical trade for trade (397 -> 306 trades, +40.86 -> +56.40 R). Only E_lo and E_hi change, with the same signs."
+   },
+   {
+    "what": "F5 implemented exactly",
+    "ok": true,
+    "note": "bind_declared_T runs in every run and cost mode and raises DeclaredThresholdError above 0.01 bp. In sample T(2022) is 4.1e-5 bp off the declared value. At a CUT-2026-style fold (pure function, tested by me): within 0.0099 bp accepted, 0.0101 bp raises, a moved fold raises, a missing 2022 fold raises. In look.py the exception propagates and no result is written. Only q_hi is bound, not the skip side."
+   },
+   {
+    "what": "F6 implemented exactly",
+    "ok": true,
+    "note": "The 7 '@payoff' references carry refuse: true (variants.refuse(info.r0, info.spread)). payoff_reference_vs_sB reports each reference against its sB sleeve inside the window. All 7 are identical in lab and live, FP and x1.5. With the default list the block is empty, because no reference enters the look."
+   },
+   {
+    "what": "F7 implemented exactly",
+    "ok": true,
+    "note": "live_one_position stays 'entry_bar' and live_friday_block is 'decision_and_entry'. The decision instant (fill bar + 1 min) and the delayed entry bar are both tested; a synthetic Friday 16:54 New York fill is refused under decision_and_entry and entered at the reopen under entry_bar. A us100 position still open at Friday 16:50 New York is closed at the open of the next reopen bar. Both choices and the us100 rule are written in notes.live. In sample 0 signals are blocked by the decision-instant test alone (56 live runs)."
+   },
+   {
+    "what": "F10 implemented exactly, with hooks",
+    "ok": true,
+    "note": "k1_skip and new_sleeve match synthesis_B's declaration text (read in synthesis_B.json proposed_validation_look): expectancy strictly higher and total R not lower with the skip, FP and x1.5; skipped vs kept signals taken alone, FP labels; PF >= 1.06, expectancy > 0, every-signal expectancy > 0, at least 3 of the 4 years positive, x1.5 expectancy > 0, weekly mean/sd of the ten + sleeve >= the ten (plain sum, FP, lab); the live reading reported outside the criteria. register_criterion is the hook, and a listed change without a criterion shows 'declared: false'."
+   },
+   {
+    "what": "Change list, payoff variants kept available, equal swing recomputed on the window",
+    "ok": true,
+    "note": "changes_in_look is K1, K2, K3. select_changes on the spec at CUT 2026 gives the ten + K1 + K2 + K3, P0 / P1 / P2 / P0+orb_eth / P0+orb_btc, 4 comparisons and the K1 sleeve comparison. Refused: a missing list, an unknown id, a duplicate id, a stake rule without an id. Listing F1eth_H2 brings in only its reference, its portfolio and its comparison. notes.equal_weekly_swing states that the scale is recomputed on the window, and the code does recompute it."
+   },
+   {
+    "what": "CUT-2026 code path read for in-sample constants",
+    "ok": true,
+    "note": "The lens functions the harness calls contain no hard-coded 2022 date: simulate_filtered, refused_mask, signal_table, fit_fold, and payoff fills / censored / stats / exit_bar / variants. The guard does not refuse writing the look's own 2026-named outputs (only reading modes are refused). At CUT 2026, T(2022) is bound through the 2022 fold."
+   },
+   {
+    "what": "Rules and state",
+    "ok": true,
+    "note": "The engineer changed files only in the two allowed folders. The harness is unchanged since the proofs (same sha256s; the lead's periodic commit included it). No bytecode in the harness folder. val_access.log: 502 lines, sha c1e4e5fb..., 0 autopsy_HI_look lines before and after my work; no look/ folder. My review wrote nothing under lab/, never set LOOK_DECLARED and read no 2022+ row: 49 parquet reads, all bounded at 2022-01-01, and only the allowlisted CSV."
+   }
+  ],
+  "leaks_found": [
+   "L1b (bypass of the declaration, not a data read): the F1 test can be passed without any addendum. results/r2/validation_hi/proofs.json, rehearsal/autopsy_HI_look__cut2022-01-01.json and proof_i_guard.json, all written by the harness, contain 'autopsy_HI_look' and the full spec sha256. With LOOK_DECLARED pointing at either of the first two, look.main passed every gate for the real spec and reached run_spec. This was shown with a simulated environment, the log and look folder redirected to scratch, and run_spec stubbed. The refusal message also tells a reader exactly which strings to search for.",
+   "L4b: outputs of the 2026 holdout run (results/holdout/results.json, trades__*.csv, holdout_stdout.txt, results/holdout_run.log) can be opened through builtins.open / io.open / pathlib at any CUT. They are only recorded, because the open() check covers holdout_raw and data/holdout and file names containing 2026, not results/holdout.",
+   "L4c: CSVs under lab/ can be read through open(), for example csv.reader(open('results/trend/trades_val_donch4h_stop.csv')), which holds validation trades. They are only recorded; the allowlist is enforced only for the pandas CSV readers.",
+   "Readers the guard neither wraps nor records (shown on synthetic files): pyarrow._parquet.ParquetReader on a pyarrow.fs file, pyarrow.dataset ParquetFileFormat.make_fragment and FileSystemDataset.from_paths, pyarrow.csv.read_csv, pyarrow.json.read_json, numpy.fromfile, io.FileIO, _io.open, io.open_code, os.open. Only pyarrow.fs, os.open / mmap and C-level numpy reads are named in the guard's own caveat.",
+   "Nested reads: code running inside a read the guard has already checked (for example a pandas.read_csv converter) can open lab/data or read a parquet file with no filter, unchecked.",
+   "Status: none of these paths is on the look's code path. The spec as it stands has no plugin, and the rehearsal reads only 4 frames and 10 official trade files, all filtered at the CUT, plus code and configuration files. In sample, no 2022+ row was read by the engineer's runs or by mine."
+  ],
+  "fixes_needed": [
+   "Before the declaration (small change, the most important): accept LOOK_DECLARED only when its realpath is the protocol, lab/PROTOCOL_V3.md, or an explicit list of addendum files. Refuse files under lab/results/, the harness folder, /tmp or the scratchpad. Add to proof i that proofs.json, the rehearsal JSON and proof_i_guard.json are refused. Today they pass the F1 test (L1b).",
+   "Small change: add lab/results/holdout/ and lab/results/holdout_run.log (better: any path under lab/ with a 'holdout' component) to the folders refused for open(), parquet and CSV reads at every CUT (L4b).",
+   "Small change, to match F3's wording: refuse reading-mode open() of *.csv / *.csv.gz under lab/ except CSV_ALLOW, so that csv.reader, numpy.loadtxt and similar are covered (L4c). Correct the caveat that implies only non-CSV files can still be opened.",
+   "Before any plugin or stake rule enters the list (together with F8 / F9): wrap or explicitly document the unwrapped readers (pyarrow.csv, pyarrow.json, pyarrow.dataset fragments / FileSystemDataset, pyarrow._parquet.ParquetReader, io.FileIO, _io.open, io.open_code, numpy.fromfile) and the nested-read pass-through. Also bind plugin file contents to the declaration, for example a sha256 per plugin in the spec checked at load; today only the spec is bound.",
+   "Optional: in bind_declared_T, also require the declared year's fitted skip side to be 'hi', and optionally n_train = 2345, so that a side flip with the same q_hi cannot pass silently.",
+   "Optional: record in the look's meta the sha256 of the harness, lens and strategy files it imports, so the run can be tied to the reviewed code. Today only the spec and the declared file are hashed."
+  ]
+ }
+}

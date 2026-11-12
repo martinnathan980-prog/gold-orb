@@ -1,0 +1,363 @@
+{
+ "frames": {
+  "us100": {
+   "rows_is": 2513306,
+   "first": "2013-01-01 00:00:00+00:00",
+   "last": "2021-12-31 21:14:00+00:00",
+   "max_ts_lt_2022": true,
+   "non_whole_minute_stamps": 0
+  },
+  "us500": {
+   "rows_is": 2381949,
+   "first": "2013-01-01 00:00:00+00:00",
+   "last": "2021-12-31 21:14:00+00:00",
+   "max_ts_lt_2022": true,
+   "non_whole_minute_stamps": 0
+  },
+  "us30": {
+   "rows_is": 2372708,
+   "first": "2013-09-30 13:34:00+00:00",
+   "last": "2021-12-31 21:14:00+00:00",
+   "max_ts_lt_2022": true,
+   "non_whole_minute_stamps": 0
+  }
+ },
+ "by_year": {
+  "2013": {
+   "sessions": 63,
+   "us100": {
+    "09:30": 43,
+    "09:59": 47,
+    "10:00": 46,
+    "15:55": 52,
+    "15:59": 56,
+    "missing_bars_0930_1559_total": 5055,
+    "days_with_any_missing_bar_0930_1559": 63,
+    "median_spread_bp_10:00": 0.349,
+    "median_spread_bp_15:55": 0.259
+   },
+   "us500": {
+    "09:30": 56,
+    "09:59": 57,
+    "10:00": 57,
+    "15:55": 59,
+    "15:59": 59,
+    "missing_bars_0930_1559_total": 3012,
+    "days_with_any_missing_bar_0930_1559": 63,
+    "median_spread_bp_10:00": 0.508,
+    "median_spread_bp_15:55": 0.508
+   },
+   "us30": {
+    "09:30": 47,
+    "09:59": 51,
+    "10:00": 54,
+    "15:55": 55,
+    "15:59": 56,
+    "missing_bars_0930_1559_total": 4081,
+    "days_with_any_missing_bar_0930_1559": 63,
+    "median_spread_bp_10:00": 0.246,
+    "median_spread_bp_15:55": 0.246
+   },
+   "days_ranked_all_three": 43
+  },
+  "2014": {
+   "sessions": 249,
+   "us100": {
+    "09:30": 245,
+    "09:59": 246,
+    "10:00": 246,
+    "15:55": 246,
+    "15:59": 246,
+    "missing_bars_0930_1559_total": 2997,
+    "days_with_any_missing_bar_0930_1559": 123,
+    "median_spread_bp_10:00": 0.364,
+    "median_spread_bp_15:55": 0.367
+   },
+   "us500": {
+    "09:30": 248,
+    "09:59": 248,
+    "10:00": 249,
+    "15:55": 235,
+    "15:59": 248,
+    "missing_bars_0930_1559_total": 6940,
+    "days_with_any_missing_bar_0930_1559": 226,
+    "median_spread_bp_10:00": 0.539,
+    "median_spread_bp_15:55": 0.54
+   },
+   "us30": {
+    "09:30": 246,
+    "09:59": 247,
+    "10:00": 247,
+    "15:55": 247,
+    "15:59": 247,
+    "missing_bars_0930_1559_total": 2483,
+    "days_with_any_missing_bar_0930_1559": 133,
+    "median_spread_bp_10:00": 0.246,
+    "median_spread_bp_15:55": 0.246
+   },
+   "days_ranked_all_three": 244
+  },
+  "2015": {
+   "sessions": 250,
+   "us100": {
+    "09:30": 249,
+    "09:59": 250,
+    "10:00": 250,
+    "15:55": 245,
+    "15:59": 245,
+    "missing_bars_0930_1559_total": 451,
+    "days_with_any_missing_bar_0930_1559": 12,
+    "median_spread_bp_10:00": 0.372,
+    "median_spread_bp_15:55": 0.367
+   },
+   "us500": {
+    "09:30": 249,
+    "09:59": 250,
+    "10:00": 250,
+    "15:55": 245,
+    "15:59": 245,
+    "missing_bars_0930_1559_total": 863,
+    "days_with_any_missing_bar_0930_1559": 71,
+    "median_spread_bp_10:00": 0.544,
+    "median_spread_bp_15:55": 0.543
+   },
+   "us30": {
+    "09:30": 249,
+    "09:59": 250,
+    "10:00": 250,
+    "15:55": 245,
+    "15:59": 245,
+    "missing_bars_0930_1559_total": 442,
+    "days_with_any_missing_bar_0930_1559": 9,
+    "median_spread_bp_10:00": 0.34,
+    "median_spread_bp_15:55": 0.337
+   },
+   "days_ranked_all_three": 249
+  },
+  "2016": {
+   "sessions": 251,
+   "us100": {
+    "09:30": 251,
+    "09:59": 251,
+    "10:00": 251,
+    "15:55": 251,
+    "15:59": 251,
+    "missing_bars_0930_1559_total": 24,
+    "days_with_any_missing_bar_0930_1559": 5,
+    "median_spread_bp_10:00": 0.371,
+    "median_spread_bp_15:55": 0.374
+   },
+   "us500": {
+    "09:30": 251,
+    "09:59": 251,
+    "10:00": 251,
+    "15:55": 251,
+    "15:59": 251,
+    "missing_bars_0930_1559_total": 458,
+    "days_with_any_missing_bar_0930_1559": 52,
+    "median_spread_bp_10:00": 0.542,
+    "median_spread_bp_15:55": 0.544
+   },
+   "us30": {
+    "09:30": 251,
+    "09:59": 251,
+    "10:00": 251,
+    "15:55": 251,
+    "15:59": 251,
+    "missing_bars_0930_1559_total": 41,
+    "days_with_any_missing_bar_0930_1559": 9,
+    "median_spread_bp_10:00": 0.352,
+    "median_spread_bp_15:55": 0.351
+   },
+   "days_ranked_all_three": 251
+  },
+  "2017": {
+   "sessions": 249,
+   "us100": {
+    "09:30": 249,
+    "09:59": 249,
+    "10:00": 249,
+    "15:55": 249,
+    "15:59": 249,
+    "missing_bars_0930_1559_total": 6,
+    "days_with_any_missing_bar_0930_1559": 5,
+    "median_spread_bp_10:00": 0.37,
+    "median_spread_bp_15:55": 0.37
+   },
+   "us500": {
+    "09:30": 249,
+    "09:59": 246,
+    "10:00": 249,
+    "15:55": 248,
+    "15:59": 249,
+    "missing_bars_0930_1559_total": 5451,
+    "days_with_any_missing_bar_0930_1559": 220,
+    "median_spread_bp_10:00": 0.527,
+    "median_spread_bp_15:55": 0.54
+   },
+   "us30": {
+    "09:30": 249,
+    "09:59": 249,
+    "10:00": 249,
+    "15:55": 249,
+    "15:59": 249,
+    "missing_bars_0930_1559_total": 65,
+    "days_with_any_missing_bar_0930_1559": 34,
+    "median_spread_bp_10:00": 0.333,
+    "median_spread_bp_15:55": 0.334
+   },
+   "days_ranked_all_three": 246
+  },
+  "2018": {
+   "sessions": 248,
+   "us100": {
+    "09:30": 247,
+    "09:59": 248,
+    "10:00": 248,
+    "15:55": 247,
+    "15:59": 247,
+    "missing_bars_0930_1559_total": 74,
+    "days_with_any_missing_bar_0930_1559": 13,
+    "median_spread_bp_10:00": 0.259,
+    "median_spread_bp_15:55": 0.259
+   },
+   "us500": {
+    "09:30": 247,
+    "09:59": 248,
+    "10:00": 248,
+    "15:55": 248,
+    "15:59": 248,
+    "missing_bars_0930_1559_total": 1226,
+    "days_with_any_missing_bar_0930_1559": 114,
+    "median_spread_bp_10:00": 0.38,
+    "median_spread_bp_15:55": 0.38
+   },
+   "us30": {
+    "09:30": 246,
+    "09:59": 248,
+    "10:00": 248,
+    "15:55": 248,
+    "15:59": 248,
+    "missing_bars_0930_1559_total": 118,
+    "days_with_any_missing_bar_0930_1559": 17,
+    "median_spread_bp_10:00": 0.246,
+    "median_spread_bp_15:55": 0.246
+   },
+   "days_ranked_all_three": 246
+  },
+  "2019": {
+   "sessions": 249,
+   "us100": {
+    "09:30": 249,
+    "09:59": 249,
+    "10:00": 249,
+    "15:55": 249,
+    "15:59": 249,
+    "missing_bars_0930_1559_total": 9,
+    "days_with_any_missing_bar_0930_1559": 2,
+    "median_spread_bp_10:00": 0.259,
+    "median_spread_bp_15:55": 0.259
+   },
+   "us500": {
+    "09:30": 249,
+    "09:59": 249,
+    "10:00": 249,
+    "15:55": 249,
+    "15:59": 249,
+    "missing_bars_0930_1559_total": 1298,
+    "days_with_any_missing_bar_0930_1559": 146,
+    "median_spread_bp_10:00": 0.38,
+    "median_spread_bp_15:55": 0.38
+   },
+   "us30": {
+    "09:30": 249,
+    "09:59": 249,
+    "10:00": 249,
+    "15:55": 249,
+    "15:59": 249,
+    "missing_bars_0930_1559_total": 20,
+    "days_with_any_missing_bar_0930_1559": 7,
+    "median_spread_bp_10:00": 0.246,
+    "median_spread_bp_15:55": 0.246
+   },
+   "days_ranked_all_three": 249
+  },
+  "2020": {
+   "sessions": 251,
+   "us100": {
+    "09:30": 249,
+    "09:59": 251,
+    "10:00": 251,
+    "15:55": 251,
+    "15:59": 251,
+    "missing_bars_0930_1559_total": 64,
+    "days_with_any_missing_bar_0930_1559": 8,
+    "median_spread_bp_10:00": 0.259,
+    "median_spread_bp_15:55": 0.259
+   },
+   "us500": {
+    "09:30": 249,
+    "09:59": 251,
+    "10:00": 251,
+    "15:55": 251,
+    "15:59": 251,
+    "missing_bars_0930_1559_total": 206,
+    "days_with_any_missing_bar_0930_1559": 42,
+    "median_spread_bp_10:00": 0.396,
+    "median_spread_bp_15:55": 0.396
+   },
+   "us30": {
+    "09:30": 248,
+    "09:59": 251,
+    "10:00": 251,
+    "15:55": 251,
+    "15:59": 251,
+    "missing_bars_0930_1559_total": 66,
+    "days_with_any_missing_bar_0930_1559": 6,
+    "median_spread_bp_10:00": 0.246,
+    "median_spread_bp_15:55": 0.246
+   },
+   "days_ranked_all_three": 248
+  },
+  "2021": {
+   "sessions": 251,
+   "us100": {
+    "09:30": 251,
+    "09:59": 251,
+    "10:00": 251,
+    "15:55": 251,
+    "15:59": 251,
+    "missing_bars_0930_1559_total": 5,
+    "days_with_any_missing_bar_0930_1559": 2,
+    "median_spread_bp_10:00": 0.259,
+    "median_spread_bp_15:55": 0.259
+   },
+   "us500": {
+    "09:30": 251,
+    "09:59": 251,
+    "10:00": 251,
+    "15:55": 251,
+    "15:59": 251,
+    "missing_bars_0930_1559_total": 148,
+    "days_with_any_missing_bar_0930_1559": 57,
+    "median_spread_bp_10:00": 0.394,
+    "median_spread_bp_15:55": 0.394
+   },
+   "us30": {
+    "09:30": 251,
+    "09:59": 251,
+    "10:00": 251,
+    "15:55": 251,
+    "15:59": 251,
+    "missing_bars_0930_1559_total": 5,
+    "days_with_any_missing_bar_0930_1559": 2,
+    "median_spread_bp_10:00": 0.246,
+    "median_spread_bp_15:55": 0.246
+   },
+   "days_ranked_all_three": 251
+  }
+ },
+ "sessions_total": 2061,
+ "first_session": "2013-09-30",
+ "last_session": "2021-12-31"
+}
