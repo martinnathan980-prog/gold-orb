@@ -27,7 +27,9 @@
 //| Barrier M (UTC minute; every bar starting before M is final):    |
 //|   M = the current minute when every symbol has ticked in it or   |
 //|   is in a known closure (ClkInClosure); else the minute that     |
-//|   started at least 2 s ago (TimeTradeServer() >= M + 2 s).       |
+//|   started at least 2 s ago (TimeTradeServer() >= M + 2 s). One   |
+//|   answer per server second: the load and the replay of one pass  |
+//|   agree even if a tick arrives between their two calls.          |
 //| Poll (once per new barrier):                                     |
 //|   - the last 3 broker bars of every symbol are read again; a     |
 //|     change (a value, a bar added or gone) asks for a rebuild;    |
@@ -50,7 +52,8 @@
 //|       gives GAP (journal, push) and is read again every 60 s:    |
 //|       bars found -> rebuild; still empty after 3 re-reads with   |
 //|       SERIES_SYNCHRONIZED true -> the broker's own hole (GAP     |
-//|       accepted=1).                                               |
+//|       accepted=1). An accepted hole is remembered across rebuilds |
+//|       (same bounds: accepted at once, no new push).              |
 //|   A symbol whose load read failed (no history yet) never blocks  |
 //|   the others; its bars are taken as they come, and its history,  |
 //|   if it appears later, asks for a rebuild. READY stays until the |
@@ -273,7 +276,7 @@ void BarsLate(const int sym, const string why, const datetime t_utc)
    g_bars_late_n++;
    long wait = 0;
    datetime now = TimeTradeServer();
-   if(g_bars_late_last > 0 && now - g_bars_late_last < CR_BARS_LATE_S) wait = CR_BARS_LATE_S - (long)(now - g_bars_late_last);
+   if(g_bars_late_last > 0 && (long)(now - g_bars_late_last) < CR_BARS_LATE_S) wait = CR_BARS_LATE_S - (long)(now - g_bars_late_last);
    Jrn(CR_EV_LATEBAR, JrnSymCode(sym), KV("why", why) + KT("t", t_utc) + KI("wait_s", wait));
   }
 
@@ -550,23 +553,31 @@ public:
       datetime from = last_srv + 60;
       if(from <= Msrv - 1) k = CopyRates(g_sym[sym].name, PERIOD_M1, (datetime)from, (datetime)(Msrv - 1), r);
       if(k < 0) k = 0;                                 // a failed read: the ticks decide below
-      datetime miss = 0;
-      for(int j = 0; j < ntk && miss == 0; j++)
+      datetime miss[CR_BARS_MAXTICK];
+      int nmiss = 0;
+      for(int j = 0; j < ntk; j++)
         {
          datetime m = tk[j];
          if(m >= Msrv || m <= last_srv) continue;
          bool found = false;
          for(int i = 0; i < k && !found; i++)
             if(r[i].time == m) found = true;
-         if(!found) miss = m;
+         if(!found)
+           {
+            miss[nmiss] = m;
+            nmiss++;
+           }
         }
-      if(miss != 0)
+      if(nmiss > 0)
         {
          if(wait_since == 0) wait_since = now;
          if((long)(now - wait_since) < CR_BARS_WAIT_S) return 1;
-         g_bars_gap_live++;
-         Jrn(CR_EV_GAP, JrnSymCode(sym), KT("minute", ClkServerToUtc(miss)) + KI("live", 1) + KI("waited_s", (long)(now - wait_since)));
-         JrnPush("barre manquante " + g_sym[sym].base + " a " + ClkStr(ClkServerToUtc(miss)) + " UTC", false);
+         for(int j = 0; j < nmiss; j++)
+           {
+            g_bars_gap_live++;
+            Jrn(CR_EV_GAP, JrnSymCode(sym), KT("minute", ClkServerToUtc(miss[j])) + KI("live", 1) + KI("waited_s", (long)(now - wait_since)));
+           }
+         JrnPush("barre manquante " + g_sym[sym].base + " a " + ClkStr(ClkServerToUtc(miss[0])) + " UTC (" + IntegerToString(nmiss) + ")", false);
         }
       wait_since = 0;
       for(int i = 0; i < k; i++)
