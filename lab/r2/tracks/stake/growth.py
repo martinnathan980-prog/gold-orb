@@ -42,8 +42,11 @@ SCHEDULES = {                                   # (thresholds in EUR, risk % per
     "A05": ((), (0.5,)),                                            # fourth clarification: the reference line
     "A025": ((), (0.25,)),
     "F": ((3000.0, 6000.0, 12000.0), (5.0, 2.0, 1.0, 0.5)),         # fast, then calm (read on max(balance, paid))
+    "F3": ((3000.0, 6000.0, 12000.0), (3.0, 2.0, 1.0, 0.5)),        # sixth clarification: the same with a slower start
+    "F2": ((6000.0, 12000.0), (2.0, 1.0, 0.5)),
+    "F1": ((12000.0,), (1.0, 0.5)),
 }
-KEYED_ON_PAID = ("C2", "D2", "F")
+KEYED_ON_PAID = ("C2", "D2", "F", "F3", "F2", "F1")
 # second clarification of addendum G: plans that bound the loss. name -> (schedule used as cap, key of the risk rule,
 # its parameters, monthly payments made whatever happens after the first 1,000 EUR, threshold of the steps (< 0 = no
 # steps), catch-up paid with a month that is paid)
@@ -68,7 +71,9 @@ PROTECT = {
 }
 # fifth clarification: plans with the stop applied. name -> (plan it is built on, stop at this fall of the reference
 # capital, armed once this much has been paid in)
-STOPPED = {"FS": ("F", 0.25, 12000.0), "A05S": ("A05", 0.25, 0.0)}
+STOPPED = {"FS": ("F", 0.25, 12000.0), "A05S": ("A05", 0.25, 0.0),
+           "F3S": ("F3", 0.25, 12000.0), "F2S": ("F2", 0.25, 12000.0), "F1S": ("F1", 0.25, 12000.0)}
+LADDER = ("A05S", "F1S", "F2S", "F3S", "FS")     # a start at 0.5, 1, 2, 3 and 5 % (sixth clarification)
 PLANS = tuple(SCHEDULES) + tuple(PROTECT) + tuple(STOPPED)
 EDGES = (1.0, 0.5, 0.25, 0.0, -0.5)
 NO_2024 = "1.0_no2024"                          # edge x1 with the weeks of 2024 left out of the draw
@@ -462,15 +467,28 @@ def _longest(flag):
     return best
 
 
-def path_measures(eq, paid, month_wk):
-    """[deepest fall from the high with payments set aside (share of money paid in + best gain), longest stretch in weeks
-    under that high, deepest fall of the balance as seen (payments included), longest stretch in weeks under the highest
-    balance seen, longest run of losing weeks, longest run of losing months], all read at week ends."""
+MEASURES = ("fall_from_high_pct", "weeks_under_high", "fall_of_balance_seen_pct", "weeks_under_highest_balance",
+            "losing_weeks_in_a_row", "losing_months_in_a_row", "fall_from_high_after_12_months_pct",
+            "fall_from_high_after_12_months_eur", "fall_from_high_eur", "fall_first_13_weeks_pct", "fall_first_13_weeks_eur",
+            "fall_first_52_weeks_pct", "fall_first_52_weeks_eur", "runs_of_4_losing_weeks", "worst_run_cost_pct",
+            "worst_run_cost_after_12_months_pct", "worst_run_cost_after_12_months_eur")
+MEASURES_PCT = (0, 2, 6, 9, 11, 14, 15)         # stored as shares, reported in %
+RUN = 4                                          # a "losing run": this many losing weeks in a row, or more
+
+
+def path_measures(eq, paid, month_wk, start=1000.0):
+    """All read at week ends, in the order of MEASURES: the deepest fall from the high with payments set aside (share of
+    money paid in + best gain), the longest stretch in weeks under that high, the deepest fall of the balance as seen
+    (payments included; the starting balance counts as the first high) and the longest stretch under the highest balance
+    seen, the longest run of losing weeks and of losing months, the deepest fall after the twelfth month (share, euros)
+    and over the whole path in euros, the deepest fall of the first 13 and 52 weeks (share, euros), the number of runs
+    of RUN losing weeks or more, what the worst of them costs (its loss over the balance at its start; 0 when there is
+    none) and the same among the runs that start after the twelfth month (nan when there is none; share, euros)."""
     g = eq - paid
     h = np.maximum.accumulate(np.maximum(g, 0.0))
     size = paid + h
     fall = np.where(size > 0, (h - g) / np.where(size > 0, size, 1.0), 0.0)
-    top = np.maximum.accumulate(eq)
+    top = np.maximum.accumulate(np.r_[start, eq])[1:]
     seen = 1.0 - eq / np.where(top > 0, top, 1.0)
     wk = np.diff(np.r_[0.0, g])
     gm = g[month_wk[1:]]
@@ -478,8 +496,29 @@ def path_measures(eq, paid, month_wk):
     w12 = int(month_wk[12]) + 1 if len(month_wk) > 12 else len(eq)             # weeks after the twelfth month
     late = fall[w12:].max() if w12 < len(fall) else 0.0
     late_eur = (h - g)[w12:].max() if w12 < len(fall) else 0.0
+    n_runs, worst, worst_late, worst_late_eur = 0, 0.0, np.nan, np.nan
+    lose = wk < -1e-9
+    w, n = 0, len(wk)
+    while w < n:
+        if not lose[w]:
+            w += 1
+            continue
+        e = w
+        while e + 1 < n and lose[e + 1]:
+            e += 1
+        if e - w + 1 >= RUN:                                                    # weeks w .. e are a losing run
+            n_runs += 1
+            base = eq[w - 1] if w > 0 else start
+            loss = (g[w - 1] if w > 0 else 0.0) - g[e]
+            c = loss / base if base > 0 else 0.0
+            worst = max(worst, c)
+            if w >= w12 and not (c <= worst_late):                              # also true while worst_late is nan
+                worst_late, worst_late_eur = c, loss
+        w = e + 1
     return (float(fall.max()), float(_longest(g < h - 1e-9)), float(seen.max()), float(_longest(eq < top - 1e-9)),
-            float(_longest(wk < -1e-9)), float(_longest(mo < -1e-9)), float(late), float(late_eur), float((h - g).max()))
+            float(_longest(lose)), float(_longest(mo < -1e-9)), float(late), float(late_eur), float((h - g).max()),
+            float(fall[:13].max()), float((h - g)[:13].max()), float(fall[:52].max()), float((h - g)[:52].max()),
+            float(n_runs), float(worst), float(worst_late), float(worst_late_eur))
 
 
 SAMPLE_PATHS = 40
@@ -506,7 +545,7 @@ def resampled(x, months=MONTHS, n_paths=N_PATHS, seed=SEED, only=None):
     keys = list(EDGES) + [NO_2024]
     res = {s: {f: np.zeros((n_paths, months + 1)) for f in keys} for s in PLANS}
     paid_in = {s: {f: np.zeros((n_paths, months + 1)) for f in keys} for s in PLANS}
-    meas = {s: {f: np.zeros((n_paths, 9)) for f in keys} for s in PLANS}
+    meas = {s: {f: np.zeros((n_paths, len(MEASURES))) for f in keys} for s in PLANS}
     fired = {s: {f: np.zeros(n_paths) for f in keys} for s in PLANS}
     zero = {s: {f: np.zeros(n_paths) for f in keys} for s in PLANS}
     paid_m = 1000.0 * np.maximum(np.arange(months + 1), 1)       # paid in by the end of month h: payments at months 0 .. h-1
@@ -575,13 +614,22 @@ def summarise(res, fired, zero, paid_m):
             ms = getattr(resampled, "meas", None)
             if ms is not None:
                 v = ms[s][f]
-                names = ("fall_from_high_pct", "weeks_under_high", "fall_of_balance_seen_pct", "weeks_under_highest_balance",
-                         "losing_weeks_in_a_row", "losing_months_in_a_row", "fall_from_high_after_12_months_pct",
-                         "fall_from_high_after_12_months_eur", "fall_from_high_eur")
-                pc_ = (0, 2, 6)
-                row["falls"] = {nm: {"median": round(float(np.median(v[:, i]) * (100 if i in pc_ else 1)), 1),
-                                     "p90": round(float(np.percentile(v[:, i], 90) * (100 if i in pc_ else 1)), 1),
-                                     "worst": round(float(v[:, i].max() * (100 if i in pc_ else 1)), 1)} for i, nm in enumerate(names)}
+                row["falls"] = {}
+                for i, nm in enumerate(MEASURES):
+                    col = v[:, i][~np.isnan(v[:, i])] * (100 if i in MEASURES_PCT else 1)      # nan = no such run on the path
+                    row["falls"][nm] = ({"median": round(float(np.median(col)), 1), "p90": round(float(np.percentile(col, 90)), 1),
+                                         "worst": round(float(col.max()), 1)} if len(col) else {"median": None, "p90": None, "worst": None})
+                    if len(col) < len(v):
+                        row["falls"][nm]["paths_with_one_pct"] = round(float(100 * len(col) / len(v)), 1)
+                share = lambda flag: round(float(100 * np.mean(flag)), 1)
+                row["shares_of_paths_pct"] = {
+                    "fall_of_50_pct_or_more": share(v[:, 0] >= 0.5), "fall_of_30_pct_or_more": share(v[:, 0] >= 0.3),
+                    "fall_of_25_pct_or_more": share(v[:, 0] >= 0.25),
+                    "fall_of_50_pct_or_more_in_the_first_13_weeks": share(v[:, 9] >= 0.5),
+                    "own_gain_over_52_weeks_under_its_high": share(v[:, 1] > 52),
+                    "balance_seen_over_26_weeks_under_its_high": share(v[:, 3] > 26),
+                    "balance_seen_over_52_weeks_under_its_high": share(v[:, 3] > 52),
+                    "a_run_of_4_losing_weeks_or_more": share(v[:, 13] >= 1)}
             row["sample_paths"] = {"balance": [[round(float(z), 0) for z in m[k]] for k in range(min(SAMPLE_PATHS, len(m)))],
                                    "paid_in": [[round(float(z), 0) for z in pin[k]] for k in range(min(SAMPLE_PATHS, len(m)))]}
             # the first month from which the median path gains at least 1,000 EUR a month, on a 6-month average, for good
@@ -619,7 +667,7 @@ def main(period):
     for s in PLANS:
         for f in list(EDGES) + [NO_2024]:
             r = summ[s][str(f)]["at_36_months"]
-            if s in PROTECT or s in STOPPED or s in ("A", "C2", "A05", "A025", "F"):
+            if s in PROTECT or s in STOPPED or s in ("A", "C2", "A05", "A025", "F", "F3", "F2", "F1"):
                 a = summ[s][str(f)]["at_12_months"]
                 print(f"{s:4s} edge x{str(f):<10}: 36 m gain median {r['gain_median']:>9,.0f} (1 in 10: {r['gain_p10']:>9,.0f} .. {r['gain_p90']:>9,.0f}) paid in {r['paid_in_median']:>7,.0f} "
                       f"in loss {r['in_loss_pct']:5.1f} % worst {r['worst_gain']:>9,.0f} | 12 m gain {a['gain_median']:>8,.0f} (1 in 10: {a['gain_p10']:>8,.0f}) paid {a['paid_in_median']:>6,.0f} | "
@@ -629,6 +677,11 @@ def main(period):
                       f"weeks under it {fl['weeks_under_high']['median']:4.0f} ({fl['weeks_under_high']['p90']:4.0f}) | balance seen {fl['fall_of_balance_seen_pct']['median']:5.1f} % "
                       f"({fl['fall_of_balance_seen_pct']['p90']:5.1f}) weeks {fl['weeks_under_highest_balance']['median']:4.0f} ({fl['weeks_under_highest_balance']['p90']:4.0f}) | "
                       f"losing weeks in a row {fl['losing_weeks_in_a_row']['median']:3.0f} ({fl['losing_weeks_in_a_row']['p90']:3.0f}) months {fl['losing_months_in_a_row']['median']:3.0f} ({fl['losing_months_in_a_row']['p90']:3.0f})")
+                sh = summ[s][str(f)]["shares_of_paths_pct"]
+                print(f"       first 13 weeks {fl['fall_first_13_weeks_pct']['median']:5.1f} % ({fl['fall_first_13_weeks_pct']['p90']:5.1f}) = {fl['fall_first_13_weeks_eur']['median']:6.0f} EUR ({fl['fall_first_13_weeks_eur']['p90']:6.0f}) | "
+                      f"first 52 weeks {fl['fall_first_52_weeks_eur']['median']:6.0f} EUR ({fl['fall_first_52_weeks_eur']['p90']:6.0f}) | fall >= 50 % {sh['fall_of_50_pct_or_more']:5.1f} % of paths, >= 30 % {sh['fall_of_30_pct_or_more']:5.1f} | "
+                      f"gain > 52 weeks under its high {sh['own_gain_over_52_weeks_under_its_high']:5.1f} | balance seen > 26 weeks {sh['balance_seen_over_26_weeks_under_its_high']:5.1f} > 52 {sh['balance_seen_over_52_weeks_under_its_high']:5.1f} | "
+                      f"a run of 4 losing weeks {sh['a_run_of_4_losing_weeks_or_more']:5.1f} %, worst costs {fl['worst_run_cost_pct']['median']:5.1f} % ({fl['worst_run_cost_pct']['p90']:5.1f})")
                 continue
             print(f"{s:2s} edge x{str(f):<10}: at 36 months median {r['median']:>10,.0f} (10 %: {r['p10']:>9,.0f}, 90 %: {r['p90']:>10,.0f}) for {r['paid']:,.0f} paid | "
                   f"below paid {r['below_paid_pct']:5.1f} % | lasting 1,000 a month from month {summ[s][str(f)]['month_of_a_lasting_1000_a_month']} | "
@@ -638,6 +691,7 @@ def main(period):
            "edges": list(EDGES), "extra_scenario": {NO_2024: "edge x1, the weeks of 2024 left out of the draw (its own draws, seed + 1)"},
            "keyed_on_max_of_balance_and_paid": list(KEYED_ON_PAID),
            "stopped": {k: {"plan": v[0], "stop_at_fall_of_reference": v[1], "armed_once_paid_in": v[2]} for k, v in STOPPED.items()},
+           "ladder_of_starts": list(LADDER), "losing_run_weeks": RUN,
            "protect": {k: {"cap_schedule": v[0], "risk_key": v[1], "risk_params": list(v[2]), "free_monthly_payments": v[3], "steps_threshold": v[4],
                            "catch_up": v[5], "share_paid_under_water": v[6]} for k, v in PROTECT.items()}, "months": MONTHS, "paths": N_PATHS, "block_weeks": BLOCK, "seed": SEED, "payment_eur": 1000.0,
            "paid_by_month": [float(v) for v in paid_m], "self_check": checks, "real_order": ro, "resampled": summ,

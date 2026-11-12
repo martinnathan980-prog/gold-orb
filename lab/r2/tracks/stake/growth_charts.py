@@ -39,11 +39,11 @@ def keur(v, _=None):
 
 
 # ---------------------------------------------------------------- 1. the plan in three cases
-def paths(plan="FS"):
+def paths(plan="FS", title="Ton compte avec le plan « rapide puis calme »", fname="1_compte_rapide_puis_calme.png"):
     cases = [("1.0", "Si le robot fait comme sur le papier"), ("0.5", "S'il fait la moitié du papier"), ("-0.5", "S'il ne vaut rien")]
     fig, axes = plt.subplots(3, 1, figsize=(6, 11.2), dpi=200)
     months = np.arange(37)
-    for ax, (f, title) in zip(axes, cases):
+    for ax, (f, case) in zip(axes, cases):
         r = R[plan][f]
         bal = np.array(r["sample_paths"]["balance"]); pin = np.array(r["sample_paths"]["paid_in"])
         paid36 = r["at_36_months"]["paid_in_median"]
@@ -61,7 +61,7 @@ def paths(plan="FS"):
             sub = f"le plus probable : {eur(gain, True)}, puis le robot s'arrête"
         else:
             sub = f"le plus probable : {eur(gain, True)} en 3 ans"
-        ax.set_title(title, loc="left", fontsize=13, fontweight="bold", color=INK, pad=22)
+        ax.set_title(case, loc="left", fontsize=13, fontweight="bold", color=INK, pad=22)
         ax.text(0, 1.035, sub, transform=ax.transAxes, fontsize=11, color=INK2, va="bottom")
         top = max(np.percentile(bal[:, -1], 92), med[-1], paid[-1]) * 1.12
         ax.set_ylim(0, top)
@@ -80,32 +80,41 @@ def paths(plan="FS"):
     h = [plt.Line2D([], [], color=BLUE, lw=2.6), plt.Line2D([], [], color=BLUE, lw=0.9, alpha=0.5), plt.Line2D([], [], color=INK2, lw=1.6, ls=(0, (4, 3)))]
     fig.legend(h, ["le cas le plus probable", "40 trajectoires possibles", "ce que tu as versé"], loc="upper left", bbox_to_anchor=(0.06, 0.972), ncol=1,
                frameon=False, fontsize=10.5, labelcolor=INK2, handlelength=2.4)
-    fig.suptitle("Ton compte avec le plan « rapide puis calme »", x=0.06, y=0.992, ha="left", fontsize=15, fontweight="bold")
+    fig.suptitle(title, x=0.06, y=0.992, ha="left", fontsize=15, fontweight="bold")
     fig.text(0.06, 0.012, "Simulation sur les années 2022 à 2025, 1 000 € versés par mois. Aucun trade réel.", fontsize=8.5, color=MUTED)
     fig.subplots_adjust(left=0.13, right=0.97, top=0.86, bottom=0.055, hspace=0.42)
-    fig.savefig(f"{OUT}/1_compte_rapide_puis_calme.png")
+    fig.savefig(f"{OUT}/{fname}")
     plt.close(fig)
 
 
 # ---------------------------------------------------------------- 2. the rule: risk falls as the account grows
-def rule():
+def rule(plan="FS", fname="2_risque_qui_se_calme.png"):
+    base = g["stopped"][plan]["plan"]
+    thr, pct = g["schedules"][base]["thresholds_eur"], g["schedules"][base]["risk_pct"]
+    arm = g["stopped"][plan]["armed_once_paid_in"]
+    edges = [0.0] + list(thr) + [20000.0]
+    xs, ys = [], []
+    for k, v in enumerate(pct):
+        xs += [edges[k], edges[k + 1]]; ys += [v, v]
     fig, ax = plt.subplots(figsize=(6, 4.3), dpi=200)
-    xs = [0, 3000, 3000, 6000, 6000, 12000, 12000, 20000]
-    ys = [5, 5, 2, 2, 1, 1, 0.5, 0.5]
     ax.plot(xs, ys, color=BLUE, lw=2.6, solid_joinstyle="round")
     ax.fill_between(xs, ys, 0, color=BLUE, alpha=0.10, lw=0)
-    for x, y, t in ((1500, 5, "5 %"), (4500, 2, "2 %"), (9000, 1, "1 %"), (16000, 0.5, "0,5 %")):
-        ax.text(x, y + 0.18, t, ha="center", va="bottom", fontsize=12, fontweight="bold", color=INK)
-    ax.axvline(12000, color=INK2, lw=1.4, ls=(0, (4, 3)))
-    ax.text(12300, 3.6, "à partir de 12 000 € versés :\narrêt de sécurité à −25 %", fontsize=10, color=INK2, va="center")
-    ax.set_xlim(0, 20000); ax.set_ylim(0, 6)
-    ax.set_xticks([0, 3000, 6000, 12000, 20000]); ax.set_xticklabels(["0", "3 000 €", "6 000 €", "12 000 €", "20 000 €"])
-    ax.set_yticks([0, 1, 2, 3, 4, 5]); ax.set_yticklabels(["0", "1 %", "2 %", "3 %", "4 %", "5 %"])
+    top = max(pct) + 1
+    for k, v in enumerate(pct):
+        ax.text((edges[k] + edges[k + 1]) / 2, v + top * 0.03, (f"{v:g} %").replace(".", ","), ha="center", va="bottom", fontsize=12, fontweight="bold", color=INK)
+    if arm > 0:
+        ax.axvline(arm, color=INK2, lw=1.4, ls=(0, (4, 3)))
+        ax.text(arm + 350, top * 0.66, f"à partir de {eur(arm)}\nversés : arrêt de\nsécurité à −25 %", fontsize=10, color=INK2, va="center")
+    ax.set_xlim(0, 20000); ax.set_ylim(0, top)
+    ax.set_xticks(edges); ax.set_xticklabels(["0"] + [eur(v) for v in edges[1:]])
+    ax.get_xticklabels()[-1].set_ha("right")
+    yt = list(range(0, int(top) + 1))
+    ax.set_yticks(yt); ax.set_yticklabels(["0"] + [f"{v} %" for v in yt[1:]])
     ax.grid(axis="y", color=GRID, lw=0.8); ax.set_axisbelow(True); ax.tick_params(length=0)
     ax.set_xlabel("taille du compte", fontsize=10)
     ax.set_title("Le risque pris à chaque trade baisse\nquand le compte grossit", loc="left", fontsize=14, fontweight="bold", pad=12)
     fig.subplots_adjust(left=0.11, right=0.96, top=0.80, bottom=0.15)
-    fig.savefig(f"{OUT}/2_risque_qui_se_calme.png")
+    fig.savefig(f"{OUT}/{fname}")
     plt.close(fig)
 
 
@@ -166,18 +175,23 @@ def gains():
 
 
 YELLOW, YELLOW_T = "#eda100", "#f6d58a"
-# first-year figures read at week ends on all 2,000 paths (independent review, results/r2/stake/growth_final_review.json;
-# recomputed from its week-by-week balances): deepest fall of the first three months (% of the account, median and 1 in 10)
-# and of the first year in euros, at half of the paper edge
-EARLY = {"FS": dict(pct=41.3, pct90=59.1, eur=984, eur90=1591), "A05S": dict(pct=3.7, pct90=6.5, eur=100, eur90=194)}
-# losing runs (same source): share of three-year paths with a run of 4 losing weeks or more, and what the worst such run costs
-# after the first year (median, % of the account), at half of the paper edge
-RUNS = {"A": dict(share=59, cost=24.5), "FS": dict(share=57, cost=12.9), "A05S": dict(share=61, cost=12.9)}
+def early(plan, f="0.5"):
+    fl = R[plan][f]["falls"]
+    return dict(pct=fl["fall_first_13_weeks_pct"]["median"], pct90=fl["fall_first_13_weeks_pct"]["p90"],
+                eur=fl["fall_first_13_weeks_eur"]["median"], eur90=fl["fall_first_13_weeks_eur"]["p90"])
+
+
+def losing_runs(plan, f="0.5"):
+    """Share of three-year paths with a run of 4 losing weeks or more, and what the worst such run that starts after the
+    first year costs (median over the paths that have one, % of the balance at its start)."""
+    r = R[plan][f]
+    return dict(share=r["shares_of_paths_pct"]["a_run_of_4_losing_weeks_or_more"], cost=r["falls"]["worst_run_cost_after_12_months_pct"]["median"])
 
 
 def duel():
     a, b = R["FS"]["0.5"], R["A05S"]["0.5"]
     wa, wb = R["FS"]["-0.5"], R["A05S"]["-0.5"]
+    ea, eb = early("FS"), early("A05S")
     e = lambda v: eur(v, True)
     pc = lambda v, x: f"−{abs(v):.0f} %\n≈ {eur(x)}"
     p1 = lambda v: f"−{abs(v):.0f} %"
@@ -185,10 +199,8 @@ def duel():
     panels = [
         ("Gain après 1 an", (a["at_12_months"]["gain_median"], b["at_12_months"]["gain_median"]), None),
         ("Gain après 3 ans", (a["at_36_months"]["gain_median"], b["at_36_months"]["gain_median"]), None),
-        ("Baisse des 3 premiers mois\n(le plus souvent)", (-EARLY["FS"]["pct"], -EARLY["A05S"]["pct"]),
-         (pc(EARLY["FS"]["pct"], EARLY["FS"]["eur"]), pc(EARLY["A05S"]["pct"], EARLY["A05S"]["eur"]))),
-        ("Baisse des 3 premiers mois\n(une fois sur dix)", (-EARLY["FS"]["pct90"], -EARLY["A05S"]["pct90"]),
-         (pc(EARLY["FS"]["pct90"], EARLY["FS"]["eur90"]), pc(EARLY["A05S"]["pct90"], EARLY["A05S"]["eur90"]))),
+        ("Baisse des 3 premiers mois\n(le plus souvent)", (-ea["pct"], -eb["pct"]), (pc(ea["pct"], ea["eur"]), pc(eb["pct"], eb["eur"]))),
+        ("Baisse des 3 premiers mois\n(une fois sur dix)", (-ea["pct90"], -eb["pct90"]), (pc(ea["pct90"], ea["eur90"]), pc(eb["pct90"], eb["eur90"]))),
         ("Baisse après la 1re année\n(le plus souvent)", (-fa, -fb), (p1(fa), p1(fb))),
         ("Si le robot ne vaut rien :\nperte avant l'arrêt", (wa["at_36_months"]["gain_median"], wb["at_36_months"]["gain_median"]), None),
     ]
@@ -220,8 +232,36 @@ def duel():
     plt.close(fig)
 
 
+LADDER = [("A05S", "0,5 %"), ("F1S", "1 %"), ("F2S", "2 %"), ("F3S", "3 %"), ("FS", "5 %")]
+TIE = 0.05      # two plans whose median gain differs by less than this share are tied (2,000 paths: the medians are known to about 3 %)
+
+
+def qualifies(plan):
+    """The rule fixed in the sixth clarification: a fall of 50 % or more in at most one path in twenty, on paper and at half edge."""
+    return all(R[plan][f]["shares_of_paths_pct"]["fall_of_50_pct_or_more"] <= 5.0 for f in ("1.0", "0.5"))
+
+
+def best_of_ladder(tie_break=True):
+    """The qualifying plan with the highest median gain after 12 months at half edge. `tie_break` (added AFTER the run, see the
+    outcome in PROTOCOL_V3): among the qualifying plans within TIE of that gain, the one with the smallest typical fall of the
+    first 13 weeks."""
+    if any(p_ not in R for p_, _ in LADDER):
+        return None
+    gain = lambda p_: R[p_]["0.5"]["at_12_months"]["gain_median"]
+    ok = [p_ for p_, _ in LADDER if qualifies(p_)]
+    if not ok:
+        return None
+    top = max(ok, key=gain)
+    if not tie_break:
+        return top
+    tied = [p_ for p_ in ok if gain(p_) >= gain(top) * (1 - TIE)]
+    return min(tied, key=lambda p_: R[p_]["0.5"]["falls"]["fall_first_13_weeks_pct"]["median"])
+
+
 def runs():
-    plans = [("A", "1 % tout\nle temps", BLUE), ("FS", "Rapide\npuis calme", AQUA), ("A05S", "Calme tout\nle temps", YELLOW)]
+    mid = best_of_ladder() or "FS"
+    plans = [("A", "1 % tout\nle temps", BLUE), (mid, f"Départ à {dict(LADDER)[mid]}\npuis calme", AQUA), ("A05S", "Calme tout\nle temps", YELLOW)]
+    RUNS = {p_: losing_runs(p_) for p_, _, _ in plans}
     fig, axes = plt.subplots(2, 1, figsize=(6, 7.6), dpi=200)
     for ax, key, title, fmt in ((axes[0], "share", "Chances d'avoir au moins une série de 4 semaines\nperdantes en 3 ans", lambda v: f"{v:.0f} %"),
                                 (axes[1], "cost", "Ce que coûte la pire de ces séries, après la\npremière année (part du compte)", lambda v: f"−{v:.0f} %")):
@@ -240,5 +280,66 @@ def runs():
     plt.close(fig)
 
 
-paths(); rule(); falls(); gains(); duel(); runs()
-print("done")
+def ladder():
+    """One picture for the choice: the same plan with a start at 0.5, 1, 2, 3 and 5 % per trade, at half of the paper edge."""
+    if any(p_ not in R for p_, _ in LADDER):
+        return
+    best = best_of_ladder()
+    x = np.arange(len(LADDER))
+    half = [R[p_]["0.5"] for p_, _ in LADDER]
+    rows = [
+        ("Gain après 1 an", [h["at_12_months"]["gain_median"] for h in half], None, BLUE, lambda v: eur(v, True)),
+        ("Pire baisse des 3 premiers mois\n(le plus souvent, et une fois sur dix)", [-h["falls"]["fall_first_13_weeks_pct"]["median"] for h in half],
+         [-h["falls"]["fall_first_13_weeks_pct"]["p90"] for h in half], ORANGE, lambda v: f"−{abs(v):.0f} %"),
+        ("Chances de perdre la moitié du compte", [h["shares_of_paths_pct"]["fall_of_50_pct_or_more"] for h in half], None, ORANGE,
+         lambda v: ("0" if v < 0.05 else "< 1 %" if v < 1 else f"{v:.0f} %") if v < 0.05 or v >= 1 or True else ""),
+        ("Gain après 3 ans", [h["at_36_months"]["gain_median"] for h in half], None, BLUE, lambda v: eur(v, True)),
+    ]
+    fig, axes = plt.subplots(4, 1, figsize=(6, 12.4), dpi=200)
+    for ax, (title, v1, v2, col, fmt) in zip(axes, rows):
+        if best is not None:
+            k = [p_ for p_, _ in LADDER].index(best)
+            ax.axvspan(k - 0.46, k + 0.46, color=AQUA_T, alpha=0.38, zorder=1, lw=0)
+        if v2 is None:
+            ax.bar(x, v1, 0.6, color=col, zorder=3)
+            m = max(abs(v) for v in v1) or 1.0
+            for xx, v in zip(x, v1):
+                ax.text(xx, v + (m * 0.04 if v >= 0 else -m * 0.04), fmt(v), ha="center", va="bottom" if v >= 0 else "top", fontsize=10.5,
+                        fontweight="bold", color=INK)
+            lo, hi = min(0, min(v1)), max(0, max(v1))
+            ax.set_ylim(lo - m * (0.22 if lo < 0 else 0.0), hi + m * 0.24)
+        else:
+            tint = ORANGE_T if col == ORANGE else BLUE_T
+            ax.bar(x - 0.23, v1, 0.36, color=col, zorder=3, label="le plus souvent")
+            ax.bar(x + 0.23, v2, 0.36, color=tint, zorder=3, label="une fois sur dix")
+            m = max(abs(v) for v in v1 + v2) or 1.0
+            for xx, v in zip(x - 0.23, v1):
+                ax.text(xx, v - m * 0.04, fmt(v), ha="center", va="top", fontsize=8.6, fontweight="bold", color=INK)
+            for xx, v in zip(x + 0.23, v2):
+                ax.text(xx, v - m * 0.04, fmt(v), ha="center", va="top", fontsize=8.6, color=INK2)
+            ax.set_ylim(min(v1 + v2) - m * 0.2, 0)
+            ax.legend(loc="lower left", frameon=False, fontsize=9.5, labelcolor=INK2, handlelength=1.2, borderaxespad=0.2)
+        ax.axhline(0, color=AXIS, lw=1.2, zorder=2)
+        ax.set_xticks(x); ax.set_xticklabels([lab for _, lab in LADDER], fontsize=10.5, color=INK)
+        ax.set_yticks([]); ax.tick_params(length=0)
+        for sp in ("left", "bottom"):
+            ax.spines[sp].set_visible(False)
+        ax.set_xlim(-0.6, len(LADDER) - 0.4)
+        ax.set_title(title, loc="left", fontsize=12, fontweight="bold", pad=9)
+    axes[-1].set_xlabel("Risque par trade au départ (il baisse ensuite jusqu'à 0,5 %)", fontsize=10, color=INK2, labelpad=8)
+    fig.suptitle("Plus le départ est rapide,\nplus le début secoue", x=0.05, y=0.988, ha="left", fontsize=15, fontweight="bold")
+    if best is not None:
+        fig.text(0.05, 0.917, "En vert, mon conseil : presque le gain du plus rapide, presque jamais −50 %.", fontsize=9.8, color=INK2)
+    fig.text(0.05, 0.026, "Si le robot fait la moitié du papier. Arrêt de sécurité à −25 % dans tous les plans.", fontsize=8.3, color=MUTED)
+    fig.text(0.05, 0.01, "Simulation sur les années 2022 à 2025, 2 000 trajectoires de 3 ans. Aucun trade réel.", fontsize=8.3, color=MUTED)
+    fig.subplots_adjust(left=0.05, right=0.97, top=0.875, bottom=0.085, hspace=0.62)
+    fig.savefig(f"{OUT}/7_echelle_des_departs.png")
+    plt.close(fig)
+
+
+paths(); rule(); falls(); gains(); duel(); runs(); ladder()
+best = best_of_ladder()
+if best is not None:
+    paths(best, f"Ton compte avec un départ à {dict(LADDER)[best]}", "8_compte_plan_conseille.png")
+    rule(best, "9_risque_plan_conseille.png")
+print("done", "| rule alone:", best_of_ladder(False), "| with the tie-break:", best)
