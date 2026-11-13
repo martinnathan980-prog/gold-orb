@@ -62,6 +62,8 @@ PLAN_START = calendar.timegm((2012, 12, 1, 0, 0, 0))          # server time, bef
 ENV = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
 F_KEYS = ("utc", "bar", "px", "st0", "side")
 REL = 1e-12                             # SPEC 7: rolling values and the stops built on them
+LATE_BOOKING = 4 * 86400                # an exit can be journaled after its stamp: a PREVISE (x + 30 min, after a weekend), an exit
+                                        # bar whose barrier falls in the next process
 X_KEYS = ("utc", "ev", "px", "reason")
 
 
@@ -108,9 +110,10 @@ def trades_of(rows, lo):
 
 
 def fol_rows(rows):
+    """the follower's lines the checks read, and the sizing skips (SIZE lines whose skip is not none)"""
     return [{k: v for k, v in r.items() if k in ("utc", "ev", "code", "ticket", "why", "reason", "rp", "from", "to", "minutes", "ok",
-                                                  "what", "oid")}
-            for r in rows if r["ev"] in FOL_EV]
+                                                  "what", "oid", "skip")}
+            for r in rows if r["ev"] in FOL_EV or (r["ev"] == "SIZE" and r.get("skip") not in (None, "none"))]
 
 
 def pos_records(files):
@@ -203,7 +206,7 @@ def restarted(exe, sw, env, segs, frm, to):
         one_process(exe, files, env, a, b)
         rows = compare.read_journal(files)
         drop_logs(files)
-        lo = segs[k - 1]["stop"] if k > 0 else -1
+        lo = segs[k - 1]["stop"] - LATE_BOOKING if k > 0 else -1
         reb = [r for r in rows if r["ev"] == "REBUILD"]
         st = [r for r in rows if r["ev"] == "SELFTEST"]
         procs.append({"k": k, "trades": trades_of(rows, lo), "fol": fol_rows(rows), "rebuilds": len(reb),
@@ -217,7 +220,7 @@ def restarted(exe, sw, env, segs, frm, to):
 
 # ------------------------------------------------------------------ checks
 def cmp_paper(cont, procs, segs, code):
-    e0 = segs[0]["stop"] if segs else 1 << 62
+    e0 = segs[0]["stop"] if segs else 1 << 62           # the trades that end after the first restart are the later ones
     later = {}
     for p in procs:
         for o, v in p["trades"][code].items():
@@ -297,11 +300,34 @@ def first_window_difference(pc, pr, wins):
     return first
 
 
-def cmp_positions(pc, pr, wins):
+def skips_of(fol_lists):
+    """{(code, oid): reason} of the live sizing skips (SIZE skip, MISSED with a sizing reason)"""
+    out = {}
+    for fol in fol_lists:
+        for r in fol:
+            if r.get("rp") == 1:
+                continue
+            if r["ev"] == "SIZE" and r.get("skip") not in (None, "none"):
+                out[(r["code"], int(r["oid"]))] = str(r["skip"])
+            elif r["ev"] == "MISSED" and str(r.get("reason")) in ("cap", "min_lot", "margin"):
+                out[(r["code"], int(r["oid"]))] = str(r["reason"])
+    return out
+
+
+def cmp_positions(pc, pr, wins, cont=None, procs=None):
     """the real trades of the restarted run against the continuous run's, per sleeve, keyed by side and entry time"""
     out = {}
     t_first = first_window_difference(pc, pr, wins)
+    sk_c = skips_of([cont["fol"]]) if cont else {}
+    sk_r = skips_of([p["fol"] for p in procs]) if procs else {}
     for c in CODES:
+        fills = sorted((f["utc"], int(o)) for o, (f, _) in (cont["trades"].get(c, {}).items() if cont else []))
+        fill_t = [a for a, _ in fills]
+
+        def oid_at(u_in):
+            import bisect
+            j = bisect.bisect_right(fill_t, u_in) - 1
+            return fills[j][1] if j >= 0 and u_in - fill_t[j] <= 300 else None
         ka = {(r["side"], r["u_in"]): r for r in pc if r["code"] == c}
         kb = {(r["side"], r["u_in"]): r for r in pr if r["code"] == c}
         same, cls, unexplained = 0, {}, []
@@ -323,6 +349,12 @@ def cmp_positions(pc, pr, wins):
                 for d in (0, 60, 120, 180, 240, 300):                    # the intent's 5-minute window touches one
                     w = w or in_window(key[1] - d, wins)
                 why = f"entry in a {w} window" if w else None
+                if why is None and t_first is not None and key[1] > t_first:
+                    o = oid_at(key[1])
+                    other = sk_c if x is None else sk_r                  # the run that has no position skipped it?
+                    if o is not None and (c, o) in other:
+                        why = (f"sizing skip ({other[(c, o)]}) in the {'continuous' if x is None else 'restarted'} run: the open "
+                               "positions or the balance differed after an earlier restart difference")
             if why is None:
                 unexplained.append({"side": key[0], "u_in": key[1], "continuous": x, "restarted": y})
             else:
@@ -344,26 +376,34 @@ def overlap(recs):
     return m
 
 
-def follower(procs, segs):
+def follower(procs, segs, cont):
     ev = {"ADOPT": 0, "ORPHAN": 0, "DUP": 0, "SLFIX": 0, "REFUSED": 0, "MISSED": {}}
     after_outage = {k + 1 for k, s in enumerate(segs) if s["outage_s"]}
     orphan_other = []
-    n_after = 0
+    n_after = n_start = 0
     for p in procs:
         for r in p["fol"]:
-            if r.get("rp") == 1:
+            if r.get("rp") == 1 or r["ev"] == "SIZE":
                 continue
             e = r["ev"]
             if e == "MISSED":
                 ev["MISSED"][str(r.get("reason"))] = ev["MISSED"].get(str(r.get("reason")), 0) + 1
             elif e in ev:
                 ev[e] += 1
-            if e == "ORPHAN":
-                if p["k"] in after_outage:
-                    n_after += 1
-                else:
-                    orphan_other.append({"process": p["k"], "code": r.get("code"), "why": r.get("why")})
+            if e != "ORPHAN":
+                continue
+            if p["k"] in after_outage:
+                n_after += 1
+                continue
+            s = segs[p["k"] - 1]
+            end = startup_end(p, s)
+            c = r.get("code")
+            if any(s["stop"] - 120 <= x["utc"] <= end for _, x in cont["trades"].get(c, {}).values()):
+                n_start += 1                          # its paper trade ended while the EA was starting
+            else:
+                orphan_other.append({"process": p["k"], "code": c, "why": r.get("why")})
     ev["orphan_after_outage"] = n_after
+    ev["orphan_paper_ended_during_start_up"] = n_start
     ev["orphan_other"] = orphan_other[:10]
     return ev
 
@@ -406,8 +446,8 @@ def analyse(D):
     cont, procs, segs = D["continuous"], D["procs"], D["segs"]
     paper = {c: cmp_paper(cont, procs, segs, c) for c in CODES}
     wins = windows(segs, procs)
-    pos = cmp_positions(cont["pos"], D["pos"], wins)
-    fol = follower(procs, segs)
+    pos = cmp_positions(cont["pos"], D["pos"], wins, cont, procs)
+    fol = follower(procs, segs, cont)
     ad = adopted(D["pos"], procs, segs)
     proc_ok = all(p["rebuilds"] == 1 and p["selftest_ok"] and not p["errors"] for p in procs)
     mins = [p["rebuild_minutes"] for p in procs[1:] if p["rebuild_minutes"] is not None]

@@ -894,3 +894,16 @@ with the choice: these are the validation years, so optimistic; the broker's mar
 and may refuse some trades at 10 %; with this plan the robot's −50 % disaster guard would stop it in most paths, so it is
 switched off for this plan, as the user accepts the loss of the account. D2 replaces F3S as the robot's stake plan; F3S
 stays available as an input. A user decision, not a test.
+
+### Addendum G — ninth clarification (2026-11-13), written BEFORE the run: the gain for the risk, between 3 % and 10 %
+The user, after choosing D2: "show me the best gain for the risk; if we reduce to 7-8 %, do we still gain a lot and
+reduce the risk a lot?". One family of plans, declared before any run: **D2's shape scaled by its starting risk X** —
+X % per trade below 3,000 EUR, X/2 % below 10,000, X/5 % below 20,000, X/10 % above, read on the larger of the balance
+and the money paid in, no plan stop, no disaster guard — for **X = 3, 5, 6, 7, 8 and 10** (X = 10 is D2 itself, run again
+as a check that the engine reproduces its stored cells exactly). Same engine (`r2/tracks/stake/growth.py`), same 2,000
+resampled 3-year paths of the 2022–2025 trades, same cases (paper, without 2024, half, quarter, covers costs,
+worthless), 1,000 EUR at the start and 1,000 EUR a month. Reported for each X, nothing chosen by the engine: months to
+10,000 EUR (median; share of paths by months 4, 6 and 9), gain after 1 and 3 years (median and one path in ten), the
+first-year fall (typical and one path in ten), the share of paths with a fall of 50 % or more, and the share that reach
+zero. Every read is logged in `results/val_access.log` by the engine. Said with it: the validation years, so
+optimistic; the broker's margin on crypto is not modelled; the user picks the X.
