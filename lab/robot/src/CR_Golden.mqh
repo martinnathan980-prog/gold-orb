@@ -25,7 +25,7 @@
 #include "CR_Rule_Brk72.mqh"
 #include "CR_Rule_F1.mqh"
 #include "CR_Rule_Orb.mqh"
-#define CR_GOLDEN_N 322                // vectors checked (SELFTEST golden=)
+#define CR_GOLDEN_N 366                // vectors checked (SELFTEST golden=)
 #define CR_GOLD_REL 1e-12               // doubles: relative tolerance (SPEC 7)
 #define CR_GOLD_NCLK 60
 #define CR_GOLD_NNYSE 40
@@ -34,8 +34,8 @@
 #define CR_GOLD_NORX 10
 #define CR_GOLD_NF1 30
 #define CR_GOLD_NRBP 10
-#define CR_GOLD_NRISK 3
-#define CR_GOLD_NKEY 11
+#define CR_GOLD_NRISK 5
+#define CR_GOLD_NKEY 15
 #define CR_GOLD_NSER 48
 
 // clock: utc, server, New York, London, server -> utc (pont), US summer time, UK summer time (7 per row)
@@ -283,15 +283,21 @@ long CR_GOLD_RBP_T[] = {
 // risk tables: the keys, then per plan the number of pairs and the rate at each key
 double CR_GOLD_KEYS[] = {
    0.0, 999.99000000000001, 2999.9899999999998, 3000.0, 3000.0100000000002, 5999.9899999999998,
-   6000.0, 11999.99, 12000.0, 50000.0, 10000000.0};
+   6000.0, 9999.9899999999998, 10000.0, 11999.99, 12000.0, 19999.990000000002,
+   20000.0, 50000.0, 10000000.0};
 int CR_GOLD_RISK_NP[] = {
-   4, 3, 2};
+   4, 3, 2,
+   4, 4};
 double CR_GOLD_RISK[] = {
-   3.0, 3.0, 3.0, 2.0, 2.0, 2.0, 1.0, 1.0, 0.5, 0.5, 0.5,
-   2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 0.5, 0.5, 0.5,
-   1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5};
-string CR_GOLD_RISK_TXT[] = {"0:3;3000:2;6000:1;12000:0.5", "0:2;6000:1;12000:0.5", "0:1;12000:0.5"};
-string CR_GOLD_RISK_NAME[] = {"F3S", "F2S", "F1S"};
+   3.0, 3.0, 3.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5,
+   0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0,
+   1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 1.0,
+   1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5,
+   0.5, 10.0, 10.0, 10.0, 5.0, 5.0, 5.0, 5.0, 5.0, 2.0, 2.0,
+   2.0, 2.0, 1.0, 1.0, 1.0, 7.0, 7.0, 7.0, 3.5, 3.5, 3.5,
+   3.5, 3.5, 1.3999999999999999, 1.3999999999999999, 1.3999999999999999, 1.3999999999999999, 0.69999999999999996, 0.69999999999999996, 0.69999999999999996};
+string CR_GOLD_RISK_TXT[] = {"0:3;3000:2;6000:1;12000:0.5", "0:2;6000:1;12000:0.5", "0:1;12000:0.5", "0:10;3000:5;10000:2;20000:1", "0:7;3000:3.5;10000:1.4;20000:0.7"};
+string CR_GOLD_RISK_NAME[] = {"F3S", "F2S", "F1S", "D2", "S7"};
 // the series (1 = NaN in the _NAN tables), pandas ewm(alpha=1/14, adjust=False).mean() and rolling(14, 9).mean()
 double CR_GOLD_X[] = {
    0.0, 1.5800000000000001, 1.0900000000000001, 3.71, 1.01, 3.3599999999999999, 1.6200000000000001, 1.73,

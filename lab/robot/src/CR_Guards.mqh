@@ -7,7 +7,9 @@
 //| The guards read the history latches of CR_Ledger (STOP, GUARD b  |
 //| and c, LOCK) and add what only the live account shows:            |
 //|   GUARD (a)  equity <= 50 % of ref (LedRefNow), on a settled      |
-//|              ledger, the plan in force (not under CR_NO_GUARD);   |
+//|              ledger, the plan in force; only with InpGuard true   |
+//|              (off by default: D2, review F3) and not under        |
+//|              CR_NO_GUARD;                                         |
 //|   FRIDAY     InpFridayCloseHHMM > 0: from that Friday server time |
 //|              to Monday 00:00 (ClaudeMains.mq5 FridayClosed); a    |
 //|              robot position opened before the last Friday close   |
@@ -361,7 +363,6 @@ void GrdCloseFlat(const datetime now_srv, const long magic, const string why)
 
 void GrdOnTimer(const datetime now_srv)
   {
-   bool settled = LedSettled();
    // STOP (SPEC 6.1): from the history, concluded on a settled ledger only
    if(!g_grd_stop && LedStopLatched())
      {
@@ -373,9 +374,10 @@ void GrdOnTimer(const datetime now_srv)
                  + " % sous la reference : tout est ferme, arret definitif", true);
      }
 #ifndef CR_NO_GUARD
-   // GUARD (SPEC 6.2): (b, c) from the history, (a) on the live equity
-   if(!g_grd_guard)
+   // GUARD (SPEC 6.2): (b, c) from the history, (a) on the live equity; never with InpGuard false
+   if(!g_grd_guard && !g_cfg.guard_off)
      {
+      bool settled = LedSettled();
       if(LedGuardLatched()) GrdGuardLatch("history", AccountInfoDouble(ACCOUNT_EQUITY), LedRefNow());
       else if(settled && LedPlan(now_srv) == CR_PLAN_OK)
         {

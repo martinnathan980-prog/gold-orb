@@ -924,7 +924,7 @@ int main(int argc, char **argv)
      {
       ClkInit("", err);
       datetime t0 = (datetime)atol(argv[2]);
-      datetime t1 = ClkNyToUtc(ClkDay(ClkUtcToNy(t0)) + 1015 * 60);
+      datetime t1 = ClkNyToUtc(ClkDay(ClkUtcToNy(t0)) + CR_GFP_OPEN_MIN * 60);   // the rule's own limit (16:46, SPEC 3 v2.1)
       std::string line;
       while(std::getline(std::cin, line))
         {
@@ -1157,22 +1157,25 @@ def gfp_unit():
     fridays = pd.date_range("2012-01-06", "2035-12-28", freq="W-FRI")
     res["calendar_2012_2035"] = {"fridays": len(got), "expected_fridays": int(len(fridays)), "codes": n_code, "wrong": bad[:10],
                                  "pass": not bad and len(got) == len(fridays)}
-    # 2. typed closures (InpExtraClosures): a window holding 13:30, one starting 16:54 (skip) and 16:55 (no skip), typed NYSE / HALF
-    typed = ("XAU 2027.03.12 15:00-2027.03.12 16:00;NYSE 2027.03.19;HALF 2027.04.02;XAU 2027.04.09 16:55-2027.04.09 17:30;"
-             "XAU 2027.04.16 16:54-2027.04.16 17:30;XAU 2027.04.23 09:00-2027.04.23 13:31;XAU 2027.04.30 13:31-2027.04.30 13:40")
+    # 2. typed closures (InpExtraClosures): a window holding 13:30, one starting 16:45 (skip) and 16:46 (no skip: the 16:45
+    #    exit bar can trade, SPEC 3 GFP v2.1, review F7), typed NYSE / HALF
+    typed = ("XAU 2027.03.12 15:00-2027.03.12 16:00;NYSE 2027.03.19;HALF 2027.04.02;XAU 2027.04.09 16:46-2027.04.09 17:30;"
+             "XAU 2027.04.16 16:45-2027.04.16 17:30;XAU 2027.04.23 09:00-2027.04.23 13:31;XAU 2027.04.30 13:31-2027.04.30 13:40")
     want = {"2027-03-12": (3, ny_utc("2027-03-12", "15:00")), "2027-03-19": (1, 0), "2027-04-02": (2, 0), "2027-04-09": (0, 0),
-            "2027-04-16": (3, ny_utc("2027-04-16", "16:54")), "2027-04-23": (3, ny_utc("2027-04-23", "09:00")),
+            "2027-04-16": (3, ny_utc("2027-04-16", "16:45")), "2027-04-23": (3, ny_utc("2027-04-23", "09:00")),
             "2027-04-30": (3, ny_utc("2027-04-30", "13:31")), "2027-03-05": (0, 0), "2027-05-07": (0, 0)}
     got = {str(utc(int(p[1])).tz_convert(NY).date()): (int(p[2]), int(float(p[3])))
            for p in (ln.split() for ln in unit(["cal", typed, ny_utc("2027-03-01", "13:30"), ny_utc("2027-05-10", "13:30")]).splitlines()
                      if ln.startswith("CAL"))}
     wrong = {d: {"got": got.get(d), "want": w} for d, w in want.items() if got.get(d) != w}
     res["typed_closures"] = {"checked": len(want), "wrong": wrong, "pass": not wrong}
-    # 3. broker Friday sessions (seconds of the server day; 13:30 New York = 20:30 server = 73800, 16:55 = 23:55 = 86100)
+    # 3. broker Friday sessions (seconds of the server day; 13:30 New York = 20:30 server = 73800, 16:46 = 23:46 = 85560: a
+    #    session must reach 16:46 New York, SPEC 3 GFP v2.1, review F7; 16:55 skipped a session ending at 23:54)
     t0 = ny_utc("2019-03-08", "13:30")
     cases = [("no information", "-1", (0, -1, 0, 0.0)), ("none listed", "0", (0, -1, 0, 0.0)),
-             ("00:00-23:59", "1 0 86340", (0, 86340, 0, 0.0)), ("ends 23:55 exactly", "1 0 86100", (0, 86100, 0, 0.0)),
-             ("ends 23:54", "1 0 86040", (1, 86040, 4, 86040.0)), ("two, the second to midnight (0)", "2 3600 72000 73800 0", (0, 86400, 0, 0.0)),
+             ("00:00-23:59", "1 0 86340", (0, 86340, 0, 0.0)), ("ends 23:46 exactly", "1 0 85560", (0, 85560, 0, 0.0)),
+             ("ends 23:54 (skipped before v2.1)", "1 0 86040", (0, 86040, 0, 0.0)),
+             ("ends 23:45", "1 0 85500", (1, 85500, 4, 85500.0)), ("two, the second to midnight (0)", "2 3600 72000 73800 0", (0, 86400, 0, 0.0)),
              ("one that misses 20:30", "1 3600 72000", (1, -1, 4, -1.0)), ("ends at 20:30, next from 20:33", "2 3600 73800 74000 86400", (1, -1, 4, -1.0)),
              ("to = 86400 (1970.01.02)", "1 3600 86400", (0, 86400, 0, 0.0)),
              ("two holding 20:30, the longer to 23:58", "2 60000 80000 70000 86280", (0, 86280, 0, 0.0))]

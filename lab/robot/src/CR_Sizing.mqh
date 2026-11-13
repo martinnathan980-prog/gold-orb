@@ -49,7 +49,9 @@
 //|                                ';' may end the list), plain       |
 //|                                decimals, from[0] = 0, from        |
 //|                                strictly increasing, pct in        |
-//|                                (0, 5], at most 16 pairs           |
+//|                                (0, 10], at most 16 pairs (D2's    |
+//|                                10 %; the notional and margin      |
+//|                                checks stay)                       |
 //|   SizRate(key)  SizM(w)  SizFactor(sl)  SizRisk(it)               |
 //|   SizWeekUnit(S)               sets the week unit if the week has |
 //|                                none; the follower calls it for a  |
@@ -71,7 +73,7 @@
 #include "CR_Ledger.mqh"
 
 #define CR_SIZ_MAX_PAIRS 16             // pairs of InpRiskTable at most
-#define CR_SIZ_PCT_MAX 5.0              // a rate above 5 % per trade is refused (SPEC 1)
+#define CR_SIZ_PCT_MAX 10.0             // a rate above 10 % per trade is refused (SPEC 1: D2 starts at 10 %)
 #define CR_SIZ_MAX_POS 6                // account.py LIMITS max_positions
 #define CR_SIZ_MAX_SYM 2                // account.py LIMITS max_per_sym
 
@@ -163,7 +165,7 @@ bool SizParseTable(const string s, double &from[], double &pct[], int &n, string
         }
       if(!(p > 0.0 && p <= CR_SIZ_PCT_MAX))
         {
-         err = "InpRiskTable: a rate must be above 0 and at most 5 % ('" + part[k] + "')";
+         err = "InpRiskTable: a rate must be above 0 and at most 10 % ('" + part[k] + "')";
          return false;
         }
       from[k] = f;

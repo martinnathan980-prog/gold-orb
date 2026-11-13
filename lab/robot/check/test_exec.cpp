@@ -1003,6 +1003,42 @@ static void w_guard_live()
    ck(mk[0] == 5 && mk[1] == 5 && mk[2] == 10 && mk[3] == 11 && n_mark == 2 && x_pushes_with("marque") == 1 && LedMarkSeen()
       && BrkRobotCount() == 0, F("the mark: four markets refused (market closed) twice, 60 s apart, then made and closed at once "
                                  "(MARK lines %ld %ld %ld %ld, %d deals)", mk[0], mk[1], mk[2], mk[3], n_mark));
+   // InpGuard false (SPEC 6.2 v2.1, the default of D2): the same fall to 50 % latches nothing, no close, no mark; and a
+   // mark already in the history (c) is ignored
+   long t3 = SV(2021, 8, 10, 10, 0, 0);
+   x_reset("guard_off", t3, 10000.0);
+   g_cfg.guard_off = true;
+   x_quote(CR_XAU, 1800.0, 13);
+   x_quote(CR_BTC, 40000.0, 20);
+   CrIntent b = x_intent("BKB", 1, 0.01);
+   BrkOpen(b, 39000.0);
+   ulong hd2 = x_hand(CR_XAU, 1, 3.0, 777);
+   LedRead(t3);
+   rp_now = t3 + 2;
+   LedRead(rp_now);
+   x_quote(CR_XAU, 1780.0, 13);                                // the same -5,340 EUR floating: equity at 46.6 % of ref
+   rp_now += 1;
+   GrdOnTimer(rp_now);
+   ck(!g_grd_guard && GrdEntryBlock(rp_now) != CR_SK_GUARD && x_listed(b.ticket) && x_listed(hd2) && x_count("MARK") == 0,
+      "InpGuard false: equity at 50 % of ref latches nothing, the robot position stays, no mark");
+   g_cfg.guard_off = false;
+   x_reset("guard_off_history", t3 + 3600, 10000.0);
+   x_quote(CR_XAU, 1800.0, 13);
+   x_quote(CR_BTC, 40000.0, 20);
+   CrIntent c = x_intent("BKB", 1, 0.01);
+   BrkOpen(c, 39000.0);
+   x_quote(CR_BTC, 40010.0, 20);
+   rp_now += 5;
+   BrkClose(c.ticket, CR_MAGIC_MARK, "guard");                 // a close with the mark's magic: GUARD (c) for the history
+   rp_now += 5;
+   LedRead(rp_now);
+   rp_now += 3;
+   LedRead(rp_now);
+   bool on_latched = LedGuardLatched();
+   g_cfg.guard_off = true;
+   bool off_latched = LedGuardLatched() || LedGuardAt(ClkServerToUtc(rp_now) + 60);
+   g_cfg.guard_off = false;
+   ck(LedMarkSeen() && on_latched && !off_latched, "a mark in the history latches GUARD (c) with InpGuard true, nothing with false");
   }
 
 //+------------------------------------------------------------------+

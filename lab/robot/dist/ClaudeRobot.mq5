@@ -1,4 +1,4 @@
-#define CR_BUILD "1ca53085c0c1"
+#define CR_BUILD "1cf1d0cab64b"
 // ==== begin src/ClaudeRobot.mq5
 //+------------------------------------------------------------------+
 //|                                               ClaudeRobot.mq5    |
@@ -18,12 +18,13 @@
 #property version   "2.00"
 #property description "ClaudeRobot: ten lab rules on XAUUSD, US100, BTCUSD and ETHUSD; paper chains followed by market orders with broker stops."
 
-// ---- the 14 inputs (SPEC 1). Plain types only.
+// ---- the 15 inputs (SPEC 1). Plain types only.
 input bool     InpTrade            = true;                          // Trade (VPS copy: false = no new entry; elsewhere: observe)
 input datetime InpPlanStart        = 0;                             // Plan start, server time (0: no new entry on a real account)
-input string   InpRiskTable        = "0:3;3000:2;6000:1;12000:0.5"; // Risk table from:pct, read on max(balance, money paid in) (F3S)
-input double   InpStopFallPct      = 25.0;                          // Plan stop: fall of the reference, percent
+input string   InpRiskTable        = "0:10;3000:5;10000:2;20000:1"; // Risk table from:pct, read on max(balance, money paid in) (D2)
+input double   InpStopFallPct      = 0.0;                           // Plan stop: fall of the reference, percent (0 = no plan stop)
 input double   InpStopArmPaid      = 12000.0;                       // Plan stop: armed once this much has been paid in
+input bool     InpGuard            = false;                         // Disaster guard at -50 % of the reference (D2: off)
 input string   InpSleeves          = "ALL";                         // Codes allowed to trade (the others: paper only)
 input int      InpK1               = -1;                            // K1 on BKE: -1 demo on / real off, 0 off, 1 on
 input int      InpH2               = -1;                            // H2 on F1E: -1 demo on / real off, 0 off, 1 on
@@ -406,8 +407,9 @@ struct CrConfig
    bool     trade;                     // InpTrade
    datetime plan_start;                // InpPlanStart (server time; 0 = unset)
    string   risk_table;                // InpRiskTable
-   double   stop_fall_pct;             // InpStopFallPct
+   double   stop_fall_pct;             // InpStopFallPct (0 = no plan stop)
    double   stop_arm_paid;             // InpStopArmPaid
+   bool     guard_off;                 // !InpGuard: no disaster guard (SPEC 6.2; false in a zeroed config = guard on)
    string   sleeves;                   // InpSleeves
    int      k1, h2, s075;              // InpK1, InpH2, InpS075: -1, 0, 1
    string   k1t;                       // InpK1T
@@ -1386,7 +1388,10 @@ string ClkStr(const datetime t) { return TimeToString(t, TIME_DATE | TIME_MINUTE
 //|   an exact round trip; booleans 0/1; times integer seconds.      |
 //| Lines go to Print (live) and to MQL5/Files/ClaudeRobot/          |
 //| <yyyymmdd>.log (server date; files older than 30 days removed).  |
-//| Lines written while the history is replayed carry rp=1.          |
+//| Lines written while the history is replayed carry rp=1: they go  |
+//| to the file only, never to Print (a rebuild writes thousands of  |
+//| them); the file is flushed once per timer pass (JrnFlush, the    |
+//| harness only in tester mode), not line by line (review F9).      |
 //| Pushes (French, ASCII): "Robot Claude : ..." with the hands'     |
 //| limits (ClaudeMains.mq5:161-184): at most 2 a second and 5 a     |
 //| minute, of which 2 are kept for urgent messages.                 |
@@ -1409,6 +1414,8 @@ datetime g_push_sec = 0, g_push_min = 0;
 int      g_push_n = 0, g_push_m = 0;
 long     g_push_sent = 0, g_push_dropped = 0;
 long     g_jrn_file_errors = 0;          // file calls that failed (the journal still goes to Print)
+bool     g_jrn_dirty = false;            // lines written since the last flush
+bool     g_jrn_replay = false;           // the history is replayed (CR_Main's rebuild): rules push nothing meanwhile
 
 string CR_REASON_NAME[11] = {"stop", "target", "time", "trail", "eod", "nofill", "skip", "gap", "void", "refused", "rule"};
 
@@ -1473,6 +1480,7 @@ void JrnClose()
    if(g_jrn_h != INVALID_HANDLE) FileClose(g_jrn_h);
    g_jrn_h = INVALID_HANDLE;
    g_jrn_day = 0;
+   g_jrn_dirty = false;
   }
 
 void JrnOpenDay(const datetime srv_day)
@@ -1514,10 +1522,21 @@ void JrnAt(const datetime utc, const int ev, const string code, const string kv)
    if(g_jrn_h != INVALID_HANDLE)
      {
       FileWriteString(g_jrn_h, line + "\n");
-      if(g_cfg.tester || !g_cfg.harness) FileFlush(g_jrn_h);
+      g_jrn_dirty = true;
      }
-   if(g_jrn_print) Print(line);
+   int n = StringLen(kv);
+   bool rp = (n >= 5 && StringSubstr(kv, n - 5) == "|rp=1");   // JrnRp always ends the line
+   if(g_jrn_print && !rp) Print(line);
    g_jrn_lines++;
+  }
+
+// once per timer pass (and at the end of OnInit): the lines of the pass reach the file (live and tester builds; a harness
+// replay outside tester mode never flushes, as before)
+void JrnFlush()
+  {
+   if(!g_jrn_dirty || g_jrn_h == INVALID_HANDLE) return;
+   g_jrn_dirty = false;
+   if(g_cfg.tester || !g_cfg.harness) FileFlush(g_jrn_h);
   }
 
 // an event stamped now (the server clock converted to UTC)
@@ -3230,7 +3249,9 @@ public:
 //| LatestExit (SPEC 4.8): t_dec = the decision of the comment when  |
 //| it lies on an hour at most 10 min before open_time, else         |
 //| open_time floored to the UTC hour; exit 15:55 New York on t_dec's|
-//| date (the H2 hold needs the paper: not applied).                 |
+//| date, or, while H2 is on, the H2 horizon xh of that decision     |
+//| (F1H2Horizon: a held trade may run to it; review F1: a NOT_READY |
+//| exit at 15:55 closed held positions whose paper trade was open). |
 //+------------------------------------------------------------------+
 #ifndef CR_RULE_F1_MQH
 #define CR_RULE_F1_MQH
@@ -3314,6 +3335,17 @@ datetime F1FridayEnd(const datetime t)
    return ClkServerToUtc((datetime)fri);
   }
 
+// H2's horizon of a decision at t_dec (SPEC 3, variants.py:118-126): 15:55 New York on t_dec's New York date + 2 business
+// days, not after Friday 23:54 server of the entry's server week (the entry bar lies in t_dec's server day); the paper
+// and LatestExit read the same value
+datetime F1H2Horizon(const datetime t_dec)
+  {
+   datetime ny = ClkUtcToNy(t_dec);
+   datetime xa = ClkNyToUtc((datetime)((long)ClkBusinessDays(ClkDay(ny), CR_F1_H2_BDAYS) + CR_F1_EXIT_MIN * 60));
+   datetime xb = F1FridayEnd(t_dec);
+   return (xa < xb) ? xa : xb;
+  }
+
 class CRuleF1
   {
 public:
@@ -3339,6 +3371,8 @@ public:
    bool      m_pd;                     // a previous New York date with session bars exists
    double    m_pdh, m_pdl, m_pdc;      // that date's high, low and last close
    double    m_x[];                    // the 15 features of the candidate (FEATURES order)
+
+             CRuleF1() { sl = -1; m_sym = -1; m_id = 0; m_h2 = false; m_refuse = 0; }
 
    bool Init(const int sleeve)
      {
@@ -3508,10 +3542,7 @@ public:
       od.dec = t_dec;
       if(m_h2)
         {
-         datetime ny = ClkUtcToNy(t_dec);
-         datetime xa = ClkNyToUtc((datetime)((long)ClkBusinessDays(ClkDay(ny), CR_F1_H2_BDAYS) + CR_F1_EXIT_MIN * 60));
-         datetime xb = F1FridayEnd(t_dec);                   // the entry bar lies in t_dec's server day
-         od.xh = (xa < xb) ? xa : xb;
+         od.xh = F1H2Horizon(t_dec);
          od.xh_r = CR_F1_H2_R;
         }
       if(!CrOutOrder(out, od)) JrnError(g_sl[sl].code, "more than CR_OUT_MAX orders at " + IntegerToString((long)t_dec));
@@ -3555,6 +3586,11 @@ public:
       datetime x0 = t_dec + CR_F1_HOLD_S;
       datetime cap = F1ExitClock(t_dec);
       if(cap < x0) x0 = cap;
+      if(m_h2)
+        {
+         datetime xh = F1H2Horizon(t_dec);                   // a held trade may run to xh (SPEC 4.8 table, F1 row)
+         if(xh > x0) x0 = xh;
+        }
       return x0;
      }
   };
@@ -3877,11 +3913,16 @@ public:
 //|          (:129-137: no quote within 10 min of 16:45), which reads|
 //|          a future bar: a NYSE full holiday or half day           |
 //|          (ClkNyse: us_holidays plus the typed NYSE and HALF      |
-//|          entries), a known XAU closure that starts before 16:55  |
+//|          entries), a known XAU closure that starts before 16:46  |
 //|          (the closure holding 13:30, or the next one: ClkNext-   |
 //|          Closure), or a broker Friday session that does not hold |
-//|          13:30 or ends before 16:55 (SymbolInfoSessionTrade; no  |
-//|          information = no skip). In 2013-2021 this skips the     |
+//|          13:30 or ends before 16:46 (SymbolInfoSessionTrade; no  |
+//|          information = no skip): the 16:45 exit bar must be      |
+//|          tradable (review F7: 16:55 skipped every Friday of a    |
+//|          broker whose gold session ends a few minutes earlier).  |
+//|          A Friday skipped for the broker session is pushed (live |
+//|          only, not while the history is replayed). In 2013-2021  |
+//|          this skips the                                          |
 //|          same 26 Fridays as the lab: Good Friday, July 4,        |
 //|          Christmas and New Year (no gold bar at 13:30) and the   |
 //|          Friday after Thanksgiving (last bar 13:42-14:05). The   |
@@ -3908,7 +3949,7 @@ public:
 #define CR_GFP_DOW 5                   // weekdays (4,): pandas Friday = ClkDow 5 (strategy.py:243)
 #define CR_GFP_ENTRY_MIN 810           // entry 13:30 New York (:243)
 #define CR_GFP_EXIT_MIN 1005           // exit 16:45 New York (:243)
-#define CR_GFP_OPEN_MIN 1015           // 16:55: a quote within 10 min of 16:45 (skip_early_close, :136)
+#define CR_GFP_OPEN_MIN 1006           // 16:46: the 16:45 exit bar can trade (skip_early_close: a quote within 10 min of 16:45, :136)
 #define CR_GFP_TOL_S 300               // tol_min 5: the first kept bar starting in [13:30, 13:35] (:65, :102)
 #define CR_GFP_LIMIT_S 3600            // limit_min 60: fills on bars starting before 14:30 (:206)
 #define CR_GFP_STOP_ATR 3.0            // stop_atr 3 (:243)
@@ -3918,8 +3959,8 @@ public:
 // ---- reasons of a skipped Friday (DEC info v1)
 #define CR_GFP_SKIP_FULL 1             // NYSE full holiday (v2 0)
 #define CR_GFP_SKIP_HALF 2             // NYSE half day (v2 0)
-#define CR_GFP_SKIP_CLOSURE 3          // a known XAU closure starts before 16:55 (v2 = its start, UTC)
-#define CR_GFP_SKIP_SESSION 4          // the broker session does not hold 13:30 or ends before 16:55 (v2 = its end, server s of day; -1 none)
+#define CR_GFP_SKIP_CLOSURE 3          // a known XAU closure starts before 16:46 (v2 = its start, UTC)
+#define CR_GFP_SKIP_SESSION 4          // the broker session does not hold 13:30 or ends before 16:46 (v2 = its end, server s of day; -1 none)
 #define CR_GFP_SKIP_ATR 5              // ATR not finite or not > 0 (v2 = hour rows so far)
 #define CR_GFP_SKIP_NOBAR 6            // no kept bar before 13:30 yet (v2 0)
 
@@ -3937,8 +3978,8 @@ bool GfpSessionHoldsAt(const long from_s, const long to_s, const long a, long &e
    return f <= a && a < t;
   }
 
-// SPEC 3 GFP: the broker's Friday trade sessions of sym against 13:30 (t0) and 16:55 (t1) New York, UTC. Returns true
-// (skip) when the broker lists sessions and none holds 13:30 and runs to 16:55 or later; end_s = the latest end of a
+// SPEC 3 GFP: the broker's Friday trade sessions of sym against 13:30 (t0) and 16:46 (t1) New York, UTC. Returns true
+// (skip) when the broker lists sessions and none holds 13:30 and runs to 16:46 or later; end_s = the latest end of a
 // session holding 13:30 (server seconds of the day), -1 when none holds it. No session listed: false (no
 // information, no skip; the harness broker lists none).
 bool GfpSessionShort(const string sym, const datetime t0, const datetime t1, long &end_s)
@@ -4076,6 +4117,18 @@ public:
       if(code != 0)
         {
          SkipLine(M, code, v2, out);
+         if(code == CR_GFP_SKIP_SESSION && !g_jrn_replay)       // never silent (review F7); not at every rebuild
+           {
+            string end = "aucune";
+            if(v2 >= 0.0)
+              {
+               long e = (long)v2;
+               long hh = e / 3600, mm = (e % 3600) / 60;
+               end = IntegerToString(hh) + "h" + (mm < 10 ? "0" : "") + IntegerToString(mm) + " (heure serveur)";
+              }
+            JrnPush("GFP : vendredi saute, la seance or du courtier ne couvre pas 13:30-16:46 New York (fin de seance "
+                    + end + ")", false);
+           }
          return;
         }
       CrOrder o;
@@ -5032,7 +5085,10 @@ bool RegReads(const int sl, const int sym) { return g_sl[sl].sym == sym || g_sl[
 //|   A symbol whose load read failed (no history yet) never blocks  |
 //|   the others; its bars are taken as they come, and its history,  |
 //|   if it appears later, asks for a rebuild. READY stays until the |
-//|   next load. NOT_READY for 10 min: one push.                     |
+//|   next load. NOT_READY for 10 min: one push. BarsNotReadyFor     |
+//|   tells the follower whether the first check has decided yet and |
+//|   for how long the symbol has been NOT_READY since (SPEC 4.8: a  |
+//|   NOT_READY exit waits for both, review F1).                     |
 //| Daily cost statistics (COST, SPEC 2.6): per symbol and server    |
 //| day, over the kept bars fed, the median of the raw spread and of |
 //| the paper spread, in bp of the bar's opening mid.                |
@@ -5060,6 +5116,12 @@ bool RegReads(const int sl, const int sym) { return g_sl[sl].sym == sym || g_sl[
 //|   BarsTimer(now_srv)      READY checks, GAP and NOTREADY pushes  |
 //|   BarsPaperQuotes(sym, bid, ask, pbid, pask)  live paper quotes  |
 //|   BarsMasked(sym, reason) masked bars since the load, by reason  |
+//|   BarsNotReadyFor(sym, now_srv)  -1 before the first READY check |
+//|                           since the load, 0 when READY, else the |
+//|                           seconds since that first check         |
+//|   BarsShut(sym, M)        minute M (UTC) is masked for the symbol|
+//|                           or lies in a known closure (no order:  |
+//|                           SPEC 4.1, review F2)                   |
 //| Journal: READY / NOTREADY (code = symbol: bars, raw bars, first, |
 //| last, masked by reason, holes, why), GAP (hole from/to, or a     |
 //| live missing minute), LATEBAR (code = symbol: why and the bar),  |
@@ -5285,6 +5347,7 @@ public:
    bool     depth;
    bool     stable;
    bool     said;                      // a READY / NOTREADY line was written since the load
+   datetime first_check;               // server time of the first READY check (decision) since the load, 0 = none yet
    string   why_said;
    bool     push10;
    datetime load_srv;                  // server time of the load
@@ -5329,6 +5392,7 @@ public:
       depth = false;
       stable = false;
       said = false;
+      first_check = 0;
       why_said = "";
       push10 = false;
       load_srv = 0;
@@ -5628,6 +5692,7 @@ public:
       if(ready || !g_sym[sym].ok) return;
       if(now < next_check) return;
       next_check = now + CR_BARS_RECHECK_S;
+      if(first_check == 0) first_check = now;             // the first decision since the load (READY or NOT_READY below)
       string nm = g_sym[sym].name;
       // (3) the second read of the load window agrees with the first
       if(!stable && !no_data)
@@ -5953,6 +6018,29 @@ bool BarsCost(const int sym, const datetime day_srv, double &raw_bp, double &pap
       return false;
      }
    return g_bs[sym].Cost(day_srv, raw_bp, paper_bp);
+  }
+
+// -1: no READY check has decided since the load; 0: READY; else the seconds the symbol has been NOT_READY since its first
+// check (SPEC 4.8: positions of NOT_READY sleeves close at LatestExit only after that first decision and a wait)
+long BarsNotReadyFor(const int sym, const datetime now_srv)
+  {
+   if(sym < 0 || sym >= CR_NSYM) return -1;
+   if(g_bs[sym].ready) return 0;
+   if(g_bs[sym].first_check == 0) return -1;
+   return (long)(now_srv - g_bs[sym].first_check);
+  }
+
+// minute M (UTC) is masked for the symbol (SPEC 2.2: the bar of M would not be kept) or lies in a known closure of its
+// family (SPEC 2.1): no order is sent in it (SPEC 4.1, review F2)
+bool BarsShut(const int sym, const datetime M)
+  {
+   if(sym < 0 || sym >= CR_NSYM) return true;
+   MqlRates r;
+   ZeroMemory(r);
+   r.time = ClkUtcToServer(M - M % 60);
+   if(BarsMaskReason(sym, r) != CR_MASK_KEPT) return true;
+   datetime c0 = 0, c1 = 0;
+   return ClkInClosure(g_sym[sym].family, M - M % 60, c0, c1);
   }
 
 long BarsMasked(const int sym, const int reason)
@@ -6990,11 +7078,13 @@ datetime PapLastExitBar(const int sl)
 //|                      neither B/ref nor the rung moves (R1); P_in  |
 //|                      never falls, so the stop never disarms       |
 //|   OTHER M            B += M                                       |
-//|   CLOSE M            B += M; plan stop (SPEC 6.1): P_in >= arm    |
-//|                      and B <= ref x (1 - fall / 100) -> STOP      |
+//|   CLOSE M            B += M; plan stop (SPEC 6.1): fall > 0,      |
+//|                      P_in >= arm and B <= ref x (1 - fall / 100)  |
+//|                      -> STOP (InpStopFallPct 0: no plan stop)     |
 //|   after any event    GUARD (b): ref > 0 and B <= 50 % of ref      |
 //|   GUARD (c)          a deal of magic 20261290 at or after T       |
-//|   CR_NO_GUARD (T7 harness builds only): GUARD never latches.      |
+//|   InpGuard false (g_cfg.guard_off), or CR_NO_GUARD (T7 harness    |
+//|   builds only): GUARD never latches, a mark is ignored.           |
 //|   A later InpPlanStart clears STOP and GUARD: only events after T |
 //|   are walked.                                                     |
 //|                                                                  |
@@ -7503,6 +7593,10 @@ void LedWalk()
    double eq = g_led_bt, paid = g_led_bt, ref = g_led_bt, cm = 0.0;
    double keep = 1.0 - g_cfg.stop_fall_pct / 100.0;
    bool latch = (g_led_plan != CR_PLAN_UNSET);
+   bool stop_on = (g_cfg.stop_fall_pct > 0.0);                 // InpStopFallPct 0: no plan stop (D2, S7)
+#ifndef CR_NO_GUARD
+   bool guard_on = !g_cfg.guard_off;                           // InpGuard false: no disaster guard (D2, S7)
+#endif
    g_led_stop_key = -1;
    g_led_stop_ev = -1;
    g_led_guard_key = -1;
@@ -7527,14 +7621,14 @@ void LedWalk()
         {
          eq = eq + a;
          cm = cm + a;
-         if(latch && g_led_stop_key < 0 && paid >= g_cfg.stop_arm_paid && eq <= ref * keep)
+         if(latch && stop_on && g_led_stop_key < 0 && paid >= g_cfg.stop_arm_paid && eq <= ref * keep)
            {
             g_led_stop_key = g_led_key[k];
             g_led_stop_ev = k;
            }
         }
 #ifndef CR_NO_GUARD
-      if(latch && g_led_guard_key < 0 && ref > 0.0 && eq <= CR_LED_GUARD_SHARE * ref)
+      if(latch && guard_on && g_led_guard_key < 0 && ref > 0.0 && eq <= CR_LED_GUARD_SHARE * ref)
         {
          g_led_guard_key = g_led_key[k];
          g_led_guard_ev = k;
@@ -7631,7 +7725,7 @@ void LedSay()
             + KD("P_in", g_led_e[k].paid) + KD("fall_pct", g_cfg.stop_fall_pct) + KD("arm", g_cfg.stop_arm_paid));
      }
 #ifndef CR_NO_GUARD
-   if((g_led_guard_ev >= 0 || g_led_mark_key >= 0) && !g_led_rep_guard)
+   if(!g_cfg.guard_off && (g_led_guard_ev >= 0 || g_led_mark_key >= 0) && !g_led_rep_guard)
      {
       g_led_rep_guard = true;
       if(g_led_guard_ev >= 0)
@@ -7745,6 +7839,7 @@ bool LedGuardAt(const datetime S)
 #ifdef CR_NO_GUARD
    return false;
 #else
+   if(g_cfg.guard_off) return false;                           // InpGuard false: a mark or a fall of half never stops it
    long lim = LedKey(S, CR_EK_CLOSE);
    return (g_led_guard_key >= 0 && g_led_guard_key < lim) || (g_led_mark_key >= 0 && g_led_mark_key < lim);
 #endif
@@ -7755,6 +7850,7 @@ bool LedGuardLatched()
 #ifdef CR_NO_GUARD
    return false;
 #else
+   if(g_cfg.guard_off) return false;
    return g_led_rep_guard || (g_led_settled && (g_led_guard_ev >= 0 || g_led_mark_key >= 0));
 #endif
   }
@@ -7914,9 +8010,9 @@ void LedReset()
 bool LedInit(string &err)
   {
    err = "";
-   if(!(g_cfg.stop_fall_pct > 0.0 && g_cfg.stop_fall_pct < 100.0))
+   if(!(g_cfg.stop_fall_pct >= 0.0 && g_cfg.stop_fall_pct < 100.0))
      {
-      err = "InpStopFallPct must lie between 0 and 100 (excluded)";
+      err = "InpStopFallPct must be 0 (no plan stop) or lie between 0 and 100 (excluded)";
       return false;
      }
    if(!(g_cfg.stop_arm_paid >= 0.0))
@@ -8022,7 +8118,9 @@ bool LedInit(string &err)
 //|                                ';' may end the list), plain       |
 //|                                decimals, from[0] = 0, from        |
 //|                                strictly increasing, pct in        |
-//|                                (0, 5], at most 16 pairs           |
+//|                                (0, 10], at most 16 pairs (D2's    |
+//|                                10 %; the notional and margin      |
+//|                                checks stay)                       |
 //|   SizRate(key)  SizM(w)  SizFactor(sl)  SizRisk(it)               |
 //|   SizWeekUnit(S)               sets the week unit if the week has |
 //|                                none; the follower calls it for a  |
@@ -8044,7 +8142,7 @@ bool LedInit(string &err)
 // (already inlined: CR_Ledger.mqh)
 
 #define CR_SIZ_MAX_PAIRS 16             // pairs of InpRiskTable at most
-#define CR_SIZ_PCT_MAX 5.0              // a rate above 5 % per trade is refused (SPEC 1)
+#define CR_SIZ_PCT_MAX 10.0             // a rate above 10 % per trade is refused (SPEC 1: D2 starts at 10 %)
 #define CR_SIZ_MAX_POS 6                // account.py LIMITS max_positions
 #define CR_SIZ_MAX_SYM 2                // account.py LIMITS max_per_sym
 
@@ -8136,7 +8234,7 @@ bool SizParseTable(const string s, double &from[], double &pct[], int &n, string
         }
       if(!(p > 0.0 && p <= CR_SIZ_PCT_MAX))
         {
-         err = "InpRiskTable: a rate must be above 0 and at most 5 % ('" + part[k] + "')";
+         err = "InpRiskTable: a rate must be above 0 and at most 10 % ('" + part[k] + "')";
          return false;
         }
       from[k] = f;
@@ -8416,7 +8514,9 @@ int SizSize(CrIntent &it, const datetime S, const bool dry)
 // (already inlined: CR_Journal.mqh)
 
 #define CR_BRK_TICK_AGE 10              // a last tick older than 10 s: no open (ClaudeMains InpMaxTickAgeSec)
-#define CR_BRK_NOTIONAL_X 20.0          // the value of a new position is cut to 20 x the balance (InpMaxNotionalX)
+#ifndef CR_BRK_NOTIONAL_X
+#define CR_BRK_NOTIONAL_X 20.0          // the value of a new position is cut to 20 x the balance (InpMaxNotionalX); 20 in
+#endif                                  // every release build (self-test); T7b's harness raises it (the lab has no such cap)
 #define CR_BRK_RISK_X 1.25              // post-fill: the real money risk at most 1.25 x the sized budget
 #define CR_BRK_DEV_SPREADS 2            // deviation: 2 spreads
 #define CR_BRK_STABLE_S 2               // two reads of positions and orders at least 2 s apart
@@ -9200,7 +9300,9 @@ bool BrkMark(const int sym, string &why)
 //| The guards read the history latches of CR_Ledger (STOP, GUARD b  |
 //| and c, LOCK) and add what only the live account shows:            |
 //|   GUARD (a)  equity <= 50 % of ref (LedRefNow), on a settled      |
-//|              ledger, the plan in force (not under CR_NO_GUARD);   |
+//|              ledger, the plan in force; only with InpGuard true   |
+//|              (off by default: D2, review F3) and not under        |
+//|              CR_NO_GUARD;                                         |
 //|   FRIDAY     InpFridayCloseHHMM > 0: from that Friday server time |
 //|              to Monday 00:00 (ClaudeMains.mq5 FridayClosed); a    |
 //|              robot position opened before the last Friday close   |
@@ -9554,7 +9656,6 @@ void GrdCloseFlat(const datetime now_srv, const long magic, const string why)
 
 void GrdOnTimer(const datetime now_srv)
   {
-   bool settled = LedSettled();
    // STOP (SPEC 6.1): from the history, concluded on a settled ledger only
    if(!g_grd_stop && LedStopLatched())
      {
@@ -9566,9 +9667,10 @@ void GrdOnTimer(const datetime now_srv)
                  + " % sous la reference : tout est ferme, arret definitif", true);
      }
 #ifndef CR_NO_GUARD
-   // GUARD (SPEC 6.2): (b, c) from the history, (a) on the live equity
-   if(!g_grd_guard)
+   // GUARD (SPEC 6.2): (b, c) from the history, (a) on the live equity; never with InpGuard false
+   if(!g_grd_guard && !g_cfg.guard_off)
      {
+      bool settled = LedSettled();
       if(LedGuardLatched()) GrdGuardLatch("history", AccountInfoDouble(ACCOUNT_EQUITY), LedRefNow());
       else if(settled && LedPlan(now_srv) == CR_PLAN_OK)
         {
@@ -9686,8 +9788,12 @@ int GrdEntryBlock(const datetime now_srv)
 //|   window holds M (after_exit_of: its exit resolved on an earlier  |
 //|   bar), the sleeve's paper trade ended on an earlier bar, not void|
 //|   at activation (void_le, x <= M), not refused by the 3-spread    |
-//|   test on the live paper quote, and the symbol ticked in minute M |
-//|   (else it is armed and the first tick of M makes the intent).    |
+//|   test on the live paper quote, M neither masked for the symbol   |
+//|   nor in a known closure (BarsShut: the paper can never fill on a |
+//|   masked bar, review F2), and the symbol ticked in minute M (else |
+//|   it is armed and the first tick of M makes the intent). An       |
+//|   observer makes the same intents (sized NOTRADE, never sent), so |
+//|   its journal equals the VPS copy's with InpTrade false (F6).     |
 //|   Stamp = M. A stop, limit or OCO order becomes an intent at its  |
 //|   PFILL on bar i, stamp i, sent at barrier i + 1, unless its paper|
 //|   trade already exited (stopped, gap, revised or voided on its    |
@@ -9701,7 +9807,11 @@ int GrdEntryBlock(const datetime now_srv)
 //|   (InpSleeves), the guards' block (STOPPED, GUARD, LOCK, FRIDAY,  |
 //|   CLOCK, SELFTEST, NOTRADE), NOTREADY; SETTLE makes it wait. A    |
 //|   skip is final: the sleeve stays busy until its paper trade ends.|
-//| Send (SPEC 4.3): BrkIntentCheck first (one intent, one trade): a  |
+//| Send (SPEC 4.3): just before every request the entry blocks are  |
+//|   read again (GrdEntryBlock, READY, review F4) and no request goes |
+//|   in a minute that is masked or in a known closure (BarsShut,     |
+//|   F2): the intent waits inside its window, then MISSED with that  |
+//|   reason. BrkIntentCheck first (one intent, one trade): a         |
 //|   position of the previous trade is closed first (the intent      |
 //|   waits; at the window's end MISSED reason=prev_open); an order,  |
 //|   deal or position already made at or after the stamp is adopted |
@@ -9720,7 +9830,11 @@ int GrdEntryBlock(const datetime now_srv)
 //|   the expected one (the paper stop of its trade, or the stop sent |
 //|   before its PFILL): PositionModify, kept and tried again every   |
 //|   10 s when refused (STOPS_LEVEL, FREEZE_LEVEL); an expected stop |
-//|   the price has already crossed -> close.                         |
+//|   the price has already crossed -> close. A position of a         |
+//|   NOT_READY or unfollowed sleeve has no expected stop: its stop   |
+//|   must lie on the right side of the market; one that a fresh quote|
+//|   has crossed for 2 min (the broker did not execute it) is closed |
+//|   (SLFIX why=wrong_side, review F8).                              |
 //| Exits (SPEC 4.5): at the barrier of ClkRealExitMinute(x) for the  |
 //|   paper's time exit x of the followed trade (with the broker's    |
 //|   session end); when that is x itself the close waits for the     |
@@ -9736,7 +9850,9 @@ int GrdEntryBlock(const datetime now_srv)
 //|   history holds open listed (at most 60 s): positions of retired  |
 //|   ids and marks are closed; each sleeve is reconciled when READY  |
 //|   (a NOT_READY sleeve keeps its positions, their stops, and closes|
-//|   them at LatestExit(POSITION_TIME, comment) with the gap rule):  |
+//|   them at LatestExit(POSITION_TIME, comment) with the gap rule,   |
+//|   only once the first READY check since the load has decided and  |
+//|   the sleeve has been NOT_READY for 10 min: review F1):           |
 //|   a same-side position opened within 5 min of the open paper      |
 //|   trade's stamp -> ADOPT (its stop reset); one matching a market  |
 //|   order still waiting in the paper queue -> ADOPT for that order; |
@@ -9791,6 +9907,9 @@ int GrdEntryBlock(const datetime now_srv)
 #define CR_FOL_SEND_MAX 30              // a refused send is tried again after 1, 2, 4 ... 30 s
 #define CR_FOL_CMAX 64                  // positions waiting to be closed at once
 #define CR_FOL_WMAX 64                  // positions already reported by WATCH
+#define CR_FOL_NOTREADY_WAIT 600        // NOT_READY exits: 10 min of NOT_READY after the first READY check of the load (F1)
+#define CR_FOL_WRONG_S 120              // an unknown position's stop crossed by a fresh quote for 2 min -> closed (F8)
+#define CR_FOL_FRESH_S 10               // a quote at most 10 s old is fresh
 
 // close reasons (CLOSE why=)
 #define CR_FW_TIME 0
@@ -9866,6 +9985,10 @@ ulong      g_fol_watch[CR_FOL_WMAX];
 int        g_fol_nwatch = 0;
 datetime   g_fol_M = 0;                 // the last barrier processed live (UTC)
 datetime   g_fol_rec_t0 = 0;            // first reconcile attempt of a rebuild (server)
+ulong      g_fol_ws_tk[CR_FOL_CMAX];    // positions of no expected stop whose stop a fresh quote has crossed (F8) ...
+datetime   g_fol_ws_t[CR_FOL_CMAX];     // ... since when (server) ...
+datetime   g_fol_ws_last[CR_FOL_CMAX];  // ... and the last fresh quote that showed it (server)
+int        g_fol_nws = 0;
 
 //+------------------------------------------------------------------+
 //| A read-only view of the paper's queue, rule exits and trade      |
@@ -10157,6 +10280,7 @@ bool FolRefusedNow(const int sl, const CrOrder &o)
 // the market order of the sleeve's paper queue that activates at minute M (SPEC 4.1); false when none
 bool FolActivating(const int sl, const datetime M, CrOrder &o)
   {
+   if(BarsShut(g_sl[sl].sym, M)) return false;                  // a masked minute or a known closure: no bar the paper keeps
    CrBar b;
    ZeroMemory(b);
    b.t = M;
@@ -10389,6 +10513,18 @@ void FolIntentStep(const int sl, const datetime now)
       g_fol[sl].it_next = now + 1;
       return;
      }
+   // just before the request: the entry blocks again (a STOP, GUARD, LOCK, FRIDAY or CLOCK that came after the sizing,
+   // a sleeve no longer READY: review F4), and never a request in a masked minute or a known closure (review F2); the
+   // intent waits inside its window, then MISSED with that reason
+   int blk = GrdEntryBlock(now);
+   if(blk == CR_SK_NONE && (!FolReady(sl) || g_fol[sl].rec_due)) blk = CR_SK_NOTREADY;
+   if(blk != CR_SK_NONE || BarsShut(s, nu))
+     {
+      g_fol[sl].last_why = (blk != CR_SK_NONE) ? blk : CR_SK_LATE;
+      g_fol_why[sl] = (blk != CR_SK_NONE) ? "" : "market_shut";
+      g_fol[sl].it_next = now + 1;
+      return;
+     }
    double bid2 = 0.0, ask2 = 0.0;
    datetime tq2 = 0;
    if(BrkQuote(s, bid2, ask2, tq2)) g_fol[sl].it.quote = (g_fol[sl].it.side > 0) ? ask2 : bid2;
@@ -10501,9 +10637,52 @@ void FolSlfix(const int sl, const ulong t, const long m, const string why, const
      }
   }
 
+// a position with no expected stop whose stop fresh quotes have shown crossed: true once that has lasted CR_FOL_WRONG_S
+// (the broker did not execute the stop); a fresh quote on the right side forgets it; more than 70 s without a fresh quote
+// showing it (a market that closed meanwhile) starts the count again
+bool FolWrongSide(const ulong t, const bool wrong, const datetime now)
+  {
+   int k = -1;
+   for(int j = 0; j < g_fol_nws; j++)
+      if(g_fol_ws_tk[j] == t) k = j;
+   if(!wrong)
+     {
+      if(k >= 0)
+        {
+         for(int j = k + 1; j < g_fol_nws; j++)
+           {
+            g_fol_ws_tk[j - 1] = g_fol_ws_tk[j];
+            g_fol_ws_t[j - 1] = g_fol_ws_t[j];
+            g_fol_ws_last[j - 1] = g_fol_ws_last[j];
+           }
+         g_fol_nws--;
+        }
+      return false;
+     }
+   if(k >= 0 && (now < g_fol_ws_last[k] || (long)(now - g_fol_ws_last[k]) > 70)) g_fol_ws_t[k] = now;   // a gap: again
+   if(k < 0)
+     {
+      if(g_fol_nws >= CR_FOL_CMAX) return false;
+      k = g_fol_nws;
+      g_fol_ws_tk[k] = t;
+      g_fol_ws_t[k] = now;
+      g_fol_nws++;
+     }
+   g_fol_ws_last[k] = now;
+   return (long)(now - g_fol_ws_t[k]) >= CR_FOL_WRONG_S;
+  }
+
+// forget the positions of FolWrongSide that are no longer open
+void FolWrongSideTidy()
+  {
+   for(int j = g_fol_nws - 1; j >= 0; j--)
+      if(!PositionSelectByTicket(g_fol_ws_tk[j])) FolWrongSide(g_fol_ws_tk[j], false, 0);
+  }
+
 void FolInvariant(const datetime now)
   {
    if(!GrdMaySend()) return;
+   FolWrongSideTidy();
    for(int i = PositionsTotal() - 1; i >= 0; i--)
      {
       ulong t = PositionGetTicket(i);
@@ -10530,7 +10709,18 @@ void FolInvariant(const datetime now)
          FolSlfix(sl, t, m, known ? (crossed ? "crossed" : "refused") : "no_expected_stop", now);
          continue;
         }
-      if(!known) continue;
+      if(!known)
+        {
+         // NOT_READY or unfollowed (SPEC 4.4): no expected stop, but the stop must lie on the right side of the market; only a
+         // fresh quote decides (a stale one changes nothing)
+         if(q && (long)(now - tq) <= CR_FOL_FRESH_S)
+           {
+            bool wrong = (side > 0 && cur >= bid) || (side < 0 && cur <= ask);
+            if(FolWrongSide(t, wrong, now)) FolSlfix(sl, t, m, "wrong_side", now);
+           }
+         continue;
+        }
+      FolWrongSide(t, false, now);
       double pt = g_sym[s].point;
       if(!(pt > 0.0)) pt = 0.01;
       if(MathAbs(cur - ex) < pt / 2) continue;
@@ -10614,11 +10804,12 @@ void FolSleeveMinute(const int sl, const datetime M, const datetime now)
          else FolIntentNew(sl, e.oid, e.side, et, e.bar, e.px, e.init_stop, 0.0);
         }
      }
-   if(!ready || !GrdMaySend()) return;                         // a NOT_READY sleeve keeps its positions (FolNotReadyExits)
-   // 2. the positions of the magic
-   FolMapPositions(sl, now);
+   if(!ready) return;                                          // a NOT_READY sleeve keeps its positions (FolNotReadyExits)
+   bool may = GrdMaySend();                                    // an observer (or a copy without the lock) sends nothing:
+   // 2. the positions of the magic                            // steps 2 and 3 are skipped, step 4 makes its intents
+   if(may) FolMapPositions(sl, now);
    // 3. the followed position against the paper (SPEC 4.5)
-   ulong tk = g_fol[sl].ticket;
+   ulong tk = may ? g_fol[sl].ticket : 0;
    if(tk != 0 && PositionSelectByTicket(tk) && !FolClosing(tk))
      {
       long X = g_fol[sl].oid;
@@ -10656,7 +10847,8 @@ void FolSleeveMinute(const int sl, const datetime M, const datetime now)
            }
         }
      }
-   // 4. a market order activating at M
+   // 4. a market order activating at M (an observer's intent is sized NOTRADE and never sent: its journal then equals the
+   //    VPS copy's with InpTrade false, SPEC 10.2 and 10.12, review F6)
    if(!open && !FolIntentActive(sl))
      {
       CrOrder o;
@@ -10939,7 +11131,25 @@ void FolArmed(const int sl, const datetime now)
      }
   }
 
-// positions of NOT_READY sleeves keep their stops and close at LatestExit(POSITION_TIME, comment) (SPEC 4.8, P9)
+// -1 while one of the sleeve's symbols has had no READY check since the load, else how long (s) the sleeve has been
+// NOT_READY since that first check (0 = READY)
+long FolNotReadyFor(const int sl, const datetime now)
+  {
+   long a = BarsNotReadyFor(g_sl[sl].sym, now);
+   if(a < 0) return -1;
+   if(g_sl[sl].sym2 >= 0)
+     {
+      long b = BarsNotReadyFor(g_sl[sl].sym2, now);
+      if(b < 0) return -1;
+      if(b > a) a = b;
+     }
+   return a;
+  }
+
+// positions of NOT_READY sleeves keep their stops and close at LatestExit(POSITION_TIME, comment) (SPEC 4.8, P9), only
+// once the first READY check since the load has decided and the sleeve has stayed NOT_READY for 10 min: every rebuild
+// starts NOT_READY, and a symbol becomes READY 2 s after the load (about 3 min with an accepted hole), when the
+// reconcile adopts the positions of the open paper trades (review F1)
 void FolNotReadyExits(const datetime now)
   {
    if(!GrdMaySend()) return;
@@ -10952,6 +11162,7 @@ void FolNotReadyExits(const datetime now)
       int sl = CrSleeveOfMagic(m);
       if(sl < 0 || !BrkRobotMagic(m) || FolClosing(t)) continue;
       if(FolReady(sl) && !g_fol[sl].rec_due) continue;
+      if(FolNotReadyFor(sl, now) < CR_FOL_NOTREADY_WAIT) continue;
       datetime opened = (datetime)PositionGetInteger(POSITION_TIME);
       string cm = PositionGetString(POSITION_COMMENT);
       datetime x = FolLatestExit(sl, opened, cm);
@@ -11022,6 +11233,7 @@ void FolResetAll()
    g_fol_nwatch = 0;
    g_fol_M = 0;
    g_fol_rec_t0 = 0;
+   g_fol_nws = 0;
   }
 
 bool FolInit(string &err)
@@ -11126,7 +11338,7 @@ void FolOnTransaction(const MqlTradeTransaction &trans) {}
 // (already inlined: CR_Rule_Brk72.mqh)
 // (already inlined: CR_Rule_F1.mqh)
 // (already inlined: CR_Rule_Orb.mqh)
-#define CR_GOLDEN_N 322                // vectors checked (SELFTEST golden=)
+#define CR_GOLDEN_N 366                // vectors checked (SELFTEST golden=)
 #define CR_GOLD_REL 1e-12               // doubles: relative tolerance (SPEC 7)
 #define CR_GOLD_NCLK 60
 #define CR_GOLD_NNYSE 40
@@ -11135,8 +11347,8 @@ void FolOnTransaction(const MqlTradeTransaction &trans) {}
 #define CR_GOLD_NORX 10
 #define CR_GOLD_NF1 30
 #define CR_GOLD_NRBP 10
-#define CR_GOLD_NRISK 3
-#define CR_GOLD_NKEY 11
+#define CR_GOLD_NRISK 5
+#define CR_GOLD_NKEY 15
 #define CR_GOLD_NSER 48
 
 // clock: utc, server, New York, London, server -> utc (pont), US summer time, UK summer time (7 per row)
@@ -11384,15 +11596,21 @@ long CR_GOLD_RBP_T[] = {
 // risk tables: the keys, then per plan the number of pairs and the rate at each key
 double CR_GOLD_KEYS[] = {
    0.0, 999.99000000000001, 2999.9899999999998, 3000.0, 3000.0100000000002, 5999.9899999999998,
-   6000.0, 11999.99, 12000.0, 50000.0, 10000000.0};
+   6000.0, 9999.9899999999998, 10000.0, 11999.99, 12000.0, 19999.990000000002,
+   20000.0, 50000.0, 10000000.0};
 int CR_GOLD_RISK_NP[] = {
-   4, 3, 2};
+   4, 3, 2,
+   4, 4};
 double CR_GOLD_RISK[] = {
-   3.0, 3.0, 3.0, 2.0, 2.0, 2.0, 1.0, 1.0, 0.5, 0.5, 0.5,
-   2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 0.5, 0.5, 0.5,
-   1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5};
-string CR_GOLD_RISK_TXT[] = {"0:3;3000:2;6000:1;12000:0.5", "0:2;6000:1;12000:0.5", "0:1;12000:0.5"};
-string CR_GOLD_RISK_NAME[] = {"F3S", "F2S", "F1S"};
+   3.0, 3.0, 3.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5,
+   0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0,
+   1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 1.0,
+   1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5,
+   0.5, 10.0, 10.0, 10.0, 5.0, 5.0, 5.0, 5.0, 5.0, 2.0, 2.0,
+   2.0, 2.0, 1.0, 1.0, 1.0, 7.0, 7.0, 7.0, 3.5, 3.5, 3.5,
+   3.5, 3.5, 1.3999999999999999, 1.3999999999999999, 1.3999999999999999, 1.3999999999999999, 0.69999999999999996, 0.69999999999999996, 0.69999999999999996};
+string CR_GOLD_RISK_TXT[] = {"0:3;3000:2;6000:1;12000:0.5", "0:2;6000:1;12000:0.5", "0:1;12000:0.5", "0:10;3000:5;10000:2;20000:1", "0:7;3000:3.5;10000:1.4;20000:0.7"};
+string CR_GOLD_RISK_NAME[] = {"F3S", "F2S", "F1S", "D2", "S7"};
 // the series (1 = NaN in the _NAN tables), pandas ewm(alpha=1/14, adjust=False).mean() and rolling(14, 9).mean()
 double CR_GOLD_X[] = {
    0.0, 1.5800000000000001, 1.0900000000000001, 3.71, 1.01, 3.3599999999999999, 1.6200000000000001, 1.73,
@@ -11694,6 +11912,7 @@ void MainConfig()
    g_cfg.risk_table = InpRiskTable;
    g_cfg.stop_fall_pct = InpStopFallPct;
    g_cfg.stop_arm_paid = InpStopArmPaid;
+   g_cfg.guard_off = !InpGuard;
    g_cfg.sleeves = InpSleeves;
    g_cfg.k1 = InpK1;
    g_cfg.h2 = InpH2;
@@ -11746,6 +11965,13 @@ bool MainBuildCheck(string &why)
       ok = false;
       why = "CR_XAU_COMM_PTS is not 6";
      }
+#ifdef CR_BRK_NOTIONAL_X                          // the real CR_Broker defines it; the S0 stub of the rule steps' trees does not
+   if(CR_BRK_NOTIONAL_X != 20.0)
+     {
+      ok = false;
+      why = "CR_BRK_NOTIONAL_X is not 20";
+     }
+#endif
 #endif
    return ok;
   }
@@ -11972,12 +12198,14 @@ bool MainRebuild(const datetime now)
    g_M = (start > 0 && start < M1) ? start : M1;
    long minutes = 0;
    g_replaying = true;
+   g_jrn_replay = true;                           // the rules push nothing while the history is replayed
    for(datetime m = g_M + 60; m <= M1; m += 60)
      {
       MainMinute(m, false);
       minutes++;
      }
    g_replaying = false;
+   g_jrn_replay = false;
    g_M = M1;
    g_rebuilds++;
    Jrn(CR_EV_REBUILD, "-", KI("n", g_rebuilds) + KV("why", g_rebuild_why) + KT("from", start) + KT("to", M1) + KI("minutes", minutes)
@@ -12006,8 +12234,8 @@ void MainLive(const datetime now)
      }
    LedOnTimer(now);
    GrdOnTimer(now);
+   BarsTimer(now);                                // READY decided before the follower reads it (review F1)
    FolOnTimer(now);
-   BarsTimer(now);
    datetime M = BarsBarrier(now);
    if(M <= g_M) return;
    int r = BarsPoll(M);
@@ -12082,6 +12310,7 @@ int OnInit()
    g_day = 0;
    g_plan_said = false;
    g_rebuild_why = "start";
+   JrnFlush();
    return INIT_SUCCEEDED;
   }
 
@@ -12103,9 +12332,8 @@ void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest 
    FolOnTransaction(trans);
   }
 
-void OnTimer()
+void MainTimer(const datetime now)
   {
-   datetime now = TimeTradeServer();
    GrdLockRefresh();
    if(g_st == CR_ST_HALT || g_st == CR_ST_INIT) return;
    if(g_st == CR_ST_WAIT)
@@ -12124,6 +12352,12 @@ void OnTimer()
       g_st = CR_ST_LIVE;
      }
    MainLive(now);
+  }
+
+void OnTimer()
+  {
+   MainTimer(TimeTradeServer());
+   JrnFlush();                                    // the journal file is flushed once per pass (review F9)
   }
 
 #endif

@@ -16,12 +16,13 @@
 #property version   "2.00"
 #property description "ClaudeRobot: ten lab rules on XAUUSD, US100, BTCUSD and ETHUSD; paper chains followed by market orders with broker stops."
 
-// ---- the 14 inputs (SPEC 1). Plain types only.
+// ---- the 15 inputs (SPEC 1). Plain types only.
 input bool     InpTrade            = true;                          // Trade (VPS copy: false = no new entry; elsewhere: observe)
 input datetime InpPlanStart        = 0;                             // Plan start, server time (0: no new entry on a real account)
-input string   InpRiskTable        = "0:3;3000:2;6000:1;12000:0.5"; // Risk table from:pct, read on max(balance, money paid in) (F3S)
-input double   InpStopFallPct      = 25.0;                          // Plan stop: fall of the reference, percent
+input string   InpRiskTable        = "0:10;3000:5;10000:2;20000:1"; // Risk table from:pct, read on max(balance, money paid in) (D2)
+input double   InpStopFallPct      = 0.0;                           // Plan stop: fall of the reference, percent (0 = no plan stop)
 input double   InpStopArmPaid      = 12000.0;                       // Plan stop: armed once this much has been paid in
+input bool     InpGuard            = false;                         // Disaster guard at -50 % of the reference (D2: off)
 input string   InpSleeves          = "ALL";                         // Codes allowed to trade (the others: paper only)
 input int      InpK1               = -1;                            // K1 on BKE: -1 demo on / real off, 0 off, 1 on
 input int      InpH2               = -1;                            // H2 on F1E: -1 demo on / real off, 0 off, 1 on

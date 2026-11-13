@@ -62,7 +62,10 @@
 //|   A symbol whose load read failed (no history yet) never blocks  |
 //|   the others; its bars are taken as they come, and its history,  |
 //|   if it appears later, asks for a rebuild. READY stays until the |
-//|   next load. NOT_READY for 10 min: one push.                     |
+//|   next load. NOT_READY for 10 min: one push. BarsNotReadyFor     |
+//|   tells the follower whether the first check has decided yet and |
+//|   for how long the symbol has been NOT_READY since (SPEC 4.8: a  |
+//|   NOT_READY exit waits for both, review F1).                     |
 //| Daily cost statistics (COST, SPEC 2.6): per symbol and server    |
 //| day, over the kept bars fed, the median of the raw spread and of |
 //| the paper spread, in bp of the bar's opening mid.                |
@@ -90,6 +93,12 @@
 //|   BarsTimer(now_srv)      READY checks, GAP and NOTREADY pushes  |
 //|   BarsPaperQuotes(sym, bid, ask, pbid, pask)  live paper quotes  |
 //|   BarsMasked(sym, reason) masked bars since the load, by reason  |
+//|   BarsNotReadyFor(sym, now_srv)  -1 before the first READY check |
+//|                           since the load, 0 when READY, else the |
+//|                           seconds since that first check         |
+//|   BarsShut(sym, M)        minute M (UTC) is masked for the symbol|
+//|                           or lies in a known closure (no order:  |
+//|                           SPEC 4.1, review F2)                   |
 //| Journal: READY / NOTREADY (code = symbol: bars, raw bars, first, |
 //| last, masked by reason, holes, why), GAP (hole from/to, or a     |
 //| live missing minute), LATEBAR (code = symbol: why and the bar),  |
@@ -315,6 +324,7 @@ public:
    bool     depth;
    bool     stable;
    bool     said;                      // a READY / NOTREADY line was written since the load
+   datetime first_check;               // server time of the first READY check (decision) since the load, 0 = none yet
    string   why_said;
    bool     push10;
    datetime load_srv;                  // server time of the load
@@ -359,6 +369,7 @@ public:
       depth = false;
       stable = false;
       said = false;
+      first_check = 0;
       why_said = "";
       push10 = false;
       load_srv = 0;
@@ -658,6 +669,7 @@ public:
       if(ready || !g_sym[sym].ok) return;
       if(now < next_check) return;
       next_check = now + CR_BARS_RECHECK_S;
+      if(first_check == 0) first_check = now;             // the first decision since the load (READY or NOT_READY below)
       string nm = g_sym[sym].name;
       // (3) the second read of the load window agrees with the first
       if(!stable && !no_data)
@@ -983,6 +995,29 @@ bool BarsCost(const int sym, const datetime day_srv, double &raw_bp, double &pap
       return false;
      }
    return g_bs[sym].Cost(day_srv, raw_bp, paper_bp);
+  }
+
+// -1: no READY check has decided since the load; 0: READY; else the seconds the symbol has been NOT_READY since its first
+// check (SPEC 4.8: positions of NOT_READY sleeves close at LatestExit only after that first decision and a wait)
+long BarsNotReadyFor(const int sym, const datetime now_srv)
+  {
+   if(sym < 0 || sym >= CR_NSYM) return -1;
+   if(g_bs[sym].ready) return 0;
+   if(g_bs[sym].first_check == 0) return -1;
+   return (long)(now_srv - g_bs[sym].first_check);
+  }
+
+// minute M (UTC) is masked for the symbol (SPEC 2.2: the bar of M would not be kept) or lies in a known closure of its
+// family (SPEC 2.1): no order is sent in it (SPEC 4.1, review F2)
+bool BarsShut(const int sym, const datetime M)
+  {
+   if(sym < 0 || sym >= CR_NSYM) return true;
+   MqlRates r;
+   ZeroMemory(r);
+   r.time = ClkUtcToServer(M - M % 60);
+   if(BarsMaskReason(sym, r) != CR_MASK_KEPT) return true;
+   datetime c0 = 0, c1 = 0;
+   return ClkInClosure(g_sym[sym].family, M - M % 60, c0, c1);
   }
 
 long BarsMasked(const int sym, const int reason)

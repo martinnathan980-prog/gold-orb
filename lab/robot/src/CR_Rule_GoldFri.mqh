@@ -32,11 +32,16 @@
 //|          (:129-137: no quote within 10 min of 16:45), which reads|
 //|          a future bar: a NYSE full holiday or half day           |
 //|          (ClkNyse: us_holidays plus the typed NYSE and HALF      |
-//|          entries), a known XAU closure that starts before 16:55  |
+//|          entries), a known XAU closure that starts before 16:46  |
 //|          (the closure holding 13:30, or the next one: ClkNext-   |
 //|          Closure), or a broker Friday session that does not hold |
-//|          13:30 or ends before 16:55 (SymbolInfoSessionTrade; no  |
-//|          information = no skip). In 2013-2021 this skips the     |
+//|          13:30 or ends before 16:46 (SymbolInfoSessionTrade; no  |
+//|          information = no skip): the 16:45 exit bar must be      |
+//|          tradable (review F7: 16:55 skipped every Friday of a    |
+//|          broker whose gold session ends a few minutes earlier).  |
+//|          A Friday skipped for the broker session is pushed (live |
+//|          only, not while the history is replayed). In 2013-2021  |
+//|          this skips the                                          |
 //|          same 26 Fridays as the lab: Good Friday, July 4,        |
 //|          Christmas and New Year (no gold bar at 13:30) and the   |
 //|          Friday after Thanksgiving (last bar 13:42-14:05). The   |
@@ -63,7 +68,7 @@
 #define CR_GFP_DOW 5                   // weekdays (4,): pandas Friday = ClkDow 5 (strategy.py:243)
 #define CR_GFP_ENTRY_MIN 810           // entry 13:30 New York (:243)
 #define CR_GFP_EXIT_MIN 1005           // exit 16:45 New York (:243)
-#define CR_GFP_OPEN_MIN 1015           // 16:55: a quote within 10 min of 16:45 (skip_early_close, :136)
+#define CR_GFP_OPEN_MIN 1006           // 16:46: the 16:45 exit bar can trade (skip_early_close: a quote within 10 min of 16:45, :136)
 #define CR_GFP_TOL_S 300               // tol_min 5: the first kept bar starting in [13:30, 13:35] (:65, :102)
 #define CR_GFP_LIMIT_S 3600            // limit_min 60: fills on bars starting before 14:30 (:206)
 #define CR_GFP_STOP_ATR 3.0            // stop_atr 3 (:243)
@@ -73,8 +78,8 @@
 // ---- reasons of a skipped Friday (DEC info v1)
 #define CR_GFP_SKIP_FULL 1             // NYSE full holiday (v2 0)
 #define CR_GFP_SKIP_HALF 2             // NYSE half day (v2 0)
-#define CR_GFP_SKIP_CLOSURE 3          // a known XAU closure starts before 16:55 (v2 = its start, UTC)
-#define CR_GFP_SKIP_SESSION 4          // the broker session does not hold 13:30 or ends before 16:55 (v2 = its end, server s of day; -1 none)
+#define CR_GFP_SKIP_CLOSURE 3          // a known XAU closure starts before 16:46 (v2 = its start, UTC)
+#define CR_GFP_SKIP_SESSION 4          // the broker session does not hold 13:30 or ends before 16:46 (v2 = its end, server s of day; -1 none)
 #define CR_GFP_SKIP_ATR 5              // ATR not finite or not > 0 (v2 = hour rows so far)
 #define CR_GFP_SKIP_NOBAR 6            // no kept bar before 13:30 yet (v2 0)
 
@@ -92,8 +97,8 @@ bool GfpSessionHoldsAt(const long from_s, const long to_s, const long a, long &e
    return f <= a && a < t;
   }
 
-// SPEC 3 GFP: the broker's Friday trade sessions of sym against 13:30 (t0) and 16:55 (t1) New York, UTC. Returns true
-// (skip) when the broker lists sessions and none holds 13:30 and runs to 16:55 or later; end_s = the latest end of a
+// SPEC 3 GFP: the broker's Friday trade sessions of sym against 13:30 (t0) and 16:46 (t1) New York, UTC. Returns true
+// (skip) when the broker lists sessions and none holds 13:30 and runs to 16:46 or later; end_s = the latest end of a
 // session holding 13:30 (server seconds of the day), -1 when none holds it. No session listed: false (no
 // information, no skip; the harness broker lists none).
 bool GfpSessionShort(const string sym, const datetime t0, const datetime t1, long &end_s)
@@ -231,6 +236,18 @@ public:
       if(code != 0)
         {
          SkipLine(M, code, v2, out);
+         if(code == CR_GFP_SKIP_SESSION && !g_jrn_replay)       // never silent (review F7); not at every rebuild
+           {
+            string end = "aucune";
+            if(v2 >= 0.0)
+              {
+               long e = (long)v2;
+               long hh = e / 3600, mm = (e % 3600) / 60;
+               end = IntegerToString(hh) + "h" + (mm < 10 ? "0" : "") + IntegerToString(mm) + " (heure serveur)";
+              }
+            JrnPush("GFP : vendredi saute, la seance or du courtier ne couvre pas 13:30-16:46 New York (fin de seance "
+                    + end + ")", false);
+           }
          return;
         }
       CrOrder o;

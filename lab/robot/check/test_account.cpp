@@ -6,7 +6,7 @@
 //                             when every check holds. Built with -DCR_NO_GUARD the GUARD worlds expect no latch.
 //   test_account rows         the symbol and sleeve rows of this test, one per line (test_account.py compares them with
 //                             src/CR_Registry.mqh and lab/r2/fp_costs.json)
-//   test_account t7a TRADES PAYS WEEKS TABLE OUT [SKEW]
+//   test_account t7a TRADES PAYS WEEKS TABLE OUT [SKEW [FALL ARM GUARD]]
 //                             T7a: the lab's trades (TRADES: i,t_in,t_out,time_exit,code,side,entry,risk,pnl, UTC
 //                             seconds, the lab's order) and payments (PAYS: t,amount) through the mock broker. Every
 //                             entry is a market intent sized by SizSize (stop_dist = the lab's risk, quote = the lab's
@@ -18,7 +18,10 @@
 //                             the WEEKS rows), OUT/summary.txt and the journal (SIZE lines) under OUT/ClaudeRobot.
 //                             SKEW = s <= 0: each payment's deal is in the history s seconds before the balance shows
 //                             it (R16); a sizing that meets SETTLE is asked again 2 s later, inside its 5-minute
-//                             window, as the follower does.
+//                             window, as the follower does. FALL ARM GUARD: InpStopFallPct (0 = no plan stop),
+//                             InpStopArmPaid and InpGuard (0/1) of the plan; default 25 12000 1 (F3S, F2S, F1S; the
+//                             T7a builds of those plans also define CR_NO_GUARD); D2 and S7 run 0 12000 0 in the build
+//                             with the guard compiled in, so InpGuard false is what keeps it off.
 // The module's state is the EA's own (translated src/CR_Sizing.mqh and src/CR_Ledger.mqh, the clock double of S0).
 #include "mock_replay.h"
 #include "ea.cpp"
@@ -66,6 +69,8 @@ static const WSl W_SL[10] = {
    {10, "ORX", "orb_asia_2d_buf10_xauusd", CR_K_ORX, 0, CR_XAU, -1, CR_CH_NONE, 1.0, CR_REF_NONE}};
 static const double W_USDEUR = 0.89;           // account.py USD_EUR, the mock's rp_usdeur
 static const char *F3S = "0:3;3000:2;6000:1;12000:0.5";
+static const char *D2 = "0:10;3000:5;10000:2;20000:1";          // the default plan (SPEC 1, PROTOCOL_V3 Addendum G)
+static const char *S7 = "0:7;3000:3.5;10000:1.4;20000:0.7";     // the X = 7 preset
 
 static void ea_rows()
   {
@@ -347,9 +352,13 @@ static void u_tables()
    ck(SizParseTable(" 0 : 3 ; 3000 : 2 ", fr, pc, n, err) && n == 2 && pc[1] == 2, "spaces are allowed");
    ck(SizParseTable("0:3;3000:2;", fr, pc, n, err) && n == 2, "one ';' may end the list");
    ck(SizParseTable("0:5", fr, pc, n, err) && n == 1 && pc[0] == 5, "5 % is allowed");
+   ck(SizParseTable("0:10", fr, pc, n, err) && n == 1 && pc[0] == 10, "10 % is allowed (D2's start, SPEC 1)");
+   ck(SizParseTable(D2, fr, pc, n, err) && n == 4 && fr[1] == 3000 && fr[2] == 10000 && fr[3] == 20000 && pc[0] == 10 && pc[1] == 5
+      && pc[2] == 2 && pc[3] == 1, "D2 parses");
+   ck(SizParseTable(S7, fr, pc, n, err) && n == 4 && fr[2] == 10000 && pc[0] == 7 && pc[1] == 3.5 && pc[2] == 1.4 && pc[3] == 0.7, "S7 parses");
    ck(SizParseTable("0:0.25;100.5:1.5", fr, pc, n, err) && n == 2 && fr[1] == 100.5 && pc[0] == 0.25, "decimals");
    const char *bad[] = {"", "  ", ";", "abc", "0:3;3000", "0:3:1", "100:3", "0:3;3000:2;2000:1", "0:3;3000:2;3000:1", "0:0", "0:-1",
-                        "0:5.5", "0:6", "-0:3", "0:3;;3000:2", "0:3x", "0:1e1", "0:nan", "0:3;3000:2;;", "1e3:2", "0:3;6000",
+                        "0:10.5", "0:11", "0:10;3000:12", "-0:3", "0:3;;3000:2", "0:3x", "0:1e1", "0:nan", "0:3;3000:2;;", "1e3:2", "0:3;6000",
                         "0:.", "0:3.0.1", "0:3,3000:2", "0;3", ":3", "0:"};
    for(const char *b : bad)
      {
@@ -367,13 +376,16 @@ static void u_tables()
    struct Plan { const char *s; std::vector<double> thr, pct; };
    std::vector<Plan> plans = {{F3S, {3000.0, 6000.0, 12000.0}, {3.0, 2.0, 1.0, 0.5}},
                               {"0:2;6000:1;12000:0.5", {6000.0, 12000.0}, {2.0, 1.0, 0.5}},
-                              {"0:1;12000:0.5", {12000.0}, {1.0, 0.5}}};
+                              {"0:1;12000:0.5", {12000.0}, {1.0, 0.5}},
+                              {D2, {3000.0, 10000.0, 20000.0}, {10.0, 5.0, 2.0, 1.0}},
+                              {S7, {3000.0, 10000.0, 20000.0}, {7.0, 3.5, 1.4, 0.7}}};
    uint64_t rng = 0x9E3779B97F4A7C15ULL;
    for(const Plan &p : plans)
      {
       g_cfg.risk_table = p.s;
       ck(SizInit(err), F("SizInit %s", p.s));
-      std::vector<double> keys = {0.0, 1.0, 2999.99, 3000.0, 3000.01, 5999.99, 6000.0, 11999.99, 12000.0, 12000.01, 1e9};
+      std::vector<double> keys = {0.0, 1.0, 2999.99, 3000.0, 3000.01, 5999.99, 6000.0, 9999.99, 10000.0, 11999.99, 12000.0, 12000.01,
+                                  19999.99, 20000.0, 20000.01, 1e9};
       for(int k = 0; k < 2000; k++)
         {
          rng ^= rng << 13;
@@ -499,7 +511,9 @@ static void u_plan()
    // input checks of LedInit
    g_world = "LedInit inputs";
    g_cfg.stop_fall_pct = 0.0;
-   ck(!LedInit(err), "InpStopFallPct 0 refused");
+   ck(LedInit(err), "InpStopFallPct 0 accepted: no plan stop (D2, S7)");
+   g_cfg.stop_fall_pct = -1.0;
+   ck(!LedInit(err), "InpStopFallPct < 0 refused");
    g_cfg.stop_fall_pct = 100.0;
    ck(!LedInit(err), "InpStopFallPct 100 refused");
    g_cfg.stop_fall_pct = 25.0;
@@ -642,12 +656,17 @@ static void u_stop()
   {
    string err;
    long t = SV(2021, 1, 4, 9, 0, 0);
-   for(int pass = 0; pass < 2; pass++)
+   for(int pass = 0; pass < 3; pass++)
      {
-      g_world = pass == 0 ? "plan stop armed" : "plan stop not armed";
-      w_reset(1000.0, t, true, SV(2021, 1, 4, 0, 0, 0), F3S);
+      g_world = pass == 0 ? "plan stop armed" : (pass == 1 ? "plan stop not armed" : "no plan stop (InpStopFallPct 0, D2)");
+      w_reset(1000.0, t, true, SV(2021, 1, 4, 0, 0, 0), pass == 2 ? D2 : F3S);
+      if(pass == 2)
+        {
+         g_cfg.stop_fall_pct = 0.0;
+         LedInit(err);
+        }
       w_ready();
-      int ndep = pass == 0 ? 11 : 10;
+      int ndep = pass == 1 ? 10 : 11;
       for(int k = 0; k < ndep; k++)
         {
          w_at(SV(2021, 1, 4, 10 + k, 0, 0));
@@ -664,6 +683,14 @@ static void u_stop()
       if(pass == 1)
         {
          ck(!LedStopLatched() && LedStopTime() == 0, "P_in 11,000 < 12,000: not armed, no stop");
+         continue;
+        }
+      if(pass == 2)
+        {
+         ck(!LedStopLatched() && LedStopTime() == 0 && !LedStoppedAt(C + 60), "InpStopFallPct 0: the same fall never stops the plan");
+         CrIntent it2 = w_intent("BKB", 1, CR_ET_MARKET, C + 60, 0.0, 500.0, 30000.0, 0.0, CR_SK_NONE);
+         ck(SizSize(it2, C + 60, false) != CR_SK_STOPPED, "InpStopFallPct 0: no STOPPED skip");
+         ckeq(it2.rate, 2.0, "D2 at max(B 8,999, P_in 12,000): 2 % (10,000 <= 12,000 < 20,000)");
          continue;
         }
       ckeq(LedPaidIn(C + 60), 12000.0, "P_in armed");
@@ -1259,11 +1286,14 @@ static int mode_t7a(int argc, char **argv)
   {
    if(argc < 7)
      {
-      fprintf(stderr, "usage: test_account t7a TRADES PAYS WEEKS TABLE OUT [SKEW]\n");
+      fprintf(stderr, "usage: test_account t7a TRADES PAYS WEEKS TABLE OUT [SKEW [FALL ARM GUARD]]\n");
       return 2;
      }
    string out = argv[6];
    long skew = (argc >= 8) ? atol(argv[7]) : 0;
+   double fall = (argc >= 11) ? strtod(argv[8], nullptr) : 25.0;
+   double arm = (argc >= 11) ? strtod(argv[9], nullptr) : 12000.0;
+   bool guard = (argc >= 11) ? (atoi(argv[10]) != 0) : true;
    if(skew > 0)
      {
       fprintf(stderr, "t7a: SKEW must be 0 or negative (the deal before the balance)\n");
@@ -1323,6 +1353,17 @@ static int mode_t7a(int argc, char **argv)
    long T = ClkUtcToServer(tr[0].t_in) - 7 * 86400;
    w_clear_logs(out);
    if(!w_reset(1000.0, T + 1, true, T, argv[5])) return 3;
+   g_cfg.stop_fall_pct = fall;                   // the plan's stop and guard inputs (SPEC 1: D2 and S7 have neither)
+   g_cfg.stop_arm_paid = arm;
+   g_cfg.guard_off = !guard;
+   {
+      string err2;
+      if(!LedInit(err2))
+        {
+         fprintf(stderr, "t7a: LedInit refused the plan's inputs: %s\n", err2.c_str());
+         return 3;
+        }
+   }
    g_cfg.push = false;
    rp_now = T + 1;
    LedRead(rp_now);

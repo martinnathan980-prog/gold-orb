@@ -38,6 +38,7 @@ import glob
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -169,12 +170,18 @@ def same_journals(a, b):
     return all(open(x, "rb").read() == open(y, "rb").read() for x, y in zip(fa, fb))
 
 
+def golden_n():
+    """CR_GOLDEN_N of the generated src/CR_Golden.mqh (the SELFTEST line's golden=)"""
+    m = re.search(r"^#define CR_GOLDEN_N (\d+)", open(os.path.join(ROBOT, "src", "CR_Golden.mqh")).read(), re.M)
+    return int(m.group(1)) if m else -1
+
+
 def contract(rows):
     ev = {}
     for r in rows:
         ev[r["ev"]] = ev.get(r["ev"], 0) + 1
     st = [r for r in rows if r["ev"] == "SELFTEST"]
-    ok = (ev.get("INIT") == 2 and len(st) == 1 and st[0].get("ok") == 1 and st[0].get("golden") == 322 and ev.get("PLAN") == 1
+    ok = (ev.get("INIT") == 2 and len(st) == 1 and st[0].get("ok") == 1 and st[0].get("golden") == golden_n() and ev.get("PLAN") == 1
           and ev.get("READY") == 4 and ev.get("REBUILD") == 1 and "ERROR" not in ev and "SEND" not in ev)
     return {"events": dict(sorted(ev.items())), "selftest": st[0] if st else None, "pass": bool(ok)}
 

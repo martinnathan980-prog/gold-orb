@@ -53,7 +53,9 @@
 //| LatestExit (SPEC 4.8): t_dec = the decision of the comment when  |
 //| it lies on an hour at most 10 min before open_time, else         |
 //| open_time floored to the UTC hour; exit 15:55 New York on t_dec's|
-//| date (the H2 hold needs the paper: not applied).                 |
+//| date, or, while H2 is on, the H2 horizon xh of that decision     |
+//| (F1H2Horizon: a held trade may run to it; review F1: a NOT_READY |
+//| exit at 15:55 closed held positions whose paper trade was open). |
 //+------------------------------------------------------------------+
 #ifndef CR_RULE_F1_MQH
 #define CR_RULE_F1_MQH
@@ -96,6 +98,17 @@ datetime F1FridayEnd(const datetime t)
    return ClkServerToUtc((datetime)fri);
   }
 
+// H2's horizon of a decision at t_dec (SPEC 3, variants.py:118-126): 15:55 New York on t_dec's New York date + 2 business
+// days, not after Friday 23:54 server of the entry's server week (the entry bar lies in t_dec's server day); the paper
+// and LatestExit read the same value
+datetime F1H2Horizon(const datetime t_dec)
+  {
+   datetime ny = ClkUtcToNy(t_dec);
+   datetime xa = ClkNyToUtc((datetime)((long)ClkBusinessDays(ClkDay(ny), CR_F1_H2_BDAYS) + CR_F1_EXIT_MIN * 60));
+   datetime xb = F1FridayEnd(t_dec);
+   return (xa < xb) ? xa : xb;
+  }
+
 class CRuleF1
   {
 public:
@@ -121,6 +134,8 @@ public:
    bool      m_pd;                     // a previous New York date with session bars exists
    double    m_pdh, m_pdl, m_pdc;      // that date's high, low and last close
    double    m_x[];                    // the 15 features of the candidate (FEATURES order)
+
+             CRuleF1() { sl = -1; m_sym = -1; m_id = 0; m_h2 = false; m_refuse = 0; }
 
    bool Init(const int sleeve)
      {
@@ -290,10 +305,7 @@ public:
       od.dec = t_dec;
       if(m_h2)
         {
-         datetime ny = ClkUtcToNy(t_dec);
-         datetime xa = ClkNyToUtc((datetime)((long)ClkBusinessDays(ClkDay(ny), CR_F1_H2_BDAYS) + CR_F1_EXIT_MIN * 60));
-         datetime xb = F1FridayEnd(t_dec);                   // the entry bar lies in t_dec's server day
-         od.xh = (xa < xb) ? xa : xb;
+         od.xh = F1H2Horizon(t_dec);
          od.xh_r = CR_F1_H2_R;
         }
       if(!CrOutOrder(out, od)) JrnError(g_sl[sl].code, "more than CR_OUT_MAX orders at " + IntegerToString((long)t_dec));
@@ -337,6 +349,11 @@ public:
       datetime x0 = t_dec + CR_F1_HOLD_S;
       datetime cap = F1ExitClock(t_dec);
       if(cap < x0) x0 = cap;
+      if(m_h2)
+        {
+         datetime xh = F1H2Horizon(t_dec);                   // a held trade may run to xh (SPEC 4.8 table, F1 row)
+         if(xh > x0) x0 = xh;
+        }
       return x0;
      }
   };

@@ -127,6 +127,8 @@ static long   rp_selected = -1;              // index in rp_pos of the selected 
 static int    rp_last_error = 0;
 static FILE  *rp_log = nullptr;
 static long   rp_copy_calls = 0, rp_pushes = 0;
+static long   rp_flushes = 0;                // FileFlush calls of the EA (SPEC 2.6: once per timer pass at most)
+static std::set<ulong> rp_sl_stuck;          // positions whose broker stop the broker does not execute (mock_faults sl_stuck)
 [[maybe_unused]] static long rp_timer_calls = 0;
 static MqlTradeResult rp_res = MqlTradeResult();
 static double rp_copy_fail = 0.0;
@@ -623,7 +625,7 @@ bool FileIsEnding(int h)
    ungetc(c, rp_files[h]);
    return false;
   }
-void FileFlush(int h) { if(rp_files.count(h)) fflush(rp_files[h]); }
+void FileFlush(int h) { rp_flushes++; if(rp_files.count(h)) fflush(rp_files[h]); }
 void FileClose(int h) { if(rp_files.count(h)) { fclose(rp_files[h]); rp_files.erase(h); } }
 static std::map<long, std::pair<std::vector<string>, size_t>> rp_finds;
 static long rp_next_find = 1;
@@ -1088,7 +1090,7 @@ static void rp_broker_stops(RpSym &s, long i)
    for(long k = (long)rp_pos.size() - 1; k >= 0; k--)
      {
       RpPos &p = rp_pos[k];
-      if(p.symbol != s.name || p.sl == 0.0 || p.time > b.time + 59) continue;
+      if(p.symbol != s.name || p.sl == 0.0 || p.time > b.time + 59 || rp_sl_stuck.count(p.ticket)) continue;
       bool first = (p.time >= b.time);
       long magic = rp_stop_magic0 ? 0 : p.magic;
       if(p.type == 0 && b.low <= p.sl)
@@ -1104,7 +1106,7 @@ static void rp_tick_stops(RpSym &s)
    for(long k = (long)rp_pos.size() - 1; k >= 0; k--)
      {
       RpPos &p = rp_pos[k];
-      if(p.symbol != s.name || p.sl == 0.0) continue;
+      if(p.symbol != s.name || p.sl == 0.0 || rp_sl_stuck.count(p.ticket)) continue;
       long magic = rp_stop_magic0 ? 0 : p.magic;
       if(p.type == 0 && bid <= p.sl) rp_close_at(k, bid * (1 - s.slip_stop), DEAL_REASON_SL, s.tick_time, magic);
       else if(p.type == 1 && ask >= p.sl) rp_close_at(k, ask * (1 + s.slip_stop), DEAL_REASON_SL, s.tick_time, magic);
@@ -1521,8 +1523,9 @@ int main()
    OnDeinit(REASON_CLOSE);
    double run_s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
    rp_save_state();
-   printf("events %zu from %ld to %ld  load %.3f s  replay %.3f s  timer calls %ld  copyrates %ld (failed %ld)  open positions %zu  deals %zu  pushes %ld\n",
-          ev.size(), ev.front(), ev.back(), load_s, run_s, rp_timer_calls, rp_copy_calls, rp_copy_failed, rp_pos.size(), rp_deals.size(), rp_pushes);
+   printf("events %zu from %ld to %ld  load %.3f s  replay %.3f s  timer calls %ld  copyrates %ld (failed %ld)  open positions %zu  deals %zu  pushes %ld  flushes %ld\n",
+          ev.size(), ev.front(), ev.back(), load_s, run_s, rp_timer_calls, rp_copy_calls, rp_copy_failed, rp_pos.size(), rp_deals.size(), rp_pushes,
+          rp_flushes);
    if(rp_log) fclose(rp_log);
    return 0;
   }

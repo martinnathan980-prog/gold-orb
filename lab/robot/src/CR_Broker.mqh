@@ -62,7 +62,9 @@
 #include "CR_Journal.mqh"
 
 #define CR_BRK_TICK_AGE 10              // a last tick older than 10 s: no open (ClaudeMains InpMaxTickAgeSec)
-#define CR_BRK_NOTIONAL_X 20.0          // the value of a new position is cut to 20 x the balance (InpMaxNotionalX)
+#ifndef CR_BRK_NOTIONAL_X
+#define CR_BRK_NOTIONAL_X 20.0          // the value of a new position is cut to 20 x the balance (InpMaxNotionalX); 20 in
+#endif                                  // every release build (self-test); T7b's harness raises it (the lab has no such cap)
 #define CR_BRK_RISK_X 1.25              // post-fill: the real money risk at most 1.25 x the sized budget
 #define CR_BRK_DEV_SPREADS 2            // deviation: 2 spreads
 #define CR_BRK_STABLE_S 2               // two reads of positions and orders at least 2 s apart

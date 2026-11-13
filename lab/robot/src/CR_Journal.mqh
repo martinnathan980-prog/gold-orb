@@ -8,7 +8,10 @@
 //|   an exact round trip; booleans 0/1; times integer seconds.      |
 //| Lines go to Print (live) and to MQL5/Files/ClaudeRobot/          |
 //| <yyyymmdd>.log (server date; files older than 30 days removed).  |
-//| Lines written while the history is replayed carry rp=1.          |
+//| Lines written while the history is replayed carry rp=1: they go  |
+//| to the file only, never to Print (a rebuild writes thousands of  |
+//| them); the file is flushed once per timer pass (JrnFlush, the    |
+//| harness only in tester mode), not line by line (review F9).      |
 //| Pushes (French, ASCII): "Robot Claude : ..." with the hands'     |
 //| limits (ClaudeMains.mq5:161-184): at most 2 a second and 5 a     |
 //| minute, of which 2 are kept for urgent messages.                 |
@@ -31,6 +34,8 @@ datetime g_push_sec = 0, g_push_min = 0;
 int      g_push_n = 0, g_push_m = 0;
 long     g_push_sent = 0, g_push_dropped = 0;
 long     g_jrn_file_errors = 0;          // file calls that failed (the journal still goes to Print)
+bool     g_jrn_dirty = false;            // lines written since the last flush
+bool     g_jrn_replay = false;           // the history is replayed (CR_Main's rebuild): rules push nothing meanwhile
 
 string CR_REASON_NAME[11] = {"stop", "target", "time", "trail", "eod", "nofill", "skip", "gap", "void", "refused", "rule"};
 
@@ -95,6 +100,7 @@ void JrnClose()
    if(g_jrn_h != INVALID_HANDLE) FileClose(g_jrn_h);
    g_jrn_h = INVALID_HANDLE;
    g_jrn_day = 0;
+   g_jrn_dirty = false;
   }
 
 void JrnOpenDay(const datetime srv_day)
@@ -136,10 +142,21 @@ void JrnAt(const datetime utc, const int ev, const string code, const string kv)
    if(g_jrn_h != INVALID_HANDLE)
      {
       FileWriteString(g_jrn_h, line + "\n");
-      if(g_cfg.tester || !g_cfg.harness) FileFlush(g_jrn_h);
+      g_jrn_dirty = true;
      }
-   if(g_jrn_print) Print(line);
+   int n = StringLen(kv);
+   bool rp = (n >= 5 && StringSubstr(kv, n - 5) == "|rp=1");   // JrnRp always ends the line
+   if(g_jrn_print && !rp) Print(line);
    g_jrn_lines++;
+  }
+
+// once per timer pass (and at the end of OnInit): the lines of the pass reach the file (live and tester builds; a harness
+// replay outside tester mode never flushes, as before)
+void JrnFlush()
+  {
+   if(!g_jrn_dirty || g_jrn_h == INVALID_HANDLE) return;
+   g_jrn_dirty = false;
+   if(g_cfg.tester || !g_cfg.harness) FileFlush(g_jrn_h);
   }
 
 // an event stamped now (the server clock converted to UTC)

@@ -70,7 +70,11 @@ int main()
                            + CR_GOLD_NRISK * (CR_GOLD_NKEY + 1) + 2 * CR_GOLD_NSER,
          "CR_GOLDEN_N counts every vector", std::to_string(CR_GOLDEN_N));
    check(CR_GOLD_NCLK == 60 && CR_GOLD_NNYSE == 40 && CR_GOLD_NATD == 20 && CR_GOLD_NBDAY == 20 && CR_GOLD_NF1 == 30
-         && CR_GOLD_NRBP == 10 && CR_GOLD_NRISK == 3, "SPEC 7 T10 sizes: 60 clock, 40 NYSE, 20 + 20 days, 30 F1, 10 riskbp, 3 tables");
+         && CR_GOLD_NRBP == 10 && CR_GOLD_NRISK == 5 && CR_GOLD_NKEY == 15,
+         "SPEC 7 T10 sizes: 60 clock, 40 NYSE, 20 + 20 days, 30 F1, 10 riskbp, 5 tables (F3S, F2S, F1S, D2, S7) at 15 keys");
+   check(CR_GOLD_RISK_NAME[3] == "D2" && CR_GOLD_RISK_TXT[3] == "0:10;3000:5;10000:2;20000:1" && CR_GOLD_RISK[3 * CR_GOLD_NKEY] == 10.0
+         && CR_GOLD_RISK_NAME[4] == "S7" && CR_GOLD_RISK_TXT[4] == "0:7;3000:3.5;10000:1.4;20000:0.7" && CR_GOLD_RISK[4 * CR_GOLD_NKEY] == 7.0,
+         "the default plan D2 (10 % at the start: SPEC 1 accepts rates up to 10 %) and the preset S7 are golden tables");
    check(LedRate(5000.0) == before5k && LedRate(20000.0) == before20k && before5k == 1.0 && before20k == 0.5,
          "the live risk table (F1S) is put back", std::to_string(LedRate(5000.0)) + " " + std::to_string(LedRate(20000.0)));
 
@@ -125,6 +129,14 @@ int main()
    CR_GOLD_RISK_TXT[2] = "0:1;12000";
    expect_fail("risk_table", 2);
    CR_GOLD_RISK_TXT[2] = t0;
+   d0 = CR_GOLD_RISK[3 * CR_GOLD_NKEY + 8];                 // D2 at 10,000 EUR: 2 %
+   CR_GOLD_RISK[3 * CR_GOLD_NKEY + 8] = 5.0;
+   expect_fail("risk_table", 3);
+   CR_GOLD_RISK[3 * CR_GOLD_NKEY + 8] = d0;
+   t0 = CR_GOLD_RISK_TXT[3];
+   CR_GOLD_RISK_TXT[3] = "0:11;3000:5;10000:2;20000:1";      // above the 10 % cap: SizParseTable refuses it
+   expect_fail("risk_table", 3);
+   CR_GOLD_RISK_TXT[3] = t0;
    check(LedRate(5000.0) == before5k && LedRate(20000.0) == before20k, "the live risk table is put back after a failed table too");
    d0 = CR_GOLD_WIL[30];
    CR_GOLD_WIL[30] = d0 * (1.0 + 1e-9);

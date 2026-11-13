@@ -21,6 +21,8 @@
 //   deal_future SECS [n] [magic]    the open's deal and order are stamped SECS seconds after TimeTradeServer()
 // Timed actions:
 //   sl_remove MAGIC                 the stop of the open positions of that magic is removed (by hand on the phone)
+//   sl_stuck MAGIC PRICE            the stop of the open positions of that magic becomes PRICE and the broker no longer
+//                                   executes it (a stop on the wrong side that is never filled: SPEC 4.4, review F8)
 //   comment MAGIC TEXT              the comment of the open positions of that magic becomes TEXT (no spaces)
 //   hide_positions SECS             every open position is unlisted for SECS seconds (listed late after a restart)
 //   disconnect SECS                 TERMINAL_CONNECTED is false for SECS seconds
@@ -147,6 +149,20 @@ static void mf_pump()
                else p.comment = x.a.size() > 1 ? x.a[1] : "";
               }
          mf_note(x.what + " " + std::to_string(magic));
+        }
+      else if(x.what == "sl_stuck")
+        {
+         long magic = mf_arg(x, 0, 0);
+         double px = x.a.size() > 1 ? atof(x.a[1].c_str()) : 0.0;
+         int n = 0;
+         for(RpPos &p : rp_pos)
+            if(p.magic == magic)
+              {
+               p.sl = px;
+               rp_sl_stuck.insert(p.ticket);
+               n++;
+              }
+         mf_note("sl_stuck " + std::to_string(magic) + " " + std::to_string(n));
         }
       else if(x.what == "hide_positions")
         {

@@ -364,8 +364,9 @@ struct CrConfig
    bool     trade;                     // InpTrade
    datetime plan_start;                // InpPlanStart (server time; 0 = unset)
    string   risk_table;                // InpRiskTable
-   double   stop_fall_pct;             // InpStopFallPct
+   double   stop_fall_pct;             // InpStopFallPct (0 = no plan stop)
    double   stop_arm_paid;             // InpStopArmPaid
+   bool     guard_off;                 // !InpGuard: no disaster guard (SPEC 6.2; false in a zeroed config = guard on)
    string   sleeves;                   // InpSleeves
    int      k1, h2, s075;              // InpK1, InpH2, InpS075: -1, 0, 1
    string   k1t;                       // InpK1T

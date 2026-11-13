@@ -24,6 +24,23 @@ script-sleeve worlds were, now with the rules deciding:
   orx_spike    9.5: a raw spread spike (+300 points) on one gold bar inside a London range [00:00, 07:00) that has an ORX
                order: the order's level and stop are the range's H' + 0.1 W' and L - 0.1 W' with the spiked ask high
                (computed here from the bars), wider than without the spike, and the real trade follows the paper
+The worlds of the review's fixes (each fails on the shipped file of CR_BUILD 1ca53085c0c1, the one reviewed):
+  h2_restart   F1: switches on, one restart during an F1E trade held by H2 (2018-03-16 08:29 UTC, the review's case):
+               the restarted run adopts the position and closes it at the paper's held exit like the continuous run;
+               no CLOSE why=latest_exit (the old LatestExit, 15:55 New York of the decision, closed it 11 h early)
+  notready_gate F1: a restart during an ORX trade whose exit falls in the gold holiday closure of 2020-02-17 (its
+               LatestExit, with the gap rule, is before the closure; the paper exits at the reopening), gold not
+               synchronized for 5 min after the start: nothing is closed before the sleeve is READY, the position is
+               adopted and closes with the paper; then gold not synchronized for 30 min: the LatestExit close waits for
+               10 min of NOT_READY after the first READY check (SPEC 4.8)
+  crypto_weekend F2: BTC and ETH quoted all weekend 2021-07-31/08-01 (Friday's bars copied one and two days on; the
+               mask drops them): no SIZE or SEND of a crypto sleeve in the masked weekend although BKB has an order
+               there ([D, D+5] = Saturday 00:00-00:05 server), and every sleeve's paper lines and real positions equal
+               the run without the weekend bars
+  shadow       F6: one week of 2021 run by an observer (off the VPS, demo, InpTrade false) and by the VPS copy with
+               InpTrade false: the same SIZE, MISSED and paper lines (SPEC 10.2, 10.12 compare the two journals)
+  gfp_session  F7: FP's Friday gold session ending at 16:50 New York (23:50 server) is accepted (GFP trades as without
+               session information); one ending at 16:40 skips the Friday with a DEC skip line (reason 4) and a push
 Outputs: check/out/test_worlds_rules/summary.json (and the worlds' journals, removed at the end unless --keep).
 """
 import argparse
@@ -132,6 +149,194 @@ def world(name, exe, bars, frm, to, env=None):
     files = os.path.join(OUT, name)
     W.run(exe, files, bars, frm, to, env=env or {}, codes=[])
     return files, W.journal(files)
+
+
+PLAN0 = calendar.timegm((2012, 12, 1, 0, 0, 0))                 # server time: a plan start before the data
+TRADE = {"MOCK_INPUT_InpTrade": "true", "MOCK_INPUT_InpPlanStart": str(PLAN0), "MOCK_INPUT_InpPush": "true",
+         "MOCK_TIMER_CALLS": "58"}
+
+
+def cut_runs(name, exe, bars, frm, t1, to, env, env2=None):
+    """the same period once in one process and once cut at t1 (server): the second process starts from the mock's saved
+    broker state only (as in T6); env2 is added to the second process (e.g. a symbol not synchronized after the start)"""
+    fc, fr = os.path.join(OUT, name + "_continuous"), os.path.join(OUT, name + "_restarted")
+    W.run(exe, fc, bars, frm, to, env=env, codes=[])
+    W.run(exe, fr, bars, frm, t1, env=env, codes=[])
+    W.run(exe, fr, bars, t1, to, env=dict(env, **(env2 or {})), codes=[], fresh=False)
+    return fc, fr
+
+
+def first_check_utc(rows, base, after):
+    """the first READY or NOTREADY line of a symbol at or after `after` (UTC): the first READY check of that start"""
+    r = [x["utc"] for x in rows if x["ev"] in ("READY", "NOTREADY") and x["code"] == base and x["utc"] >= after]
+    return min(r) if r else None
+
+
+# ------------------------------------------------------------------ the worlds of the review's fixes
+def w_h2_restart(exe, bars):
+    """F1: an F1E trade held by H2, one restart during the hold: adopted, closed with the paper, never at 15:55"""
+    frm, t1, to = W.utc_to_srv(calendar.timegm((2018, 3, 10, 0, 0, 0))), W.utc_to_srv(calendar.timegm((2018, 3, 16, 8, 29, 0))), \
+        W.utc_to_srv(calendar.timegm((2018, 3, 17, 0, 0, 0)))
+    env = dict(TRADE, **SW_ON, MOCK_INPUT_InpK1T=k1t())
+    fc, fr = cut_runs("h2_restart", exe, bars, frm, t1, to, env)
+    rc, rr = W.journal(fc), W.journal(fr)
+    u1 = W.srv_to_utc(t1)
+    held = []                                                    # the continuous run's F1E trades held by H2 and open at t1
+    done, _ = compare.paper_chain(rc, "F1E")
+    holds = {int(r["oid"]) for r in rc if r["ev"] == "HOLD" and r["code"] == "F1E"}
+    for o, (f, x) in done.items():
+        if int(o) in holds and int(f["bar"]) < u1 < int(x["utc"]):
+            held.append((int(o), int(f["bar"]), int(x["utc"]), int(f["side"])))
+    pc, pr = W.wpos(fc, "F1E"), W.wpos(fr, "F1E")
+    out = []
+    for o, fb, xu, side in held:
+        a = pc[(pc.side == side) & ((pc.u_in - fb).abs() <= 300)] if len(pc) else pc
+        b = pr[(pr.side == side) & ((pr.u_in - fb).abs() <= 300)] if len(pr) else pr
+        out.append({"oid": o, "paper_exit_utc": xu, "continuous_u_out": int(a.iloc[0].u_out) if len(a) else None,
+                    "restarted_u_out": int(b.iloc[0].u_out) if len(b) and not pd.isna(b.iloc[0].get("u_out")) else None,
+                    "ticket": int(b.iloc[0].position) if len(b) else None})
+    seg2 = [r for r in rr if r["utc"] >= u1 and r.get("rp") != 1]
+    late = [r for r in seg2 if r["ev"] == "CLOSE" and r.get("why") == "latest_exit"]
+    adopt = [r for r in seg2 if r["ev"] == "ADOPT" and r["code"] == "F1E"]
+    res = {"held_open_at_restart": out, "latest_exit_closes": [(r["utc"], r.get("ticket")) for r in late],
+           "adopt_lines": [(r["utc"], r.get("why"), r.get("ticket")) for r in adopt], "errors": W.ev(rr, "ERROR")[:3]}
+    ok = bool(out) and all(x["continuous_u_out"] is not None and x["restarted_u_out"] == x["continuous_u_out"] for x in out)
+    ok = ok and not late and all(any(int(a.get("ticket", -1)) == x["ticket"] for a in adopt) for x in out) and not res["errors"]
+    res["pass"] = bool(ok)
+    return res
+
+
+def w_notready_gate(exe, bars):
+    """F1: positions of a NOT_READY sleeve close at LatestExit only after the first READY check of the start and 10 min of
+    NOT_READY; an ORX trade whose exit falls in the gold holiday closure of Presidents' Day 2020"""
+    frm = W.utc_to_srv(calendar.timegm((2020, 2, 10, 0, 0, 0)))
+    t1 = W.utc_to_srv(calendar.timegm((2020, 2, 17, 19, 55, 0)))   # 14:55 New York, inside the closure [13:00, 18:00)
+    to = W.utc_to_srv(calendar.timegm((2020, 2, 19, 0, 0, 0)))
+    u1 = W.srv_to_utc(t1)
+    res = {}
+    fc, fr = cut_runs("gate_short", exe, bars, frm, t1, to, TRADE, {"MOCK_UNSYNC_XAUUSD.r": f"{t1}-{t1 + 300}"})
+    rc, rr = W.journal(fc), W.journal(fr)
+    done, _ = compare.paper_chain(rc, "ORX")
+    tr = [(int(o), int(f["bar"]), int(x["utc"]), int(f["side"])) for o, (f, x) in done.items() if int(f["bar"]) < u1 < int(x["utc"])]
+    pc, pr = W.wpos(fc, "ORX"), W.wpos(fr, "ORX")
+    rows = []
+    for o, fb, xu, side in tr:
+        a = pc[(pc.side == side) & ((pc.u_in - fb).abs() <= 300)] if len(pc) else pc
+        b = pr[(pr.side == side) & ((pr.u_in - fb).abs() <= 300)] if len(pr) else pr
+        rows.append({"oid": o, "paper_exit_utc": xu, "continuous_u_out": int(a.iloc[0].u_out) if len(a) else None,
+                     "restarted_u_out": int(b.iloc[0].u_out) if len(b) and not pd.isna(b.iloc[0].get("u_out")) else None})
+    seg2 = [r for r in rr if r["utc"] >= u1 and r.get("rp") != 1]
+    late = [r for r in seg2 if r["ev"] == "CLOSE" and r.get("why") == "latest_exit"]
+    fc_xau = first_check_utc(rr, "XAUUSD", u1)
+    ready = [r["utc"] for r in seg2 if r["ev"] == "READY" and r["code"] == "XAUUSD"]
+    adopt = [r for r in seg2 if r["ev"] == "ADOPT" and r["code"] == "ORX"]
+    res["short"] = {"open_at_restart": rows, "first_check_utc": fc_xau, "ready_utc": ready[:1],
+                    "adopted": [(r["utc"], r.get("why")) for r in adopt], "latest_exit_closes": [r["utc"] for r in late]}
+    ok_a = bool(rows) and not late and bool(adopt) and bool(ready) and all(adopt[0]["utc"] >= ready[0] for _ in [0]) and \
+        all(x["continuous_u_out"] is not None and x["restarted_u_out"] == x["continuous_u_out"] for x in rows)
+    # gold not synchronized for 30 min: NOT_READY lasts; LatestExit (12:59 New York, passed) closes it, 10 min after the first check
+    _, fr2 = cut_runs("gate_long", exe, bars, frm, t1, to, TRADE, {"MOCK_UNSYNC_XAUUSD.r": f"{t1}-{t1 + 1800}"})
+    rr2 = W.journal(fr2)
+    seg2b = [r for r in rr2 if r["utc"] >= u1 and r.get("rp") != 1]
+    late2 = [r["utc"] for r in seg2b if r["ev"] == "CLOSE" and r.get("why") == "latest_exit" and r.get("code") == "ORX"]
+    fc2 = first_check_utc(rr2, "XAUUSD", u1)
+    res["long"] = {"first_check_utc": fc2, "latest_exit_closes": late2, "wait_s": (late2[0] - fc2) if late2 and fc2 else None}
+    ok_b = bool(late2) and fc2 is not None and 600 <= late2[0] - fc2 <= 660
+    res["errors"] = (W.ev(rr, "ERROR") + W.ev(rr2, "ERROR"))[:3]
+    res["pass"] = bool(ok_a and ok_b and not res["errors"])
+    return res
+
+
+def w_crypto_weekend(exe, bars):
+    """F2: BTC and ETH quoted all weekend (the mask drops the bars): no crypto order in the masked weekend"""
+    fri = calendar.timegm((2021, 7, 30, 0, 0, 0))                   # server clock: Friday 2021-07-30
+    paths, added = {}, {}
+    for s_ in ("BTCUSD.r", "ETHUSD.r"):
+        d, rec = W.read_bars(bars[s_])
+        src = rec[(rec["t"] >= fri) & (rec["t"] < fri + 86400)]
+        sat, sun = src.copy(), src.copy()
+        sat["t"] += 86400
+        sun["t"] += 2 * 86400
+        had = int(((rec["t"] >= fri + 86400) & (rec["t"] < fri + 3 * 86400)).sum())
+        new = np.sort(np.concatenate([rec, sat, sun]), order="t")
+        assert had == 0 and (np.diff(new["t"]) > 0).all()
+        p_ = os.path.join(OUT, "bars", f"{s_}_weekend.bin")
+        os.makedirs(os.path.dirname(p_), exist_ok=True)
+        W.write_bars(p_, d, new)
+        paths[s_], added[s_] = p_, int(len(sat) + len(sun))
+    frm, to = calendar.timegm((2021, 7, 26, 0, 0, 0)), calendar.timegm((2021, 8, 3, 0, 0, 0))
+    env = dict(TRADE, MOCK_INPUT_InpPush="false")
+    f0, r0 = world("weekend_ref", exe, bars, frm, to, env)
+    f1, r1 = world("weekend", exe, dict(bars, **paths), frm, to, env)
+    lo, hi = W.srv_to_utc(fri + 23 * 3600 + 55 * 60), W.srv_to_utc(fri + 3 * 86400)    # Friday 23:55 server to Monday 00:00
+    crypto = ("BKB", "BKE", "F1B", "F1E", "NQB")
+    sent = [r for r in r1 if r["ev"] in ("SIZE", "SEND", "FILL") and r["code"] in crypto and lo <= r["utc"] < hi and r.get("rp") != 1]
+    ords = [r for r in r1 if r["ev"] == "DEC" and r.get("what") == "ord" and r["code"] in ("BKB", "BKE") and lo <= int(r["tf"]) < hi]
+    m0, m1 = deinit(r0), deinit(r1)
+    l0, l1 = sleeve_lines(f0, CODES), sleeve_lines(f1, CODES)
+    p0, p1 = W.wpos(f0), W.wpos(f1)
+    key = lambda p: sorted((r.code, r.side, int(r.u_in), int(r.u_out) if not pd.isna(r.u_out) else -1, float(r.vol)) for r in p.itertuples()) if len(p) else []
+    res = {"bars_added": added, "masked_added": {s_[:6]: m1.get(f"masked_{s_[:6]}", -1) - m0.get(f"masked_{s_[:6]}", -1) for s_ in paths},
+           "orders_in_the_masked_weekend": [(r["code"], r["oid"], r["tf"], r["tt"]) for r in ords],
+           "crypto_size_send_fill_in_the_masked_weekend": [(r["ev"], r["code"], r["utc"]) for r in sent][:5],
+           "same_paper_lines": {c: l0[c] == l1[c] for c in CODES}, "same_positions": key(p0) == key(p1), "positions": int(len(p1)),
+           "errors": W.ev(r1, "ERROR")[:3]}
+    res["pass"] = bool(all(res["masked_added"][s_[:6]] == added[s_] for s_ in paths) and ords and not sent and all(res["same_paper_lines"].values())
+                       and res["same_positions"] and not res["errors"])
+    return res
+
+
+def w_shadow(exe, bars):
+    """F6: the observer (off the VPS, demo, InpTrade false) and the VPS copy with InpTrade false write the same intents"""
+    frm, to = calendar.timegm((2021, 3, 1, 0, 0, 0)), calendar.timegm((2021, 3, 8, 0, 0, 0))
+    base = {"MOCK_INPUT_InpTrade": "false", "MOCK_INPUT_InpPlanStart": str(PLAN0), "MOCK_INPUT_InpPush": "false"}
+    fo, ro = world("shadow_observer", exe, bars, frm, to, dict(base, MOCK_VPS="0"))
+    fv, rv = world("shadow_vps", exe, bars, frm, to, dict(base, MOCK_VPS="1"))
+    keep = ("SIZE", "MISSED", "DEC", "PFILL", "PEXIT", "PSTOP", "PREVISE", "PVOID", "PREFUSE", "HOLD")
+
+    def lines(files):
+        out = []
+        for f in sorted(x for x in os.listdir(os.path.join(files, "ClaudeRobot")) if x.endswith(".log")):
+            for ln in open(os.path.join(files, "ClaudeRobot", f)):
+                p_ = ln.split("|", 4)
+                if len(p_) > 3 and p_[2] in keep:
+                    out.append(ln.rstrip("\n"))
+        return out
+    lo, lv = lines(fo), lines(fv)
+    io = [r for r in ro if r["ev"] == "INIT" and "observer" in r]
+    iv = [r for r in rv if r["ev"] == "INIT" and "observer" in r]
+    size_live = [r for r in ro if r["ev"] == "SIZE" and r.get("rp") != 1]
+    res = {"observer_flags": [io[0].get("observer"), iv[0].get("observer")] if io and iv else None, "lines": [len(lo), len(lv)],
+           "identical": lo == lv, "first_difference": next(([a, b] for a, b in zip(lo, lv) if a != b), None),
+           "live_size_lines": len(size_live), "skips": sorted({str(r.get("skip")) for r in size_live}),
+           "missed_exited_market": sum(1 for r in ro if r["ev"] == "MISSED" and r.get("reason") == "exited" and r.get("rp") != 1),
+           "sends": sum(1 for r in ro + rv if r["ev"] == "SEND")}
+    res["pass"] = bool(res["observer_flags"] == [1, 0] and res["identical"] and len(size_live) > 0 and res["skips"] == ["notrade"]
+                       and res["sends"] == 0)
+    return res
+
+
+def w_gfp_session(exe, bars):
+    """F7: FP's Friday gold session ending at 16:50 New York is accepted; one ending at 16:40 skips the Friday, pushed"""
+    frm, to = calendar.timegm((2021, 3, 8, 0, 0, 0)), calendar.timegm((2021, 3, 13, 0, 0, 0))
+    fri_1330 = int(pd.Timestamp("2021-03-12 13:30", tz=NY).tz_convert("UTC").value // 10 ** 9)
+    env = dict(TRADE, MOCK_INPUT_InpPush="true")
+    out = {}
+    for tag, end in (("none", None), ("1650", "2350"), ("1640", "2340")):
+        files = os.path.join(OUT, "gfp_session_" + tag)
+        faults = None if end is None else [f"0 session XAUUSD.r 5 0100 {end}"]
+        W.run(exe, files, bars, frm, to, env=env, codes=[], faults=faults)
+        rows = W.journal(files)
+        dec = [r for r in rows if r["ev"] == "DEC" and r["code"] == "GFP" and r["utc"] == fri_1330 and r.get("rp") != 1]
+        pu = [q for q in W.pushes(files) if "GFP" in q and "seance" in q]
+        out[tag] = {"orders": sum(1 for r in dec if r.get("what") == "ord"),
+                    "skips": [(r.get("v1"), r.get("v2")) for r in dec if r.get("what") == "info" and int(r.get("side", 9)) == 0],
+                    "session_pushes": pu[:2], "faults": W.fault_counts(files)}
+    res = {"runs": out}
+    res["pass"] = bool(out["none"]["orders"] == 1 and out["1650"]["orders"] == 1 and not out["1650"]["skips"] and not out["1650"]["session_pushes"]
+                       and out["1640"]["orders"] == 0 and len(out["1640"]["skips"]) == 1 and int(out["1640"]["skips"][0][0]) == 4
+                       and len(out["1640"]["session_pushes"]) == 1)
+    return res
 
 
 # ------------------------------------------------------------------ the three rule worlds
@@ -309,7 +514,9 @@ def main(argv=None):
         ok &= same and same_deals
         log(f"{'PASS' if same and same_deals else 'FAIL'} clean_san {summary['worlds']['clean_san']['sec']} s")
         shutil.rmtree(os.path.join(OUT, "clean_san"), ignore_errors=True)
-    for name, fn in (("gfp_holiday", w_gfp_holiday), ("us100_half", w_us100_half)):
+    for name, fn in (("gfp_holiday", w_gfp_holiday), ("us100_half", w_us100_half), ("h2_restart", w_h2_restart),
+                     ("notready_gate", w_notready_gate), ("crypto_weekend", w_crypto_weekend), ("shadow", w_shadow),
+                     ("gfp_session", w_gfp_session)):
         if sel(name):
             t1 = time.time()
             r = fn(exes["plain"], bars)

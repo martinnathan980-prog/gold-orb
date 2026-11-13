@@ -19,7 +19,9 @@ processes on the frames rebuilt from the same bars). Checks, per sleeve:
     back as the JSON's double, the generator refuses a copy of the model with one digit changed (wrong sha256) and
     writes nothing; the EA's Score() (a generated unit program) on every lab candidate's features: bit for bit the
     term-by-term sum, within 1e-12 of numpy;
-  * LatestExit (SPEC 4.8): 15:55 New York of the decision's date, against zoneinfo, on 40 open times;
+  * LatestExit (SPEC 4.8): 15:55 New York of the decision's date, against zoneinfo, on 48 open times; with H2 on (SPEC
+    v2.1, review F1) the H2 horizon min(15:55 New York on the decision's New York date + 2 business days, Friday 23:54
+    server), against pandas BDay and zoneinfo, on the same open times;
   * the lab trades on the rebuilt frames against the official trades: differences listed with their cause;
   * the sanitizer build replays the same bars with an identical journal.
 Outputs: check/out/test_E/test_F1.json.
@@ -226,8 +228,14 @@ int main(int argc, char **argv)
    FILE *g = fopen(argv[2], "r");
    if(!g) return 3;
    long o = 0, c = 0;
-   CRuleF1 q;
-   while(fscanf(g, "%ld %ld", &o, &c) == 2) printf("LX %ld %ld %ld\n", o, c, (long)q.LatestExit(o, c));
+   CRuleF1 q, qh;
+   q.m_h2 = false;
+   qh.m_h2 = true;                                            // F1E with H2 on: LatestExit is the H2 horizon
+   while(fscanf(g, "%ld %ld", &o, &c) == 2)
+     {
+      printf("LX %ld %ld %ld\n", o, c, (long)q.LatestExit(o, c));
+      printf("LH %ld %ld %ld\n", o, c, (long)qh.LatestExit(o, c));
+     }
    fclose(g);
    return 0;
   }
@@ -260,8 +268,9 @@ def unit_checks(cands):
     exe, warn = H.build_unit("unit_f1", "CR_Rule_F1.mqh", UNIT_SCORE)
     r = subprocess.run([exe, os.path.join(d, "features.txt"), os.path.join(d, "latest.txt")], capture_output=True, text=True)
     lines = r.stdout.split("\n")
-    sc = np.array([float(x) for x in lines if x and not x.startswith("LX")])
+    sc = np.array([float(x) for x in lines if x and not x.startswith(("LX", "LH"))])
     lx = [tuple(int(v) for v in x.split()[1:]) for x in lines if x.startswith("LX")]
+    lh = [tuple(int(v) for v in x.split()[1:]) for x in lines if x.startswith("LH")]
     seq_eq = int((sc == allc.score_seq.to_numpy()).sum()) if len(sc) == len(allc) else -1
     d_np = float(np.abs(sc - allc.score.to_numpy()).max()) if len(sc) == len(allc) else None
     bad_lx = []
@@ -273,11 +282,28 @@ def unit_checks(cands):
         cap = int(pd.Timestamp(ny.year, ny.month, ny.day, 15, 55, tz=NY).tz_convert("UTC").value // 10**9)
         if x != min(t + 46800, cap):
             bad_lx.append([o, c, x, min(t + 46800, cap)])
+    bad_lh = []
+    from pandas.tseries.offsets import BDay
+    for o, c, x in lh:
+        t = o - o % 3600
+        if c > 0 and c % 3600 == 0 and c <= o and o - c <= 600:
+            t = c
+        ny = pd.Timestamp(t, unit="s", tz="UTC").tz_convert(NY)
+        cap = int(pd.Timestamp(ny.year, ny.month, ny.day, 15, 55, tz=NY).tz_convert("UTC").value // 10**9)
+        d2 = pd.Timestamp(ny.year, ny.month, ny.day) + BDay(2)
+        xa = int(pd.Timestamp(d2.year, d2.month, d2.day, 15, 55, tz=NY).tz_convert("UTC").value // 10**9)
+        srv = ny.tz_localize(None) + pd.Timedelta(hours=7)          # the server wall clock (New York + 7 h)
+        fri = srv.normalize() + pd.Timedelta(days=4 - srv.dayofweek) + pd.Timedelta(hours=23, minutes=54)
+        xb = int((fri - pd.Timedelta(hours=7)).tz_localize(NY).tz_convert("UTC").value // 10**9)
+        want = max(min(t + 46800, cap), min(xa, xb))
+        if x != want:
+            bad_lh.append([o, c, x, want])
     res = {"build_warnings": warn, "exit": r.returncode, "scores": int(len(sc)), "lab_candidates": int(len(allc)),
            "score_bit_equal_term_by_term": seq_eq, "score_max_abs_diff_vs_numpy": d_np,
-           "latest_exit_cases": len(lx), "latest_exit_wrong": bad_lx[:10]}
+           "latest_exit_cases": len(lx), "latest_exit_wrong": bad_lx[:10], "latest_exit_h2_cases": len(lh),
+           "latest_exit_h2_wrong": bad_lh[:10]}
     res["pass"] = bool(r.returncode == 0 and not warn and seq_eq == len(allc) and d_np is not None and d_np <= 1e-12
-                       and len(lx) == len(cases) and not bad_lx)
+                       and len(lx) == len(cases) and not bad_lx and len(lh) == len(cases) and not bad_lh)
     return res
 
 
@@ -337,7 +363,8 @@ def main(argv=None):
     res["unit"] = unit_checks([cands[c][1] for c in ("F1B", "F1E")])
     ok &= res["unit"]["pass"]
     print(f"unit: Score() on {res['unit']['scores']} lab candidates, term-by-term bit-equal {res['unit']['score_bit_equal_term_by_term']}, "
-          f"max |diff| vs numpy {res['unit']['score_max_abs_diff_vs_numpy']}; LatestExit {res['unit']['latest_exit_cases']} cases, "
+          f"max |diff| vs numpy {res['unit']['score_max_abs_diff_vs_numpy']}; LatestExit with H2 {res['unit']['latest_exit_h2_cases']} cases, "
+          f"wrong {len(res['unit']['latest_exit_h2_wrong'])}; LatestExit {res['unit']['latest_exit_cases']} cases, "
           f"wrong {len(res['unit']['latest_exit_wrong'])} | {'PASS' if res['unit']['pass'] else 'FAIL'}", flush=True)
     if not a.no_sanitize:
         exe_s, warn_s = H.build_ea(True)

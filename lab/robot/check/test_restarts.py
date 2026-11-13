@@ -26,6 +26,10 @@ Checks:
      price, lots), except where an entry or exit falls in an outage or in a start's start-up window (from the restart to
      two minutes after its first live barrier), or where only the lots differ because the balance path changed after
      such a difference (each counted with its cause).
+  4. No EA-initiated close against the paper (review F1, F5): a close the EA itself decides in a start-up window
+     (CLOSE why=latest_exit or why=orphan) of a position whose paper trade (the continuous run's trade of that sleeve and
+     side filled within 5 min of the position's entry) is still open at that moment fails the test. The start-up
+     windows are reported apart: entries delayed by a start, exits in a start, and these EA-initiated closes.
 Outputs: check/out/test_restarts/summary.json, and <setting>_data.json.gz (what the checks read; --analyse checks it
 again without replaying).
 """
@@ -73,7 +77,7 @@ def log(m):
 
 def inputs(sw, k1t):
     base = {"MOCK_INPUT_InpTrade": "true", "MOCK_INPUT_InpPlanStart": str(PLAN_START), "MOCK_INPUT_InpPush": "false",
-            "MOCK_BALANCE": "100000", "MOCK_QUIET": "1", "MOCK_SYMS": ",".join(SYMS)}
+            "MOCK_BALANCE": "100000", "MOCK_QUIET": "1", "MOCK_SYMS": ",".join(SYMS), **W.F3S_PRESET}
     sws = {"off": ("0", ""), "on": ("1", k1t)}[sw]
     base.update({"MOCK_INPUT_InpK1": sws[0], "MOCK_INPUT_InpH2": sws[0], "MOCK_INPUT_InpS075": sws[0], "MOCK_INPUT_InpK1T": sws[1]})
     for s, p in W.bar_paths().items():
@@ -364,6 +368,62 @@ def cmp_positions(pc, pr, wins, cont=None, procs=None):
     return out
 
 
+def ea_closes(procs, segs, cont, pos):
+    """check 4 (review F1, F5): the closes the EA itself decides (CLOSE why=latest_exit or why=orphan, live lines) inside a
+    start-up window, each matched to its position (ticket) and to the continuous run's paper trade that position follows
+    (same sleeve and side, paper fill bar within 5 min of the real entry); one whose paper trade is still open at the close
+    is an EA decision against the paper: a failure"""
+    by_ticket = {int(r["position"]): r for r in pos}
+    out = {"in_start_up": 0, "by_why": {}, "paper_trade_ended": 0, "no_paper_trade": 0, "against_open_paper": [],
+           "n_against_open_paper": 0, "by_sleeve": {}}
+    for k, s in enumerate(segs):
+        p = procs[k + 1]
+        a, b = s["next_start"], startup_end(p, s)
+        for r in p["fol"]:
+            if r["ev"] != "CLOSE" or r.get("rp") == 1 or str(r.get("why")) not in ("latest_exit", "orphan"):
+                continue
+            t = int(r["utc"])
+            if not (a <= t < b):
+                continue
+            out["in_start_up"] += 1
+            w = str(r.get("why"))
+            out["by_why"][w] = out["by_why"].get(w, 0) + 1
+            q = by_ticket.get(int(r["ticket"])) if r.get("ticket") is not None else None
+            if q is None:
+                out["no_paper_trade"] += 1
+                continue
+            c, side, u_in = q["code"], int(q["side"]), int(q["u_in"])
+            hit = None
+            for o, (f, x) in cont["trades"].get(c, {}).items():
+                if int(f["side"]) == side and abs(int(f["bar"]) - u_in) <= 300:
+                    hit = (o, f, x)
+                    break
+            if hit is None:
+                out["no_paper_trade"] += 1
+                continue
+            o, f, x = hit
+            if int(f["bar"]) <= t < int(x["utc"]):
+                out["n_against_open_paper"] += 1
+                out["by_sleeve"][c] = out["by_sleeve"].get(c, 0) + 1
+                if len(out["against_open_paper"]) < 10:
+                    out["against_open_paper"].append({"process": k + 1, "code": c, "why": w, "close_utc": t, "ticket": int(r["ticket"]),
+                                                      "oid": int(o), "paper_exit_utc": int(x["utc"]),
+                                                      "paper_left_h": round((int(x["utc"]) - t) / 3600, 2)})
+            else:
+                out["paper_trade_ended"] += 1
+    return out
+
+
+def start_up_split(pos_res):
+    """the start-up and outage classes of check 3, apart: entries delayed by a start, exits in a start, outages"""
+    out = {}
+    for c, v in pos_res.items():
+        cl = v["classified"]
+        out[c] = {"entries_delayed_by_a_start": cl.get("entry in a start-up window", 0), "exits_in_a_start": cl.get("exit in a start-up window", 0),
+                  "entries_in_an_outage": cl.get("entry in a outage window", 0), "exits_in_an_outage": cl.get("exit in a outage window", 0)}
+    return out
+
+
 def overlap(recs):
     ev = []
     for r in recs:
@@ -449,6 +509,7 @@ def analyse(D):
     pos = cmp_positions(cont["pos"], D["pos"], wins, cont, procs)
     fol = follower(procs, segs, cont)
     ad = adopted(D["pos"], procs, segs)
+    eac = ea_closes(procs, segs, cont, D["pos"])
     proc_ok = all(p["rebuilds"] == 1 and p["selftest_ok"] and not p["errors"] for p in procs)
     mins = [p["rebuild_minutes"] for p in procs[1:] if p["rebuild_minutes"] is not None]
     depth_ok = len(mins) == len(procs) - 1 and all(m <= 121 * 1440 for m in mins)
@@ -457,10 +518,11 @@ def analyse(D):
            "points_per_sleeve": D["points_per_sleeve"], "cover": cover(cont, segs), "processes_ok": proc_ok,
            "rebuilds_from_depth_only": depth_ok, "rebuild_minutes": [int(min(mins)), int(max(mins))] if mins else None,
            "process_errors": [p["errors"] for p in procs if p["errors"]][:5], "paper": paper, "positions": pos, "follower": fol,
-           "adopt": ad}
+           "adopt": ad, "ea_closes_in_start_up": eac, "start_up_split": start_up_split(pos)}
     res["pass"] = bool(proc_ok and depth_ok and all(v["pass"] for v in paper.values())
                        and all(v["n_unexplained"] == 0 and v["max_open_at_once"] <= 1 for v in pos.values())
-                       and fol["DUP"] == 0 and not fol["orphan_other"] and ad["n_not_adopted"] == 0)
+                       and fol["DUP"] == 0 and not fol["orphan_other"] and ad["n_not_adopted"] == 0
+                       and eac["n_against_open_paper"] == 0)
     return res
 
 
@@ -527,6 +589,10 @@ def main(argv=None):
                 f"max open {po['max_open_at_once']}")
         log(f"  follower: {r['follower']} | {r['adopt']['open_across_restarts']} positions open across restarts, closed by their stop "
             f"before reconcile {r['adopt']['closed_by_their_stop_before_reconcile']}, not adopted {r['adopt']['n_not_adopted']}")
+        e = r["ea_closes_in_start_up"]
+        log(f"  EA-initiated closes in start-up windows (latest_exit, orphan): {e['in_start_up']} {e['by_why']}, paper trade ended "
+            f"{e['paper_trade_ended']}, no paper trade {e['no_paper_trade']}, AGAINST AN OPEN PAPER TRADE {e['n_against_open_paper']} "
+            f"{e['by_sleeve']} {e['against_open_paper'][:3]}")
     log(f"test_restarts: {'PASS' if summary['pass'] else 'FAIL'} ({summary['sec']} s)")
     if not a.keep and not a.analyse:
         for sw in sws:

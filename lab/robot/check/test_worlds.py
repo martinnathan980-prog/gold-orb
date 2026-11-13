@@ -59,6 +59,10 @@ RULE_STUBS = ["CR_Rule_IdxUS.mqh", "CR_Rule_Brk72.mqh", "CR_Rule_F1.mqh", "CR_F1
               "CR_Rule_Orb.mqh", "CR_Rule_Donch.mqh", "CR_Golden.mqh"]
 REF = os.path.join(HERE, "out", "ref", "rebuilt_is")
 IS_END = 1640995200                                             # 2022-01-01 00:00 UTC: every read below stops before it
+# the plan the worlds were written for: the F3S preset of SPEC 1 (risk table, plan stop -25 % armed at 12,000 EUR, the
+# disaster guard on); SPEC 1's defaults are D2 since v2.1 (no plan stop, no guard), tested by T7a, T7b and test_release
+F3S_PRESET = {"MOCK_INPUT_InpRiskTable": "0:3;3000:2;6000:1;12000:0.5", "MOCK_INPUT_InpStopFallPct": "25",
+              "MOCK_INPUT_InpStopArmPaid": "12000", "MOCK_INPUT_InpGuard": "true"}
 ENV = dict(os.environ, PYTHONDONTWRITEBYTECODE="1",
            NUMBA_CACHE_DIR=os.environ.get("NUMBA_CACHE_DIR", "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/numba"))
 DEAL_SL, DEAL_EXPERT = 4, 3
@@ -215,7 +219,7 @@ def run(exe, files, bars, frm, to, env=None, codes=CODES, fresh=True, faults=Non
         script_dir(files, codes, extra=extra_orders, override=override)
     e = dict(ENV, MOCK_FILES=files, MOCK_SYMS=",".join(SYMS), MOCK_QUIET="1", MOCK_FROM=str(frm), MOCK_TO=str(to), MOCK_BALANCE="100000",
              MOCK_INPUT_InpScript=",".join(codes), MOCK_INPUT_InpK1="0", MOCK_INPUT_InpH2="0", MOCK_INPUT_InpS075="0",
-             MOCK_INPUT_InpPlanStart=str(srv("2020-06-01 00:00")))
+             MOCK_INPUT_InpPlanStart=str(srv("2020-06-01 00:00")), **F3S_PRESET)
     for s, p in bars.items():
         e[f"MOCK_BARS_{s}"] = p
     if faults is not None:
@@ -924,6 +928,78 @@ def w_notready_comment(ctx):
     return finish(res)
 
 
+def w_wrong_side(ctx):
+    """review F8: a restart while a BKB position is open and BTC never synchronized (NOT_READY, no expected stop); the
+    broker moves the position's stop to the wrong side of the market and no longer executes it (sl_stuck): the robot
+    closes it 2 min later (SLFIX why=wrong_side) instead of keeping it to its LatestExit (SPEC 4.4: on the right side)"""
+    f, x, p = ctx.pick("BKB", FROM + 140 * 86400, lambda f, x, p: x.get("reason") == "time" and x["utc"] - f["utc"] >= 8 * 3600)
+    frm, t1, to = day_srv(f["utc"]), utc_to_srv(f["utc"]) + 2 * 3600, day_srv(x["utc"], -6)
+    t1 -= t1 % 60
+    t2 = t1 + 1800
+    B = Bars(ctx.bars["BTCUSD.r"])
+    bar = B.forming(t2 + 60)
+    side = int(f["side"])
+    px = (bar["h"] / B.sc) * 1.05 if side > 0 else (bar["l"] / B.sc) * 0.95          # well beyond the market, the wrong side
+    wrun(ctx, "wrong_side", frm, t1, None)
+    files, rc, out = wrun(ctx, "wrong_side", t1, to, [f"{t2} sl_stuck 20261203 {px:.2f}"], fresh=False,
+                          env={"MOCK_UNSYNC_BTCUSD.r": f"{t1}-{to + 86400}"})
+    rows = journal(files)
+    res = {"fault_counts": fault_counts(files), "errors": ev(rows, "ERROR")}
+    pb = wpos(files, "BKB")
+    tr = pb[(pb.u_in >= f["utc"]) & (pb.u_in <= f["utc"] + 300)]
+    tk = int(tr.iloc[0].position) if len(tr) else -1
+    fix = [r for r in ev(rows, "SLFIX", "BKB") if int(r.get("ticket", -1)) == tk]
+    cl = [r for r in ev(rows, "CLOSE", "BKB") if int(r.get("ticket", -1)) == tk]
+    u2 = srv_to_utc(t2)
+    chk(res, "stuck_applied", res["fault_counts"].get("sl_stuck 20261203 1", 0) == 1, res["fault_counts"])
+    chk(res, "slfix_wrong_side_after_2_min", len(fix) == 1 and fix[0].get("why") == "wrong_side" and u2 + 120 <= fix[0]["utc"] <= u2 + 240,
+        [(r["utc"], r.get("why")) for r in fix])
+    chk(res, "closed_by_the_robot_not_at_latest_exit", len(tr) == 1 and len(cl) >= 1 and cl[-1].get("why") == "slfix"
+        and not pd.isna(tr.iloc[0].get("u_out")) and int(tr.iloc[0].u_out) < int(x["utc"]) - 3600,
+        {"u_out": None if not len(tr) or pd.isna(tr.iloc[0].get("u_out")) else int(tr.iloc[0].u_out), "x": int(x["utc"]),
+         "why": [r.get("why") for r in cl]})
+    chk(res, "slfix_pushed", any("SLFIX" in q for q in pushes(files)))
+    return finish(res)
+
+
+def w_block_resend(ctx):
+    """review F4: a BKB intent sized one minute before the Friday close (InpFridayCloseHHMM), whose opens the broker refuses
+    (requote, 6 times: retried after 1, 2, 4 ... 30 s) into the Friday window: the entry blocks are read again before every
+    request, so nothing is opened after the close (MISSED reason=friday), where the robot used to open (and the Friday close
+    closed it again)"""
+    pick = None
+    for oid, (f, x) in sorted(ctx.trades["BKB"].items(), key=lambda kv: kv[1][0]["utc"]):
+        t = utc_to_srv(f["bar"])
+        if f["utc"] < FROM + 30 * 86400 or time.gmtime(t).tm_wday != 4 or not (time.gmtime(t).tm_hour < 22):
+            continue
+        p_ = ctx.pos[(ctx.pos.code == "BKB") & (ctx.pos.u_in >= f["utc"]) & (ctx.pos.u_in <= f["utc"] + 300)]
+        if len(p_):
+            pick = (int(oid), f, x)
+            break
+    oid, f, x = pick
+    stamp = utc_to_srv(f["bar"])                                 # the market intent's stamp (server)
+    close = stamp + 60
+    hhmm = time.gmtime(close).tm_hour * 100 + time.gmtime(close).tm_min
+    frm, to = day_srv(f["utc"]), stamp + 3 * 3600
+    files, rc, out = wrun(ctx, "block_resend", frm, to, [f"{stamp} refuse_open 10004 6 20261203"],
+                          env={"MOCK_INPUT_InpFridayCloseHHMM": str(hhmm)})
+    rows = journal(files)
+    res = {"oid": oid, "friday_close_hhmm": hhmm, "fault_counts": fault_counts(files), "errors": ev(rows, "ERROR")}
+    pb = wpos(files, "BKB")
+    after = pb[pb.t_in >= close] if len(pb) else pb
+    miss = [r for r in ev(rows, "MISSED", "BKB", live=True) if int(r.get("oid", -1)) == oid]
+    size = [r for r in ev(rows, "SIZE", "BKB", live=True) if int(r.get("oid", -1)) == oid]
+    chk(res, "sized_before_the_close", len(size) == 1 and size[0].get("skip") == "none", [(r["utc"], r.get("skip")) for r in size])
+    refused = [r for r in ev(rows, "SEND", "BKB", live=True) if int(r.get("oid", -1)) == oid and r.get("result") == "refused"]
+    # (the broker refuses the first requests; the mock's quote is fresh 10 s per minute, so the retry that is due next comes
+    # with the next minute's tick, inside the Friday window)
+    chk(res, "refused_before_the_close", res["fault_counts"].get("refuse_open 10004", 0) >= 1 and len(refused) >= 1
+        and all(utc_to_srv(r["utc"]) < close for r in refused), [(r["utc"], r.get("rc")) for r in refused])
+    chk(res, "nothing_opened_in_the_friday_window", len(after) == 0, after[["t_in", "t_out"]].to_dict("records") if len(after) else [])
+    chk(res, "missed_friday", len(miss) == 1 and miss[0].get("reason") == "friday", [(r["utc"], r.get("reason")) for r in miss])
+    return finish(res)
+
+
 def w_magic0(ctx):
     """broker stop deals carrying magic 0: the closes are still the robot's (deals attach by position id): the positions,
     the ledger's balance at every sizing and the lots equal the run without the fault; no orphan"""
@@ -1484,7 +1560,8 @@ def w_sanitizer(ctx):
 
 
 WORLDS = [w_refused_sltp, w_freeze, w_requote_timeout, w_slow_reply, w_dup, w_n30_reversal, w_deal_future, w_stops, w_listed_late,
-          w_restart, w_latebar, w_hole, w_notready_comment, w_magic0, w_clock, w_payments, w_settle, w_plan, w_plan_stop, w_guard,
+          w_restart, w_latebar, w_hole, w_notready_comment, w_wrong_side, w_block_resend, w_magic0, w_clock, w_payments, w_settle,
+          w_plan, w_plan_stop, w_guard,
           w_lock, w_friday, w_vps_tradefalse, w_observer, w_instances, w_p5, w_p4, w_good_friday, w_switches, w_tester, w_sanitizer]
 NOT_HERE = {
     "a GFP Friday that is a NYSE holiday with gold quoted after 13:30 (R8)": "the skip is GFP's rule (step G); the script sleeves "

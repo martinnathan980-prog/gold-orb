@@ -14,8 +14,12 @@
 //|   window holds M (after_exit_of: its exit resolved on an earlier  |
 //|   bar), the sleeve's paper trade ended on an earlier bar, not void|
 //|   at activation (void_le, x <= M), not refused by the 3-spread    |
-//|   test on the live paper quote, and the symbol ticked in minute M |
-//|   (else it is armed and the first tick of M makes the intent).    |
+//|   test on the live paper quote, M neither masked for the symbol   |
+//|   nor in a known closure (BarsShut: the paper can never fill on a |
+//|   masked bar, review F2), and the symbol ticked in minute M (else |
+//|   it is armed and the first tick of M makes the intent). An       |
+//|   observer makes the same intents (sized NOTRADE, never sent), so |
+//|   its journal equals the VPS copy's with InpTrade false (F6).     |
 //|   Stamp = M. A stop, limit or OCO order becomes an intent at its  |
 //|   PFILL on bar i, stamp i, sent at barrier i + 1, unless its paper|
 //|   trade already exited (stopped, gap, revised or voided on its    |
@@ -29,7 +33,11 @@
 //|   (InpSleeves), the guards' block (STOPPED, GUARD, LOCK, FRIDAY,  |
 //|   CLOCK, SELFTEST, NOTRADE), NOTREADY; SETTLE makes it wait. A    |
 //|   skip is final: the sleeve stays busy until its paper trade ends.|
-//| Send (SPEC 4.3): BrkIntentCheck first (one intent, one trade): a  |
+//| Send (SPEC 4.3): just before every request the entry blocks are  |
+//|   read again (GrdEntryBlock, READY, review F4) and no request goes |
+//|   in a minute that is masked or in a known closure (BarsShut,     |
+//|   F2): the intent waits inside its window, then MISSED with that  |
+//|   reason. BrkIntentCheck first (one intent, one trade): a         |
 //|   position of the previous trade is closed first (the intent      |
 //|   waits; at the window's end MISSED reason=prev_open); an order,  |
 //|   deal or position already made at or after the stamp is adopted |
@@ -48,7 +56,11 @@
 //|   the expected one (the paper stop of its trade, or the stop sent |
 //|   before its PFILL): PositionModify, kept and tried again every   |
 //|   10 s when refused (STOPS_LEVEL, FREEZE_LEVEL); an expected stop |
-//|   the price has already crossed -> close.                         |
+//|   the price has already crossed -> close. A position of a         |
+//|   NOT_READY or unfollowed sleeve has no expected stop: its stop   |
+//|   must lie on the right side of the market; one that a fresh quote|
+//|   has crossed for 2 min (the broker did not execute it) is closed |
+//|   (SLFIX why=wrong_side, review F8).                              |
 //| Exits (SPEC 4.5): at the barrier of ClkRealExitMinute(x) for the  |
 //|   paper's time exit x of the followed trade (with the broker's    |
 //|   session end); when that is x itself the close waits for the     |
@@ -64,7 +76,9 @@
 //|   history holds open listed (at most 60 s): positions of retired  |
 //|   ids and marks are closed; each sleeve is reconciled when READY  |
 //|   (a NOT_READY sleeve keeps its positions, their stops, and closes|
-//|   them at LatestExit(POSITION_TIME, comment) with the gap rule):  |
+//|   them at LatestExit(POSITION_TIME, comment) with the gap rule,   |
+//|   only once the first READY check since the load has decided and  |
+//|   the sleeve has been NOT_READY for 10 min: review F1):           |
 //|   a same-side position opened within 5 min of the open paper      |
 //|   trade's stamp -> ADOPT (its stop reset); one matching a market  |
 //|   order still waiting in the paper queue -> ADOPT for that order; |
@@ -119,6 +133,9 @@
 #define CR_FOL_SEND_MAX 30              // a refused send is tried again after 1, 2, 4 ... 30 s
 #define CR_FOL_CMAX 64                  // positions waiting to be closed at once
 #define CR_FOL_WMAX 64                  // positions already reported by WATCH
+#define CR_FOL_NOTREADY_WAIT 600        // NOT_READY exits: 10 min of NOT_READY after the first READY check of the load (F1)
+#define CR_FOL_WRONG_S 120              // an unknown position's stop crossed by a fresh quote for 2 min -> closed (F8)
+#define CR_FOL_FRESH_S 10               // a quote at most 10 s old is fresh
 
 // close reasons (CLOSE why=)
 #define CR_FW_TIME 0
@@ -194,6 +211,10 @@ ulong      g_fol_watch[CR_FOL_WMAX];
 int        g_fol_nwatch = 0;
 datetime   g_fol_M = 0;                 // the last barrier processed live (UTC)
 datetime   g_fol_rec_t0 = 0;            // first reconcile attempt of a rebuild (server)
+ulong      g_fol_ws_tk[CR_FOL_CMAX];    // positions of no expected stop whose stop a fresh quote has crossed (F8) ...
+datetime   g_fol_ws_t[CR_FOL_CMAX];     // ... since when (server) ...
+datetime   g_fol_ws_last[CR_FOL_CMAX];  // ... and the last fresh quote that showed it (server)
+int        g_fol_nws = 0;
 
 //+------------------------------------------------------------------+
 //| A read-only view of the paper's queue, rule exits and trade      |
@@ -485,6 +506,7 @@ bool FolRefusedNow(const int sl, const CrOrder &o)
 // the market order of the sleeve's paper queue that activates at minute M (SPEC 4.1); false when none
 bool FolActivating(const int sl, const datetime M, CrOrder &o)
   {
+   if(BarsShut(g_sl[sl].sym, M)) return false;                  // a masked minute or a known closure: no bar the paper keeps
    CrBar b;
    ZeroMemory(b);
    b.t = M;
@@ -717,6 +739,18 @@ void FolIntentStep(const int sl, const datetime now)
       g_fol[sl].it_next = now + 1;
       return;
      }
+   // just before the request: the entry blocks again (a STOP, GUARD, LOCK, FRIDAY or CLOCK that came after the sizing,
+   // a sleeve no longer READY: review F4), and never a request in a masked minute or a known closure (review F2); the
+   // intent waits inside its window, then MISSED with that reason
+   int blk = GrdEntryBlock(now);
+   if(blk == CR_SK_NONE && (!FolReady(sl) || g_fol[sl].rec_due)) blk = CR_SK_NOTREADY;
+   if(blk != CR_SK_NONE || BarsShut(s, nu))
+     {
+      g_fol[sl].last_why = (blk != CR_SK_NONE) ? blk : CR_SK_LATE;
+      g_fol_why[sl] = (blk != CR_SK_NONE) ? "" : "market_shut";
+      g_fol[sl].it_next = now + 1;
+      return;
+     }
    double bid2 = 0.0, ask2 = 0.0;
    datetime tq2 = 0;
    if(BrkQuote(s, bid2, ask2, tq2)) g_fol[sl].it.quote = (g_fol[sl].it.side > 0) ? ask2 : bid2;
@@ -829,9 +863,52 @@ void FolSlfix(const int sl, const ulong t, const long m, const string why, const
      }
   }
 
+// a position with no expected stop whose stop fresh quotes have shown crossed: true once that has lasted CR_FOL_WRONG_S
+// (the broker did not execute the stop); a fresh quote on the right side forgets it; more than 70 s without a fresh quote
+// showing it (a market that closed meanwhile) starts the count again
+bool FolWrongSide(const ulong t, const bool wrong, const datetime now)
+  {
+   int k = -1;
+   for(int j = 0; j < g_fol_nws; j++)
+      if(g_fol_ws_tk[j] == t) k = j;
+   if(!wrong)
+     {
+      if(k >= 0)
+        {
+         for(int j = k + 1; j < g_fol_nws; j++)
+           {
+            g_fol_ws_tk[j - 1] = g_fol_ws_tk[j];
+            g_fol_ws_t[j - 1] = g_fol_ws_t[j];
+            g_fol_ws_last[j - 1] = g_fol_ws_last[j];
+           }
+         g_fol_nws--;
+        }
+      return false;
+     }
+   if(k >= 0 && (now < g_fol_ws_last[k] || (long)(now - g_fol_ws_last[k]) > 70)) g_fol_ws_t[k] = now;   // a gap: again
+   if(k < 0)
+     {
+      if(g_fol_nws >= CR_FOL_CMAX) return false;
+      k = g_fol_nws;
+      g_fol_ws_tk[k] = t;
+      g_fol_ws_t[k] = now;
+      g_fol_nws++;
+     }
+   g_fol_ws_last[k] = now;
+   return (long)(now - g_fol_ws_t[k]) >= CR_FOL_WRONG_S;
+  }
+
+// forget the positions of FolWrongSide that are no longer open
+void FolWrongSideTidy()
+  {
+   for(int j = g_fol_nws - 1; j >= 0; j--)
+      if(!PositionSelectByTicket(g_fol_ws_tk[j])) FolWrongSide(g_fol_ws_tk[j], false, 0);
+  }
+
 void FolInvariant(const datetime now)
   {
    if(!GrdMaySend()) return;
+   FolWrongSideTidy();
    for(int i = PositionsTotal() - 1; i >= 0; i--)
      {
       ulong t = PositionGetTicket(i);
@@ -858,7 +935,18 @@ void FolInvariant(const datetime now)
          FolSlfix(sl, t, m, known ? (crossed ? "crossed" : "refused") : "no_expected_stop", now);
          continue;
         }
-      if(!known) continue;
+      if(!known)
+        {
+         // NOT_READY or unfollowed (SPEC 4.4): no expected stop, but the stop must lie on the right side of the market; only a
+         // fresh quote decides (a stale one changes nothing)
+         if(q && (long)(now - tq) <= CR_FOL_FRESH_S)
+           {
+            bool wrong = (side > 0 && cur >= bid) || (side < 0 && cur <= ask);
+            if(FolWrongSide(t, wrong, now)) FolSlfix(sl, t, m, "wrong_side", now);
+           }
+         continue;
+        }
+      FolWrongSide(t, false, now);
       double pt = g_sym[s].point;
       if(!(pt > 0.0)) pt = 0.01;
       if(MathAbs(cur - ex) < pt / 2) continue;
@@ -942,11 +1030,12 @@ void FolSleeveMinute(const int sl, const datetime M, const datetime now)
          else FolIntentNew(sl, e.oid, e.side, et, e.bar, e.px, e.init_stop, 0.0);
         }
      }
-   if(!ready || !GrdMaySend()) return;                         // a NOT_READY sleeve keeps its positions (FolNotReadyExits)
-   // 2. the positions of the magic
-   FolMapPositions(sl, now);
+   if(!ready) return;                                          // a NOT_READY sleeve keeps its positions (FolNotReadyExits)
+   bool may = GrdMaySend();                                    // an observer (or a copy without the lock) sends nothing:
+   // 2. the positions of the magic                            // steps 2 and 3 are skipped, step 4 makes its intents
+   if(may) FolMapPositions(sl, now);
    // 3. the followed position against the paper (SPEC 4.5)
-   ulong tk = g_fol[sl].ticket;
+   ulong tk = may ? g_fol[sl].ticket : 0;
    if(tk != 0 && PositionSelectByTicket(tk) && !FolClosing(tk))
      {
       long X = g_fol[sl].oid;
@@ -984,7 +1073,8 @@ void FolSleeveMinute(const int sl, const datetime M, const datetime now)
            }
         }
      }
-   // 4. a market order activating at M
+   // 4. a market order activating at M (an observer's intent is sized NOTRADE and never sent: its journal then equals the
+   //    VPS copy's with InpTrade false, SPEC 10.2 and 10.12, review F6)
    if(!open && !FolIntentActive(sl))
      {
       CrOrder o;
@@ -1267,7 +1357,25 @@ void FolArmed(const int sl, const datetime now)
      }
   }
 
-// positions of NOT_READY sleeves keep their stops and close at LatestExit(POSITION_TIME, comment) (SPEC 4.8, P9)
+// -1 while one of the sleeve's symbols has had no READY check since the load, else how long (s) the sleeve has been
+// NOT_READY since that first check (0 = READY)
+long FolNotReadyFor(const int sl, const datetime now)
+  {
+   long a = BarsNotReadyFor(g_sl[sl].sym, now);
+   if(a < 0) return -1;
+   if(g_sl[sl].sym2 >= 0)
+     {
+      long b = BarsNotReadyFor(g_sl[sl].sym2, now);
+      if(b < 0) return -1;
+      if(b > a) a = b;
+     }
+   return a;
+  }
+
+// positions of NOT_READY sleeves keep their stops and close at LatestExit(POSITION_TIME, comment) (SPEC 4.8, P9), only
+// once the first READY check since the load has decided and the sleeve has stayed NOT_READY for 10 min: every rebuild
+// starts NOT_READY, and a symbol becomes READY 2 s after the load (about 3 min with an accepted hole), when the
+// reconcile adopts the positions of the open paper trades (review F1)
 void FolNotReadyExits(const datetime now)
   {
    if(!GrdMaySend()) return;
@@ -1280,6 +1388,7 @@ void FolNotReadyExits(const datetime now)
       int sl = CrSleeveOfMagic(m);
       if(sl < 0 || !BrkRobotMagic(m) || FolClosing(t)) continue;
       if(FolReady(sl) && !g_fol[sl].rec_due) continue;
+      if(FolNotReadyFor(sl, now) < CR_FOL_NOTREADY_WAIT) continue;
       datetime opened = (datetime)PositionGetInteger(POSITION_TIME);
       string cm = PositionGetString(POSITION_COMMENT);
       datetime x = FolLatestExit(sl, opened, cm);
@@ -1350,6 +1459,7 @@ void FolResetAll()
    g_fol_nwatch = 0;
    g_fol_M = 0;
    g_fol_rec_t0 = 0;
+   g_fol_nws = 0;
   }
 
 bool FolInit(string &err)

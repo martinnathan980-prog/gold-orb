@@ -4,7 +4,10 @@
                                                 [--raw-h 0] [--tag NAME]
 
 Reads lab/data/fp/<sym>_m1.parquet with the row filter ts < 2022-01-01 (and ts >= --from) INSIDE the read call, never
-a later row. Writes, under lab/robot/check/out/ (git-ignored):
+a later row. Gold bars starting 17:00-17:59 New York are dropped (SPEC 2.2: the EA's mask drops them, the daily gold
+closure; in sample the lab frame holds 20, all on 2012-12-31 17:00-17:58), so that the bar file and the rebuilt frame
+are exactly the EA's kept bars and the references run on them (before, those 20 bars seeded the lab's GFP hour ATR of
+January 2013 and three stops differed from the EA's). Writes, under lab/robot/check/out/ (git-ignored):
   bars/<SYMBOL>.r_<tag>.bin     the bars as the broker publishes them: server time (New York + 7 h), bid O/H/L/C on the
                                 2-digit grid (until the Mac says otherwise), spread = round((ao - bo) / point) in points,
                                 i.e. the lab's whole spread, commission included. Binary layout read by mock_replay.h:
@@ -39,14 +42,22 @@ REC = np.dtype([("t", "<i8"), ("o", "<i4"), ("h", "<i4"), ("l", "<i4"), ("c", "<
 sys.path.insert(0, os.path.join(LAB, "live_ai"))
 
 
+def xau_closure_bars(m1):
+    """gold bars starting 17:00-17:59 New York (SPEC 2.2, the xau mask: the daily closure)"""
+    return m1.index.tz_convert(NY).hour == 17
+
+
 def load_lab(sym, start=None, end=None):
-    """The in-sample lab frame, cut inside the read call (never a 2022+ row in memory)."""
+    """The in-sample lab frame, cut inside the read call (never a 2022+ row in memory); gold without its 17:00-17:59 New
+    York bars (the EA's mask drops them: the rebuilt frame is then the EA's kept bars)."""
     hi = CUT if end is None else min(pd.Timestamp(end, tz="UTC"), CUT)
     filt = [("ts", "<", hi)]
     if start is not None:
         filt.append(("ts", ">=", pd.Timestamp(start, tz="UTC")))
     m1 = pd.read_parquet(os.path.join(LAB, "data", "fp", f"{sym}_m1.parquet"), filters=filt)
     assert len(m1) and m1.index.max() < CUT and m1.index.is_monotonic_increasing and m1.index.is_unique
+    if sym == "xauusd":
+        m1 = m1[~xau_closure_bars(m1)]
     return m1
 
 
@@ -102,6 +113,7 @@ def rebuild(rec, digits=DIGITS, raw_h=0):
 
 def export(sym, start=None, end=None, raw_h=0, tag=None):
     m1 = load_lab(sym, start, end)
+    assert sym != "xauusd" or not xau_closure_bars(m1).any()
     tag = tag or f"{(start or 'start')}_{(end or '2022-01-01')}".replace("-", "")
     t = server_secs(m1.index)
     assert (np.diff(t) > 0).all(), "server time not strictly increasing"

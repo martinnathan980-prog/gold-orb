@@ -42,11 +42,13 @@
 //|                      neither B/ref nor the rung moves (R1); P_in  |
 //|                      never falls, so the stop never disarms       |
 //|   OTHER M            B += M                                       |
-//|   CLOSE M            B += M; plan stop (SPEC 6.1): P_in >= arm    |
-//|                      and B <= ref x (1 - fall / 100) -> STOP      |
+//|   CLOSE M            B += M; plan stop (SPEC 6.1): fall > 0,      |
+//|                      P_in >= arm and B <= ref x (1 - fall / 100)  |
+//|                      -> STOP (InpStopFallPct 0: no plan stop)     |
 //|   after any event    GUARD (b): ref > 0 and B <= 50 % of ref      |
 //|   GUARD (c)          a deal of magic 20261290 at or after T       |
-//|   CR_NO_GUARD (T7 harness builds only): GUARD never latches.      |
+//|   InpGuard false (g_cfg.guard_off), or CR_NO_GUARD (T7 harness    |
+//|   builds only): GUARD never latches, a mark is ignored.           |
 //|   A later InpPlanStart clears STOP and GUARD: only events after T |
 //|   are walked.                                                     |
 //|                                                                  |
@@ -555,6 +557,10 @@ void LedWalk()
    double eq = g_led_bt, paid = g_led_bt, ref = g_led_bt, cm = 0.0;
    double keep = 1.0 - g_cfg.stop_fall_pct / 100.0;
    bool latch = (g_led_plan != CR_PLAN_UNSET);
+   bool stop_on = (g_cfg.stop_fall_pct > 0.0);                 // InpStopFallPct 0: no plan stop (D2, S7)
+#ifndef CR_NO_GUARD
+   bool guard_on = !g_cfg.guard_off;                           // InpGuard false: no disaster guard (D2, S7)
+#endif
    g_led_stop_key = -1;
    g_led_stop_ev = -1;
    g_led_guard_key = -1;
@@ -579,14 +585,14 @@ void LedWalk()
         {
          eq = eq + a;
          cm = cm + a;
-         if(latch && g_led_stop_key < 0 && paid >= g_cfg.stop_arm_paid && eq <= ref * keep)
+         if(latch && stop_on && g_led_stop_key < 0 && paid >= g_cfg.stop_arm_paid && eq <= ref * keep)
            {
             g_led_stop_key = g_led_key[k];
             g_led_stop_ev = k;
            }
         }
 #ifndef CR_NO_GUARD
-      if(latch && g_led_guard_key < 0 && ref > 0.0 && eq <= CR_LED_GUARD_SHARE * ref)
+      if(latch && guard_on && g_led_guard_key < 0 && ref > 0.0 && eq <= CR_LED_GUARD_SHARE * ref)
         {
          g_led_guard_key = g_led_key[k];
          g_led_guard_ev = k;
@@ -683,7 +689,7 @@ void LedSay()
             + KD("P_in", g_led_e[k].paid) + KD("fall_pct", g_cfg.stop_fall_pct) + KD("arm", g_cfg.stop_arm_paid));
      }
 #ifndef CR_NO_GUARD
-   if((g_led_guard_ev >= 0 || g_led_mark_key >= 0) && !g_led_rep_guard)
+   if(!g_cfg.guard_off && (g_led_guard_ev >= 0 || g_led_mark_key >= 0) && !g_led_rep_guard)
      {
       g_led_rep_guard = true;
       if(g_led_guard_ev >= 0)
@@ -797,6 +803,7 @@ bool LedGuardAt(const datetime S)
 #ifdef CR_NO_GUARD
    return false;
 #else
+   if(g_cfg.guard_off) return false;                           // InpGuard false: a mark or a fall of half never stops it
    long lim = LedKey(S, CR_EK_CLOSE);
    return (g_led_guard_key >= 0 && g_led_guard_key < lim) || (g_led_mark_key >= 0 && g_led_mark_key < lim);
 #endif
@@ -807,6 +814,7 @@ bool LedGuardLatched()
 #ifdef CR_NO_GUARD
    return false;
 #else
+   if(g_cfg.guard_off) return false;
    return g_led_rep_guard || (g_led_settled && (g_led_guard_ev >= 0 || g_led_mark_key >= 0));
 #endif
   }
@@ -966,9 +974,9 @@ void LedReset()
 bool LedInit(string &err)
   {
    err = "";
-   if(!(g_cfg.stop_fall_pct > 0.0 && g_cfg.stop_fall_pct < 100.0))
+   if(!(g_cfg.stop_fall_pct >= 0.0 && g_cfg.stop_fall_pct < 100.0))
      {
-      err = "InpStopFallPct must lie between 0 and 100 (excluded)";
+      err = "InpStopFallPct must be 0 (no plan stop) or lie between 0 and 100 (excluded)";
       return false;
      }
    if(!(g_cfg.stop_arm_paid >= 0.0))

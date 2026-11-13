@@ -10,7 +10,10 @@
    containers), each with the guard on and with CR_NO_GUARD.
 3. T7a: the official trades of the ten sleeves (results/r2/recalc/trades, read with the row filter entry_time <
    2022-01-01 inside the read call), entries 2018-02-01 .. 2021-12-31, 1,000 EUR at the start and on the first entry of
-   each following server month (growth.py real_order:421-436), plans F3S, F2S and F1S, built with CR_NO_GUARD.
+   each following server month (growth.py real_order:421-436), plans F3S, F2S and F1S (stop -25 % armed at 12,000 EUR,
+   built with CR_NO_GUARD), and D2 (the default, PROTOCOL_V3 Addendum G) and S7 (its X = 7 preset): no plan stop
+   (InpStopFallPct 0) and InpGuard false in the build with the guard compiled in, growth.py's schedules "D2" and "S7"
+   (read on max(B, P_in), no stop applied: the engine only records the week the -50 % rule would have fired).
    growth.run_one on growth.arrays(d, price_level="is") (P8) is the reference. Equal: taken count, skips by reason
    (minimum lot, caps, margin; none by the stake rule), stop week, money paid in each week; weekly balances within
    0.01 EUR. Per trade (diagnosis, from the EA's SIZE lines): lots, m, w, unit, B, P_in, rate against a copy of
@@ -49,7 +52,12 @@ import account as A  # noqa: E402
 import growth as G  # noqa: E402
 
 CUT = pd.Timestamp("2022-01-01", tz="UTC")
-PLANS = {"F3S": "0:3;3000:2;6000:1;12000:0.5", "F2S": "0:2;6000:1;12000:0.5", "F1S": "0:1;12000:0.5"}
+PLANS = {"F3S": "0:3;3000:2;6000:1;12000:0.5", "F2S": "0:2;6000:1;12000:0.5", "F1S": "0:1;12000:0.5",
+         "D2": "0:10;3000:5;10000:2;20000:1", "S7": "0:7;3000:3.5;10000:1.4;20000:0.7"}
+# the plan's InpStopFallPct, InpStopArmPaid and InpGuard (SPEC 1): F3S, F2S, F1S as growth.STOPPED (the guard is left out of
+# T7a by the CR_NO_GUARD build); D2 and S7: no plan stop, no guard (InpGuard false in a build with the guard compiled in)
+STOPS = {"F3S": (25.0, 12000.0, 1), "F2S": (25.0, 12000.0, 1), "F1S": (25.0, 12000.0, 1), "D2": (0.0, 12000.0, 0), "S7": (0.0, 12000.0, 0)}
+NO_STOP = ("D2", "S7")
 EDGES = (1.0, 0.0, -0.5)
 CODE = {"noise30_us100": "N30", "ocm4_us100": "OC4", "brk72_24h_wd_btcusd": "BKB", "brk72_24h_wd_ethusd": "BKE",
         "F1_brk_ridge_filter_btcusd": "F1B", "F1_brk_ridge_filter_ethusd": "F1E", "nq_btc_follow_btcusd": "NQB",
@@ -161,9 +169,15 @@ def payments(x):
 
 
 def mirror(x, pnl, plan, dep_t, dep_wk, dep_amt, start=1000.0):
-    """growth.engine (growth.py:150-319) written again for the STOPPED plans (key 1, the cushion_only stake rule, no
-    payment steps, no second profile), recording each entry's sizing. Checked against run_one bit for bit."""
-    base, kill_dd, kill_arm = G.STOPPED[plan]
+    """growth.engine (growth.py:150-319) written again for the STOPPED plans and the plain schedules read on max(B, P_in)
+    (key 1: D2, S7; the -50 % rule only recorded, as run_one does for a plan outside STOPPED), the cushion_only stake
+    rule, no payment steps, no second profile, recording each entry's sizing. Checked against run_one bit for bit."""
+    if plan in G.STOPPED:
+        base, kill_dd, kill_arm = G.STOPPED[plan]
+        stop_on_kill = True
+    else:
+        assert plan in G.SCHEDULES and plan in G.KEYED_ON_PAID, plan
+        base, kill_dd, kill_arm, stop_on_kill = plan, 0.5, 0.0, False
     thr, pct = (np.array(v, dtype=np.float64) for v in G.SCHEDULES[base])
     key, rp = 1, np.zeros(5)
     p, famcap = S.params(G.CFG)
@@ -238,10 +252,11 @@ def mirror(x, pnl, plan, dep_t, dep_wk, dep_amt, start=1000.0):
                 o_idx[:] = -1
             if eq <= ref * (1.0 - kill_dd) and cnt[5] < 0 and paid >= kill_arm:
                 cnt[5] = float(w_ev)
-                stopped = True
-                cnt[7] = 1.0
-                if i >= n:
-                    o_idx[:] = -1
+                if stop_on_kill:
+                    stopped = True
+                    cnt[7] = 1.0
+                    if i >= n:
+                        o_idx[:] = -1
             continue
         if i >= n:
             break
@@ -355,8 +370,10 @@ def run_t7a(exe, plan, edge, x, e, dep, ref, rec, sanitize, skew=0):
     os.makedirs(d_out)
     env = dict(os.environ, ASAN_OPTIONS="detect_leaks=1") if sanitize else None
     t0 = time.time()
+    fall, arm, guard = STOPS[plan]
     r = subprocess.run([exe, "t7a", os.path.join(d_in, "trades.csv"), os.path.join(d_in, "payments.csv"), os.path.join(d_in, "weeks.csv"),
-                        PLANS[plan], d_out, str(int(skew))], capture_output=True, text=True, env=env, cwd=ROBOT, timeout=7200)
+                        PLANS[plan], d_out, str(int(skew)), repr(fall), repr(arm), str(guard)], capture_output=True, text=True, env=env,
+                       cwd=ROBOT, timeout=7200)
     sec = round(time.time() - t0, 2)
     res = {"plan": plan, "edge": edge, "sanitize": sanitize, "skew": skew, "exit": r.returncode, "stdout": r.stdout.strip(), "sec": sec}
     if r.returncode != 0:
@@ -374,6 +391,9 @@ def run_t7a(exe, plan, edge, x, e, dep, ref, rec, sanitize, skew=0):
                   "stopped": int(n - cnt[0] - cnt[1] - cnt[2] - cnt[3] - cnt[4]), "zero": int(cnt[6])}
     stop_utc = int(summ["stop_utc"])
     stop_wk_ea = week_of_utc(stop_utc, mon) if stop_utc > 0 else -1
+    # the lab's stop week: the week its plan stop fired (STOPPED plans); for D2 and S7 the engine applies no stop (cnt[7]
+    # stays 0) and only records the week the -50 % rule would have fired, which the EA, without guard, ignores
+    stop_wk_lab = int(cnt[5]) if int(cnt[7]) == 1 else -1
     dB = np.abs(wk.B.to_numpy() - eq_wk)
     dP = np.abs(wk.P_in.to_numpy() - paid_wk)
     # per trade, against the recording copy of the engine (entries before the stop)
@@ -399,7 +419,8 @@ def run_t7a(exe, plan, edge, x, e, dep, ref, rec, sanitize, skew=0):
                 first.setdefault(k, int(row.i))
                 if k in maxd:
                     maxd[k] = max(maxd[k], abs(a - b))
-    res.update({"trades": n, "counts_ea": counts_ea, "counts_lab": counts_lab, "stop_week_ea": stop_wk_ea, "stop_week_lab": int(cnt[5]),
+    res.update({"trades": n, "counts_ea": counts_ea, "counts_lab": counts_lab, "stop_week_ea": stop_wk_ea, "stop_week_lab": stop_wk_lab,
+                "minus_50_rule_week_lab": int(cnt[5]), "guard_latched_ea": int(summ.get("guard_latched", -1)),
                 "stop_utc": stop_utc, "weeks": len(wk), "max_abs_diff_weekly_balance_eur": float(dB.max()),
                 "max_abs_diff_weekly_paid_eur": float(dP.max()), "final_balance_ea": float(wk.B.iloc[-1]), "final_balance_lab": float(eq_wk[-1]),
                 "paid_ea": float(wk.P_in.iloc[-1]), "paid_lab": float(paid_wk[-1]), "per_trade_compared": compared,
@@ -410,7 +431,8 @@ def run_t7a(exe, plan, edge, x, e, dep, ref, rec, sanitize, skew=0):
                 "settle_past_window": int(summ["settle_past_window"])})
     ok = (counts_ea["none"] == counts_lab["none"] and counts_ea["min_lot"] == counts_lab["min_lot"] and counts_ea["cap"] == counts_lab["cap"]
           and counts_ea["margin"] == counts_lab["margin"] and counts_ea["stopped"] == counts_lab["stopped"] and counts_ea["other"] == 0
-          and counts_lab["rule"] == 0 and counts_lab["zero"] == 0 and stop_wk_ea == int(cnt[5]) and len(wk) == len(eq_wk)
+          and counts_lab["rule"] == 0 and counts_lab["zero"] == 0 and stop_wk_ea == stop_wk_lab and len(wk) == len(eq_wk)
+          and int(summ.get("guard_latched", -1)) == 0
           and float(dB.max()) <= 0.01 and float(dP.max()) <= 0.01 and int(summ["late_stop"]) == 0 and int(summ["fails"]) == 0
           and int(summ["settle_past_window"]) == 0 and (int(summ["settle_waits"]) > 0) == (skew != 0))
     # the SIZE lines carry the same lots and m (every entry: one line)
@@ -437,8 +459,8 @@ def main(argv=None):
     res = {"pass": False}
     builds = {}
     try:
-        builds["plain"] = make("test_account_i", False, False)
-        builds["plain_ng"] = make("test_account_i_ng", False, True)
+        builds["plain"] = make("test_account_i", False, False)          # the guard compiled in: D2 and S7 (InpGuard false)
+        builds["plain_ng"] = make("test_account_i_ng", False, True)     # CR_NO_GUARD: F3S, F2S, F1S (SPEC 7 T7a)
         if not a.no_sanitize:
             builds["san"] = make("test_account_i_san", True, False)
             builds["san_ng"] = make("test_account_i_san_ng", True, True)
@@ -463,16 +485,19 @@ def main(argv=None):
             eq_wk, paid_wk, cnt = G.run_one(pk, pnl, plan, *dep)
             m_eq, m_paid, m_cnt, rec = mirror(x, pnl, plan, *dep)
             same = bool(np.array_equal(m_eq, eq_wk) and np.array_equal(m_paid, paid_wk) and np.array_equal(m_cnt, cnt))
-            san = a.san_all or (plan == "F3S" and edge in SAN_EDGES)
-            for kind in ("plain_ng",) + (("san_ng",) if "san_ng" in builds and san else ()):
+            san = a.san_all or (plan in ("F3S", "D2") and edge in SAN_EDGES)
+            kinds = ("plain",) + (("san",) if "san" in builds and san else ()) if plan in NO_STOP else \
+                ("plain_ng",) + (("san_ng",) if "san_ng" in builds and san else ())
+            for kind in kinds:
                 r = run_t7a(builds[kind][0], plan, edge, x, e, dep, (eq_wk, paid_wk, cnt), rec, kind.startswith("san"))
                 r["engine_copy_equals_run_one"] = same
                 r["pass"] = bool(r["pass"] and same)
                 res["t7a"].append(r)
                 print(f"T7a {plan} edge x{edge:g}{' sanitizer' if r['sanitize'] else ''}: "
                       f"{'PASS' if r['pass'] else 'FAIL'} taken {r.get('counts_ea', {}).get('none')} / {int(cnt[0])}, "
-                      f"stop week {r.get('stop_week_ea')} / {int(cnt[5])}, weekly B max diff {r.get('max_abs_diff_weekly_balance_eur')}, "
-                      f"{r['sec']} s", flush=True)
+                      f"skips EA {r.get('counts_ea')} lab {r.get('counts_lab')}, stop week {r.get('stop_week_ea')} / {r.get('stop_week_lab')}"
+                      f" (-50 % rule week {int(cnt[5])}), weekly B max diff {r.get('max_abs_diff_weekly_balance_eur')}, final "
+                      f"{r.get('final_balance_ea')} / {r.get('final_balance_lab')}, {r['sec']} s", flush=True)
     # R16 inside T7a: each deposit's deal is in the history 45 s before the balance shows it; the sizing waits, same result
     pnl = G.with_edge(x, 1.0)
     eq_wk, paid_wk, cnt = G.run_one(pk, pnl, "F3S", *dep)
@@ -492,7 +517,8 @@ def main(argv=None):
         json.dump(res, f, indent=1)
     short = {k: v for k, v in res.items() if k != "t7a"}
     short["t7a"] = [{k: r.get(k) for k in ("plan", "edge", "sanitize", "skew", "pass", "counts_ea", "counts_lab", "stop_week_ea",
-                                           "stop_week_lab", "max_abs_diff_weekly_balance_eur", "max_abs_diff_weekly_paid_eur",
+                                           "stop_week_lab", "minus_50_rule_week_lab", "max_abs_diff_weekly_balance_eur",
+                                           "max_abs_diff_weekly_paid_eur", "final_balance_ea", "final_balance_lab",
                                            "per_trade_differences", "settle_waits", "sec")}
                     for r in res["t7a"]]
     print(json.dumps(short, indent=1))

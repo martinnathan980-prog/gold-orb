@@ -3,6 +3,7 @@
     python3 -I lab/robot/check/run_tests.py                 # everything
     python3 -I lab/robot/check/run_tests.py --only T1,T3    # by the tag of their first line (T1..T10, S0)
     python3 -I lab/robot/check/run_tests.py --list
+    python3 -I lab/robot/check/run_tests.py --jobs 3        # three tests at once, the longest first (by the last summary)
 
 A test's tag is the first word of its first line: the first word of a .py module docstring (T3 for a docstring that
 starts "T3 paper: ..."; S0 for "S0: ..."), the first word of a .cpp's first comment ("// T3 paper: ..."). A test passes
@@ -89,6 +90,7 @@ def main(argv=None):
     ap.add_argument("--only")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--timeout", type=int, default=3600)
+    ap.add_argument("--jobs", type=int, default=1, help="tests run at once (the longest of the last summary first)")
     a = ap.parse_args(argv)
     tests = sorted(glob.glob(os.path.join(HERE, "test_*.py")) + glob.glob(os.path.join(HERE, "test_*.cpp")))
     want = set(a.only.split(",")) if a.only else None
@@ -99,20 +101,37 @@ def main(argv=None):
             print(f"{t:5s} {os.path.relpath(p, ROBOT)}")
         return 0
     os.makedirs(OUT, exist_ok=True)
-    rows, ok = [], True
-    for p, t in sel:
+    t_start = time.time()
+
+    def one(pt):
+        p, t = pt
+        t0 = time.time()
         r = run_one(p, a.timeout)
         name = os.path.basename(p)
         with open(os.path.join(OUT, name + ".log"), "w") as f:
             f.write(r["out"])
         passed = r["exit"] == 0
-        ok &= passed
-        rows.append({"test": name, "tag": t, "pass": passed, "exit": r["exit"], "sec": r["sec"]})
-        print(f"{'PASS' if passed else 'FAIL'} {t:5s} {name:28s} {r['sec']:7.1f} s" + ("" if passed else f"  (exit {r['exit']})"))
+        print(f"{'PASS' if passed else 'FAIL'} {t:5s} {name:28s} {r['sec']:7.1f} s" + ("" if passed else f"  (exit {r['exit']})"), flush=True)
         if not passed:
-            print("   " + "\n   ".join(r["out"].splitlines()[-12:]))
+            print("   " + "\n   ".join(r["out"].splitlines()[-12:]), flush=True)
+        return {"test": name, "tag": t, "pass": passed, "exit": r["exit"], "sec": r["sec"],
+                "started_utc": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(t0)), "ended_utc": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())}
+    if a.jobs <= 1:
+        rows = [one(pt) for pt in sel]
+    else:
+        from concurrent.futures import ThreadPoolExecutor
+        last = {}
+        try:
+            last = {r["test"]: r.get("sec", 0.0) for r in json.load(open(os.path.join(OUT, "summary.json"))).get("tests", [])}
+        except (OSError, ValueError):
+            pass
+        order = sorted(range(len(sel)), key=lambda i: -last.get(os.path.basename(sel[i][0]), 0.0))
+        with ThreadPoolExecutor(max_workers=a.jobs) as ex:
+            done = dict(zip(order, ex.map(lambda i: one(sel[i]), order)))
+        rows = [done[i] for i in range(len(sel))]
+    ok = all(r["pass"] for r in rows)
     with open(os.path.join(OUT, "summary.json"), "w") as f:
-        json.dump({"pass": ok, "tests": rows}, f, indent=1)
+        json.dump({"pass": ok, "jobs": a.jobs, "wall_s": round(time.time() - t_start, 1), "tests": rows}, f, indent=1)
     print(f"run_tests: {sum(x['pass'] for x in rows)}/{len(rows)} passed")
     return 0 if ok else 1
 

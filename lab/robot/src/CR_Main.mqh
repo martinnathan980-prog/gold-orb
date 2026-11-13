@@ -78,6 +78,7 @@ void MainConfig()
    g_cfg.risk_table = InpRiskTable;
    g_cfg.stop_fall_pct = InpStopFallPct;
    g_cfg.stop_arm_paid = InpStopArmPaid;
+   g_cfg.guard_off = !InpGuard;
    g_cfg.sleeves = InpSleeves;
    g_cfg.k1 = InpK1;
    g_cfg.h2 = InpH2;
@@ -130,6 +131,13 @@ bool MainBuildCheck(string &why)
       ok = false;
       why = "CR_XAU_COMM_PTS is not 6";
      }
+#ifdef CR_BRK_NOTIONAL_X                          // the real CR_Broker defines it; the S0 stub of the rule steps' trees does not
+   if(CR_BRK_NOTIONAL_X != 20.0)
+     {
+      ok = false;
+      why = "CR_BRK_NOTIONAL_X is not 20";
+     }
+#endif
 #endif
    return ok;
   }
@@ -356,12 +364,14 @@ bool MainRebuild(const datetime now)
    g_M = (start > 0 && start < M1) ? start : M1;
    long minutes = 0;
    g_replaying = true;
+   g_jrn_replay = true;                           // the rules push nothing while the history is replayed
    for(datetime m = g_M + 60; m <= M1; m += 60)
      {
       MainMinute(m, false);
       minutes++;
      }
    g_replaying = false;
+   g_jrn_replay = false;
    g_M = M1;
    g_rebuilds++;
    Jrn(CR_EV_REBUILD, "-", KI("n", g_rebuilds) + KV("why", g_rebuild_why) + KT("from", start) + KT("to", M1) + KI("minutes", minutes)
@@ -390,8 +400,8 @@ void MainLive(const datetime now)
      }
    LedOnTimer(now);
    GrdOnTimer(now);
+   BarsTimer(now);                                // READY decided before the follower reads it (review F1)
    FolOnTimer(now);
-   BarsTimer(now);
    datetime M = BarsBarrier(now);
    if(M <= g_M) return;
    int r = BarsPoll(M);
@@ -466,6 +476,7 @@ int OnInit()
    g_day = 0;
    g_plan_said = false;
    g_rebuild_why = "start";
+   JrnFlush();
    return INIT_SUCCEEDED;
   }
 
@@ -487,9 +498,8 @@ void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest 
    FolOnTransaction(trans);
   }
 
-void OnTimer()
+void MainTimer(const datetime now)
   {
-   datetime now = TimeTradeServer();
    GrdLockRefresh();
    if(g_st == CR_ST_HALT || g_st == CR_ST_INIT) return;
    if(g_st == CR_ST_WAIT)
@@ -508,6 +518,12 @@ void OnTimer()
       g_st = CR_ST_LIVE;
      }
    MainLive(now);
+  }
+
+void OnTimer()
+  {
+   MainTimer(TimeTradeServer());
+   JrnFlush();                                    // the journal file is flushed once per pass (review F9)
   }
 
 #endif

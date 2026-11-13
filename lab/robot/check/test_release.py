@@ -8,18 +8,25 @@ Checks (SPEC 1 "Single file", SPEC 7 T10; step K):
      same text with `#define CR_DEBUG` first; every src file is inlined exactly once; only <Trade\\Trade.mqh> is left as
      an include; pure ASCII.
   2. No harness constant: the dist files define none of CR_HARNESS, CR_NO_GUARD, CR_DEBUG (the release file),
-     CR_IDX_TRACE (step D's diagnostic) or any MOCK_ name; CR_XAU_COMM_PTS is defined once, under #ifndef, as 6; the
+     CR_IDX_TRACE (step D's diagnostic) or any MOCK_ name; CR_XAU_COMM_PTS is defined once, under #ifndef, as 6, and
+     CR_BRK_NOTIONAL_X (the 20 x balance cap, raised only by T7b's harness build) once, under #ifndef, as 20.0; the
      harness-only inputs (InpScript, InpScriptDir) and the script rule sit inside #ifdef CR_HARNESS blocks.
-  3. The 14 inputs of SPEC 1, in order, with their types and defaults; no other input outside #ifdef CR_HARNESS.
+  3. The 15 inputs of SPEC 1, in order, with their types and defaults (D2: InpRiskTable 0:10;3000:5;10000:2;20000:1, no
+     plan stop, InpGuard false); no other input outside #ifdef CR_HARNESS.
   4. MQL5 subset (SPEC 1): no fmax/fmin, no '->', 'new', '#import', 'virtual', 'template', function-like macro, Sleep
      (to_cpp.py refuses them; it translates the file below), no `#property strict`.
   5. Builds, 0 warnings each: the harness build (CR_HARNESS, CR_XAU_COMM_PTS=0), its sanitizer build, the release
      build (no CR_HARNESS: what MetaEditor compiles), the debug file as a release build, and the release build with
-     -DCR_NO_GUARD and with -DCR_XAU_COMM_PTS=0 (the two forbidden constants).
+     -DCR_NO_GUARD and with -DCR_XAU_COMM_PTS=0 (the two forbidden constants); the CR_NO_GUARD build no longer warns
+     about `settled` (request 1 of step K, fixed).
   6. The guard works through the whole EA in the replay mock (one week of 2021, InpTrade true, a demo account):
-       release build             SELFTEST ok=1 with every golden vector, INIT harness=0 comm_pts=6, orders sent;
+       release build             SELFTEST ok=1 with every golden vector (CR_GOLDEN_N of src/CR_Golden.mqh), INIT
+                                 harness=0 comm_pts=6 and the default plan D2, orders sent; the journal (review F9):
+                                 Print (the mock's log) carries no rp=1 line while the file does, and the file is
+                                 flushed at most once per timer pass;
        release + CR_NO_GUARD     SELFTEST ok=0 why=CR_NO_GUARD..., no SEND, the intents skipped as selftest;
        release + comm 0          SELFTEST ok=0 why=CR_XAU_COMM_PTS..., no SEND;
+       release + notional 1000   SELFTEST ok=0 why=CR_BRK_NOTIONAL_X..., no SEND (the 20 x balance cap is fixed);
        harness, one golden F1 score changed in a copy of the dist file   SELFTEST ok=0 why=golden f1_score ..., no SEND;
        debug file                its BAR lines (the bar dump of CR_DEBUG) are there.
 Outputs: check/out/test_release/summary.json; builds under build/test_release/ (removed unless --keep).
@@ -47,11 +54,12 @@ WORK = os.path.join(ROBOT, "build", "test_release")
 DIST = os.path.join(ROBOT, "dist", "ClaudeRobot.mq5")
 DIST_DBG = os.path.join(ROBOT, "dist", "ClaudeRobot_debug.mq5")
 SYMS = ("XAUUSD.r", "US100.r", "BTCUSD.r", "ETHUSD.r")
-INPUTS = [("bool", "InpTrade", "true"), ("datetime", "InpPlanStart", "0"), ("string", "InpRiskTable", '"0:3;3000:2;6000:1;12000:0.5"'),
-          ("double", "InpStopFallPct", "25.0"), ("double", "InpStopArmPaid", "12000.0"), ("string", "InpSleeves", '"ALL"'),
-          ("int", "InpK1", "-1"), ("int", "InpH2", "-1"), ("int", "InpS075", "-1"), ("string", "InpK1T", '""'),
-          ("double", "InpDailyLockStakes", "0.0"), ("int", "InpFridayCloseHHMM", "0"), ("string", "InpExtraClosures", '""'),
-          ("bool", "InpPush", "true")]
+INPUTS = [("bool", "InpTrade", "true"), ("datetime", "InpPlanStart", "0"), ("string", "InpRiskTable", '"0:10;3000:5;10000:2;20000:1"'),
+          ("double", "InpStopFallPct", "0.0"), ("double", "InpStopArmPaid", "12000.0"), ("bool", "InpGuard", "false"),
+          ("string", "InpSleeves", '"ALL"'), ("int", "InpK1", "-1"), ("int", "InpH2", "-1"), ("int", "InpS075", "-1"),
+          ("string", "InpK1T", '""'), ("double", "InpDailyLockStakes", "0.0"), ("int", "InpFridayCloseHHMM", "0"),
+          ("string", "InpExtraClosures", '""'), ("bool", "InpPush", "true")]
+D2 = "0:10;3000:5;10000:2;20000:1"
 HARNESS_DEFINES = ("CR_HARNESS", "CR_NO_GUARD", "CR_IDX_TRACE", "CR_DEBUG")
 FROM = calendar.timegm((2021, 3, 1, 0, 0, 0))                 # server time; in sample
 TO = calendar.timegm((2021, 3, 6, 0, 0, 0))
@@ -59,6 +67,12 @@ TO = calendar.timegm((2021, 3, 6, 0, 0, 0))
 
 def text(p):
     return open(p, "rb").read()
+
+
+def golden_n():
+    """CR_GOLDEN_N of the generated src/CR_Golden.mqh (the SELFTEST line's golden=)"""
+    m = re.search(r"^#define CR_GOLDEN_N (\d+)", open(os.path.join(ROBOT, "src", "CR_Golden.mqh")).read(), re.M)
+    return int(m.group(1)) if m else -1
 
 
 def check_released(res):
@@ -120,7 +134,7 @@ def check_constants(res):
     """2-4. harness constants, the 14 inputs, the MQL5 subset"""
     lines = text(DIST).decode("ascii").split("\n")
     ctx = blocks(lines)
-    bad_def, comm, inputs, stray, subset = [], [], [], [], []
+    bad_def, comm, inputs, stray, subset, notional = [], [], [], [], [], []
     for no, (ln, st) in enumerate(zip(lines, ctx), 1):
         code = ln.split("//", 1)[0]
         m = re.match(r"\s*#\s*define\s+(\w+)\b(.*)$", code)
@@ -130,6 +144,8 @@ def check_constants(res):
                 bad_def.append((no, ln.strip()))
             if name == "CR_XAU_COMM_PTS":
                 comm.append((no, m.group(2).strip(), st[-1] if st else ""))
+            if name == "CR_BRK_NOTIONAL_X":
+                notional.append((no, m.group(2).strip(), st[-1] if st else ""))
         m = re.match(r'\s*input\s+(\w+)\s+(Inp\w+)\s*=\s*("(?:\\.|[^"\\])*"|[^;"]+?)\s*;', code)
         if m:
             in_harness = any("CR_HARNESS" in s and "#ifdef" in s and "#else" not in s for s in st)
@@ -143,9 +159,10 @@ def check_constants(res):
     want = [(t, n, d) for t, n, d in INPUTS]
     script_in_harness = all(any("CR_HARNESS" in s for s in ctx[i]) for i, ln in enumerate(lines)
                             if re.match(r"\s*class\s+CRuleScript\b", ln))
-    out = {"harness_defines_found": bad_def, "cr_xau_comm_pts": comm, "inputs": inputs, "inputs_expected": want,
+    out = {"harness_defines_found": bad_def, "cr_xau_comm_pts": comm, "cr_brk_notional_x": notional, "inputs": inputs, "inputs_expected": want,
            "harness_only_inputs": stray, "subset_violations": subset, "script_rule_inside_cr_harness": script_in_harness}
     ok = (not bad_def and len(comm) == 1 and comm[0][1] == "6" and comm[0][2].startswith("#ifndef CR_XAU_COMM_PTS")
+          and len(notional) == 1 and notional[0][1].split()[0] == "20.0" and notional[0][2].startswith("#ifndef CR_BRK_NOTIONAL_X")
           and inputs == want and sorted(n for _, n, _ in stray) == ["InpScript", "InpScriptDir"] and not subset and script_in_harness)
     res["constants"] = dict(out, pass_=ok)
     return ok
@@ -160,18 +177,13 @@ def builds(res):
         "debug_release": dict(entry=DIST_DBG, name="test_release_dbg", harness=False),
         "release_no_guard": dict(entry=DIST, name="test_release_ng", harness=False, defines=["CR_NO_GUARD"]),
         "release_comm0": dict(entry=DIST, name="test_release_c0", harness=False, defines=["CR_XAU_COMM_PTS=0"]),
+        "release_notional": dict(entry=DIST, name="test_release_nx", harness=False, defines=["CR_BRK_NOTIONAL_X=1000.0"]),
     }
-    exe, warn, known = {}, {}, {}
+    exe, warn = {}, {}
     for k, kw in plan.items():
         e, w = build(kw.pop("entry"), **kw)
         exe[k], warn[k] = e, len(w)
-        if k == "release_no_guard":
-            # J's CR_Guards.mqh: GrdOnTimer reads `settled` only inside #ifndef CR_NO_GUARD, so a CR_NO_GUARD build warns
-            # "unused variable 'settled'" (a test-only build: T7 and this check). Listed, and asked of J in the report.
-            known[k] = [x for x in w if "unused variable" in x and "settled" in x]
-            warn[k] = len(w) - len(known[k])
-    res["builds"] = {"warnings": warn, "known_warnings_cr_no_guard": {k: len(v) for k, v in known.items()},
-                     "pass_": all(v == 0 for v in warn.values())}
+    res["builds"] = {"warnings": warn, "pass_": all(v == 0 for v in warn.values())}
     return exe
 
 
@@ -195,9 +207,16 @@ def run_week(exe, name):
         ev[r["ev"]] = ev.get(r["ev"], 0) + 1
     st = [r for r in rows if r["ev"] == "SELFTEST"]
     init = [r for r in rows if r["ev"] == "INIT" and "build" in r]
+    plan = [r for r in rows if r["ev"] == "PLAN"]
     sizes = [r for r in rows if r["ev"] == "SIZE" and r.get("rp") != 1]
+    # the journal's two outputs (review F9): Print goes to the mock's log, the file to MQL5/Files/ClaudeRobot
+    printed = [ln for ln in open(os.path.join(files, "_mock", "log.txt")) if ln.startswith("CR|")]
+    m = re.search(r"timer calls (\d+).*flushes (\d+)", out)
     return {"wall_s": round(wall, 2), "events": ev, "selftest": st[0] if st else None, "init": init[0] if init else None,
-            "live_size_skips": sorted({str(r.get("skip")) for r in sizes}), "sends": ev.get("SEND", 0), "bar_lines": ev.get("BAR", 0)}
+            "plan": plan[0] if plan else None, "live_size_skips": sorted({str(r.get("skip")) for r in sizes}), "sends": ev.get("SEND", 0),
+            "bar_lines": ev.get("BAR", 0), "file_lines": len(rows), "file_rp_lines": sum(1 for r in rows if r.get("rp") == 1),
+            "printed_lines": len(printed), "printed_rp_lines": sum(1 for ln in printed if ln.rstrip("\n").endswith("|rp=1")),
+            "timer_calls": int(m.group(1)) if m else -1, "flushes": int(m.group(2)) if m else -1}
 
 
 def corrupted_dist():
@@ -242,19 +261,28 @@ def main(argv=None):
     runs["release"] = run_week(exe["release"], "release")
     runs["release_no_guard"] = run_week(exe["release_no_guard"], "release_no_guard")
     runs["release_comm0"] = run_week(exe["release_comm0"], "release_comm0")
+    runs["release_notional"] = run_week(exe["release_notional"], "release_notional")
     runs["harness_golden_changed"] = run_week(exe["harness_golden_changed"], "harness_golden_changed")
     runs["debug_release"] = run_week(exe["debug_release"], "debug_release")
     runs["harness_golden_changed"]["changed"] = {"was": was, "now": now}
     g = lambda k, f: (runs[k]["selftest"] or {}).get(f)
     rel_init = runs["release"]["init"] or {}
+    rel = runs["release"]
     checks = {
-        "release_selftest_ok": g("release", "ok") == 1 and g("release", "golden") == 322 and g("release", "why") in ("", None),
+        "release_selftest_ok": g("release", "ok") == 1 and g("release", "golden") == golden_n() and golden_n() > 0
+        and g("release", "why") in ("", None),
         "release_init_harness0_comm6": rel_init.get("harness") == 0 and rel_init.get("comm_pts") == 6,
+        "release_default_plan_d2": rel_init.get("risk") == D2 and (rel["plan"] or {}).get("risk") == D2,
+        "journal_print_no_rp_lines": rel["printed_lines"] > 0 and rel["printed_rp_lines"] == 0 and rel["file_rp_lines"] > 1000
+        and rel["printed_lines"] == rel["file_lines"] - rel["file_rp_lines"],
+        "journal_flush_once_per_pass": 0 < rel["flushes"] <= rel["timer_calls"] + 2 and rel["flushes"] < rel["file_lines"],
         "release_sends_orders": runs["release"]["sends"] > 0,
         "no_guard_blocked": g("release_no_guard", "ok") == 0 and "CR_NO_GUARD" in str(g("release_no_guard", "why"))
         and runs["release_no_guard"]["sends"] == 0 and "selftest" in runs["release_no_guard"]["live_size_skips"],
         "comm0_blocked": g("release_comm0", "ok") == 0 and "CR_XAU_COMM_PTS" in str(g("release_comm0", "why"))
         and runs["release_comm0"]["sends"] == 0,
+        "notional_cap_changed_blocked": g("release_notional", "ok") == 0 and "CR_BRK_NOTIONAL_X" in str(g("release_notional", "why"))
+        and runs["release_notional"]["sends"] == 0,
         "golden_changed_blocked": g("harness_golden_changed", "ok") == 0 and str(g("harness_golden_changed", "why")).startswith("golden f1_score 0:")
         and runs["harness_golden_changed"]["sends"] == 0,
         "debug_bar_dump": runs["debug_release"]["bar_lines"] > 1000 and g("debug_release", "ok") == 1,

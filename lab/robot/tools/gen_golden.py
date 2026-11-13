@@ -17,8 +17,8 @@ What the EA checks at OnInit (GoldenCheck, called by CR_Main; a mismatch blocks 
            floats: IEEE doubles, the EA's operations), within 1e-12 of the lab's score_model (numpy), checked here
   riskbp   10 K1 risks 1e4 x stop_dist / P of the lab's brk72 ETH orders (make_orders through recalc.sleeves(), the
            in-sample frame), P = the mid close of the last bar starting before the decision (s1_run.py:85-108)
-  risk     the three plans F3S, F2S, F1S (SPEC 1): SizParseTable, then the rate at 11 keys, against growth._pct on
-           growth.SCHEDULES["F3"], ["F2"], ["F1"]
+  risk     the five plans F3S, F2S, F1S, D2 (the default) and S7 (SPEC 1): SizParseTable, then the rate at 15 keys, against
+           growth._pct on growth.SCHEDULES["F3"], ["F2"], ["F1"], ["D2"], ["S7"]
   wilder   a 48-value series (NaN first, one more NaN inside) through CrWilder(14), against pandas
            ewm(alpha=1/14, adjust=False).mean()
   sma      the same series through CrRollSum(14, 9).Mean(), against pandas rolling(14, min_periods=9).mean()
@@ -53,8 +53,10 @@ for sub in (("live_ai",), ("r2", "tracks", "idx_us"), ("r2", "tracks", "stake"))
     sys.path.insert(0, os.path.join(LAB, *sub))
 sys.path.insert(0, LAB)
 REL = 1e-12
-PLANS = [("F3S", "0:3;3000:2;6000:1;12000:0.5", "F3"), ("F2S", "0:2;6000:1;12000:0.5", "F2"), ("F1S", "0:1;12000:0.5", "F1")]
-RISK_KEYS = [0.0, 999.99, 2999.99, 3000.0, 3000.01, 5999.99, 6000.0, 11999.99, 12000.0, 50000.0, 10000000.0]
+PLANS = [("F3S", "0:3;3000:2;6000:1;12000:0.5", "F3"), ("F2S", "0:2;6000:1;12000:0.5", "F2"), ("F1S", "0:1;12000:0.5", "F1"),
+         ("D2", "0:10;3000:5;10000:2;20000:1", "D2"), ("S7", "0:7;3000:3.5;10000:1.4;20000:0.7", "S7")]
+RISK_KEYS = [0.0, 999.99, 2999.99, 3000.0, 3000.01, 5999.99, 6000.0, 9999.99, 10000.0, 11999.99, 12000.0, 19999.99, 20000.0,
+             50000.0, 10000000.0]
 
 
 def secs(t):
