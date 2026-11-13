@@ -16,7 +16,9 @@
    0.01 EUR. Per trade (diagnosis, from the EA's SIZE lines): lots, m, w, unit, B, P_in, rate against a copy of
    growth.engine that records them; the copy must give run_one's figures bit for bit. The same at the lab's edges x0
    and x-0.5 (growth.with_edge), where the plan stop fires.
---quick: T7a at edge x1 only. Sanitizer: the unit worlds and T7a F3S x1 (--san-all: every T7a run).
+4. R16 inside T7a: F3S at edge x1 with each deposit's deal 45 s before the balance shows it. The sizing requests of
+   that minute meet SETTLE and are asked again every 2 s inside their 5-minute window; the result must not change.
+--quick: T7a at edge x1 only. Sanitizer: the unit worlds and T7a F3S at x1 and x-0.5 (--san-all: every T7a run).
 Outputs under lab/robot/check/out/test_account/ (summary.json, inputs, the EA's trades.csv / weeks.csv, journals).
 """
 import argparse
@@ -53,6 +55,8 @@ CODE = {"noise30_us100": "N30", "ocm4_us100": "OC4", "brk72_24h_wd_btcusd": "BKB
         "F1_brk_ridge_filter_btcusd": "F1B", "F1_brk_ridge_filter_ethusd": "F1E", "nq_btc_follow_btcusd": "NQB",
         "GOLD_FRI_PM_xauusd": "GFP", "donch4h_stop_xauusd": "D4H", "orb_asia_2d_buf10_xauusd": "ORX"}
 SK = {"none": 0, "stopped": 1, "min_lot": 10, "cap": 11, "margin": 12}
+SKEW = -45                                  # R16 run: a deposit's deal 45 s before the balance shows it
+SAN_EDGES = (1.0, -0.5)                     # F3S runs repeated under the sanitizer: no stop, and a stop in week 49
 ENTRY = "src/CR_Sizing.mqh"
 SUBST = ["CR_Clock.mqh=" + os.path.join(ROBOT, "check", "dbl", "CR_Clock_dbl.mqh")]
 
@@ -341,8 +345,8 @@ def week_of_utc(t_utc, mon):
     return int(np.searchsorted(mon, s, side="right") - 1)
 
 
-def run_t7a(exe, plan, edge, x, e, dep, ref, rec, sanitize):
-    tag = f"{plan}_x{edge:g}" + ("_san" if sanitize else "")
+def run_t7a(exe, plan, edge, x, e, dep, ref, rec, sanitize, skew=0):
+    tag = f"{plan}_x{edge:g}" + ("_san" if sanitize else "") + (f"_skew{skew}" if skew else "")
     d_in = os.path.join(OUT, "t7a_in_x" + f"{edge:g}")
     d_out = os.path.join(OUT, "t7a_" + tag)
     mon = write_inputs(d_in, x, e, G.with_edge(x, edge), dep[0])
@@ -352,9 +356,9 @@ def run_t7a(exe, plan, edge, x, e, dep, ref, rec, sanitize):
     env = dict(os.environ, ASAN_OPTIONS="detect_leaks=1") if sanitize else None
     t0 = time.time()
     r = subprocess.run([exe, "t7a", os.path.join(d_in, "trades.csv"), os.path.join(d_in, "payments.csv"), os.path.join(d_in, "weeks.csv"),
-                        PLANS[plan], d_out], capture_output=True, text=True, env=env, cwd=ROBOT, timeout=7200)
+                        PLANS[plan], d_out, str(int(skew))], capture_output=True, text=True, env=env, cwd=ROBOT, timeout=7200)
     sec = round(time.time() - t0, 2)
-    res = {"plan": plan, "edge": edge, "sanitize": sanitize, "exit": r.returncode, "stdout": r.stdout.strip(), "sec": sec}
+    res = {"plan": plan, "edge": edge, "sanitize": sanitize, "skew": skew, "exit": r.returncode, "stdout": r.stdout.strip(), "sec": sec}
     if r.returncode != 0:
         res["stderr"] = r.stderr[-3000:]
         res["pass"] = False
@@ -401,11 +405,14 @@ def run_t7a(exe, plan, edge, x, e, dep, ref, rec, sanitize):
                 "paid_ea": float(wk.P_in.iloc[-1]), "paid_lab": float(paid_wk[-1]), "per_trade_compared": compared,
                 "per_trade_differences": diff, "per_trade_first_difference": first, "per_trade_max_abs_diff": maxd,
                 "dropped_at_stop": int(summ["dropped"]), "payments_skipped_after_stop": int(summ["payments_skipped"]),
-                "late_stop": int(summ["late_stop"]), "ledger_reads": int(summ["reads"]), "deals": int(summ["deals"])})
+                "late_stop": int(summ["late_stop"]), "ledger_reads": int(summ["reads"]), "deals": int(summ["deals"]),
+                "settle_waits": int(summ["settle_waits"]), "settle_wait_trades": int(summ["settle_wait_trades"]),
+                "settle_past_window": int(summ["settle_past_window"])})
     ok = (counts_ea["none"] == counts_lab["none"] and counts_ea["min_lot"] == counts_lab["min_lot"] and counts_ea["cap"] == counts_lab["cap"]
           and counts_ea["margin"] == counts_lab["margin"] and counts_ea["stopped"] == counts_lab["stopped"] and counts_ea["other"] == 0
           and counts_lab["rule"] == 0 and counts_lab["zero"] == 0 and stop_wk_ea == int(cnt[5]) and len(wk) == len(eq_wk)
-          and float(dB.max()) <= 0.01 and float(dP.max()) <= 0.01 and int(summ["late_stop"]) == 0 and int(summ["fails"]) == 0)
+          and float(dB.max()) <= 0.01 and float(dP.max()) <= 0.01 and int(summ["late_stop"]) == 0 and int(summ["fails"]) == 0
+          and int(summ["settle_past_window"]) == 0 and (int(summ["settle_waits"]) > 0) == (skew != 0))
     # the SIZE lines carry the same lots and m (every entry: one line)
     rows = compare.read_journal(d_out)
     size = [q for q in rows if q["ev"] == "SIZE"]
@@ -456,7 +463,8 @@ def main(argv=None):
             eq_wk, paid_wk, cnt = G.run_one(pk, pnl, plan, *dep)
             m_eq, m_paid, m_cnt, rec = mirror(x, pnl, plan, *dep)
             same = bool(np.array_equal(m_eq, eq_wk) and np.array_equal(m_paid, paid_wk) and np.array_equal(m_cnt, cnt))
-            for kind in ("plain_ng",) + (("san_ng",) if "san_ng" in builds and (a.san_all or (plan == "F3S" and edge == 1.0)) else ()):
+            san = a.san_all or (plan == "F3S" and edge in SAN_EDGES)
+            for kind in ("plain_ng",) + (("san_ng",) if "san_ng" in builds and san else ()):
                 r = run_t7a(builds[kind][0], plan, edge, x, e, dep, (eq_wk, paid_wk, cnt), rec, kind.startswith("san"))
                 r["engine_copy_equals_run_one"] = same
                 r["pass"] = bool(r["pass"] and same)
@@ -465,14 +473,27 @@ def main(argv=None):
                       f"{'PASS' if r['pass'] else 'FAIL'} taken {r.get('counts_ea', {}).get('none')} / {int(cnt[0])}, "
                       f"stop week {r.get('stop_week_ea')} / {int(cnt[5])}, weekly B max diff {r.get('max_abs_diff_weekly_balance_eur')}, "
                       f"{r['sec']} s", flush=True)
+    # R16 inside T7a: each deposit's deal is in the history 45 s before the balance shows it; the sizing waits, same result
+    pnl = G.with_edge(x, 1.0)
+    eq_wk, paid_wk, cnt = G.run_one(pk, pnl, "F3S", *dep)
+    m_eq, m_paid, m_cnt, rec = mirror(x, pnl, "F3S", *dep)
+    same = bool(np.array_equal(m_eq, eq_wk) and np.array_equal(m_paid, paid_wk) and np.array_equal(m_cnt, cnt))
+    r = run_t7a(builds["plain_ng"][0], "F3S", 1.0, x, e, dep, (eq_wk, paid_wk, cnt), rec, False, skew=SKEW)
+    r["engine_copy_equals_run_one"] = same
+    r["pass"] = bool(r["pass"] and same)
+    res["t7a"].append(r)
+    print(f"T7a F3S edge x1 deal {-SKEW} s before the balance: {'PASS' if r['pass'] else 'FAIL'} taken "
+          f"{r.get('counts_ea', {}).get('none')} / {int(cnt[0])}, weekly B max diff {r.get('max_abs_diff_weekly_balance_eur')}, "
+          f"sizing waits {r.get('settle_waits')} ({r.get('settle_wait_trades')} trades), {r['sec']} s", flush=True)
     res["sec"] = round(time.time() - t0, 1)
     res["pass"] = bool(res["rows"]["pass"] and all(u["pass"] for u in res["units"].values()) and all(r["pass"] for r in res["t7a"])
                        and all(v == 0 for v in res["warnings"].values()))
     with open(os.path.join(OUT, "summary.json"), "w") as f:
         json.dump(res, f, indent=1)
     short = {k: v for k, v in res.items() if k != "t7a"}
-    short["t7a"] = [{k: r.get(k) for k in ("plan", "edge", "sanitize", "pass", "counts_ea", "counts_lab", "stop_week_ea", "stop_week_lab",
-                                           "max_abs_diff_weekly_balance_eur", "max_abs_diff_weekly_paid_eur", "per_trade_differences", "sec")}
+    short["t7a"] = [{k: r.get(k) for k in ("plan", "edge", "sanitize", "skew", "pass", "counts_ea", "counts_lab", "stop_week_ea",
+                                           "stop_week_lab", "max_abs_diff_weekly_balance_eur", "max_abs_diff_weekly_paid_eur",
+                                           "per_trade_differences", "settle_waits", "sec")}
                     for r in res["t7a"]]
     print(json.dumps(short, indent=1))
     return 0 if res["pass"] else 1

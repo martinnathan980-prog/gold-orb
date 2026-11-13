@@ -1,29 +1,41 @@
 """T3 paper: CR_Paper (SPEC 2.5, step C) against the lab's own code on in-sample data, plain and sanitizer builds.
 
     python3 -I lab/robot/check/test_paper.py [--quick] [--no-sanitize] [--orders N] [--seed S] [--markets a,b] [--keep]
+                                             [--exe BINARY] [--no-e2e] [--e2e-tag is|y2021] [--mutants]
 
 The paper engine (src/CR_Paper.mqh, translated by check/to_cpp.py) runs inside check/test_paper.cpp, which feeds it
 minute by minute as CR_Main does: for every minute M, the bars starting before M with their OnBar outputs, then the
 OnMinute(M) outputs, then PapOnBarrier(M). Checks:
   1. Random orders (T3). For each market (xauusd, us100, btcusd, ethusd): the in-sample frame lab/data/fp/<sym>_m1.parquet,
      read with ts < 2022-01-01 inside the read call, with random holes cut into it (most of them around scheduled exits,
-     so that the gap rule moves those exits), and at least 10,000 random orders on 15 sleeves: market, stop, limit and OCO
-     entries; absolute, distance, tiny and wrong-side stops; targets, trails and break-evens; time exits with and without
-     the gap rule; hold extensions; both refusals; void_le; rule exits followed by an after_exit_of order; orders emitted
-     from OnBar; overlapping market windows. The lab reference of each sleeve is built only with the lab's functions:
-     goldlab.data.exit_index (gap rule), tracks/trend/strategy.py _first_touch (OCO side), lab/r2/recalc.py
-     _crypto_fp_hours (void_le), autopsy/payoff variants.hold_decision and H (hold), payoff common.fills with
-     variants.refuse (refusal 1, d0 as validation_hi/vhi_sleeves.stop_distance_at_fill), synthesis_B common
-     simulate_filtered (refusal 2), goldlab.sim.simulate (one position per sleeve, r2.costs). Every trade must be
-     identical: entry and exit times, side, reason, entry, initial stop and exit prices bit for bit. Trades still open at
-     the frame end are excluded. Also: every PREFUSE is in the lab's refused set, and the HOLD status of every taken trade
-     with an extension equals variants.hold_decision's.
-  2. The hand-built scenarios of the simulator map (results/live/brain_maps_2026-11-11.json, map 'simulateur', section
+     so that the gap rule moves those exits, some exactly at the rule's 30-minute edge), and at least 10,000 random orders
+     on 15 sleeves: market, stop, limit and OCO entries; absolute, distance, tiny and wrong-side stops; targets, trails and
+     break-evens; time exits with and without the gap rule; hold extensions (some with xh at or before x); both refusals;
+     void_le on market and pending entries; rule exits followed by an after_exit_of order; orders emitted from OnBar;
+     overlapping market windows; targeted shapes (a stop hit on the last bar before a hole, a hold whose barrier and
+     revision tests disagree, a hold ahead on its fill bar, a hold granted after a stop on the last bar before a hole).
+     The lab reference of each sleeve is built only with the lab's functions: goldlab.data.exit_index (gap rule),
+     tracks/trend/strategy.py _first_touch (OCO side), lab/r2/recalc.py _crypto_fp_hours (void_le), autopsy/payoff
+     variants.hold_decision and H (hold), payoff common.fills with variants.refuse (refusal 1, d0 as
+     validation_hi/vhi_sleeves.stop_distance_at_fill), synthesis_B common simulate_filtered (refusal 2),
+     goldlab.sim.simulate (one position per sleeve, r2.costs). Every trade must be identical: entry and exit times, side,
+     reason, entry, initial stop and exit prices bit for bit. Trades still open at the frame end are excluded. Also: every
+     PREFUSE is in the lab's refused set, the HOLD status of every taken trade with an extension (its last HOLD a grant)
+     equals variants.hold_decision's, and in the full run every coverage counter (result.json "coverage_total") is above 0.
+  2. The same replay with PapOnBarrier called once every 61 minutes only: PapOnBar's own barrier must give the same events
+     (a HOLD's barrier time aside) and the same trades open at the end.
+  3. The hand-built scenarios of the simulator map (results/live/brain_maps_2026-11-11.json, map 'simulateur', section
      6: A to I2; the swap cases K and the no_overlap=False table H' do not apply to the paper) on xauusd 2021: lab and
      paper identical, and the map's hand formulas hold.
-  3. The unit worlds of test_paper.cpp (38 checks).
-  4. The sanitizer build (address, undefined behaviour, checked containers): the unit worlds and the same replays, with
+  4. The unit worlds of test_paper.cpp (59 checks).
+  5. The sanitizer build (address, undefined behaviour, checked containers): the unit worlds and the same replays, with
      events byte for byte equal to the plain build's.
+  6. End to end through the S0 driver: src/ as S0 left it (commit 399837f, read with git show) with this CR_Paper.mqh and
+     the clock double, the ten sleeves switched to CR_Rule_Script and fed with the lab's own orders on the frames rebuilt
+     from the bar exports (ref_lab.py --frame rebuilt), 2013-2021 (2021 with --quick): every paper trade of the journal
+     equals the lab's trade, prices bit for bit; the sanitizer build writes the same journal.
+--exe tests another binary built from test_paper.cpp; --mutants builds nine broken engines (MUTANTS) and requires the quick
+test to fail on each (outputs in check/out/test_paper_mutant/, mutants.json).
 Outputs: check/out/test_paper/ (result.json and per-market events; the bar files are deleted unless --keep).
 In sample only: every frame is read with ts < 2022-01-01 inside the read call.
 """
@@ -80,6 +92,7 @@ ROWF = [("kind", "<i8"), ("emit_kind", "<i8"), ("emit_t", "<i8"), ("sleeve", "<i
         ("group", "<i8")]
 ROW = np.dtype(ROWF)
 REASON = {0: "stop", 1: "target", 2: "time", 3: "trail", 7: "gap"}
+SPARSE = 61                                    # the sparse replay calls PapOnBarrier once every 61 minutes
 CHAINS = ["market", "market_gap", "stop_entry", "limit_entry", "oco", "hold_r1", "hold_mixed", "void_le_r2", "void_le",
           "refuse1", "refuse2", "exit_reversal", "onbar_stop", "limit_window", "overlap_market"]
 REFUSE = {"hold_r1": 1, "void_le_r2": 2, "refuse1": 1, "refuse2": 2}
@@ -124,7 +137,7 @@ class Gen:
         self.orders, self.exits, self.holes = [], [], []
         self.oid = 10_000_000
         self.seq = 0
-        self.targeted = {"hold_flip": 0, "stop_on_L": 0, "hold_fill_bar": 0}
+        self.targeted = {"hold_flip": 0, "stop_on_L": 0, "hold_fill_bar": 0, "hold_stop_on_L": 0, "hole_edge": 0}
 
     def next_bar_time(self, t):
         i = int(np.searchsorted(self.t, t))
@@ -190,13 +203,20 @@ class Gen:
         c = int(self.rng.integers(1, 30)) * 60
         self.holes.append((x - a, x + c))
 
+    def hole_edge(self, x):
+        """the exact edge of gl.exit_index: no bar in [x - a, x + 30 min) (the next bar, if the data has it, starts at x + 30
+        min: still the exit bar) or in [x - a, x + 31 min) (the next bar starts after x + 30 min: the gap rule applies)"""
+        a = int(self.rng.integers(0, 61)) * 60
+        self.holes.append((x - a, x + 1800 + (60 if self.rng.random() < 0.5 else 0)))
+        self.targeted["hole_edge"] += 1
+
     def hole_fill(self, t_from, x):
         """no bar from just after the activation bar to x + 30 min: the gap rule lands on the activation (fill) bar"""
         act = self.next_bar_time(t_from)
         if act < x:
             self.holes.append((act + 60, x + 1800 + int(self.rng.integers(1, 241)) * 60))
 
-    def gap_holes(self, o, p_after=0.25, p_short=0.1, p_fill=0.05):
+    def gap_holes(self, o, p_after=0.25, p_short=0.1, p_fill=0.05, p_edge=0.08):
         x, r = o["x_sched"], self.rng.random()
         if r < p_after:
             self.hole_after(x)
@@ -204,6 +224,8 @@ class Gen:
             self.hole_short(x)
         elif r < p_after + p_short + p_fill:
             self.hole_fill(o["t_from"], x)
+        elif r < p_after + p_short + p_fill + p_edge:
+            self.hole_edge(x)
 
     # ---------------------------------------------------------------------------------- targeted orders
     def fill_px(self, i, side):
@@ -237,23 +259,63 @@ class Gen:
     def hold_fill_bar(self, o):
         """a hold order ahead by 1 R at the close of its fill bar, with no bar from just after the fill bar to x0 + 30 min:
         the barrier grants the hold on the fill bar, the gap revision withdraws it (the exit bar is the fill bar, which
-        the lab's hold_decision never counts), and the time exit waits for the first bar after the hole"""
+        the lab's hold_decision never counts), and the time exit waits for the first bar after the hole. The order is
+        moved to the first bar of the next 240 that qualifies."""
         r, A = self.rng, self.a
-        t, side = o["t_from"], o["side"]
-        ia = int(np.searchsorted(self.t, t))
-        if ia >= len(self.t) or self.t[ia] > o["t_to"]:
+        side = o["side"]
+        i0 = int(np.searchsorted(self.t, o["t_from"]))
+        for ia in range(i0, min(i0 + 240, len(self.t) - 2)):
+            fp = self.fill_px(ia, side)
+            g = side * ((A["bc"] if side > 0 else A["ac"])[ia] - fp)
+            rk = 0.5 * g
+            if rk <= 1e-9 * fp or (side > 0 and A["bl"][ia] <= fp - rk) or (side < 0 and A["ah"][ia] >= fp + rk):
+                continue
+            ta = int(self.t[ia])
+            x0 = ta + int(r.integers(2, 121)) * 60
+            hole_end = x0 + 1800 + int(r.integers(1, 241)) * 60
+            self.bare(o)
+            o.update(t_from=ta, t_to=ta, emit_t=ta, dec=ta, stop=0.0, stop_dist=float(rk), x_sched=x0, x_gap=1,
+                     xh=x0 + int(r.integers(5, 1441)) * 60, xh_r=1.0, _end=hole_end)
+            self.holes.append((ta + 60, hole_end))
+            self.targeted["hold_fill_bar"] += 1
+            return True
+        return False
+
+    def hold_stop_on_L(self, o):
+        """a hold order stopped on L, the last bar before a hole at x0, while ahead by 1 R at the close of the bar before
+        L: the barrier finds the trade exited, the revision's re-test (on the bar before L) grants the hold; with xh after
+        the hole the stop exit stands, with xh inside the same hole the time exit at L's open replaces it (PREVISE)"""
+        r, A = self.rng, self.a
+        side = o["side"]
+        ia = int(np.searchsorted(self.t, o["t_from"]))
+        if ia >= len(self.t) - 3 or self.t[ia] > o["t_to"]:
             return False
         fp = self.fill_px(ia, side)
-        g = side * ((A["bc"] if side > 0 else A["ac"])[ia] - fp)
-        rk = 0.5 * g
-        if rk <= 0 or (side > 0 and A["bl"][ia] <= fp - rk) or (side < 0 and A["ah"][ia] >= fp + rk):
-            return False
-        x0 = int(self.t[ia]) + int(r.integers(2, 121)) * 60
-        self.bare(o)
-        o.update(stop=0.0, stop_dist=float(rk), x_sched=x0, x_gap=1, xh=x0 + int(r.integers(5, 1441)) * 60, xh_r=1.0)
-        self.holes.append((int(self.t[ia]) + 60, x0 + 1800 + int(r.integers(1, 241)) * 60))
-        self.targeted["hold_fill_bar"] += 1
-        return True
+        for iL in range(ia + 2, min(ia + 600, len(self.t) - 1)):
+            if side > 0:
+                room = fp - A["bl"][ia:iL].min()                 # the stop must stay below every low before L
+                dn = fp - A["bl"][iL]                            # and be hit on L
+                up = A["bc"][iL - 1] - fp                         # ahead by >= 1 R at the close of the bar before L
+            else:
+                room = A["ah"][ia:iL].max() - fp
+                dn = A["ah"][iL] - fp
+                up = fp - A["ac"][iL - 1]
+            hi = min(dn, up)
+            if room > 0 and hi - room > 1e-7 * fp:
+                rk = 0.5 * (room + hi)
+                tl = int(self.t[iL])
+                x0 = tl + int(r.integers(1, 61)) * 60
+                hole_end = x0 + 1800 + int(r.integers(60, 241)) * 60
+                if r.random() < 0.5:
+                    xh = hole_end + int(r.integers(5, 601)) * 60      # after the hole: the stop exit on L stands
+                else:
+                    xh = x0 + int(r.integers(1, (hole_end - 1800 - x0) // 60)) * 60   # same hole: exit_index(xh) = L
+                self.bare(o)
+                o.update(stop=0.0, stop_dist=float(rk), x_sched=x0, x_gap=1, xh=xh, xh_r=1.0, _end=hole_end)
+                self.holes.append((tl + 60, hole_end))
+                self.targeted["hold_stop_on_L"] += 1
+                return True
+        return False
 
     def stop_on_L(self, o):
         """a gap-rule order whose absolute stop is first hit on the last bar before a hole around x: the stop exit
@@ -325,8 +387,10 @@ class Gen:
                         self.gap_holes(o)
                 else:                                                   # hold_mixed
                     rr = r.random()
-                    if not (et == 0 and ((rr < 0.4 and self.hold_flip(o)) or (0.4 <= rr < 0.55 and self.hold_fill_bar(o)))):
+                    if not (et == 0 and ((rr < 0.3 and self.hold_flip(o)) or (0.3 <= rr < 0.5 and self.hold_fill_bar(o))
+                                         or (0.5 <= rr < 0.7 and self.hold_stop_on_L(o)))):
                         self.hold(o)
+                    end = max(end, o["t_to"], o.get("_end", end))
             elif name in ("stop_entry", "limit_entry"):
                 et = 1 if name == "stop_entry" else 2
                 w = int(r.choice([0, 60, 300]))
@@ -350,8 +414,12 @@ class Gen:
                 if not (r.random() < 0.3 and self.hold_flip(o)):
                     self.hold(o)
             elif name in ("void_le_r2", "void_le"):
-                o = self.new(sl, side, 0, t, t + 300, void_le=1, x_gap=1)
+                et = 0 if (name == "void_le_r2" or r.random() < 0.7) else int(r.choice([1, 2]))
+                o = self.new(sl, side, et, t, t + 300, void_le=1, x_gap=1)
                 end = t + 300
+                if et:                                                  # armed void_le: the wrapper's entry_i is the activation bar
+                    o["expiry_excl"] = t + int(r.integers(5, 2881)) * 60
+                    end = o["expiry_excl"] - 1
                 self.plan(o, stops=("dist",), wrong=0.0, tiny=0.15 if name == "void_le_r2" else 0.0, target=0.0, trail=0.0, be=0.0)
                 o["x_sched"] = t + int(r.integers(-60, 721)) * 60
                 if o["x_sched"] > t + 300:
@@ -397,6 +465,8 @@ class Gen:
         x0 = t + int(r.integers(30, 721)) * 60
         o["x_sched"], o["x_gap"] = x0, int(r.random() < 0.8)
         o["xh"], o["xh_r"] = x0 + int(r.integers(5, 1441)) * 60, 1.0
+        if r.random() < 0.1:
+            o["xh"] = x0 - int(r.integers(0, 241)) * 60          # xh <= x0: a pass leaves x at x0 (variants.H: max)
         if o["x_gap"]:
             rr = r.random()
             if rr < 0.35:
@@ -405,7 +475,9 @@ class Gen:
                 self.hole_short(x0)
             elif rr < 0.5:
                 self.hole_fill(t, x0)
-            if r.random() < 0.25:
+            elif rr < 0.58:
+                self.hole_edge(x0)
+            if r.random() < 0.25 and o["xh"] > x0:
                 self.hole_after(o["xh"])
 
     def reversal(self, sl, side, t):
@@ -632,12 +704,28 @@ def write_inputs(d, m1h, sid, orders, exits, nsl):
         f.write("\n".join([str(sid)] * nsl) + "\n")
 
 
-def run_exe(exe, d, timeout=7200):
+def run_exe(exe, d, timeout=7200, sparse=1):
     t0 = time.time()
-    r = subprocess.run([exe, "replay", d], capture_output=True, text=True, timeout=timeout)
+    r = subprocess.run([exe, "replay", d] + ([str(sparse)] if sparse > 1 else []), capture_output=True, text=True, timeout=timeout)
     if r.returncode:
         raise RuntimeError(f"{exe} replay failed ({r.returncode}): {r.stdout[-2000:]} {r.stderr[-4000:]}")
-    return time.time() - t0, json.load(open(os.path.join(d, "summary.json")))
+    return time.time() - t0, json.load(open(os.path.join(d, "summary" + ("_sparse" if sparse > 1 else "") + ".json")))
+
+
+def event_lines(path, what="events"):
+    """the sorted lines of an events file (HOLD's barrier time blanked: it is the barrier that tested), or the trade rows
+    of an open file without x_pending (which reads the last barrier)"""
+    out = []
+    with open(path) as f:
+        for ln in f:
+            p = ln.rstrip("\n").split(",")
+            if what == "events":
+                if p[0] == "HOLD":
+                    p[4] = "*"
+                out.append(",".join(p))
+            elif p[0] == "trade":
+                out.append(",".join(p[:-1]))
+    return sorted(out)
 
 
 def paper_read(d):
@@ -647,7 +735,7 @@ def paper_read(d):
 
     def sl(k):
         return S.setdefault(k, {"tr": {}, "refused": set(), "void_act": set(), "void_late": set(), "hold": {}, "revise": 0,
-                                "revise_over_exit": 0, "pstop": 0, "seq": [], "last_hold": {}})
+                                "revise_over_exit": 0, "pstop": 0, "seq": [], "last_hold": {}, "void_x": {}, "void_t": {}})
 
     with open(os.path.join(d, "events.csv")) as f:
         for ln in f:
@@ -667,6 +755,7 @@ def paper_read(d):
                     z["revise_over_exit"] += tr["exit_time"] is not None
                 tr.update(exit_time=t, exit=px, reason=REASON.get(reason, str(reason)), revised=ev == "PREVISE")
             elif ev == "PVOID":
+                z["void_x"][oid], z["void_t"][oid] = x, t
                 if oid in z["tr"]:
                     z["tr"].pop(oid)
                     z["void_late"].add(oid)
@@ -675,7 +764,7 @@ def paper_read(d):
             elif ev == "PREFUSE":
                 z["refused"].add(oid)
             elif ev == "HOLD":
-                z["hold"].setdefault(oid, []).append((x, px))
+                z["hold"].setdefault(oid, []).append((x, px, t))
                 z["last_hold"][oid] = len(z["seq"])
             elif ev == "PSTOP":
                 z["pstop"] += 1
@@ -693,7 +782,7 @@ def compare_chain(lab_t, m1h, pap, open_oid, ahead, refused, hold_oids):
     N = len(m1h)
     last_t = int(secs(m1h.index[-1:])[0])
     tr = pap["tr"]
-    res = {"lab": int(len(lab_t)), "paper_closed": 0, "matched": 0, "censored": 0, "mismatch": [], "reasons": {}}
+    res = {"lab": int(len(lab_t)), "paper_closed": 0, "matched": 0, "censored": 0, "mismatch": [], "reasons": {}, "_matched": []}
     seen = set()
     for _, q in lab_t.iterrows():
         oid = int(q.oid)
@@ -713,6 +802,7 @@ def compare_chain(lab_t, m1h, pap, open_oid, ahead, refused, hold_oids):
                 and p["exit_time"] == xt and p["exit"] == float(q.exit) and p["reason"] == q.reason)
         if same:
             res["matched"] += 1
+            res["_matched"].append(oid)
             res["reasons"][q.reason] = res["reasons"].get(q.reason, 0) + 1
         elif censor:
             res["censored"] += 1
@@ -735,7 +825,7 @@ def compare_chain(lab_t, m1h, pap, open_oid, ahead, refused, hold_oids):
         if oid not in hold_oids or oid not in tr or tr[oid]["exit_time"] is None:
             continue
         h = pap["hold"].get(oid, [])
-        p_held = bool(h) and h[-1][0] != tr[oid]["x"]
+        p_held = bool(h) and h[-1][1] != 0.0                 # last HOLD: a grant (px = the mark) or a withdrawal (px = 0)
         held += p_held
         if p_held != (oid in ahead):
             bad_hold.append(oid)
@@ -772,18 +862,38 @@ def run_market(sym, exe, exe_san, args, rng):
     cover = {"oco_both_touched": 0, "void_at_activation": 0, "void_late": 0, "revise": 0, "revise_over_stop_exit": 0,
              "hold_granted": 0, "hold_withdrawn": 0, "refused": 0, "after_exit_of_fills": 0, "pstop": 0,
              "gap_exit_moved_before_x": 0, "gap_exit_after_fill_bar_wait": 0, "rule_exits_void": 0,
-             "held_then_gap_revision_of_xh": 0, "hold_withdrawn_fill_bar_wait": 0,
+             "held_then_gap_revision_of_xh": 0, "hold_withdrawn_fill_bar_wait": 0, "hold_pass_x_unchanged": 0,
+             "hold_granted_at_revision": 0, "hold_granted_after_stop_on_L": 0, "void_late_armed": 0,
+             "matched_market": 0, "matched_stop": 0, "matched_limit": 0, "matched_oco": 0,
+             "exit_stop": 0, "exit_target": 0, "exit_time": 0, "exit_trail": 0, "exit_gap": 0,
              "targeted_hold_flip": g.targeted["hold_flip"], "targeted_stop_on_L": g.targeted["stop_on_L"],
-             "targeted_hold_fill_bar": g.targeted["hold_fill_bar"]}
+             "targeted_hold_fill_bar": g.targeted["hold_fill_bar"], "targeted_hold_stop_on_L": g.targeted["hold_stop_on_L"],
+             "targeted_hole_edge": g.targeted["hole_edge"], "gap_exit_at_x_plus_30": 0}
     for sl, name in enumerate(CHAINS):
         orders = [o for o in g.orders if o["sleeve"] == sl]
         exits = [e for e in g.exits if e["sleeve"] == sl]
         lab_t, refused, ahead, info = lab_chain(m1h, sym, orders, exits, REFUSE.get(name, 0))
         pap = S.get(sl, {"tr": {}, "refused": set(), "void_act": set(), "void_late": set(), "hold": {}, "revise": 0, "revise_over_exit": 0,
-                         "pstop": 0, "seq": [], "last_hold": {}})
+                         "pstop": 0, "seq": [], "last_hold": {}, "void_x": {}, "void_t": {}})
         hold_oids = {o["oid"] for o in orders if o["xh"] > 0}
         c = compare_chain(lab_t, m1h, pap, opened.get(sl), ahead, refused | info.get("voided", set()), hold_oids)
         c.update(orders=len(orders), refuse=REFUSE.get(name, 0))
+        etype = {o["oid"]: o["etype"] for o in orders}
+        for oid in c.pop("_matched"):
+            cover["matched_" + ("market", "stop", "limit", "oco")[etype[oid]]] += 1
+        for rs, nrs in c["reasons"].items():
+            cover["exit_" + rs] += nrs
+        x0 = {o["oid"]: o["x_sched"] for o in orders}
+        for oid, h in pap["hold"].items():
+            seq = [e for e, q in pap["seq"] if q == oid]
+            for (hx, hpx, ht) in h:
+                if hpx == 0:
+                    continue
+                cover["hold_pass_x_unchanged"] += hx == x0[oid]
+                cover["hold_granted_at_revision"] += ht > x0[oid] + 1800
+            if h[-1][1] != 0 and "PEXIT" in seq and seq.index("PEXIT") < seq.index("HOLD") and "PREVISE" not in seq:
+                cover["hold_granted_after_stop_on_L"] += 1
+        cover["void_late_armed"] += sum(1 for oid in pap["void_act"] if pap["void_x"].get(oid, 0) > pap["void_t"].get(oid, 0))
         res["chains"][name] = c
         for k in tot:
             tot[k] += c[k] if k != "hold_status_differs" else c["n_hold_status_differs"]
@@ -793,8 +903,8 @@ def run_market(sym, exe, exe_san, args, rng):
         cover["void_late"] += len(pap["void_late"])
         cover["revise"] += pap["revise"]
         cover["revise_over_stop_exit"] += pap["revise_over_exit"]
-        cover["hold_granted"] += sum(1 for h in pap["hold"].values() for x, px in h if px != 0)
-        cover["hold_withdrawn"] += sum(1 for h in pap["hold"].values() for x, px in h if px == 0)
+        cover["hold_granted"] += sum(1 for h in pap["hold"].values() for x, px, _ in h if px != 0)
+        cover["hold_withdrawn"] += sum(1 for h in pap["hold"].values() for x, px, _ in h if px == 0)
         cover["refused"] += len(pap["refused"])
         cover["after_exit_of_fills"] += len(aeo & set(pap["tr"]))
         cover["pstop"] += pap["pstop"]
@@ -807,6 +917,7 @@ def run_market(sym, exe, exe_san, args, rng):
                 xt = int(pd.Timestamp(xt).value // 10**9)
                 cover["gap_exit_moved_before_x"] += xt < x
                 cover["gap_exit_after_fill_bar_wait"] += xt > x + 1800
+                cover["gap_exit_at_x_plus_30"] += xt == x + 1800
         cover["rule_exits_void"] += info.get("rule_exits_void", 0)
         for oid, h in pap["hold"].items():
             after = [e for e, q in pap["seq"][pap["last_hold"][oid]:] if q == oid]
@@ -820,6 +931,14 @@ def run_market(sym, exe, exe_san, args, rng):
     res["gen_sec"] = round(t_gen, 1)
     res["pass"] = (tot["mismatches"] == 0 and tot["hold_status_differs"] == 0 and len(fails) == 0 and len(g.orders) >= args.orders
                    and all(not c["refused_not_in_lab_set"] for c in res["chains"].values()))
+    # the same replay with PapOnBarrier called once every SPARSE minutes only: PapOnBar's own barrier must give the same
+    # events (HOLD's barrier time aside) and the same trades open at the end
+    sec_sp, _ = run_exe(exe, d, sparse=SPARSE)
+    sp_ev = event_lines(os.path.join(d, "events.csv")) == event_lines(os.path.join(d, "events_sparse.csv"))
+    sp_open = event_lines(os.path.join(d, "open.csv"), "open") == event_lines(os.path.join(d, "open_sparse.csv"), "open")
+    res["sparse_barriers"] = {"barrier_every_min": SPARSE, "sec": round(sec_sp, 1), "events_identical": sp_ev,
+                              "open_trades_identical": sp_open}
+    res["pass"] &= sp_ev and sp_open
     if exe_san:
         ev_plain = open(os.path.join(d, "events.csv"), "rb").read()
         open_plain = open(os.path.join(d, "open.csv"), "rb").read()
@@ -831,6 +950,7 @@ def run_market(sym, exe, exe_san, args, rng):
         os.remove(os.path.join(d, "bars.bin"))
     print(f"{sym:7s} orders {len(g.orders):6d} bars {len(m1h):8d} (holes {len(g.holes)}) lab trades {tot['lab']:6d} matched "
           f"{tot['matched']:6d} censored {tot['censored']:3d} mismatches {tot['mismatches']} held {tot['held']} | paper {sec:.1f} s"
+          + f", sparse barriers identical={sp_ev and sp_open}"
           + (f", sanitizer {res['sanitizer']['sec']} s identical={res['sanitizer']['events_identical']}" if exe_san else "")
           + f" | {'PASS' if res['pass'] else 'FAIL'}", flush=True)
     return res
@@ -1002,7 +1122,7 @@ def scenarios(exe, exe_san):
             lab_o["oid"] = [o["oid"] for o in orders if o["sleeve"] == sl]
             t = simulate(m1, lab_o, sym="xauusd", costs=c, no_overlap=True)
             pap = S.get(sl, {"tr": {}, "refused": set(), "void_act": set(), "void_late": set(), "hold": {}, "revise": 0,
-                             "revise_over_exit": 0, "pstop": 0, "seq": [], "last_hold": {}})
+                             "revise_over_exit": 0, "pstop": 0, "seq": [], "last_hold": {}, "void_x": {}, "void_t": {}})
             cmp_ = compare_chain(t, m1, pap, opened.get(sl), set(), set(), set())
             closed = sorted([p for p in pap["tr"].values() if p["exit_time"] is not None], key=lambda p: p["entry_time"])
             checks = []
@@ -1038,6 +1158,171 @@ def scenarios(exe, exe_san):
     return out
 
 
+# ======================================================================================== the S0 driver end to end
+S0_COMMIT = "399837f"                         # the S0 state of src/ (SPEC 8: C's tests compile S0 files and its own)
+E2E_CODES = "N30,OC4,BKB,BKE,F1B,F1E,NQB,GFP,D4H,ORX"
+E2E_SYM = {"N30": "US100.r", "OC4": "US100.r", "BKB": "BTCUSD.r", "BKE": "ETHUSD.r", "F1B": "BTCUSD.r", "F1E": "ETHUSD.r",
+           "NQB": "BTCUSD.r", "GFP": "XAUUSD.r", "D4H": "XAUUSD.r", "ORX": "XAUUSD.r"}
+E2E_SYMS = ("XAUUSD.r", "US100.r", "BTCUSD.r", "ETHUSD.r")
+
+
+def s0_tree():
+    """src/ as S0 left it (git show, read only), with this step's CR_Paper.mqh; under build/ (git-ignored)"""
+    d = os.path.join(ROBOT, "build", "test_paper_s0tree", "src")
+    if os.path.isdir(d):
+        shutil.rmtree(d)
+    os.makedirs(d)
+    ls = subprocess.run(["git", "-C", ROBOT, "ls-tree", "--name-only", S0_COMMIT, "--", "src/"], capture_output=True, text=True)
+    names = [os.path.basename(x) for x in ls.stdout.split()]
+    if ls.returncode or "CR_Main.mqh" not in names:
+        return None
+    for n in names:
+        r = subprocess.run(["git", "-C", ROBOT, "show", f"{S0_COMMIT}:./src/{n}"], capture_output=True)
+        if r.returncode:
+            return None
+        open(os.path.join(d, n), "wb").write(r.stdout)
+    shutil.copy(os.path.join(ROBOT, "src", "CR_Paper.mqh"), os.path.join(d, "CR_Paper.mqh"))
+    return d
+
+
+def e2e_inputs(tag):
+    """the bar exports of a tag (y2021: 2021; is: 2013-2021) and the lab's references on the frames rebuilt from them, made
+    when missing by export_frames.py and ref_lab.py (S0's tools)"""
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", NUMBA_CACHE_DIR=_NB)        # the tools' own (shared, warm) cache
+
+    def tool(args):
+        r = subprocess.run([sys.executable, "-I"] + args, env=env, capture_output=True, text=True)
+        if r.returncode:
+            raise RuntimeError(f"{os.path.basename(args[0])} failed ({r.returncode}): {(r.stdout + r.stderr)[-3000:]}")
+
+    bars = {sy: os.path.join(HERE, "out", "bars", f"{sy}_{tag}.bin") for sy in E2E_SYMS}
+    if not all(os.path.exists(v) for v in bars.values()):
+        win = ["--from", "2021-01-01", "--to", "2022-01-01"] if tag == "y2021" else []
+        tool([os.path.join(HERE, "export_frames.py")] + win + ["--tag", tag])
+    ref = os.path.join(HERE, "out", "ref", f"rebuilt_{tag}")
+    if not all(os.path.exists(os.path.join(ref, "script", f"{c}.csv")) and os.path.exists(os.path.join(ref, c, "trades.parquet"))
+               for c in E2E_CODES.split(",")):
+        tool([os.path.join(HERE, "ref_lab.py"), "--frame", "rebuilt", "--tag", tag, "--no-changes"])
+    last = {m["broker"]: int(pd.Timestamp(m["last"]).value // 10**9)
+            for m in json.load(open(os.path.join(HERE, "out", f"manifest_{tag}.json")))}
+    return bars, ref, last
+
+
+def e2e(sanitize, tag="y2021"):
+    """the S0 driver (CR_Main minute contract, CR_Rule_Script, the S0 stubs, the clock double) with this CR_Paper.mqh replays
+    2021 on the four symbols, the ten sleeves fed with the lab's own orders on the rebuilt 2021 frames: every paper trade
+    of the journal (PFILL + PEXIT or PREVISE, PVOID dropped) must equal the lab's trade on the same frame, prices bit for
+    bit (trades entered before the first barrier or exiting at the frame end excluded)"""
+    import compare
+    from build import replay as run_replay
+    tree = s0_tree()
+    if tree is None:
+        return {"skipped": "git history of the S0 commit not available", "pass": True}
+    bars, ref, last = e2e_inputs(tag)
+    exe, warn = build(os.path.join(tree, "ClaudeRobot.mq5"), name="test_paper_e2e" + ("_san" if sanitize else ""), sanitize=sanitize,
+                      subst=["CR_Clock.mqh=" + os.path.join(HERE, "dbl", "CR_Clock_dbl.mqh")])
+    files = os.path.join(OUT, f"e2e_{tag}" + ("_san" if sanitize else ""))
+    if os.path.isdir(files):
+        shutil.rmtree(files)
+    os.makedirs(os.path.join(files, "ClaudeRobot", "script"))
+    for c in E2E_CODES.split(","):
+        shutil.copy(os.path.join(ref, "script", f"{c}.csv"), os.path.join(files, "ClaudeRobot", "script", f"{c}.csv"))
+    out, wall = run_replay(exe, files, bars, env={"MOCK_INPUT_InpScript": E2E_CODES}, fresh=False)
+    rows = compare.read_journal(files)
+    reb = compare.events(rows, "REBUILD").iloc[0]
+    first_minute = int(reb["from"]) + 60 if int(reb["from"]) > 0 else int(reb["to"]) + 60
+    void = {(r["code"], r["oid"]) for r in rows if r["ev"] == "PVOID"}
+    kept = [r for r in rows if not (r["ev"] in ("PFILL", "PEXIT", "PREVISE") and (r["code"], r.get("oid")) in void)]
+    ev = {}
+    for r in rows:
+        ev[r["ev"]] = ev.get(r["ev"], 0) + 1
+    res = {"tag": tag, "build_warnings": warn, "replay": out, "wall_s": round(wall, 1), "first_minute": first_minute, "events": ev,
+           "errors": [r for r in rows if r["ev"] == "ERROR"][:5], "per_sleeve": {}}
+    ok = not warn and not res["errors"] and "SEND" not in ev
+    for c in E2E_CODES.split(","):
+        lab = pd.read_parquet(os.path.join(ref, c, "trades.parquet"))
+        r = compare.cmp_trades(kept, lab, c, t_from=first_minute, t_to=last[E2E_SYM[c]] - 1)
+        good = (r.get("lab_trades", 0) > 0 and r["pass"] and r.get("only_lab") == 0 and r.get("only_ea") == 0
+                and r.get("same_exit_and_reason") == r.get("same_entry") == r.get("lab_trades")
+                and r.get("entry_equal") == r.get("stop_equal") == r.get("exit_equal") == r.get("lab_trades"))
+        r["voided"] = sum(1 for (cc, _) in void if cc == c)
+        r["pass"] = bool(good)
+        res["per_sleeve"][c] = r
+        ok &= good
+    res["pass"] = bool(ok)
+    res["files"] = files
+    return res
+
+
+def e2e_both(with_sanitizer, tag="y2021"):
+    t0 = time.time()
+    out = {"plain": e2e(False, tag)}
+    ok = out["plain"]["pass"]
+    if with_sanitizer and "skipped" not in out["plain"]:
+        out["sanitizer"] = e2e(True, tag)
+        same = subprocess.run(["diff", "-r", "-q", os.path.join(out["plain"]["files"], "ClaudeRobot"),
+                               os.path.join(out["sanitizer"]["files"], "ClaudeRobot")], capture_output=True, text=True)
+        out["sanitizer"]["journal_identical_to_plain_build"] = same.returncode == 0
+        ok &= out["sanitizer"]["pass"] and same.returncode == 0
+    out["pass"] = bool(ok)
+    out["sec"] = round(time.time() - t0, 1)
+    p = out["plain"]
+    if "skipped" in p:
+        print(f"S0 driver end to end: skipped ({p['skipped']})", flush=True)
+    else:
+        n = sum(v.get("lab_trades", 0) for v in p["per_sleeve"].values())
+        eq = sum(v.get("exit_equal", 0) for v in p["per_sleeve"].values())
+        print(f"S0 driver end to end ({tag}, ten sleeves, lab orders through CR_Rule_Script): lab trades {n}, paper trades equal {eq}"
+              + (f", sanitizer journal identical={out['sanitizer']['journal_identical_to_plain_build']}" if "sanitizer" in out else "")
+              + f" | {'PASS' if ok else 'FAIL'} ({out['sec']} s)", flush=True)
+    return out
+
+
+# ======================================================================================== mutation checks (--mutants)
+# each mutant breaks one rule of the engine; the quick test on gold and bitcoin must FAIL on every one of them
+MUTANTS = {
+    "no_barrier_in_PapOnBar": ("   PapSleeveBarrier(sl, b.t);                                   // (a no-op after PapOnBarrier(b.t))\n", ""),
+    "no_hold_retest_at_revision": ("      if(!lfill && PapHoldPass(tr, tr.b_prev))", "      if(tr.held)"),
+    "gap_edge_off_by_one": ("M <= g_pap_t[sl].q + CR_PAP_GAP", "M < g_pap_t[sl].q + CR_PAP_GAP"),
+    "no_skip_on_exit_bar": ("bool busy = (g_pap_t[sl].st == CR_PT_OPEN) || (g_pap_lx[sl] != 0 && g_pap_lx[sl] == b.t);",
+                            "bool busy = (g_pap_t[sl].st == CR_PT_OPEN);"),
+    "refuse1_signed_distance": ("double d0 = PapOn(o.stop) ? MathAbs(fp - o.stop) : o.stop_dist;",
+                                "double d0 = PapOn(o.stop) ? side * (fp - o.stop) : o.stop_dist;"),
+    "oco_tie_side_flipped": ("if(hu && hd) side = (b.bc >= b.bo) ? -1 : 1;", "if(hu && hd) side = (b.bc >= b.bo) ? 1 : -1;"),
+    "time_exit_on_fill_bar": ("   if(!first)\n     {\n      tr.b_prev = tr.b_last;", "   if(true)\n     {\n      tr.b_prev = tr.b_last;"),
+    "no_late_void": ("   if(x0q && tr.o.void_le && tr.b_last.t == tr.act)", "   if(false)"),
+    "armed_void_after_expiry": ("&& PapMinAfter(g_pap_q[i].o.x_sched + CR_PAP_GAP) < PapMinFrom(g_pap_q[i].o.expiry_excl))",
+                                "&& g_pap_q[i].o.expiry_excl > M)"),
+}
+
+
+def mutants(argv_common):
+    src = open(os.path.join(ROBOT, "src", "CR_Paper.mqh")).read()
+    root = os.path.join(ROBOT, "build", "test_paper_mutants")
+    res, ok = {}, True
+    for name, (a, b) in MUTANTS.items():
+        if src.count(a) != 1:
+            res[name] = {"error": "the line to mutate is not in CR_Paper.mqh exactly once"}
+            ok = False
+            continue
+        d = os.path.join(root, name)
+        os.makedirs(d, exist_ok=True)
+        shutil.copy(os.path.join(ROBOT, "src", "CR_Types.mqh"), d)
+        with open(os.path.join(d, "CR_Paper.mqh"), "w") as f:
+            f.write(src.replace(a, b, 1))
+        exe, _ = build(os.path.join(d, "CR_Paper.mqh"), name="test_paper_mut_" + name, main=os.path.join(HERE, "test_paper.cpp"))
+        r = subprocess.run([sys.executable, "-I", os.path.abspath(__file__), "--quick", "--no-sanitize", "--no-e2e",
+                            "--markets", "xauusd,btcusd", "--exe", exe] + argv_common, capture_output=True, text=True, cwd=ROBOT)
+        tail = [ln for ln in (r.stdout + r.stderr).splitlines() if ln.startswith(("worlds", "map", "xauusd", "btcusd", "test_paper"))]
+        res[name] = {"exit": r.returncode, "caught": r.returncode != 0, "out": tail}
+        ok &= r.returncode != 0
+        print(f"mutant {name:28s} {'caught' if r.returncode else 'NOT CAUGHT'}", flush=True)
+    with open(os.path.join(HERE, "out", "test_paper_mutant", "mutants.json"), "w") as f:
+        json.dump({"pass": ok, "mutants": res}, f, indent=1)
+    print(f"test_paper --mutants: {'PASS' if ok else 'FAIL'} ({sum(v.get('caught', False) for v in res.values())} of {len(res)} caught)")
+    return 0 if ok else 1
+
+
 # ======================================================================================== main
 def build_exe(name, sanitize):
     exe, warn = build(os.path.join(ROBOT, "src", "CR_Paper.mqh"), name=name, main=os.path.join(HERE, "test_paper.cpp"),
@@ -1053,13 +1338,27 @@ def main(argv=None):
     ap.add_argument("--seed", type=int, default=20261112)
     ap.add_argument("--markets", default=",".join(MARKETS))
     ap.add_argument("--keep", action="store_true")
+    ap.add_argument("--exe", help="test this replay binary instead of building src/CR_Paper.mqh (mutation checks)")
+    ap.add_argument("--no-e2e", action="store_true", help="skip the S0 driver end-to-end replay")
+    ap.add_argument("--mutants", action="store_true", help="mutation checks: the quick test must fail on each broken engine")
+    ap.add_argument("--e2e-tag", choices=["y2021", "is"], help="its period: is = 2013-2021 (default), y2021 = 2021 (--quick)")
     a = ap.parse_args(argv)
+    global OUT
+    if a.exe or a.mutants:
+        OUT = os.path.join(HERE, "out", "test_paper_mutant")              # never over the real result
+    if a.mutants:
+        os.makedirs(OUT, exist_ok=True)
+        return mutants(["--seed", str(a.seed)])
     if a.quick:
         a.orders = 2000
     t0 = time.time()
     os.makedirs(OUT, exist_ok=True)
     res = {"seed": a.seed, "orders_per_market_asked": a.orders, "registry_slippage_rows": registry_rows_ok()}
-    exe, warn = build_exe("test_paper_plain", False)
+    if a.exe:
+        exe, warn = os.path.abspath(a.exe), []
+        res["exe"] = exe
+    else:
+        exe, warn = build_exe("test_paper_plain", False)
     res["build_plain_warnings"] = warn
     exe_san = None
     if not a.no_sanitize:
@@ -1073,20 +1372,32 @@ def main(argv=None):
     res["worlds"] = worlds
     print("worlds:", {k: v["out"][-1] for k, v in worlds.items()}, flush=True)
     res["scenarios"] = scenarios(exe, exe_san)
+    if not (a.no_e2e or a.exe):
+        res["e2e"] = e2e_both(not a.no_sanitize and not a.quick, a.e2e_tag or ("y2021" if a.quick else "is"))
     rng = np.random.default_rng(a.seed)
     res["markets"] = {}
     for sym in a.markets.split(","):
         res["markets"][sym] = run_market(sym, exe, None if a.quick else exe_san, a, rng)
+    cov = {}
+    for m in res["markets"].values():
+        for k, v in m["coverage"].items():
+            cov[k] = cov.get(k, 0) + int(v)
+    res["coverage_total"] = cov
+    res["coverage_zero"] = sorted(k for k, v in cov.items() if v == 0)
+    res["coverage_required"] = a.orders >= 10000 and len(res["markets"]) == len(MARKETS)
     ok = (res["registry_slippage_rows"] and not res["build_plain_warnings"] and not res.get("build_sanitizer_warnings")
           and all(w["exit"] == 0 for w in worlds.values()) and res["scenarios"]["pass"]
-          and all(m["pass"] for m in res["markets"].values()))
+          and all(m["pass"] for m in res["markets"].values())
+          and res.get("e2e", {"pass": True})["pass"]
+          and not (res["coverage_required"] and res["coverage_zero"]))
     res["pass"] = bool(ok)
     res["sec"] = round(time.time() - t0, 1)
     with open(os.path.join(OUT, "result.json"), "w") as f:
         json.dump(res, f, indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o))
     tot = {k: sum(m["total"][k] for m in res["markets"].values()) for k in ("lab", "matched", "censored", "mismatches")}
     print(f"test_paper: {'PASS' if ok else 'FAIL'}  orders {sum(m['orders'] for m in res['markets'].values())} lab trades {tot['lab']} "
-          f"matched {tot['matched']} censored {tot['censored']} mismatches {tot['mismatches']}  ({res['sec']} s)"
+          f"matched {tot['matched']} censored {tot['censored']} mismatches {tot['mismatches']}"
+          f"{'  zero coverage: ' + ','.join(res['coverage_zero']) if res['coverage_zero'] else ''}  ({res['sec']} s)"
           f" -> {os.path.relpath(os.path.join(OUT, 'result.json'), ROBOT)}")
     return 0 if ok else 1
 

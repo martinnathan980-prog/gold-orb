@@ -6,7 +6,7 @@
 //                             when every check holds. Built with -DCR_NO_GUARD the GUARD worlds expect no latch.
 //   test_account rows         the symbol and sleeve rows of this test, one per line (test_account.py compares them with
 //                             src/CR_Registry.mqh and lab/r2/fp_costs.json)
-//   test_account t7a TRADES PAYS WEEKS TABLE OUT
+//   test_account t7a TRADES PAYS WEEKS TABLE OUT [SKEW]
 //                             T7a: the lab's trades (TRADES: i,t_in,t_out,time_exit,code,side,entry,risk,pnl, UTC
 //                             seconds, the lab's order) and payments (PAYS: t,amount) through the mock broker. Every
 //                             entry is a market intent sized by SizSize (stop_dist = the lab's risk, quote = the lab's
@@ -16,6 +16,9 @@
 //                             does (growth.py:194, 261-265): no more payments, and the positions still open at the
 //                             next entry are dropped. Writes OUT/trades.csv, OUT/weeks.csv (B and P_in at each end of
 //                             the WEEKS rows), OUT/summary.txt and the journal (SIZE lines) under OUT/ClaudeRobot.
+//                             SKEW = s <= 0: each payment's deal is in the history s seconds before the balance shows
+//                             it (R16); a sizing that meets SETTLE is asked again 2 s later, inside its 5-minute
+//                             window, as the follower does.
 // The module's state is the EA's own (translated src/CR_Sizing.mqh and src/CR_Ledger.mqh, the clock double of S0).
 #include "mock_replay.h"
 #include "ea.cpp"
@@ -603,9 +606,16 @@ static void u_ref()
       ckeq(LedPaidIn(stamps[k]), wantP[k], F("P_in after step %zu", k));
       ckeq(LedRef(stamps[k]), wantR[k], F("ref after step %zu", k));
      }
+   ckeq(LedBalanceNow(), 4000.0, "LedBalanceNow = B after the last event");
+   ckeq(LedPaidInNow(), 4000.0, "LedPaidInNow");
+   ckeq(LedRefNow(), 4000.0, "LedRefNow");
    cknear(LedBalance(stamps[3]) / LedRef(stamps[3]), LedBalance(stamps[2]) / LedRef(stamps[2]), 1e-15, "a withdrawal leaves B/ref alone");
    ckeq(SizRate(MathMax(LedBalance(stamps[3]), LedPaidIn(stamps[3]))), SizRate(MathMax(LedBalance(stamps[2]), LedPaidIn(stamps[2]))),
         "a withdrawal leaves the rung alone");
+   // withdrawing gains (B above P_in) lowers max(B, P_in): the rung follows SPEC 5's formula (7,000 -> 4,000: 1 % -> 2 %)
+   ckeq(SizRate(MathMax(LedBalance(stamps[5]), LedPaidIn(stamps[5]))), 1.0, "rung before the withdrawal of gains");
+   ckeq(SizRate(MathMax(LedBalance(stamps[6]), LedPaidIn(stamps[6]))), 2.0, "rung after it: max(B, P_in) = 4,000");
+   cknear(LedBalance(stamps[6]) / LedRef(stamps[6]), LedBalance(stamps[5]) / LedRef(stamps[5]), 1e-15, "B/ref unchanged by it");
    // the worked example of R1: armed at 13,000 paid, a withdrawal during a drawdown neither disarms nor fires the stop
    g_world = "R1 withdrawal during a drawdown after arming";
    w_reset(13000.0, t, true, SV(2021, 1, 4, 0, 0, 0), F3S);
@@ -773,14 +783,37 @@ static void u_lock()
    ck(!LedDayLocked(rp_now), "LedDayLocked the next day");
    g_cfg.lock_stakes = 0.0;
    ck(!LedDayLockedAt(U(SV(2021, 1, 12, 10, 31, 0))), "InpDailyLockStakes 0: never");
-   // no LOCK conclusion while the ledger moves
+   // a LOCK concluded on a settled ledger holds while the ledger moves later that day
+   g_world = "daily lock kept while the ledger moves";
+   w_reset(10000.0, t, true, SV(2021, 1, 4, 0, 0, 0), F3S);
    g_cfg.lock_stakes = 2.0;
-   w_at(SV(2021, 1, 12, 10, 40, 0));
+   w_ready();
+   a = w_open(CR_ETH, 1, 1.0, 1200.0, 20261204, SV(2021, 1, 12, 9, 50, 2), 0.0);
+   w_close(a, -210.0, DEAL_REASON_EXPERT, 20261204, SV(2021, 1, 12, 10, 0, 2), 0.0, 0.0);
+   w_at(SV(2021, 1, 12, 10, 1, 0));
+   LedRead(rp_now);
+   ck(LedSettled() && LedDayLocked(rp_now), "-210 <= -200 on a settled ledger: LOCK");
    w_pay(SV(2021, 1, 12, 10, 41, 0), 100.0, 30);      // the balance shows it 30 s before its deal
    w_at(SV(2021, 1, 12, 10, 40, 35));
    LedRead(rp_now);
+   ck(!LedSettled() && LedDayLocked(rp_now), "the LOCK holds while the ledger moves");
+   w_at(SV(2021, 1, 13, 0, 1, 0));
+   LedRead(rp_now);
+   ck(LedSettled() && !LedDayLocked(rp_now), "and ends with the server day");
+   // no LOCK conclusion while the ledger moves: the limit is reached during a movement
+   g_world = "daily lock not concluded while the ledger moves";
+   w_reset(10000.0, SV(2021, 1, 14, 9, 0, 0), true, SV(2021, 1, 4, 0, 0, 0), F3S);
+   g_cfg.lock_stakes = 2.0;
+   w_ready();
+   w_at(SV(2021, 1, 14, 10, 40, 0));
+   w_pay(SV(2021, 1, 14, 10, 41, 0), 100.0, 30);      // the balance shows it 30 s before its deal
+   a = w_open(CR_ETH, 1, 1.0, 1200.0, 20261204, SV(2021, 1, 14, 10, 30, 2), 0.0);
+   w_close(a, -210.0, DEAL_REASON_EXPERT, 20261204, SV(2021, 1, 14, 10, 40, 10), 0.0, 0.0);
+   w_at(SV(2021, 1, 14, 10, 40, 35));
+   LedRead(rp_now);
    ck(!LedSettled() && !LedDayLocked(rp_now), "not concluded while unsettled");
-   w_at(SV(2021, 1, 12, 10, 41, 0));
+   ck(LedDayLockedAt(U(SV(2021, 1, 14, 10, 41, 0))), "(the history alone would lock)");
+   w_at(SV(2021, 1, 14, 10, 41, 0));
    LedRead(rp_now);
    ck(LedSettled() && LedDayLocked(rp_now), "concluded once settled");
   }
@@ -853,6 +886,24 @@ static void u_settle()
    w_reset(0.0, t0, true, 0, F3S);
    ckint(LedRead(t0), CR_LED_MOVING, "no deal and no balance: not ready");
    ckint(LedRead(t0 + 5), CR_LED_MOVING, "... still not ready");
+   ckint(LedRead(t0 + 70), CR_LED_MOVING, "... never accepted while empty");
+   // a start where B(T) never holds still: the latest value is accepted 60 s after the first read, and pushed
+   g_world = "settle at the start, B(T) moving";
+   w_reset(10000.0, t0, true, SV(2021, 1, 4, 0, 0, 0), F3S);
+   long pushes1 = rp_pushes;
+   bool moving = true;
+   for(int k = 0; k < 60; k++)
+     {
+      rp_balance += 1.0;                                // the balance changes at every read, the history does not
+      moving = moving && LedRead(t0 + k) == CR_LED_MOVING;
+     }
+   ck(moving && !LedSettled(), "59 s of movement from the first read: not settled");
+   ckint(rp_pushes - pushes1, 0, "no push yet");
+   rp_balance += 1.0;
+   ckint(LedRead(t0 + 60), CR_LED_OK, "60 s after the first read: the latest value is accepted");
+   ckeq(LedBT(), 10061.0, "B(T) = the latest value");
+   ck(rp_pushes > pushes1, "... and pushed");
+   ckint(LedRead(t0 + 61), CR_LED_OK, "the same value 1 s later: settled");
   }
 
 static void u_week()
@@ -1208,10 +1259,16 @@ static int mode_t7a(int argc, char **argv)
   {
    if(argc < 7)
      {
-      fprintf(stderr, "usage: test_account t7a TRADES PAYS WEEKS TABLE OUT\n");
+      fprintf(stderr, "usage: test_account t7a TRADES PAYS WEEKS TABLE OUT [SKEW]\n");
       return 2;
      }
    string out = argv[6];
+   long skew = (argc >= 8) ? atol(argv[7]) : 0;
+   if(skew > 0)
+     {
+      fprintf(stderr, "t7a: SKEW must be 0 or negative (the deal before the balance)\n");
+      return 2;
+     }
    std::vector<T7Trade> tr;
    std::vector<T7Pay> pays;
    std::vector<long> weeks;
@@ -1278,7 +1335,8 @@ static int mode_t7a(int argc, char **argv)
    std::multimap<std::pair<long, int>, long> q;
    for(size_t k = 0; k < pays.size(); k++) q.insert({{ClkUtcToServer(pays[k].t), 0}, (long)k});
    for(size_t k = 0; k < tr.size(); k++) q.insert({{ClkUtcToServer(tr[k].t_in) + 2, 2}, (long)k});
-   long n_pay = 0, n_pay_skipped = 0, n_dropped = 0, n_out = 0, reads = 0;
+   long n_pay = 0, n_pay_skipped = 0, n_dropped = 0, n_out = 0, reads = 0, n_wait = 0, n_wait_trades = 0, n_window = 0;
+   std::vector<char> waited(tr.size(), 0);
    bool late_stop = false;
    while(!q.empty())
      {
@@ -1298,7 +1356,7 @@ static int mode_t7a(int argc, char **argv)
             n_pay_skipped++;                          // stopped: the lab pays nothing in any more (growth.py:194)
             continue;
            }
-         RpPay p = {ts, ts, pays[idx].amount, false};
+         RpPay p = {ts, ts - skew, pays[idx].amount, false};          // the balance shows it at t_deal - skew
          rp_pays.push_back(p);
          rp_book_payments(rp_now);
          rp_deliver_tx();
@@ -1344,6 +1402,21 @@ static int mode_t7a(int argc, char **argv)
          itn.oid = x.i;
          int sk = SizSize(itn, x.t_in, false);
          reads++;
+         if(sk == CR_SK_SETTLE)
+           {
+            // the ledger moves: the intent waits inside its window (SPEC 5) and is sized again 2 s later
+            n_wait++;
+            if(!waited[idx]) n_wait_trades++;
+            waited[idx] = 1;
+            if(rp_now + 2 <= ClkUtcToServer(x.t_in) + 300) q.insert({{rp_now + 2, 2}, idx});
+            else
+              {
+               n_window++;
+               ck(false, F("trade %ld: still SETTLE at the end of its window", x.i));
+               x.skip = sk;
+              }
+            continue;
+           }
          x.skip = sk;
          x.m = itn.m;
          x.w = itn.w;
@@ -1387,9 +1460,10 @@ static int mode_t7a(int argc, char **argv)
       fprintf(fw, "%zu,%ld,%.17g,%.17g\n", k, weeks[k + 1], LedBalance(S), LedPaidIn(S));
      }
    fprintf(fs, "trades %zu\npayments %zu\npayments_booked %ld\npayments_skipped %ld\nclosing_deals %ld\ndropped %ld\nstop_utc %ld\n"
-           "late_stop %d\nreads %ld\ndeals %zu\nstop_latched %d\nguard_latched %d\nsettled %d\nfails %d\n", tr.size(), pays.size(), n_pay,
-           n_pay_skipped, n_out, n_dropped, (long)LedStopTime(), late_stop ? 1 : 0, reads, rp_deals.size(), LedStopLatched() ? 1 : 0,
-           LedGuardLatched() ? 1 : 0, LedSettled() ? 1 : 0, g_fails);
+           "late_stop %d\nreads %ld\ndeals %zu\nstop_latched %d\nguard_latched %d\nsettled %d\nskew %ld\nsettle_waits %ld\n"
+           "settle_wait_trades %ld\nsettle_past_window %ld\nfails %d\n", tr.size(), pays.size(), n_pay, n_pay_skipped, n_out, n_dropped,
+           (long)LedStopTime(), late_stop ? 1 : 0, reads, rp_deals.size(), LedStopLatched() ? 1 : 0, LedGuardLatched() ? 1 : 0,
+           LedSettled() ? 1 : 0, skew, n_wait, n_wait_trades, n_window, g_fails);
    for(int k = 0; k <= CR_SK_SELFTEST; k++) fprintf(fs, "skip_%s %ld\n", SizSkipName(k).c_str(), cnt[k]);
    fclose(ft);
    fclose(fw);

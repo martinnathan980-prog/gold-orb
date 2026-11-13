@@ -3,18 +3,21 @@
 //
 // Modes (check/test_paper.py drives the second one):
 //   test_paper                 the unit worlds below on synthetic bars; exit 0 when every check holds
-//   test_paper replay DIR      DIR/sleeves.txt  one line per sleeve: "<symbol id>" (sleeve index = line number)
+//   test_paper replay DIR [K]  DIR/sleeves.txt  one line per sleeve: "<symbol id>" (sleeve index = line number)
 //                              DIR/bars.bin     kept bars, 80-byte records <int64 t, int32 sym, int32 s_raw, 8 doubles
 //                                               bo bh bl bc ao ah al ac>, sorted by (t, sym)
 //                              DIR/script.bin   rule outputs, 216-byte records of 27 eight-byte fields (see Row), sorted by
 //                                               emission point then row order
 //                              -> DIR/events.csv (every paper event, and SUBMITFAIL lines), DIR/open.csv (trades and
 //                                 orders still open at the end), DIR/summary.json
+//                              K > 1: PapOnBarrier only on minutes M with (M / 60) % K == 0 (PapOnBar's own barrier does
+//                              the rest); outputs events_sparse.csv, open_sparse.csv, summary_sparse.json
 // The minute contract of CR_Main (MainMinute, MainFeedBar, MainEmit): for every whole minute M, every bar starting before M
 // in (t, sym) order: the OnBar outputs of that bar (orders, then exits), PapOnBar for each sleeve trading the symbol, the
 // events drained; then the OnMinute(M) outputs; PapOnBarrier(M); the events drained.
 #include "mock_replay.h"
 #include "ea.cpp"
+#include <algorithm>
 #include <cinttypes>
 #include <string>
 #include <vector>
@@ -151,8 +154,9 @@ template <typename T> static bool read_all(const string &path, std::vector<T> &v
    return got == v.size() && (size_t)n == v.size() * sizeof(T);
   }
 
-static int replay(const string &dir)
+static int replay(const string &dir, const int sparse)
   {
+   const string sfx = sparse > 1 ? "_sparse" : "";
    std::vector<int> ssym;
    FILE *sf = fopen((dir + "/sleeves.txt").c_str(), "r");
    if(!sf) { fprintf(stderr, "no sleeves.txt\n"); return 2; }
@@ -165,7 +169,7 @@ static int replay(const string &dir)
    if(!read_all(dir + "/bars.bin", bars) || !read_all(dir + "/script.bin", rows)) { fprintf(stderr, "bad input files\n"); return 2; }
    t_setup(ssym);
    for(auto &c : g_ev_count) c = 0;
-   g_evf = fopen((dir + "/events.csv").c_str(), "w");
+   g_evf = fopen((dir + "/events" + sfx + ".csv").c_str(), "w");
    std::vector<size_t> onbar, onmin;                  // row indices, each list in file order
    for(size_t i = 0; i < rows.size(); i++) (rows[i].emit_kind == 1 ? onbar : onmin).push_back(i);
    if(bars.empty()) { fprintf(stderr, "no bars\n"); return 2; }
@@ -202,7 +206,7 @@ static int replay(const string &dir)
         }
       while(om < onmin.size() && rows[onmin[om]].emit_t < M) { stray++; om++; }
       while(om < onmin.size() && rows[onmin[om]].emit_t == M) submit(rows[onmin[om++]]);
-      PapOnBarrier(M);
+      if(sparse <= 1 || (M / 60) % sparse == 0) PapOnBarrier(M);
       drain();
       minutes++;
      }
@@ -210,7 +214,7 @@ static int replay(const string &dir)
    double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
    fclose(g_evf);
    g_evf = nullptr;
-   FILE *of = fopen((dir + "/open.csv").c_str(), "w");
+   FILE *of = fopen((dir + "/open" + sfx + ".csv").c_str(), "w");
    fprintf(of, "what,sleeve,oid,side,fill_bar,fill_px,init_stop,stop,x,x_gap,x_pending\n");
    for(int sl = 0; sl < g_nsl; sl++)
      {
@@ -222,7 +226,7 @@ static int replay(const string &dir)
       if(PapPending(sl, o)) fprintf(of, "order,%d,%" PRId64 ",%d,0,0,0,0,0,0,0\n", sl, (int64_t)o.oid, o.side);
      }
    fclose(of);
-   FILE *jf = fopen((dir + "/summary.json").c_str(), "w");
+   FILE *jf = fopen((dir + "/summary" + sfx + ".json").c_str(), "w");
    fprintf(jf, "{\"bars\": %zu, \"fed\": %ld, \"minutes\": %ld, \"rows\": %zu, \"stray_rows\": %ld, \"submit_fail\": %ld, \"ms\": %.1f, \"events\": {",
            bars.size(), fed, minutes, rows.size(), stray, g_submit_fail, ms);
    bool first = true;
@@ -301,7 +305,8 @@ struct World
 // outputs a world emits: at OnMinute(minute) or OnBar(bar at minute)
 struct Out { int minute; bool onbar; bool is_exit; CrOrder o; CrExit e; };
 
-static void run_world(const World &w, std::vector<Out> outs, int until_minute, int nsl = 1)
+// barrier_every: 1 = PapOnBarrier every minute (the driver's contract); 0 = never (PapOnBar's own barrier does the work)
+static void run_world(const World &w, std::vector<Out> outs, int until_minute, int nsl = 1, int barrier_every = 1)
   {
    t_setup(std::vector<int>(nsl, 0));
    g_got.clear();
@@ -324,9 +329,23 @@ static void run_world(const World &w, std::vector<Out> outs, int until_minute, i
          if(!u.onbar && w.t(u.minute) == M && !u.is_exit) { if(!PapSubmit(u.o)) g_got.push_back(CrPEvent{-1, u.o.sleeve, u.o.oid}); }
       for(auto &u : outs)
          if(!u.onbar && w.t(u.minute) == M && u.is_exit) PapSubmitExit(u.e);
-      PapOnBarrier(M);
+      if(barrier_every > 0 && (m + 1) % barrier_every == 0) PapOnBarrier(M);
       collect();
      }
+  }
+
+// the trade-level events of the last run (every event but HOLD's barrier time), to compare two drivers
+static std::vector<std::string> trade_lines()
+  {
+   std::vector<std::string> v;
+   for(auto &e : g_got)
+     {
+      char buf[256];
+      snprintf(buf, sizeof(buf), "%d,%ld,%d,%ld,%ld,%.17g,%.17g,%d,%ld", e.ev, (long)e.oid, e.side, e.ev == CR_EV_HOLD ? 0L : (long)e.t,
+               (long)e.bar, e.px, e.stop, e.reason, (long)e.x);
+      v.push_back(buf);
+     }
+   return v;
   }
 
 static CrOrder mk(long oid, int side, int etype, int64_t from, int64_t to, int sl = 0)
@@ -626,11 +645,250 @@ static void worlds()
       PapReset();
       check(!PapTrade(0, t) && !PapPending(0, q) && PapEvents() == 0 && PapLastExitBar(0) == 0, "W12 PapReset");
    }
+   // W13: the hold test passes but xh <= x0: HOLD with x = x0 (variants.H: max(ext, exit_i)), the exit stays at x0's bar
+   {
+      World w;
+      w.flat(0, 29, 100.0);
+      w.add(29, 100.0, 105.0, 100.0, 104.0);
+      w.flat(30, 60, 104.0);
+      CrOrder o = mk(80, 1, CR_ET_MARKET, w.t(10), w.t(10));
+      o.stop_dist = 2.0;
+      o.x_sched = w.t(30);
+      o.x_gap = true;
+      o.xh = w.t(20);
+      o.xh_r = 1.0;
+      run_world(w, {at_min(10, o)}, 70);
+      const CrPEvent *h = last_ev(CR_EV_HOLD, 80), *x = last_ev(CR_EV_PEXIT, 80);
+      check(count_ev(CR_EV_HOLD, 80) == 1 && h && h->x == w.t(30) && eq(h->px, 104.0), "W13 HOLD on a pass even when xh <= x0 (x stays x0)");
+      check(x && x->t == w.t(30) && x->reason == CR_R_TIME && eq(x->px, 104.0 * (1 - SM)), "W13 time exit at x0's bar");
+   }
+   // W14: a market order whose window overlaps a void_le order's is refused, in either order (a void decided after the
+   //      activation bar would have freed that bar for the other order); a later window is accepted
+   {
+      World w;
+      CrOrder a = mk(81, 1, CR_ET_MARKET, w.t(10), w.t(15));
+      a.void_le = true;
+      a.x_gap = true;
+      a.x_sched = w.t(40);
+      CrOrder b = mk(82, -1, CR_ET_MARKET, w.t(12), w.t(14));
+      CrOrder c = mk(83, -1, CR_ET_MARKET, w.t(20), w.t(25));
+      t_setup({0});
+      bool ok1 = PapSubmit(a), ok2 = PapSubmit(b), ok3 = PapSubmit(c);
+      check(ok1 && !ok2 && ok3, "W14 overlap with a void_le order refused; a later window accepted");
+      t_setup({0});
+      ok1 = PapSubmit(b);
+      ok2 = PapSubmit(a);
+      check(ok1 && !ok2, "W14 refused in the other order too");
+   }
+   // W15: a driver that never calls PapOnBarrier: PapOnBar's own barrier gives the same trades, revisions, voids and holds
+   {
+      std::vector<std::pair<World, CrOrder>> cases;
+      World a;
+      a.flat(0, 30, 100.0);
+      a.add(30, 100.0, 100.05, 95.0, 95.0);
+      a.flat(100, 130, 95.0);
+      CrOrder oa = mk(84, 1, CR_ET_MARKET, a.t(10), a.t(10));
+      oa.stop_dist = 2.0;
+      oa.x_sched = a.t(40);
+      oa.x_gap = true;
+      cases.push_back({a, oa});                                  // stop on L, then PREVISE
+      World b;
+      b.flat(0, 28, 100.0);
+      b.add(28, 100.0, 100.1, 99.9, 100.0);
+      b.add(29, 100.0, 105.0, 100.0, 104.0);
+      b.flat(100, 130, 104.0);
+      CrOrder ob = mk(85, 1, CR_ET_MARKET, b.t(10), b.t(10));
+      ob.stop_dist = 2.0;
+      ob.x_sched = b.t(30);
+      ob.x_gap = true;
+      ob.xh = b.t(60);
+      ob.xh_r = 1.0;
+      cases.push_back({b, ob});                                  // HOLD granted on L, withdrawn by the revision, PREVISE
+      World c = b;
+      c.bars.erase(std::remove_if(c.bars.begin(), c.bars.end(), [&](const CrBar &x) { return x.t >= b.t(100); }), c.bars.end());
+      c.flat(30, 100, 104.0);
+      cases.push_back({c, ob});                                  // HOLD confirmed by bar 30, held to 60
+      World d;
+      d.flat(0, 11, 100.0);
+      d.flat(100, 120, 100.0);
+      CrOrder od = mk(86, 1, CR_ET_MARKET, d.t(10), d.t(10));
+      od.void_le = true;
+      od.x_gap = true;
+      od.x_sched = d.t(40);
+      cases.push_back({d, od});                                  // late PVOID of a filled order
+      CrOrder oe = mk(87, 1, CR_ET_STOP, d.t(10), d.t(10));
+      oe.level = 200.0;
+      oe.expiry_excl = d.t(300);
+      oe.void_le = true;
+      oe.x_gap = true;
+      oe.x_sched = d.t(40);
+      cases.push_back({d, oe});                                  // late PVOID of an armed order
+      int k = 0;
+      for(auto &cs : cases)
+        {
+         run_world(cs.first, {at_min(10, cs.second)}, 140);
+         std::vector<std::string> full = trade_lines();
+         run_world(cs.first, {at_min(10, cs.second)}, 140, 1, 0);
+         std::vector<std::string> sparse = trade_lines();
+         std::sort(full.begin(), full.end());
+         std::sort(sparse.begin(), sparse.end());
+         char what[96];
+         snprintf(what, sizeof(what), "W15 case %d: no PapOnBarrier call, the same %zu events", k++, full.size());
+         check(!full.empty() && full == sparse, what);
+        }
+   }
+   // W16: the trade is stopped on L (the last bar before a hole at x0) and the revision's re-test on the bar before L
+   //      grants the hold: with xh after the hole the stop exit stands; with xh in the same hole exit_index(xh) is L too
+   //      and the time exit at L's open replaces it (PREVISE)
+   {
+      World w;
+      w.flat(0, 28, 100.0);
+      w.add(28, 100.0, 105.0, 100.0, 104.0);          // ahead at 28
+      w.add(29, 104.0, 104.1, 97.0, 97.5);            // the stop (fill - 2) is hit on 29
+      w.flat(100, 200, 97.5);
+      CrOrder o = mk(88, 1, CR_ET_MARKET, w.t(10), w.t(10));
+      o.stop_dist = 2.0;
+      o.x_sched = w.t(30);
+      o.x_gap = true;
+      o.xh = w.t(150);
+      o.xh_r = 1.0;
+      run_world(w, {at_min(10, o)}, 210);
+      double fp = 100.1 * (1 + SM);
+      const CrPEvent *x = last_ev(CR_EV_PEXIT, 88), *h = last_ev(CR_EV_HOLD, 88);
+      check(x && x->reason == CR_R_STOP && x->t == w.t(29) + 60 && eq(x->px, (fp - 2.0) * (1 - SS)), "W16 stop exit on L");
+      check(count_ev(CR_EV_HOLD, 88) == 1 && h && h->x == w.t(150) && eq(h->px, 104.0) && h->t == w.t(61) && count_ev(CR_EV_PREVISE, 88) == 0,
+            "W16 the revision grants the hold (mark of the bar before L): the stop exit stands");
+      o.xh = w.t(60);
+      run_world(w, {at_min(10, o)}, 210);
+      const CrPEvent *r = last_ev(CR_EV_PREVISE, 88);
+      check(r && r->t == w.t(29) && r->reason == CR_R_TIME && eq(r->px, 104.0 * (1 - SM)) && r->x == w.t(60) && r->bar == w.t(29),
+            "W16 xh in the same hole: PREVISE at L's open after the barrier passes xh + 30 min");
+   }
+   // W17: a rule exit that resolves while its order still waits for a fill: the exit comes at the bar after the fill
+   {
+      World w;
+      w.flat(0, 20, 100.0);
+      w.add(20, 100.0, 101.5, 99.9, 101.2);
+      w.flat(21, 40, 101.2);
+      CrOrder a = mk(89, 1, CR_ET_STOP, w.t(10), w.t(10));
+      a.level = 101.0;
+      a.expiry_excl = w.t(30);
+      a.stop_dist = 5.0;
+      a.x_sched = w.t(35);
+      Out e = ex_min(12, 89, w.t(12), w.t(15));
+      run_world(w, {at_min(10, a), e}, 45);
+      const CrPEvent *f = last_ev(CR_EV_PFILL, 89), *x = last_ev(CR_EV_PEXIT, 89);
+      check(f && f->t == w.t(20) && eq(f->px, 101.0 * (1 + SS)) && x && x->t == w.t(21) && x->reason == CR_R_TIME,
+            "W17 a rule exit resolved before the fill: time exit at the bar after the fill (sim.py:137)");
+   }
+   // W18: a refused limit entry: PREFUSE at its fill bar, no trade, nothing counts as an exit
+   {
+      World w;
+      w.flat(0, 15, 100.0);
+      w.add(15, 100.0, 100.05, 99.4, 99.6);
+      w.flat(16, 40, 99.6);
+      CrOrder a = mk(90, 1, CR_ET_LIMIT, w.t(10), w.t(10));
+      a.level = 99.5;
+      a.expiry_excl = w.t(30);
+      a.stop_dist = 0.2;
+      a.refuse = CR_REF_PAYOFF;
+      run_world(w, {at_min(10, a)}, 45);
+      const CrPEvent *r = last_ev(CR_EV_PREFUSE, 90);
+      CrTrade t;
+      check(r && r->t == w.t(15) && eq(r->px, 99.5) && count_ev(CR_EV_PFILL, 90) == 0 && !PapTrade(0, t) && PapLastExitBar(0) == 0,
+            "W18 refused limit entry: PREFUSE at the fill bar, flat, no exit bar");
+   }
+   // W19: an armed void_le stop entry with no kept bar from its activation bar to x + 30 min: PVOID at that barrier;
+   //      with a bar inside [x, x + 30 min] it stays armed
+   {
+      World w;
+      w.flat(0, 11, 100.0);
+      w.flat(100, 120, 100.0);
+      CrOrder a = mk(91, 1, CR_ET_STOP, w.t(10), w.t(10));
+      a.level = 200.0;
+      a.expiry_excl = w.t(300);
+      a.void_le = true;
+      a.x_gap = true;
+      a.x_sched = w.t(40);
+      run_world(w, {at_min(10, a)}, 130);
+      const CrPEvent *v = last_ev(CR_EV_PVOID, 91);
+      check(count_ev(CR_EV_PVOID, 91) == 1 && v && v->t == w.t(10) && count_ev(CR_EV_PFILL, 91) == 0, "W19 armed void_le order: PVOID");
+      World w2;
+      w2.flat(0, 11, 100.0);
+      w2.add(50, 100.0, 100.05, 99.95, 100.0);
+      w2.flat(100, 120, 100.0);
+      run_world(w2, {at_min(10, a)}, 130);
+      CrOrder q;
+      check(count_ev(CR_EV_PVOID, 91) == 0 && PapPending(0, q) && q.oid == 91, "W19 a bar in [x, x + 30 min]: still armed");
+   }
+   // W20: stopped on its fill bar while its gap question is open; the revision finds L = the fill bar: the stop exit
+   //      stands (no PREVISE); with void_le the order never existed (PVOID, no exit bar left)
+   {
+      World w;
+      w.flat(0, 10, 100.0);
+      w.add(10, 100.0, 100.05, 99.9, 100.0);
+      w.flat(100, 130, 100.0);
+      CrOrder a = mk(92, 1, CR_ET_MARKET, w.t(10), w.t(10));
+      a.stop_dist = 0.1;
+      a.x_sched = w.t(40);
+      a.x_gap = true;
+      run_world(w, {at_min(10, a)}, 140);
+      const CrPEvent *x = last_ev(CR_EV_PEXIT, 92);
+      double fp = 100.1 * (1 + SM);
+      check(x && x->reason == CR_R_STOP && x->t == w.t(10) + 60 && eq(x->px, (fp - 0.1) * (1 - SS)) && count_ev(CR_EV_PREVISE, 92) == 0
+            && PapLastExitBar(0) == w.t(10), "W20 stopped on the fill bar, L = fill bar: the stop exit stands");
+      a.void_le = true;
+      run_world(w, {at_min(10, a)}, 140);
+      check(count_ev(CR_EV_PVOID, 92) == 1 && PapLastExitBar(0) == 0, "W20 void_le: PVOID, no exit bar left");
+   }
+   // W22: an armed void_le order whose void (first barrier after x + 30 min) and expiry fall in one hole: the earlier of
+   //      the two barriers decides, with or without PapOnBarrier calls (void 9 minutes before the expiry: PVOID; void at
+   //      the expiry's own barrier: the expiry, no event)
+   {
+      World w;
+      w.flat(0, 11, 100.0);
+      w.flat(200, 220, 100.0);
+      for(int k = 0; k < 2; k++)
+        {
+         CrOrder a = mk(96 + k, 1, CR_ET_STOP, w.t(10), w.t(10));
+         a.level = 200.0;
+         a.void_le = true;
+         a.x_gap = true;
+         a.x_sched = w.t(40);
+         a.expiry_excl = (k == 0) ? w.t(80) : w.t(71);          // void decided at barrier 71
+         int n[2];
+         for(int mode = 0; mode < 2; mode++)
+           {
+            run_world(w, {at_min(10, a)}, 230, 1, mode == 0 ? 1 : 0);
+            n[mode] = count_ev(CR_EV_PVOID, 96 + k);
+           }
+         char what[96];
+         snprintf(what, sizeof(what), "W22 %s: %s with and without barrier calls", k == 0 ? "void before expiry" : "void at the expiry",
+                  k == 0 ? "PVOID" : "no PVOID");
+         check(n[0] == n[1] && n[0] == (k == 0 ? 1 : 0), what);
+        }
+   }
+   // W21: an order activating on the bar where the trade took its target is skipped; the next bar is free
+   {
+      World w;
+      w.flat(0, 12, 100.0);
+      w.add(12, 100.0, 101.0, 99.95, 100.9);
+      w.flat(13, 30, 100.9);
+      CrOrder a = mk(93, 1, CR_ET_MARKET, w.t(10), w.t(10));
+      a.target_dist = 0.5;
+      CrOrder b = mk(94, -1, CR_ET_MARKET, w.t(12), w.t(12));
+      CrOrder c = mk(95, -1, CR_ET_MARKET, w.t(13), w.t(13));
+      run_world(w, {at_min(10, a), at_min(12, b), at_min(13, c)}, 35);
+      const CrPEvent *x = last_ev(CR_EV_PEXIT, 93);
+      double fp = 100.1 * (1 + SM);
+      check(x && x->reason == CR_R_TARGET && x->t == w.t(12) + 60 && eq(x->px, MathMax(fp + 0.5, 100.0)) && count_ev(CR_EV_PFILL, 94) == 0
+            && count_ev(CR_EV_PFILL, 95) == 1, "W21 skip on the exit bar (target), taken on the next bar");
+   }
   }
 
 int main(int argc, char **argv)
   {
-   if(argc >= 3 && string(argv[1]) == "replay") return replay(argv[2]);
+   if(argc >= 3 && string(argv[1]) == "replay") return replay(argv[2], argc >= 4 ? atoi(argv[3]) : 1);
    worlds();
    printf("test_paper worlds: %d checks, %d failed\n", g_checks, g_fails);
    return g_fails == 0 ? 0 : 1;

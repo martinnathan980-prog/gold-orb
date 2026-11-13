@@ -56,8 +56,9 @@
 //|   balance out of step) is MOVING: nothing is sized and no STOP,   |
 //|   GUARD or LOCK is concluded until B(T) is back (to the accepted  |
 //|   value or the one accepted before it), or until it has differed  |
-//|   for 60 s: then the latest value is accepted and pushed. The     |
-//|   walk always starts from the accepted B(T).                      |
+//|   for 60 s: then the latest value is accepted and pushed. At the  |
+//|   start the same 60 s run from the first read. The walk always    |
+//|   starts from the accepted B(T).                                  |
 //|                                                                  |
 //| Week unit (SPEC 5, growth.py:228-275): set at the week's first    |
 //|   ledger event, a robot close or a sizing request (SizWeekUnit in |
@@ -72,6 +73,14 @@
 //|   when the robot close money stamped in the server day reaches    |
 //|   -X x rate(max(B_d, P_d)) / 100 x B_d, B_d and P_d at the start  |
 //|   of the server day. Booked money only: rebuilt from the history. |
+//|   A LOCK is concluded only on a settled ledger; once concluded it |
+//|   holds for the rest of that server day, also while B(T) moves.   |
+//|                                                                  |
+//| Journal: SETTLE (state=moving, ok, accepted), PLAN (demo plan     |
+//|   from the first deal, with a push), and one STOP and one GUARD   |
+//|   line (src=history...) when the history shows the latch on a     |
+//|   settled ledger. The guards (CR_Guards) act on the latches and   |
+//|   push; the ledger itself closes nothing.                         |
 //|                                                                  |
 //| API (signatures of the S0 stub kept; the rest is new):            |
 //|   LedInit(err)              once at OnInit (after SizInit)        |
@@ -89,6 +98,10 @@
 //|                             start of the history                  |
 //|   LedBT()                   B(T) the walk starts from             |
 //|   LedBalance(S) LedPaidIn(S) LedRef(S)   at stamp S (UTC)         |
+//|   LedCloseMoney(S)          robot close money stamped before S    |
+//|   LedBalanceNow() LedPaidInNow() LedRefNow()   after every event  |
+//|                             read so far (GUARD (a): equity <= 50 %|
+//|                             of LedRefNow on a settled ledger)     |
 //|   LedStopLatched() LedStopTime() LedStoppedAt(S)       STOP       |
 //|   LedGuardLatched() LedGuardAt(S) LedMarkSeen()        GUARD      |
 //|   LedDayLocked(now_srv) LedDayLockedAt(S)              LOCK       |
@@ -178,7 +191,7 @@ CrLedEv   g_led_e[];                   // events after T, sorted
 long      g_led_key[];                 // their sort keys, increasing
 int       g_led_ne = 0;
 bool      g_led_tables = false;        // positions and events match the cache and T
-datetime  g_led_T_built = -1;          // T of the tables
+datetime  g_led_T_built = 0;           // T of the tables (meaningful while g_led_tables is true)
 datetime  g_led_T = 0;                 // plan start in use (server clock), 0 = the start of the history
 datetime  g_led_T_utc = 0;
 int       g_led_plan = CR_PLAN_UNSET;
@@ -193,6 +206,7 @@ int       g_led_guard_ev = -1;
 bool      g_led_rep_stop = false;      // STOP concluded on a settled ledger (kept until LedInit)
 bool      g_led_rep_guard = false;
 bool      g_led_said_plan = false;
+datetime  g_led_lock_day = 0;          // server day of a LOCK concluded on a settled ledger (0 = none)
 // settle (SPEC 5)
 bool      g_led_acc = false;           // a B(T) has been accepted
 double    g_led_acc_v = 0.0;
@@ -352,7 +366,7 @@ void LedPlanCompute(const datetime now_srv)
       g_led_T = 0;                                // B(T) still settles; nothing is concluded (OBSERVE)
       g_led_plan = CR_PLAN_UNSET;
      }
-   g_led_T_utc = (g_led_T > 0) ? ClkServerToUtc(g_led_T) : 0;
+   g_led_T_utc = (g_led_T > 0) ? ClkServerToUtc(g_led_T) : (datetime)0;
   }
 
 // B(T) = ACCOUNT_BALANCE - money of the deals at or after T, credit deals left out, to the cent
@@ -591,29 +605,46 @@ void LedSettleLine(const string state, const double v)
    Jrn(CR_EV_SETTLE, "-", KV("state", state) + KD("B_T", v) + KD("accepted", g_led_acc_v) + KT("T", g_led_T));
   }
 
+// the 60-s rule: the latest B(T) is accepted, journaled and pushed
+void LedSettleAccept(const double v)
+  {
+   if(g_led_acc)
+     {
+      g_led_acc_prev = g_led_acc_v;
+      g_led_has_prev = true;
+     }
+   g_led_acc = true;
+   g_led_acc_v = v;
+   g_led_settled = true;
+   g_led_move_t = 0;
+   LedSettleLine("accepted", v);
+   JrnPush("solde et historique en desaccord depuis 60 s : nouveau solde de depart du plan accepte (" + DoubleToString(v, 2) + ")", false);
+  }
+
 // the settle rule (SPEC 5, R16) on the B(T) of one read
 void LedSettle(const double v, const datetime now)
   {
    if(!g_led_acc)
      {
-      if(g_led_has_cand && MathAbs(v - g_led_cand_v) <= CR_LED_TOL)
-        {
-         if(now - g_led_cand_t >= CR_LED_SETTLE_GAP)
-           {
-            g_led_acc = true;
-            g_led_acc_v = v;
-            g_led_has_prev = false;
-            g_led_settled = true;
-            g_led_move_t = 0;
-           }
-        }
-      else
+      // the start: two equal reads at least 2 s apart; a B(T) that still moves 60 s after the first read is accepted
+      if(g_led_move_t == 0 || now < g_led_move_t) g_led_move_t = now;
+      bool same = g_led_has_cand && MathAbs(v - g_led_cand_v) <= CR_LED_TOL;
+      if(!same)
         {
          g_led_has_cand = true;
          g_led_cand_v = v;
          g_led_cand_t = now;
-         g_led_settled = false;
         }
+      if(same && now - g_led_cand_t >= CR_LED_SETTLE_GAP)
+        {
+         g_led_acc = true;
+         g_led_acc_v = v;
+         g_led_has_prev = false;
+         g_led_settled = true;
+         g_led_move_t = 0;
+        }
+      else if(now - g_led_move_t >= CR_LED_SETTLE_MAX) LedSettleAccept(v);
+      else g_led_settled = false;
       return;
      }
    bool cur = MathAbs(v - g_led_acc_v) <= CR_LED_TOL;
@@ -637,16 +668,7 @@ void LedSettle(const double v, const datetime now)
       LedSettleLine("moving", v);
      }
    g_led_settled = false;
-   if(now - g_led_move_t >= CR_LED_SETTLE_MAX)
-     {
-      g_led_acc_prev = g_led_acc_v;
-      g_led_has_prev = true;
-      g_led_acc_v = v;
-      g_led_settled = true;
-      g_led_move_t = 0;
-      LedSettleLine("accepted", v);
-      JrnPush("solde et historique en desaccord depuis 60 s : nouveau solde de depart du plan accepte (" + DoubleToString(v, 2) + ")", false);
-     }
+   if(now - g_led_move_t >= CR_LED_SETTLE_MAX) LedSettleAccept(v);
   }
 
 // STOP and GUARD lines, once each, on a settled ledger
@@ -730,7 +752,7 @@ int LedPlanAt(const datetime S)
    return CR_PLAN_OK;
   }
 
-datetime LedPlanStart() { return (g_led_plan == CR_PLAN_UNSET) ? 0 : g_led_T; }
+datetime LedPlanStart() { return (g_led_plan == CR_PLAN_UNSET) ? (datetime)0 : g_led_T; }
 double   LedBT() { return g_led_bt; }
 
 // ---- the state at a stamp S (UTC) ---------------------------------------------------------------------------------
@@ -759,8 +781,13 @@ double LedCloseMoney(const datetime S)
    return (k > 0) ? g_led_e[k - 1].cm : 0.0;
   }
 
+// the state after every event of the history read last (GUARD (a) compares the equity with LedRefNow)
+double LedBalanceNow() { return (g_led_ne > 0) ? g_led_e[g_led_ne - 1].eq : g_led_bt; }
+double LedPaidInNow() { return (g_led_ne > 0) ? g_led_e[g_led_ne - 1].paid : g_led_bt; }
+double LedRefNow() { return (g_led_ne > 0) ? g_led_e[g_led_ne - 1].ref : g_led_bt; }
+
 // ---- latches (SPEC 6.1, 6.2) --------------------------------------------------------------------------------------
-datetime LedStopTime() { return (g_led_stop_ev >= 0) ? g_led_e[g_led_stop_ev].t : 0; }
+datetime LedStopTime() { return (g_led_stop_ev >= 0) ? g_led_e[g_led_stop_ev].t : (datetime)0; }
 bool     LedStoppedAt(const datetime S) { return g_led_stop_key >= 0 && g_led_stop_key < LedKey(S, CR_EK_CLOSE); }
 bool     LedStopLatched() { return g_led_rep_stop || (g_led_settled && g_led_stop_ev >= 0); }
 bool     LedMarkSeen() { return g_led_mark_key >= 0; }
@@ -798,10 +825,16 @@ bool LedDayLockedAt(const datetime S)
    return lim > 0.0 && cs - cd <= -lim;
   }
 
+// LOCK now: concluded only on a settled ledger (SPEC 5); a LOCK concluded earlier holds for the rest of its server day
 bool LedDayLocked(const datetime now_srv)
   {
-   if(!g_led_settled) return false;                 // no LOCK conclusion while the ledger moves (SPEC 5)
-   return LedDayLockedAt(ClkServerToUtc(now_srv) + 1);
+   datetime S = ClkServerToUtc(now_srv) + 1;
+   datetime day = ClkServerDay(S);
+   if(g_led_lock_day != 0 && g_led_lock_day == day && g_cfg.lock_stakes > 0.0) return true;
+   if(!g_led_settled) return false;
+   if(!LedDayLockedAt(S)) return false;
+   g_led_lock_day = day;
+   return true;
   }
 
 // ---- week unit (SPEC 5) -------------------------------------------------------------------------------------------
@@ -924,7 +957,7 @@ void LedReset()
    g_led_np = 0;
    g_led_ne = 0;
    g_led_tables = false;
-   g_led_T_built = -1;
+   g_led_T_built = 0;
    g_led_walked = false;
    g_led_dirty = true;
    LedForgetWeeks();
@@ -948,7 +981,7 @@ bool LedInit(string &err)
       err = "InpDailyLockStakes must be 0 or more";
       return false;
      }
-   if(g_cfg.plan_start < 0)
+   if((long)g_cfg.plan_start < 0)
      {
       err = "InpPlanStart must be a server time (0 = unset)";
       return false;
@@ -972,6 +1005,7 @@ bool LedInit(string &err)
    g_led_rep_stop = false;
    g_led_rep_guard = false;
    g_led_said_plan = false;
+   g_led_lock_day = 0;
    g_led_acc = false;
    g_led_acc_v = 0.0;
    g_led_has_prev = false;

@@ -23,7 +23,10 @@
 //| kept bar starting before M (PapOnBar after the rules' OnBar),    |
 //| then OnMinute(M), then PapOnBarrier(M). So at PapOnBarrier(M)    |
 //| every bar starting before M is final, and no bar starting at or  |
-//| after M has been seen.                                           |
+//| after M has been seen. PapOnBar(sl, b) first runs the sleeve's   |
+//| part of the barrier at b's start (a no-op when the driver called |
+//| PapOnBarrier for every minute), so a skipped barrier never lets  |
+//| a bar answer a question it cannot answer.                        |
 //|                                                                  |
 //| How the paper reads a CrOrder ("0 = none" for every optional     |
 //| field; a NaN counts as none too):                                |
@@ -56,43 +59,51 @@
 //|               last processed bar c is at or after its fill bar   |
 //|               and side x (mark - fill) >= xh_r x |fill - stop0|, |
 //|               mark = c's bid close (long) or ask close (short),  |
-//|               gets x := max(xh, x) with the same gap flag.       |
+//|               gets x := max(xh, x) with the same gap flag (HOLD).|
 //|   refuse      at the fill, spread = ao - bo of the fill bar:     |
 //|               1 (payoff): d0 < 3 x spread, d0 = |fill - stop| for|
 //|               an absolute stop, else stop_dist (vhi_sleeves      |
 //|               stop_distance_at_fill, variants.refuse);           |
 //|               2 (synthesis_B): |fill - stop0| < 3 x spread or a  |
 //|               stop on the wrong side (common.py:136-169). A      |
-//|               refused order leaves no trace (PREFUSE).           |
-//|   void_le     brk72's wrapper (recalc.py:43-53): the order never |
-//|               existed when its exit bar (x with the gap rule)    |
-//|               does not follow its activation bar: x at or before |
-//|               that bar (PVOID at activation), or the late gap    |
-//|               revision lands on it (PVOID then).                 |
+//|               refused order leaves no trace (PREFUSE): the sleeve|
+//|               stays flat and nothing counts as exited on b.      |
+//|   void_le     brk72's wrapper (recalc.py:43-53, exit_i > entry_i)|
+//|               the order never existed when its exit bar (x with  |
+//|               the gap rule) does not follow its ACTIVATION bar   |
+//|               (entry_i): x at or before that bar (PVOID at       |
+//|               activation), or no kept bar from just after it to  |
+//|               x + 30 min (PVOID at that barrier, armed or filled)|
 //| A CrExit of oid X: at the first kept bar e inside its window it  |
 //| replaces X's time exit by "the first kept bar at or after e, not |
-//| the fill bar, no gap rule" (noise30 sets exit_i = e, reason      |
-//| 'time'); it is void when its window ends without a kept bar.     |
+//| the fill bar, no gap rule, no hold" (noise30 sets exit_i = e,    |
+//| reason 'time'); it is void when its window ends without a bar.   |
 //|                                                                  |
 //| Late gap revision (SPEC 2.5, P4). While the 30-minute question of|
 //| a gap-rule exit x is open (no kept bar seen at or after x yet),  |
-//| the trade keeps its last two processed bars. When the barrier    |
-//| passes x + 30 min with no kept bar in [x, x + 30 min], the last  |
-//| processed bar L is the last kept bar before x: the paper books   |
-//| the time exit at L's open (PREVISE, replacing a stop, target or  |
-//| trail exit booked on L); if L is the fill bar the exit waits for |
-//| the next kept bar; void_le with L = the activation bar -> PVOID. |
-//| A hold of the barrier at x is tested again on the bar before L   |
-//| (HOLD to grant it, HOLD with x = x_sched to withdraw it).        |
+//| the trade keeps its last two processed bars and the stop before  |
+//| the last one. When the barrier passes x + 30 min with no kept bar|
+//| in [x, x + 30 min], the last processed bar L is the last kept bar|
+//| before x: the paper books the time exit at L's open (PREVISE,    |
+//| replacing a stop, target, trail or gap exit booked on L); if L is|
+//| the fill bar the exit waits for the next kept bar; void_le with  |
+//| L = the activation bar -> PVOID. The hold test of the barrier at |
+//| x was made on L; the revision makes it again on the bar before L |
+//| (the lab's c = exit bar - 1): HOLD to grant it, HOLD with px = 0 |
+//| and x = x_sched to withdraw it. A hold granted there moves the   |
+//| exit past the hole: L then stands as a bar of the trade, and the |
+//| extended exit gets its own 30-minute question.                   |
 //|                                                                  |
-//| Two orders of one sleeve may wait at once when both are market   |
-//| orders (they resolve at their activation bar, in emission order).|
-//| An order whose span overlaps a waiting stop, limit or OCO order  |
-//| (or a stop, limit or OCO order overlapping any waiting order) is |
-//| refused (PapSubmit false -> ERROR): the lab decides such a pair  |
-//| with future bars. Span = [t_from, t_to] for a market order,      |
-//| [t_from (or its activation bar), max(t_to, expiry_excl - 1)]     |
-//| otherwise. It cannot occur in the ten rules (SPEC 2.5).          |
+//| Orders waiting together. Two market orders of one sleeve may wait|
+//| at once (each resolves at its own activation bar, in emission    |
+//| order), unless one has void_le: a void_le trade can be voided    |
+//| after its activation bar, and an order skipped on that bar would |
+//| have been taken by the lab. Every other overlap of spans with a  |
+//| waiting order is refused (PapSubmit false -> ERROR): the lab     |
+//| decides such a pair with future bars. Span = [t_from, t_to] for a|
+//| market order, [t_from (or its activation bar), max(t_to,         |
+//| expiry_excl - 1)] otherwise. None of this occurs in the ten rules|
+//| (SPEC 2.5).                                                      |
 //|                                                                  |
 //| Events (CrPEvent; t is the lab stamp, bar the bar that made it): |
 //|   PFILL   t = bar = fill bar; px fill; stop = st0 = initial stop;|
@@ -100,8 +111,10 @@
 //|   PEXIT   t = exit bar + 60 s ('time': the bar start); px exit;  |
 //|           reason stop, target, time, trail or gap                |
 //|   PSTOP   t = bar + 60 s; stop = the new stop (trail or be)      |
-//|   PREVISE t = bar = L; px = the time exit at L's open            |
-//|   PVOID   t = bar = the activation bar; reason void              |
+//|   PREVISE t = bar = L; px = the time exit at L's open; reason    |
+//|           time; stop = the stop before L                         |
+//|   PVOID   t = bar = the activation bar; reason void (px = fill   |
+//|           when a trade existed, else 0)                          |
 //|   PREFUSE t = bar = the fill bar; px the fill it would have had; |
 //|           reason refused                                         |
 //|   HOLD    t = the barrier; bar = c; px = the mark (0 when the    |
@@ -118,12 +131,12 @@
 #define CR_PAP_XALL 128                // CR_MAX_SL x CR_PAP_XMAX
 #define CR_PAP_GAP 1800                // gl.exit_index: a bar more than 30 min after x does not take the exit
 
-// queued order states
+// queued order states (0 = dead, dropped at the next compaction)
 #define CR_PO_WAIT 1                   // waiting for its activation bar
 #define CR_PO_ARMED 2                  // stop, limit or OCO activated, waiting for its fill
 // rule exit states
 #define CR_PX_WAIT 1                   // waiting for a kept bar inside its window
-#define CR_PX_DONE 2                   // resolved on the bar m_bar
+#define CR_PX_DONE 2                   // resolved on the bar .bar
 #define CR_PX_VOID 3                   // its window ended without a kept bar
 // trade states
 #define CR_PT_NONE 0                   // no trade
@@ -170,29 +183,32 @@ struct CrPapTrade                      // the sleeve's trade
    bool     xg;                        // the gap rule applies to x
    datetime q;                         // the time whose 30-minute question is open
    bool     q_open;                    // no kept bar seen at or after q yet
-   bool     q_x0;                      // that question is x0's (a hold re-test belongs to it)
+   bool     q_x0;                      // that question is x0's (void_le and the hold re-test belong to it)
    int      hold;                      // CR_PH_*
-   bool     held;                      // x = xh by the hold extension
+   bool     held;                      // the hold test passed: x = max(xh, x0)
    int      reason;                    // exit reason (CR_R_*), CR_R_NONE while open
    datetime xbar;                      // exit bar start
    double   xpx;                       // exit price
   };
 
-CrPapOrd   g_pq[CR_PAP_QALL];          // sleeve sl's queue: g_pq[sl * CR_PAP_QMAX + k], k < g_pqn[sl], emission order
-int        g_pqn[CR_MAX_SL];
-CrPapExit  g_px[CR_PAP_XALL];          // sleeve sl's rule exits: g_px[sl * CR_PAP_XMAX + k], k < g_pxn[sl]
-int        g_pxn[CR_MAX_SL];
-CrPapTrade g_pt[CR_MAX_SL];
-datetime   g_plx[CR_MAX_SL];           // start of the exit bar of the sleeve's last trade (0 = none)
-datetime   g_plx0[CR_MAX_SL];          // its value before the current trade's fill (PVOID puts it back)
-datetime   g_plast[CR_MAX_SL];         // start of the last bar fed to the sleeve
-datetime   g_pM = 0;                   // the last barrier
-CrPEvent   g_pev[];
-int        g_pevn = 0;
-long       g_perr = 0;                 // orders or exits refused by PapSubmit / PapSubmitExit, events lost
+CrPapOrd   g_pap_q[CR_PAP_QALL];       // sleeve sl's queue: g_pap_q[sl * CR_PAP_QMAX + k], k < g_pap_qn[sl], emission order
+int        g_pap_qn[CR_MAX_SL];
+CrPapExit  g_pap_x[CR_PAP_XALL];       // sleeve sl's rule exits: g_pap_x[sl * CR_PAP_XMAX + k], k < g_pap_xn[sl]
+int        g_pap_xn[CR_MAX_SL];
+CrPapTrade g_pap_t[CR_MAX_SL];
+datetime   g_pap_lx[CR_MAX_SL];        // start of the exit bar of the sleeve's last trade (0 = none)
+datetime   g_pap_lx0[CR_MAX_SL];       // its value before the current trade's fill (PVOID puts it back)
+datetime   g_pap_last[CR_MAX_SL];      // start of the last bar fed to the sleeve
+datetime   g_pap_M = 0;                // the last barrier
+CrPEvent   g_pap_ev[];
+int        g_pap_evn = 0;
+long       g_pap_err = 0;              // orders or exits refused by PapSubmit / PapSubmitExit, events lost
 
 // a sleeve index the paper can hold (the fixed tables have CR_PAP_QALL / CR_PAP_QMAX rows)
-bool PapSleeveOk(const int sl) { return sl >= 0 && sl < g_nsl && sl < CR_MAX_SL && sl < CR_PAP_QALL / CR_PAP_QMAX && sl < CR_PAP_XALL / CR_PAP_XMAX; }
+bool PapSleeveOk(const int sl)
+  {
+   return sl >= 0 && sl < g_nsl && sl < CR_MAX_SL && sl < CR_PAP_QALL / CR_PAP_QMAX && sl < CR_PAP_XALL / CR_PAP_XMAX;
+  }
 
 //+------------------------------------------------------------------+
 //| Small helpers                                                    |
@@ -200,34 +216,43 @@ bool PapSleeveOk(const int sl) { return sl >= 0 && sl < g_nsl && sl < CR_MAX_SL 
 // an optional field is set: finite and not 0
 bool PapOn(const double v) { return MathIsValidNumber(v) && v != 0.0; }
 
+// the first barrier (whole UTC minute) after t, and at or after t
+datetime PapMinAfter(const datetime t) { return t - t % 60 + 60; }
+datetime PapMinFrom(const datetime t)
+  {
+   datetime m = t - t % 60;
+   if(m < t) m += 60;
+   return m;
+  }
+
 double PapSlipM(const int sl) { return g_sym[g_sl[sl].sym].slip_mkt; }
 double PapSlipS(const int sl) { return g_sym[g_sl[sl].sym].slip_stop; }
 
 void PapEmit(const int ev, const int sl, const long oid, const int side, const datetime t, const datetime bar, const double px,
              const double stop, const double st0, const int reason, const datetime x, const int s_raw, const double s_paper)
   {
-   if(g_pevn >= ArraySize(g_pev))
+   if(g_pap_evn >= ArraySize(g_pap_ev))
      {
-      if(ArrayResize(g_pev, g_pevn + 64, 256) < g_pevn + 1)
+      if(ArrayResize(g_pap_ev, g_pap_evn + 64, 256) < g_pap_evn + 1)
         {
-         g_perr++;                                             // no memory: the event is lost (counted)
+         g_pap_err++;                                          // no memory: the event is lost (counted)
          return;
         }
      }
-   g_pev[g_pevn].ev = ev;
-   g_pev[g_pevn].sleeve = sl;
-   g_pev[g_pevn].oid = oid;
-   g_pev[g_pevn].side = side;
-   g_pev[g_pevn].t = t;
-   g_pev[g_pevn].bar = bar;
-   g_pev[g_pevn].px = px;
-   g_pev[g_pevn].stop = stop;
-   g_pev[g_pevn].init_stop = st0;
-   g_pev[g_pevn].reason = reason;
-   g_pev[g_pevn].x = x;
-   g_pev[g_pevn].s_raw = s_raw;
-   g_pev[g_pevn].s_paper = s_paper;
-   g_pevn++;
+   g_pap_ev[g_pap_evn].ev = ev;
+   g_pap_ev[g_pap_evn].sleeve = sl;
+   g_pap_ev[g_pap_evn].oid = oid;
+   g_pap_ev[g_pap_evn].side = side;
+   g_pap_ev[g_pap_evn].t = t;
+   g_pap_ev[g_pap_evn].bar = bar;
+   g_pap_ev[g_pap_evn].px = px;
+   g_pap_ev[g_pap_evn].stop = stop;
+   g_pap_ev[g_pap_evn].init_stop = st0;
+   g_pap_ev[g_pap_evn].reason = reason;
+   g_pap_ev[g_pap_evn].x = x;
+   g_pap_ev[g_pap_evn].s_raw = s_raw;
+   g_pap_ev[g_pap_evn].s_paper = s_paper;
+   g_pap_evn++;
   }
 
 // an event of the trade on bar b
@@ -245,19 +270,20 @@ datetime PapSpanEnd(const CrOrder &o)
    return o.t_to;
   }
 
-// could the queued order a and the new order b need the same bar while one of them is a pending entry?
+// could the queued order a and the new order b need the same bar in a way only future bars decide?
 bool PapOverlap(const CrPapOrd &a, const CrOrder &b)
   {
-   if(a.o.etype == CR_ET_MARKET && b.etype == CR_ET_MARKET) return false;
-   datetime a0 = (a.st == CR_PO_ARMED) ? a.act : a.o.t_from;
+   if(a.o.etype == CR_ET_MARKET && b.etype == CR_ET_MARKET && !a.o.void_le && !b.void_le) return false;
+   datetime a0 = a.o.t_from;
+   if(a.st == CR_PO_ARMED) a0 = a.act;
    return a0 <= PapSpanEnd(b) && b.t_from <= PapSpanEnd(a.o);
   }
 
-// index (in g_px) of the latest rule exit of oid for sleeve sl, -1 when none
+// index (in g_pap_x) of the latest rule exit of oid for sleeve sl, -1 when none
 int PapExitFind(const int sl, const long oid)
   {
-   for(int k = g_pxn[sl] - 1; k >= 0; k--)
-      if(g_px[sl * CR_PAP_XMAX + k].e.oid == oid) return sl * CR_PAP_XMAX + k;
+   for(int k = g_pap_xn[sl] - 1; k >= 0; k--)
+      if(g_pap_x[sl * CR_PAP_XMAX + k].e.oid == oid) return sl * CR_PAP_XMAX + k;
    return -1;
   }
 
@@ -265,40 +291,40 @@ int PapExitFind(const int sl, const long oid)
 void PapExitsCompact(const int sl)
   {
    int base = sl * CR_PAP_XMAX;
-   int n = g_pxn[sl];
+   int n = g_pap_xn[sl];
    int w = 0;
    for(int k = 0; k < n; k++)
      {
-      bool keep = (g_px[base + k].st == CR_PX_WAIT);
+      bool keep = (g_pap_x[base + k].st == CR_PX_WAIT);
       if(!keep)
-         for(int j = 0; j < g_pqn[sl]; j++)
-            if(g_pq[sl * CR_PAP_QMAX + j].o.after_exit_of == g_px[base + k].e.oid && g_pq[sl * CR_PAP_QMAX + j].st == CR_PO_WAIT)
+         for(int j = 0; j < g_pap_qn[sl]; j++)
+            if(g_pap_q[sl * CR_PAP_QMAX + j].st == CR_PO_WAIT && g_pap_q[sl * CR_PAP_QMAX + j].o.after_exit_of == g_pap_x[base + k].e.oid)
               {
                keep = true;
                break;
               }
       if(keep)
         {
-         if(w != k) g_px[base + w] = g_px[base + k];
+         if(w != k) g_pap_x[base + w] = g_pap_x[base + k];
          w++;
         }
      }
-   g_pxn[sl] = w;
+   g_pap_xn[sl] = w;
   }
 
 // drop the orders marked dead (st 0), keeping the emission order
 void PapOrdersCompact(const int sl)
   {
    int base = sl * CR_PAP_QMAX;
-   int n = g_pqn[sl];
+   int n = g_pap_qn[sl];
    int w = 0;
    for(int k = 0; k < n; k++)
      {
-      if(g_pq[base + k].st == 0) continue;
-      if(w != k) g_pq[base + w] = g_pq[base + k];
+      if(g_pap_q[base + k].st == 0) continue;
+      if(w != k) g_pap_q[base + w] = g_pap_q[base + k];
       w++;
      }
-   g_pqn[sl] = w;
+   g_pap_qn[sl] = w;
   }
 
 //+------------------------------------------------------------------+
@@ -311,7 +337,7 @@ void PapBookExit(const int sl, CrPapTrade &tr, const CrBar &b, const double px, 
    tr.reason = reason;
    tr.xbar = b.t;
    tr.xpx = px;
-   g_plx[sl] = b.t;
+   g_pap_lx[sl] = b.t;
    datetime t = b.t + 60;
    if(reason == CR_R_TIME) t = b.t;                           // sim.py:284: + 1 minute unless 'time'
    PapEmitTr(CR_EV_PEXIT, sl, tr, t, b, px, reason);
@@ -408,6 +434,7 @@ bool PapTryFill(const int sl, const CrOrder &o, const CrBar &b, int &side, doubl
    side = o.side;
    et = o.etype;
    lv = o.level;
+   fp = 0.0;
    if(o.etype == CR_ET_MARKET)
      {
       double sm = PapSlipM(sl);
@@ -447,10 +474,9 @@ bool PapTryFill(const int sl, const CrOrder &o, const CrBar &b, int &side, doubl
      {
       bool hu = (b.ah >= o.level);
       bool hd = (b.bl <= o.level2);
+      if(!hu && !hd) return false;
       if(hu && hd) side = (b.bc >= b.bo) ? -1 : 1;
-      else if(hu) side = 1;
-      else if(hd) side = -1;
-      else return false;
+      else side = hu ? 1 : -1;
       et = CR_ET_STOP;
       if(side > 0)
         {
@@ -487,7 +513,7 @@ void PapOpen(const int sl, CrPapTrade &tr, const CrOrder &o, const datetime act,
       PapEmit(CR_EV_PREFUSE, sl, o.oid, side, b.t, b.t, fp, st, st, CR_R_REFUSED, o.x_sched, b.s_raw, spread);
       return;
      }
-   g_plx0[sl] = g_plx[sl];
+   g_pap_lx0[sl] = g_pap_lx[sl];
    tr.st = CR_PT_OPEN;
    tr.o = o;
    tr.side = side;
@@ -511,10 +537,10 @@ void PapOpen(const int sl, CrPapTrade &tr, const CrOrder &o, const datetime act,
    tr.x0 = o.x_sched;
    tr.xg = o.x_gap;
    tr.q = o.x_sched;
-   tr.q_open = o.x_gap && o.x_sched > 0 && o.x_sched > b.t;               // x at or before the fill bar: exit at the next bar
+   tr.q_open = o.x_gap && o.x_sched > b.t;                                // x at or before the fill bar: exit at the next bar
    tr.q_x0 = tr.q_open;
    tr.hold = CR_PH_NONE;
-   if(o.xh > 0 && o.x_sched > 0 && o.x_sched > b.t) tr.hold = CR_PH_DUE;
+   if(o.xh > 0 && o.x_sched > b.t) tr.hold = CR_PH_DUE;                   // x at or before the fill bar: never at the clock
    tr.held = false;
    tr.reason = CR_R_NONE;
    tr.xbar = 0;
@@ -533,7 +559,7 @@ void PapOpen(const int sl, CrPapTrade &tr, const CrOrder &o, const datetime act,
 //+------------------------------------------------------------------+
 //| Hold extension and late gap revision                             |
 //+------------------------------------------------------------------+
-// variants.hold_decision: ahead by at least xh_r x risk at the close of bar c, c at or after the fill bar
+// variants.hold_decision: ahead by at least xh_r x the initial risk at the close of bar c, c at or after the fill bar
 bool PapHoldPass(const CrPapTrade &tr, const CrBar &c)
   {
    if(c.t == 0 || c.t < tr.fill) return false;
@@ -548,19 +574,22 @@ void PapEmitHold(const int sl, const CrPapTrade &tr, const datetime M, const CrB
    PapEmit(CR_EV_HOLD, sl, tr.o.oid, tr.side, M, c.t, mark, tr.cur, tr.st0, CR_R_NONE, tr.x, c.s_raw, c.ao - c.bo);
   }
 
-// the first barrier at or after x0, the trade open: the test on its last processed bar (final unless the gap rule may
-// still move x0's exit bar)
+// the test passed (variants.H: exit_i = max(ext, exit_i))
+void PapHoldGrant(const int sl, CrPapTrade &tr, const datetime M, const CrBar &c)
+  {
+   tr.held = true;
+   tr.x = tr.x0;
+   if(tr.o.xh > tr.x0) tr.x = tr.o.xh;
+   PapEmitHold(sl, tr, M, c, true);
+  }
+
+// the first barrier at or after x0, the trade open: the test on its last processed bar, which is the last kept bar
+// before x0 (final unless the gap rule moves x0's exit bar back to that bar: then the revision tests again)
 void PapHoldAtBarrier(const int sl, CrPapTrade &tr, const datetime M)
   {
-   bool pass = PapHoldPass(tr, tr.b_last);
    tr.hold = CR_PH_DONE;
    if(tr.q_open && tr.q_x0) tr.hold = CR_PH_TENT;
-   if(pass && tr.o.xh > tr.x0)
-     {
-      tr.held = true;
-      tr.x = tr.o.xh;
-      PapEmitHold(sl, tr, M, tr.b_last, true);
-     }
+   if(PapHoldPass(tr, tr.b_last)) PapHoldGrant(sl, tr, M, tr.b_last);
   }
 
 // the barrier passed q + 30 min and no kept bar started at or after q: the trade's last processed bar L is the last
@@ -573,31 +602,30 @@ void PapRevise(const int sl, CrPapTrade &tr, const datetime M)
    bool lfill = (tr.b_last.t == tr.fill);
    if(x0q && tr.o.void_le && tr.b_last.t == tr.act)
      {
-      PapEmitTr(CR_EV_PVOID, sl, tr, tr.act, tr.b_last, tr.fp, CR_R_VOID);
-      if(tr.st == CR_PT_EXITED) g_plx[sl] = g_plx0[sl];
+      PapEmitTr(CR_EV_PVOID, sl, tr, tr.act, tr.b_last, tr.fp, CR_R_VOID);   // the wrapper drops the order: no trade at all
+      g_pap_lx[sl] = g_pap_lx0[sl];
       tr.st = CR_PT_NONE;
       return;
      }
    if(x0q && (tr.hold == CR_PH_DUE || tr.hold == CR_PH_TENT))
      {
-      bool pass = !lfill && PapHoldPass(tr, tr.b_prev);
-      bool was = tr.held;
       tr.hold = CR_PH_DONE;
-      if(pass && tr.o.xh > tr.x0)
+      if(!lfill && PapHoldPass(tr, tr.b_prev))                // the lab's c = (exit bar L) - 1 = the bar before L
         {
-         tr.held = true;
-         tr.x = tr.o.xh;
-         if(!was) PapEmitHold(sl, tr, M, tr.b_prev, true);
-         if(tr.xg)
+         if(!tr.held) PapHoldGrant(sl, tr, M, tr.b_prev);
+         if(tr.x > tr.x0)                                      // the exit moved past the hole: L stays a bar of the trade
            {
-            tr.q = tr.x;                                       // the extended exit has its own question (x > x0 > L)
-            tr.q_open = true;
+            if(tr.xg)
+              {
+               tr.q = tr.x;                                    // the extended exit has its own question (x > x0 > L)
+               tr.q_open = true;
+              }
+            return;
            }
-         return;
         }
-      if(was)
+      else if(tr.held)
         {
-         tr.held = false;
+         tr.held = false;                                      // withdrawn: the exit bar is L (or the bar after the fill)
          tr.x = tr.x0;
          PapEmitHold(sl, tr, M, tr.b_last, false);
         }
@@ -613,7 +641,7 @@ void PapRevise(const int sl, CrPapTrade &tr, const datetime M)
    tr.reason = CR_R_TIME;
    tr.xbar = tr.b_last.t;
    tr.xpx = px;
-   g_plx[sl] = tr.b_last.t;
+   g_pap_lx[sl] = tr.b_last.t;
    PapEmitTr(CR_EV_PREVISE, sl, tr, tr.b_last.t, tr.b_last, px, CR_R_TIME);
    tr.st = CR_PT_NONE;
   }
@@ -626,19 +654,15 @@ void PapTradeNewBar(CrPapTrade &tr, const CrBar &b)
       tr.st = CR_PT_NONE;
       return;
      }
-   if(tr.st != CR_PT_OPEN) return;
-   if(tr.hold == CR_PH_DUE && b.t >= tr.x0) tr.hold = CR_PH_DONE;     // (cannot happen: the barrier at x0 comes first)
-   if(!tr.q_open || b.t < tr.q) return;
-   tr.q_open = false;                                         // a kept bar starts in [q, q + 30 min]: the exit stays there
-   if(tr.q_x0)
+   if(tr.st != CR_PT_OPEN || !tr.q_open || b.t < tr.q) return;
+   tr.q_open = false;                                         // a kept bar starts in [q, q + 30 min]: q's exit bar is b
+   if(!tr.q_x0) return;
+   tr.q_x0 = false;
+   if(tr.hold == CR_PH_TENT) tr.hold = CR_PH_DONE;            // the decision of the barrier at x0 stands
+   if(tr.held && tr.xg && tr.x > b.t)
      {
-      tr.q_x0 = false;
-      if(tr.hold == CR_PH_TENT) tr.hold = CR_PH_DONE;         // the decision of the barrier at x0 stands
-      if(tr.held && tr.xg && tr.x > b.t)
-        {
-         tr.q = tr.x;
-         tr.q_open = true;
-        }
+      tr.q = tr.x;
+      tr.q_open = true;
      }
   }
 
@@ -649,28 +673,28 @@ void PapTradeNewBar(CrPapTrade &tr, const CrBar &b)
 void PapExitsOnBar(const int sl, const CrBar &b)
   {
    int base = sl * CR_PAP_XMAX;
-   for(int k = 0; k < g_pxn[sl]; k++)
+   for(int k = 0; k < g_pap_xn[sl]; k++)
      {
-      if(g_px[base + k].st != CR_PX_WAIT) continue;
-      if(b.t < g_px[base + k].e.t_from || b.t > g_px[base + k].e.t_to) continue;
-      g_px[base + k].st = CR_PX_DONE;
-      g_px[base + k].bar = b.t;
-      long oid = g_px[base + k].e.oid;
-      if(g_pt[sl].st == CR_PT_OPEN && g_pt[sl].o.oid == oid)
+      if(g_pap_x[base + k].st != CR_PX_WAIT) continue;
+      if(b.t < g_pap_x[base + k].e.t_from || b.t > g_pap_x[base + k].e.t_to) continue;
+      g_pap_x[base + k].st = CR_PX_DONE;
+      g_pap_x[base + k].bar = b.t;
+      long oid = g_pap_x[base + k].e.oid;
+      if(g_pap_t[sl].st == CR_PT_OPEN && g_pap_t[sl].o.oid == oid)
         {
-         g_pt[sl].x = b.t;
-         g_pt[sl].xg = false;
-         g_pt[sl].q_open = false;
-         g_pt[sl].q_x0 = false;
-         g_pt[sl].hold = CR_PH_NONE;
-         g_pt[sl].held = false;
+         g_pap_t[sl].x = b.t;
+         g_pap_t[sl].xg = false;
+         g_pap_t[sl].q_open = false;
+         g_pap_t[sl].q_x0 = false;
+         g_pap_t[sl].hold = CR_PH_NONE;
+         g_pap_t[sl].held = false;
         }
-      for(int j = 0; j < g_pqn[sl]; j++)
-         if(g_pq[sl * CR_PAP_QMAX + j].o.oid == oid)
+      for(int j = 0; j < g_pap_qn[sl]; j++)
+         if(g_pap_q[sl * CR_PAP_QMAX + j].o.oid == oid)
            {
-            g_pq[sl * CR_PAP_QMAX + j].o.x_sched = b.t;
-            g_pq[sl * CR_PAP_QMAX + j].o.x_gap = false;
-            g_pq[sl * CR_PAP_QMAX + j].o.xh = 0;
+            g_pap_q[sl * CR_PAP_QMAX + j].o.x_sched = b.t;
+            g_pap_q[sl * CR_PAP_QMAX + j].o.x_gap = false;
+            g_pap_q[sl * CR_PAP_QMAX + j].o.xh = 0;
            }
      }
   }
@@ -682,62 +706,62 @@ bool PapActivates(const int sl, const CrOrder &o, const CrBar &b)
    if(o.after_exit_of == 0) return true;
    int k = PapExitFind(sl, o.after_exit_of);
    if(k < 0) return false;
-   return g_px[k].st == CR_PX_DONE && g_px[k].bar < b.t;
+   return g_pap_x[k].st == CR_PX_DONE && g_pap_x[k].bar < b.t;
   }
 
 // the sleeve's queue on bar b, in emission order: armed orders try to fill, waiting orders activate
 void PapOrdersOnBar(const int sl, const CrBar &b)
   {
    int base = sl * CR_PAP_QMAX;
-   int n = g_pqn[sl];
+   int n = g_pap_qn[sl];
    for(int k = 0; k < n; k++)
      {
       int i = base + k;
-      if(g_pq[i].st == CR_PO_WAIT)
+      if(g_pap_q[i].st == CR_PO_WAIT)
         {
-         if(!PapActivates(sl, g_pq[i].o, b)) continue;
-         if(g_pq[i].o.void_le && g_pq[i].o.x_sched > 0 && g_pq[i].o.x_sched <= b.t)
+         if(!PapActivates(sl, g_pap_q[i].o, b)) continue;
+         if(g_pap_q[i].o.void_le && g_pap_q[i].o.x_sched > 0 && g_pap_q[i].o.x_sched <= b.t)
            {
-            PapEmit(CR_EV_PVOID, sl, g_pq[i].o.oid, g_pq[i].o.side, b.t, b.t, 0.0, 0.0, 0.0, CR_R_VOID, g_pq[i].o.x_sched, b.s_raw,
-                    b.ao - b.bo);
-            g_pq[i].st = 0;
+            PapEmit(CR_EV_PVOID, sl, g_pap_q[i].o.oid, g_pap_q[i].o.side, b.t, b.t, 0.0, 0.0, 0.0, CR_R_VOID, g_pap_q[i].o.x_sched,
+                    b.s_raw, b.ao - b.bo);
+            g_pap_q[i].st = 0;                                 // the wrapper drops it: it skips nothing and blocks nothing
             continue;
            }
-         bool busy = (g_pt[sl].st == CR_PT_OPEN) || (g_plx[sl] != 0 && g_plx[sl] == b.t);     // sim.py:80
+         bool busy = (g_pap_t[sl].st == CR_PT_OPEN) || (g_pap_lx[sl] != 0 && g_pap_lx[sl] == b.t);   // sim.py:80
          if(busy)
            {
-            g_pq[i].st = 0;
+            g_pap_q[i].st = 0;
             continue;
            }
-         g_pq[i].act = b.t;
-         if(g_pq[i].o.etype != CR_ET_MARKET)
+         g_pap_q[i].act = b.t;
+         if(g_pap_q[i].o.etype != CR_ET_MARKET)
            {
-            g_pq[i].st = CR_PO_ARMED;
-            if(b.t >= g_pq[i].o.expiry_excl)
+            g_pap_q[i].st = CR_PO_ARMED;
+            if(b.t >= g_pap_q[i].o.expiry_excl)
               {
-               g_pq[i].st = 0;
+               g_pap_q[i].st = 0;                              // no bar of its window may fill it (sim.py 'nofill')
                continue;
               }
            }
         }
-      else if(g_pq[i].st == CR_PO_ARMED)
+      else if(g_pap_q[i].st == CR_PO_ARMED)
         {
-         if(b.t >= g_pq[i].o.expiry_excl)
+         if(b.t >= g_pap_q[i].o.expiry_excl)
            {
-            g_pq[i].st = 0;
+            g_pap_q[i].st = 0;
             continue;
            }
-         if(g_pt[sl].st == CR_PT_OPEN) continue;               // (cannot happen: PapSubmit refuses overlaps)
+         if(g_pap_t[sl].st == CR_PT_OPEN) continue;            // (cannot happen: PapSubmit refuses overlaps)
         }
       else continue;
       int side = 0, et = 0;
       double fp = 0.0, lv = 0.0;
-      if(!PapTryFill(sl, g_pq[i].o, b, side, fp, et, lv)) continue;
+      if(!PapTryFill(sl, g_pap_q[i].o, b, side, fp, et, lv)) continue;
       CrOrder o;
-      o = g_pq[i].o;
-      datetime act = g_pq[i].act;
-      g_pq[i].st = 0;
-      PapOpen(sl, g_pt[sl], o, act, b, side, fp, et, lv);
+      o = g_pap_q[i].o;
+      datetime act = g_pap_q[i].act;
+      g_pap_q[i].st = 0;
+      PapOpen(sl, g_pap_t[sl], o, act, b, side, fp, et, lv);
      }
    PapOrdersCompact(sl);
   }
@@ -748,37 +772,36 @@ void PapOrdersOnBar(const int sl, const CrBar &b)
 void PapOrdersOnBarrier(const int sl, const datetime M)
   {
    int base = sl * CR_PAP_QMAX;
-   for(int k = 0; k < g_pqn[sl]; k++)
+   for(int k = 0; k < g_pap_qn[sl]; k++)
      {
       int i = base + k;
-      if(g_pq[i].st == CR_PO_WAIT)
+      if(g_pap_q[i].st == CR_PO_WAIT)
         {
-         if(g_pq[i].o.t_to < M)
+         if(g_pap_q[i].o.t_to < M)
            {
-            g_pq[i].st = 0;                                    // its window ended without an activation
+            g_pap_q[i].st = 0;                                 // its window ended without an activation
             continue;
            }
-         if(g_pq[i].o.after_exit_of != 0)
+         if(g_pap_q[i].o.after_exit_of != 0)
            {
-            int x = PapExitFind(sl, g_pq[i].o.after_exit_of);
-            if(x >= 0 && g_px[x].st == CR_PX_VOID) g_pq[i].st = 0;   // void with its exit
+            int x = PapExitFind(sl, g_pap_q[i].o.after_exit_of);
+            if(x >= 0 && g_pap_x[x].st == CR_PX_VOID) g_pap_q[i].st = 0;   // void with its exit
            }
         }
-      else if(g_pq[i].st == CR_PO_ARMED)
+      else if(g_pap_q[i].st == CR_PO_ARMED)
         {
-         if(g_pq[i].o.expiry_excl <= M)
+         // void_le: no kept bar after the activation bar up to x + 30 min -> the exit bar is the activation bar. That is
+         // known at the first barrier after x + 30 min, unless the order expired at an earlier barrier: the two are taken
+         // in the order of their own barriers, so PapOnBar's barrier, which may see both at once, decides as the minutes do
+         if(g_pap_q[i].o.void_le && g_pap_q[i].o.x_gap && g_pap_q[i].o.x_sched > g_pap_q[i].act && M > g_pap_q[i].o.x_sched + CR_PAP_GAP
+            && g_pap_last[sl] == g_pap_q[i].act && PapMinAfter(g_pap_q[i].o.x_sched + CR_PAP_GAP) < PapMinFrom(g_pap_q[i].o.expiry_excl))
            {
-            g_pq[i].st = 0;                                    // no fill (sim.py 'nofill')
+            PapEmit(CR_EV_PVOID, sl, g_pap_q[i].o.oid, g_pap_q[i].o.side, g_pap_q[i].act, g_pap_q[i].act, 0.0, 0.0, 0.0, CR_R_VOID,
+                    g_pap_q[i].o.x_sched, 0, 0.0);
+            g_pap_q[i].st = 0;
             continue;
            }
-         // void_le: no kept bar since the activation bar and none in [x, x + 30 min] -> the exit bar is the activation bar
-         if(g_pq[i].o.void_le && g_pq[i].o.x_gap && g_pq[i].o.x_sched > g_pq[i].act && M > g_pq[i].o.x_sched + CR_PAP_GAP
-            && g_plast[sl] == g_pq[i].act)
-           {
-            PapEmit(CR_EV_PVOID, sl, g_pq[i].o.oid, g_pq[i].o.side, g_pq[i].act, g_pq[i].act, 0.0, 0.0, 0.0, CR_R_VOID,
-                    g_pq[i].o.x_sched, 0, 0.0);
-            g_pq[i].st = 0;
-           }
+         if(g_pap_q[i].o.expiry_excl <= M) g_pap_q[i].st = 0;  // no fill (sim.py 'nofill')
         }
      }
    PapOrdersCompact(sl);
@@ -787,8 +810,22 @@ void PapOrdersOnBarrier(const int sl, const datetime M)
 void PapExitsOnBarrier(const int sl, const datetime M)
   {
    int base = sl * CR_PAP_XMAX;
-   for(int k = 0; k < g_pxn[sl]; k++)
-      if(g_px[base + k].st == CR_PX_WAIT && g_px[base + k].e.t_to < M) g_px[base + k].st = CR_PX_VOID;
+   for(int k = 0; k < g_pap_xn[sl]; k++)
+      if(g_pap_x[base + k].st == CR_PX_WAIT && g_pap_x[base + k].e.t_to < M) g_pap_x[base + k].st = CR_PX_VOID;
+  }
+
+// the sleeve's part of barrier M: every bar of its symbol starting before M has been fed
+void PapSleeveBarrier(const int sl, const datetime M)
+  {
+   PapExitsOnBarrier(sl, M);
+   PapOrdersOnBarrier(sl, M);
+   PapExitsCompact(sl);
+   if(g_pap_t[sl].st == CR_PT_OPEN && g_pap_t[sl].hold == CR_PH_DUE && M >= g_pap_t[sl].x0) PapHoldAtBarrier(sl, g_pap_t[sl], M);
+   for(int guard = 0; guard < 4; guard++)                    // x0's question, then the extended exit's
+     {
+      if(g_pap_t[sl].st == CR_PT_NONE || !g_pap_t[sl].q_open || M <= g_pap_t[sl].q + CR_PAP_GAP) break;
+      PapRevise(sl, g_pap_t[sl], M);
+     }
   }
 
 //+------------------------------------------------------------------+
@@ -796,27 +833,27 @@ void PapExitsOnBarrier(const int sl, const datetime M)
 //+------------------------------------------------------------------+
 void PapReset()
   {
-   for(int i = 0; i < CR_PAP_QALL; i++) ZeroMemory(g_pq[i]);
-   for(int i = 0; i < CR_PAP_XALL; i++) ZeroMemory(g_px[i]);
+   for(int i = 0; i < CR_PAP_QALL; i++) ZeroMemory(g_pap_q[i]);
+   for(int i = 0; i < CR_PAP_XALL; i++) ZeroMemory(g_pap_x[i]);
    for(int sl = 0; sl < CR_MAX_SL; sl++)
      {
-      g_pqn[sl] = 0;
-      g_pxn[sl] = 0;
-      ZeroMemory(g_pt[sl]);
-      g_pt[sl].st = CR_PT_NONE;
-      g_pt[sl].reason = CR_R_NONE;
-      g_plx[sl] = 0;
-      g_plx0[sl] = 0;
-      g_plast[sl] = 0;
+      g_pap_qn[sl] = 0;
+      g_pap_xn[sl] = 0;
+      ZeroMemory(g_pap_t[sl]);
+      g_pap_t[sl].st = CR_PT_NONE;
+      g_pap_t[sl].reason = CR_R_NONE;
+      g_pap_lx[sl] = 0;
+      g_pap_lx0[sl] = 0;
+      g_pap_last[sl] = 0;
      }
-   g_pM = 0;
-   g_pevn = 0;
+   g_pap_M = 0;
+   g_pap_evn = 0;
   }
 
 void PapInit()
   {
-   ArrayResize(g_pev, 0, 256);
-   g_perr = 0;
+   ArrayResize(g_pap_ev, 0, 256);
+   g_pap_err = 0;
    PapReset();
   }
 
@@ -827,24 +864,24 @@ bool PapSubmit(const CrOrder &o)
    if(ok) ok = (o.etype >= CR_ET_MARKET && o.etype <= CR_ET_OCO);
    if(ok && o.etype != CR_ET_OCO) ok = (o.side == 1 || o.side == -1);
    if(ok) ok = PapOn(o.stop) || PapOn(o.stop_dist);              // every trade needs a stop (sim.py:256)
-   if(ok) ok = (g_pqn[sl] < CR_PAP_QMAX);
+   if(ok) ok = (g_pap_qn[sl] < CR_PAP_QMAX);
    if(ok)
-      for(int k = 0; k < g_pqn[sl]; k++)
-         if(PapOverlap(g_pq[sl * CR_PAP_QMAX + k], o))
+      for(int k = 0; k < g_pap_qn[sl]; k++)
+         if(PapOverlap(g_pap_q[sl * CR_PAP_QMAX + k], o))
            {
             ok = false;
             break;
            }
    if(!ok)
      {
-      g_perr++;
+      g_pap_err++;
       return false;
      }
-   int i = sl * CR_PAP_QMAX + g_pqn[sl];
-   g_pq[i].o = o;
-   g_pq[i].st = CR_PO_WAIT;
-   g_pq[i].act = 0;
-   g_pqn[sl]++;
+   int i = sl * CR_PAP_QMAX + g_pap_qn[sl];
+   g_pap_q[i].o = o;
+   g_pap_q[i].st = CR_PO_WAIT;
+   g_pap_q[i].act = 0;
+   g_pap_qn[sl]++;
    return true;
   }
 
@@ -853,96 +890,89 @@ bool PapSubmitExit(const CrExit &e)
    int sl = e.sleeve;
    if(!PapSleeveOk(sl))
      {
-      g_perr++;
+      g_pap_err++;
       return false;
      }
-   if(g_pxn[sl] >= CR_PAP_XMAX) PapExitsCompact(sl);
-   if(g_pxn[sl] >= CR_PAP_XMAX)
+   if(g_pap_xn[sl] >= CR_PAP_XMAX) PapExitsCompact(sl);
+   if(g_pap_xn[sl] >= CR_PAP_XMAX)
      {
-      g_perr++;
+      g_pap_err++;
       return false;
      }
-   int i = sl * CR_PAP_XMAX + g_pxn[sl];
-   g_px[i].e = e;
-   g_px[i].st = CR_PX_WAIT;
-   g_px[i].bar = 0;
-   g_pxn[sl]++;
+   int i = sl * CR_PAP_XMAX + g_pap_xn[sl];
+   g_pap_x[i].e = e;
+   g_pap_x[i].st = CR_PX_WAIT;
+   g_pap_x[i].bar = 0;
+   g_pap_xn[sl]++;
    return true;
   }
 
 void PapOnBar(const int sl, const CrBar &b)
   {
    if(!PapSleeveOk(sl)) return;
-   if(b.sym != g_sl[sl].sym || b.t <= g_plast[sl]) return;
+   if(b.sym != g_sl[sl].sym || b.t <= g_pap_last[sl]) return;
+   PapSleeveBarrier(sl, b.t);                                   // (a no-op after PapOnBarrier(b.t))
    PapExitsOnBar(sl, b);                                        // (0) rule exits resolve on their first kept bar
-   PapTradeNewBar(g_pt[sl], b);                                 // (0') a new bar settles an exited trade and a question
-   if(g_pt[sl].st == CR_PT_OPEN) PapManage(sl, g_pt[sl], b, false);   // (1) the open trade
+   PapTradeNewBar(g_pap_t[sl], b);                              // (0') a new bar settles an exited trade and a question
+   if(g_pap_t[sl].st == CR_PT_OPEN) PapManage(sl, g_pap_t[sl], b, false);   // (1) the open trade
    PapOrdersOnBar(sl, b);                                       // (2) armed orders, then activations
-   g_plast[sl] = b.t;
+   g_pap_last[sl] = b.t;
   }
 
 void PapOnBarrier(const datetime M)
   {
-   g_pM = M;
+   if(M > g_pap_M) g_pap_M = M;
    for(int sl = 0; sl < g_nsl; sl++)
      {
       if(!PapSleeveOk(sl)) break;
-      PapExitsOnBarrier(sl, M);
-      PapOrdersOnBarrier(sl, M);
-      PapExitsCompact(sl);
-      if(g_pt[sl].st == CR_PT_OPEN && g_pt[sl].hold == CR_PH_DUE && M >= g_pt[sl].x0) PapHoldAtBarrier(sl, g_pt[sl], M);
-      for(int guard = 0; guard < 4; guard++)
-        {
-         if(g_pt[sl].st == CR_PT_NONE || !g_pt[sl].q_open || M <= g_pt[sl].q + CR_PAP_GAP) break;
-         PapRevise(sl, g_pt[sl], M);
-        }
+      PapSleeveBarrier(sl, M);
      }
   }
 
-int PapEvents() { return g_pevn; }
+int PapEvents() { return g_pap_evn; }
 
 bool PapEvent(const int k, CrPEvent &e)
   {
-   if(k < 0 || k >= g_pevn) return false;
-   e = g_pev[k];
+   if(k < 0 || k >= g_pap_evn) return false;
+   e = g_pap_ev[k];
    return true;
   }
 
-void PapClearEvents() { g_pevn = 0; }
+void PapClearEvents() { g_pap_evn = 0; }
 
 bool PapTrade(const int sl, CrTrade &t)
   {
    if(!PapSleeveOk(sl)) return false;
-   if(g_pt[sl].st != CR_PT_OPEN) return false;
+   if(g_pap_t[sl].st != CR_PT_OPEN) return false;
    t.sleeve = sl;
-   t.oid = g_pt[sl].o.oid;
-   t.side = g_pt[sl].side;
-   t.etype = g_pt[sl].o.etype;
-   t.act_bar = g_pt[sl].act;
-   t.fill_bar = g_pt[sl].fill;
-   t.fill_px = g_pt[sl].fp;
-   t.init_stop = g_pt[sl].st0;
-   t.stop = g_pt[sl].cur;
-   t.moved = g_pt[sl].moved;
-   t.x_sched = g_pt[sl].x;
-   t.x_gap = g_pt[sl].xg;
-   t.x_pending = (g_pt[sl].x > 0 && g_pM >= g_pt[sl].x);
-   t.dec = g_pt[sl].o.dec;
-   t.group = g_pt[sl].o.group;
+   t.oid = g_pap_t[sl].o.oid;
+   t.side = g_pap_t[sl].side;
+   t.etype = g_pap_t[sl].o.etype;
+   t.act_bar = g_pap_t[sl].act;
+   t.fill_bar = g_pap_t[sl].fill;
+   t.fill_px = g_pap_t[sl].fp;
+   t.init_stop = g_pap_t[sl].st0;
+   t.stop = g_pap_t[sl].cur;
+   t.moved = g_pap_t[sl].moved;
+   t.x_sched = g_pap_t[sl].x;
+   t.x_gap = g_pap_t[sl].xg;
+   t.x_pending = (g_pap_t[sl].x > 0 && g_pap_M >= g_pap_t[sl].x);
+   t.dec = g_pap_t[sl].o.dec;
+   t.group = g_pap_t[sl].o.group;
    return true;
   }
 
 bool PapPending(const int sl, CrOrder &o)
   {
    if(!PapSleeveOk(sl)) return false;
-   if(g_pqn[sl] <= 0) return false;
-   o = g_pq[sl * CR_PAP_QMAX].o;
+   if(g_pap_qn[sl] <= 0) return false;
+   o = g_pap_q[sl * CR_PAP_QMAX].o;
    return true;
   }
 
 datetime PapLastExitBar(const int sl)
   {
    if(sl < 0 || sl >= CR_MAX_SL) return 0;
-   return g_plx[sl];
+   return g_pap_lx[sl];
   }
 #endif
