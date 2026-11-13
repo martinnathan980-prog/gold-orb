@@ -880,3 +880,17 @@ Told to the user with the choice: F3S's first-year fall is 29 % typical (1,840 E
 10–20 % he first named; losing half within 3 years happens in 2.5 % of half-edge paths and 21.9 % if the rules are
 worthless; the 2 % start earns almost the same (−275 EUR over 3 years at half edge) with fewer deep falls. F3S becomes
 the stake plan of the robot unless the user changes it. A user decision, not a test: nothing was run.
+
+### Addendum G — the user's second choice of start (2026-11-13): speed first, the risk of losing everything accepted
+The user: "le meilleur robot ; au début je me fiche du risque de tout perdre ; je veux aller très vite ; c'est la seule
+chose qui compte". Among the plans already simulated in `results/r2/stake/growth.json` (nothing new was run), the one
+that reaches 10,000 EUR soonest without going to zero is **D2**: 10 % per trade below 3,000 EUR, 5 % below 10,000, 2 %
+below 20,000, then 1 %, read on the larger of the balance and the money paid in, no plan stop. Paper / half edge:
+10,000 EUR reached at month 5 / 8 (median), before month 6 in 64 % / 38 % of paths; gain after 1 year +20,151 / +9,440
+EUR (covers costs −3,637, worthless −7,235), after 3 years +179,696 / +43,460 EUR (covers costs −4,695, worthless
+−19,046) for 36,000 EUR paid in; a fall of 50 % or more in 73.2 % / 88.3 % of paths, typical first-year fall 65 % / 76 %.
+E (20 % at the start) is not faster by month 6 (62 % / 37 %) and goes to zero in 18 % / 53 % of paths. Told to the user
+with the choice: these are the validation years, so optimistic; the broker's margin on crypto is not in the simulation
+and may refuse some trades at 10 %; with this plan the robot's −50 % disaster guard would stop it in most paths, so it is
+switched off for this plan, as the user accepts the loss of the account. D2 replaces F3S as the robot's stake plan; F3S
+stays available as an input. A user decision, not a test.
