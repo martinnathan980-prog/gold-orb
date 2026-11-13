@@ -907,3 +907,18 @@ worthless), 1,000 EUR at the start and 1,000 EUR a month. Reported for each X, n
 first-year fall (typical and one path in ten), the share of paths with a fall of 50 % or more, and the share that reach
 zero. Every read is logged in `results/val_access.log` by the engine. Said with it: the validation years, so
 optimistic; the broker's margin on crypto is not modelled; the user picks the X.
+
+### Addendum G — outcome of the ninth clarification (2026-11-13, `results/r2/stake/growth_scaled.json`, `scaled_summary.json`)
+The engine reproduces D2 exactly with S10 (20,994 numbers of the six cases, every path, 0 differences) and leaves every
+other plan unchanged. Half of the paper edge (paper in brackets), X = 3 / 5 / 6 / 7 / 8 / 10 %:
+- **10,000 EUR before month 6:** 15 / 31 / 35 / 38 / 40 / 41 % of paths (32 / 57 / 64 / 66 / 68 / 68 %); median month
+  8 / 8 / 8 / 7 / 7 / 7 (7 / 6 / 6 / 6 / 5 / 5). By month 9 every smaller X gets there at least as often as 10 %.
+- **Gain after 1 year (median):** +3,293 / +5,004 / +5,972 / +7,410 / +8,480 / +9,440 EUR (+6,515 / +11,076 / +13,050 /
+  +14,934 / +16,626 / +20,151); one path in ten −841 / −2,047 / −2,728 / −3,454 / −4,131 / −5,614 EUR.
+- **Fall of 50 % or more within 3 years:** 2.1 / 37.5 / 61.3 / 74.9 / 79.7 / 88.3 % (0.6 / 14.6 / 30.6 / 49.0 / 59.6 /
+  73.2 %); typical first-year fall 30 / 46 / 54 / 61 / 67 / 76 %.
+- **If the rules only cover their costs:** gain after 1 year 0 / −805 / −1,339 / −1,765 / −2,453 / −3,637 EUR.
+Reading for the user, not a choice made by the lab: from 7 % to 10 % the speed to 10,000 EUR barely changes while the
+risk of a 50 % fall and the loss in the weak cases grow; 5 % halves the risk of 7 % for about one month more. The
+pictures are `results/r2/stake/images/15_gain_pour_le_risque.png`, `16_mois_pour_10000.png`, `17_compte_7_contre_10.png`
+(independent review: 150 drawn numbers checked, 0 wrong; the worst cases were added).
