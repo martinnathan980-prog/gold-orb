@@ -7,12 +7,16 @@ sanitizer build (`-fsanitize=address,undefined -D_GLIBCXX_DEBUG`). It runs in th
 which imitates MetaTrader 5 and a hedging broker; it is not MetaTrader. MetaEditor cannot run here: section 6 lists what
 only the user's Mac can check.
 
-**Verdict.** ⟨T6⟩ All 31 tests of the suite pass on the final tree. The shipped file makes, for every
-sleeve, byte for byte the decisions and paper trades that the rule steps verified against the lab; its trades equal the
-lab's on the same bars, with five kinds of classified differences (section 4); its account equals growth.engine fed its
-own trades for F3S, F2S, F1S and F3S with the changes on; restarts and outages leave the later paper trades unchanged;
-the broker faults, the guards and the golden self-test behave as SPEC 7 asks. Nothing found needs a code change before
-the Mac compile, except the cosmetic warning of request 1 (section 5).
+**Verdict.** All 31 tests of the suite pass on the final tree. For every sleeve, the shipped file writes byte for byte
+the decisions and paper trades that the rule steps verified against the lab. Its trades equal the lab's on the same
+bars, apart from five classified kinds of difference (section 4). Its account equals growth.engine fed its own trades
+under F3S, F2S, F1S and F3S with the changes on. About 2,000 restarts and 20 outages leave every later paper trade
+unchanged (bit for bit; NQB within 2.2e-16), and every real difference has a cause. The broker faults, the guards and
+the golden self-test behave as SPEC 7 asks. Nothing found needs a code change before the Mac compile, except the cosmetic
+warning of request 1 (section 5). One decision came after the suite had started: PROTOCOL_V3 Addendum G makes D2 (or
+the same shape at a smaller starting risk, which the user is still choosing) the stake plan, with the -50 % guard off.
+The shipped file follows SPEC v2 (F3S, guard on): it refuses a rate above 5 % and has no guard switch, so the chosen plan
+needs a SPEC change first (request 7).
 
 | File | CR_BUILD | Lines |
 |---|---|---|
@@ -45,13 +49,47 @@ each file inlined once, the only include left `<Trade\Trade.mqh>`.
 
 ## 2. The suite
 
-Run on the final tree (every test's latest run started after the last edit of `src/` and the harness, all on the dist
-file `1ca53085c0c1`) with
-`check/run_tests.py`'s own runner (`run_one`), in groups that ran side by side (results in `check/out/tests/summary.json`
-and one log per test). Times are wall-clock: up to three tests ran at once on four cores, and several tests run more
-than one process.
+Run on the final tree: every test's latest run started after the last edit of `src/` and the harness, all on the dist
+file `1ca53085c0c1`. The runner is `check/run_tests.py`'s own `run_one`, in groups that ran side by side (results in
+`check/out/tests/summary.json`, one log per test beside it). Times are wall-clock: up to three tests ran at once on four
+cores, and several tests run more than one process.
 
-⟨suite table⟩
+| SPEC 7 | Test | Step | What it checks | Result | Wall time |
+|---|---|---|---|---|---|
+| S0 | `test_s0_build.py` | S0 | the dist file and every variant build with 0 warnings; the translator refuses the banned constructs | pass | 124 s |
+| S0 | `test_s0_dbl.py` | S0 | the clock double equals zoneinfo, every hour 2012-2035 | pass | 10 s |
+| S0 | `test_s0_refs.py` | S0 | ref_lab.py gives the official in-sample trades of the ten sleeves; the change references | pass | 30 s |
+| S0 | `test_s0_replay.py` | S0 | the driver replays 2021 on the four symbols, journal parsable (InpTrade false) | pass | 126 s |
+| S0 | `test_s0_script.py` | S0 | CR_Rule_Script replays the lab's orders field by field | pass | 27 s |
+| T1 | `test_clock.cpp` | A | hand cases from SPEC 2.1; the evaluator test_clock.py drives | pass | 28 s |
+| T1 | `test_clock.py` | A | clocks, NYSE calendar, closures, parser, exit minutes against the lab | pass | 103 s |
+| T2 | `test_bars.cpp` | B | mock worlds: barrier, holes, late bars, READY, mask | pass | 79 s |
+| T2 | `test_bars.py` | B | bars, mask, quotes, aggregates, primitives against pandas and the lab | pass | 276 s |
+| T3 | `test_paper.cpp` | C | paper unit worlds | pass | 42 s |
+| T3 | `test_paper.py` | C | random orders against gl.simulate; end to end on the lab's orders; broken engines caught | pass | 675 s |
+| T4 | `test_N30.py` | D | N30 decisions and trades against the lab; holes and restarts worlds | pass | 578 s |
+| T4 | `test_OC4.py` | D | OC4 likewise | pass | 12 s |
+| T4 | `test_BK.py` | E | BKB and BKE against the lab | pass | 578 s |
+| T4 | `test_F1.py` | E | F1B and F1E against the lab; the frozen scorecard | pass | 35 s |
+| T5 | `test_changes.py` | E | K1, S0.75r and H2 against the lab's own implementations | pass | 462 s |
+| T4 | `test_NQB.py` | F | NQB decisions, trades and sigma; holes and restarts worlds | pass | 630 s |
+| T4 | `test_GFP.py` | G | GFP decisions and trades against the lab | pass | 1,167 s |
+| T4 | `test_ORX.py` | G | ORX decisions and trades against the lab | pass | 106 s |
+| T4 | `test_D4H.py` | H | D4H decisions, trades and ATR; holes, restarts and unit worlds | pass | 1,339 s |
+| T4, T5 | `test_accept.py` | K | the shipped file, ten sleeves at once, switches off and on: the steps' journals and the lab | pass | 838 s |
+| T6 | `test_restarts.py` | K | about 1,000 restarts and 10 outages per setting, switches off and on | pass | 3,695 s |
+| T7a | `test_account.cpp` | I | ledger and sizing unit worlds | pass | 18 s |
+| T7a | `test_account.py` | I | ledger and sizing against growth.run_one, three plans, three edges | pass | 1,020 s |
+| T7b | `test_t7b.py` | K | the whole EA against growth.engine: F3S, F2S, F1S, F3S with the changes | pass | 716 s |
+| T8 | `test_worlds.py` | J | execution layer on the lab's orders: 3 clean worlds, 30 fault worlds, sanitizer | pass | 365 s |
+| T8 | `test_worlds_rules.py` | K | the shipped file with the real rules: 5 clean worlds and the 3 rule worlds | pass | 915 s |
+| T9 | `test_exec.cpp` | J | broker, guards and ledger worlds | pass | 40 s |
+| T9 | `test_hands_port.py` | J | the 64 hands' tests SPEC 7 T9 keeps | pass | 53 s |
+| T10 | `test_golden.cpp` | K | GoldenCheck on the shipped file; one changed vector of each kind refused | pass | 47 s |
+| T10 | `test_release.py` | K | dist = amalgam(src); constants, inputs, subset; the release guard | pass | 180 s |
+
+31 of 31 pass. Phases ran from 06:59 to 08:23 UTC; T6 ran again from 08:24 to 09:26 after its analysis was
+corrected (section 3, T6).
 
 ## 3. Per test
 
@@ -163,7 +201,90 @@ digits (SPEC 10.3, 10.6) settle this.
 
 ### T6: restarts and outages (K: `test_restarts.py`)
 
-⟨T6 section⟩
+The shipped file (harness build) trades on a demo account in the mock over the whole in-sample period (2013-2021, the
+four symbols): 100,000 EUR, F3S, `InpPlanStart` before the data. For each switch setting (off, and on with the K1 folds
+of T5) one continuous run is the reference. The same period is then cut into about 1,000 processes. Each new process
+starts from the mock's saved broker state (positions, orders, deals, balance) and nothing else: the EA rebuilds its
+bars from the depth only (120 days of gold, 60 of the others) and its state from the broker. The restart points come
+from the continuous run, for each sleeve: 50 inside its open paper trades, 30 one to ten minutes before one of its
+decisions, 20 at random weekday minutes; points closer than 10 minutes are merged. Ten restarts are outages: the next
+process starts 1 to 6 hours later, while the broker's stops keep working.
+
+| Setting | Restarts (in trades / before decisions / random) | Outages | Processes: SELFTEST ok, one REBUILD, no ERROR | Rebuild from the depth only | Wall time |
+|---|---|---|---|---|---|
+| off | 995 (499 / 296 / 200), 2013-01-11 to 2021-12-28 | 10, 1.08 to 5.38 h | all 996 | yes: 17,046 to 172,860 minutes | 889 s continuous, 2,784 s restarted |
+| on | 987 (494 / 295 / 198), 2013-01-04 to 2021-12-31 | 10, 2.4 to 5.87 h | all 988 | yes: 6,233 to 172,860 minutes | 864 s continuous, 2,699 s restarted |
+
+**Check 1, the later paper trades.** Every paper trade that ends after the first restart is compared with the
+continuous run's trade of the same order id: fill time, bar, price, side and first stop; exit event, time, price and
+reason. A trade is taken from the first process that finishes it (a later process only replays it). An exit can be
+written after its time (a PREVISE 30 minutes after a weekend, or an exit bar whose barrier falls in the next process), so
+a process may finish trades whose exit lies up to 4 days before its start. Switches off: 7,962 trades, 7,958 bit for bit,
+4 within 1e-12; switches on: 7,840 trades, 7,836 bit for bit, 4 within 1e-12; none missing, extra or different. Each
+cell: switches off / on.
+
+| Sleeve | Trades checked | Bit for bit | Within 1e-12 | Missing, extra, different | Restarts inside its open trades | Restarts 1-10 min before its decisions | Outages over its trades |
+|---|---|---|---|---|---|---|---|
+| N30 | 1,642 / 1,642 | 1,642 / 1,642 | 0 / 0 | 0, 0, 0 / 0, 0, 0 | 166 / 139 | 41 / 43 | 5 / 4 |
+| OC4 | 999 / 999 | 999 / 999 | 0 / 0 | 0, 0, 0 / 0, 0, 0 | 173 / 196 | 36 / 35 | 4 / 5 |
+| BKB | 645 / 664 | 645 / 664 | 0 / 0 | 0, 0, 0 / 0, 0, 0 | 371 / 338 | 79 / 87 | 2 / 5 |
+| BKE | 519 / 428 | 519 / 428 | 0 / 0 | 0, 0, 0 / 0, 0, 0 | 333 / 267 | 80 / 67 | 3 / 3 |
+| F1B | 631 / 631 | 631 / 631 | 0 / 0 | 0, 0, 0 / 0, 0, 0 | 267 / 248 | 57 / 63 | 4 / 4 |
+| F1E | 518 / 465 | 518 / 465 | 0 / 0 | 0, 0, 0 / 0, 0, 0 | 231 / 293 | 52 / 57 | 2 / 3 |
+| NQB | 1,063 / 1,063 | 1,059 / 1,059 | 4 / 4 (at most 2.2e-16) | 0, 0, 0 / 0, 0, 0 | 99 / 97 | 57 / 56 | 1 / 2 |
+| GFP | 417 / 417 | 417 / 417 | 0 / 0 | 0, 0, 0 / 0, 0, 0 | 78 / 76 | 31 / 30 | 2 / 2 |
+| D4H | 494 / 494 | 494 / 494 | 0 / 0 | 0, 0, 0 / 0, 0, 0 | 295 / 286 | 97 / 81 | 3 / 3 |
+| ORX | 1,034 / 1,037 | 1,034 / 1,037 | 0 / 0 | 0, 0, 0 / 0, 0, 0 | 624 / 623 | 33 / 34 | 7 / 7 |
+
+The 4 NQB trades per setting (stop and exit within 2.2e-16): after a start, the rolling sums of NQB's sigma begin at
+another minute, so their last bits differ (section 4, item 1).
+
+**Check 2, every process:** SELFTEST ok, exactly one REBUILD, from the depth only, and no ERROR (996 and 988 processes).
+
+**Check 3, the real positions (SPEC 4.8).** The real trades of the restarted run are matched with the continuous run's by
+sleeve, side and entry time. Every difference has a cause, and none is left unexplained:
+- *start-up window*: the entry or exit falls between a restart and two minutes after the start's first live barrier (or
+  its last reconcile). The median window is 9 minutes. A restart inside a weekend, holiday or daily closure goes live when
+  the markets reopen, up to 75 hours later (17 windows off and 31 on last over an hour; all of them are closures).
+- *outage*: the entry falls while the EA was down.
+- *lots only*: entry and exit times and prices are equal; only the lots differ. After the first trade that differed
+  (2013-07-18 off, 2013-06-26 on) the shared account's balance differs, so later lots differ: restarted / continuous lots
+  have a median of 0.987 off and 0.976 on, and 90 % lie between 0.94 and 1.015. The extremes, 0.24 and 4.07, come from
+  the stake rule's cushion factor m (between 0.25 and 1, `SizM`): from 100,000 EUR the risk rung never moves, so only m
+  can change a lot fourfold.
+- *sizing skip*: one run skipped the intent because its caps were full (switches on: N30 5, OC4 3, NQB 1, GFP 3), again
+  after an earlier difference.
+
+Each cell: switches off / on.
+
+| Sleeve | Continuous | Restarted | Identical | Entry or exit in a start-up window | In an outage | Lots only (balance path) | Sizing skip in one run | Unexplained | Most open at once |
+|---|---|---|---|---|---|---|---|---|---|
+| N30 | 1,590 / 1,593 | 1,575 / 1,583 | 627 / 619 | 58 / 37 | 3 / 4 | 921 / 944 | 0 / 5 | 0 / 0 | 1 / 1 |
+| OC4 | 988 / 989 | 982 / 987 | 459 / 477 | 36 / 36 | 1 / 1 | 507 / 491 | 0 / 3 | 0 / 0 | 1 / 1 |
+| BKB | 621 / 638 | 619 / 634 | 36 / 41 | 12 / 20 | 0 / 0 | 577 / 584 | 0 / 0 | 0 / 0 | 1 / 1 |
+| BKE | 496 / 405 | 493 / 402 | 433 / 360 | 9 / 12 | 1 / 1 | 56 / 37 | 0 / 0 | 0 / 0 | 1 / 1 |
+| F1B | 616 / 616 | 613 / 608 | 67 / 72 | 11 / 20 | 1 / 2 | 541 / 529 | 0 / 0 | 0 / 0 | 1 / 1 |
+| F1E | 507 / 456 | 506 / 450 | 466 / 356 | 18 / 75 | 0 / 0 | 31 / 33 | 0 / 0 | 0 / 0 | 1 / 1 |
+| NQB | 807 / 818 | 801 / 808 | 113 / 119 | 23 / 26 | 0 / 3 | 679 / 677 | 0 / 1 | 0 / 0 | 1 / 1 |
+| GFP | 336 / 336 | 336 / 336 | 125 / 87 | 14 / 5 | 0 / 2 | 203 / 244 | 0 / 3 | 0 / 0 | 1 / 1 |
+| D4H | 471 / 471 | 469 / 471 | 178 / 139 | 4 / 0 | 0 / 0 | 290 / 332 | 0 / 0 | 0 / 0 | 1 / 1 |
+| ORX | 1,004 / 1,004 | 1,004 / 1,003 | 291 / 219 | 10 / 13 | 0 / 0 | 707 / 776 | 0 / 0 | 0 / 0 | 1 / 1 |
+| all | 7,436 / 7,326 | 7,398 / 7,282 | 2,795 / 2,489 | | | | | 0 / 0 | |
+
+Never two positions of one sleeve at once, and no DUP. The follower's lines over all processes:
+
+| | Switches off | Switches on |
+|---|---|---|
+| ADOPT | 2,467 | 2,302 |
+| ORPHAN: after an outage / its paper trade ended while the EA was starting / other | 0 / 6 / 0 | 1 / 2 / 0 |
+| DUP, SLFIX, REFUSED | 0, 0, 0 | 0, 0, 0 |
+| MISSED: late (the paper trade opened while the EA was down or starting, past its 5-minute window) / cap / exited | 59 / 66 / 1 | 75 / 56 / 1 |
+| Robot positions open across a restart: adopted or closed by the next process / closed by their own broker stop before the reconcile / neither | 2,498 / 17 / 0 | 2,382 / 11 / 0 |
+
+The first full run (same EA, same journals) failed on the test itself: it dropped the trades whose exit was written after
+the restart (now the 4-day margin above), and it had no class for ORPHANs whose paper trade ended during a start-up or
+for cap skips after an earlier difference. The second run, with those rules, passes; every count of the EA is the same
+in both runs.
 
 ### T7a: ledger and sizing against growth.run_one (step I: `test_account.cpp`, `test_account.py`)
 
@@ -331,8 +452,9 @@ naming it; a change of 1e-14 relative passes; 0.2 ms per call. 26 checks, 0 fail
 | The 2021 clean world under the sanitizer (trading, J's follower and broker) | 581 s, journal and deals identical | |
 | GoldenCheck at OnInit (sanitizer build) | 0.2 ms | |
 
-With trading on, the nine-year replay takes about 11 minutes in the mock, because the EA reads the whole deal history
-at least once a minute (SPEC R5) and the mock scans every deal per call (section 6).
+With trading on, the nine-year replay takes about 15 minutes in the mock (T6's continuous runs: 889 s and 864 s, two at
+once), because the EA reads the whole deal history at least once a minute (SPEC R5) and the mock scans every deal per
+call (section 6).
 
 ## 4. Every remaining difference, with its cause
 
@@ -340,7 +462,7 @@ On the same bars, the shipped file and the lab code differ only here:
 
 | # | Where | Count | Cause | Status |
 |---|---|---|---|---|
-| 1 | NQB stops and stop exits | 1 trade in sample, 1.6e-16 relative (T4); 4 trades within 1e-12 after restarts (T6) | numpy's log against the C library's log (one unit in the last place on 6,538 of 1,469,276 US100 returns); after a restart the rolling sums start from a different first minute, so their rounding differs in the last bits | inside SPEC 7's 1e-12 |
+| 1 | NQB stops and stop exits | 1 trade in sample, 1.6e-16 relative (T4); in the 2021 worlds 3 stops and 1 exit, at most 1.9e-16 (T8); after restarts 4 trades per setting, at most 2.2e-16 (T6) | numpy's log against the C library's log (one unit in the last place on 6,538 of 1,469,276 US100 returns); after a restart the rolling sums start from a different first minute, so their rounding differs in the last bits | inside SPEC 7's 1e-12 |
 | 2 | GFP hole day 2013-05-31 | 1 trade only in the EA | the gold data stops at 16:39 New York; the lab's 16:45 test reads that future hole | classified (SPEC 7) |
 | 3 | GFP January 2013 stops, rebuilt frame only | 3 stops, 1 beyond 1e-12 (5.8e-10) | the EA's mask drops 20 gold bars of 2012-12-31 that seed the lab's Wilder ATR; equal on the kept bars | classified; request 5 |
 | 4 | D4H, ORX | 1 lab trade each open at the frame end | its exit falls in 2022 | left out (SPEC 7) |
@@ -352,9 +474,9 @@ Execution and account differences (the paper is unchanged in each case):
 |---|---|---|---|---|
 | 6 | Late gold intents sized on the larger of paper and quote risk (P1) | 2018-2021, F3S: quote risk larger on ORX 163, GFP 95, D4H 87; lots smaller on ORX 114, GFP 41, D4H 60 | SPEC 4.2: a stop, limit or OCO fill is sent one bar late at the quote | SPEC 9.1; far more than SPEC 4.2's estimate for 2013-2021 (16 donch, 20 orb, 0 GFP): for the lead |
 | 7 | D4H 2021-08-08 (gold flash crash) | 1 trade: the real exit is 0.12 USD per oz better than the paper's (5.56 USD on 0.47 lots) | the paper's new trail stop was already past the next open: the follower closes at the open (SPEC 4.4), the paper books its stop there with stop slippage | SPEC 9.4 |
-| 8 | Tick mode stop exits | 2021: 423 of 1,348 real exits fill past the stop | the mock's four ticks a minute (open, low, high, close) | mock model |
+| 8 | Tick mode stop exits | 2021: 423 of 1,348 real exits fill at the triggering tick, not at the stop price | the mock's four ticks a minute (open, low, high, close) | mock model |
 | 9 | ETH sleeves NOT_READY until 2018-03-02 | BKE 8, F1E 9 intents in February 2018 | ETH's data starts 2018-01-01; SPEC 2.2 needs 60 days | SPEC 2.2 |
-| 10 | Restarts | see T6 | start-up windows and outages delay real entries and exits; the shared account then takes slightly different lots, and a cap can bind differently later | SPEC 4.8, 9.9 |
+| 10 | Restarts (T6) | about 1,000 restarts per setting: real trades with an entry or exit in a start-up window 195 off / 244 on, in an outage 6 / 13; then lots only 4,512 / 4,647; cap skips 0 / 12 | start-up windows and outages delay or miss real entries and exits; the shared account's balance then differs, so later lots differ (median ratio 0.98) and a cap can bind differently | SPEC 4.8, 9.9 |
 | 11 | Volume cap | 2018-2021 F3S: 52 BKE and 90 F1E orders above 100 lots | CR_Broker cuts at SYMBOL_VOLUME_MAX (`SEND cut=vmax`); the lab has no cap | FP's real caps: Mac item 10.6 |
 
 Against the official trades (the lab's own frames, not the robot), the 2-digit export moves razor decisions: N30 1, OC4
@@ -373,7 +495,7 @@ mock_replay.h, test_s0_replay.py). These requests need another owner:
 | 4 | I | `src/CR_Sizing.mqh` | Optional: use `RegStakeFactor` once it moves to CR_Types (SizFactor is a copy). | Asked by I. |
 | 5 | Lead | `check/export_frames.py` (S0) | Decide whether the rebuilt frame drops the 20 gold bars of 2012-12-31 17:00-17:58 New York. | G agreed to drop them, H had no preference. K left the export as it is: the steps' references and journals were all made on it, the effect is three January-2013 GFP stops (largest 5.8e-10 relative), and test_accept compares GFP with the lab run on the kept bars too, where it is exact. SPEC 2.2 already states the 20 bars. |
 | 6 | Lead | `SPEC.md` | The wording changes the steps asked for (listed below). | Not K's file. |
-| 7 | Lead, then I, J, K | `SPEC.md`; `src/CR_Sizing.mqh`, `src/CR_Guards.mqh`; K's tests | PROTOCOL_V3 Addendum G (committed at 08:16, after this suite had started) makes D2 the robot's stake plan (10 % per trade below 3,000 EUR, 5 % below 10,000, 2 % below 20,000, then 1 %, read on max(balance, money paid in), no plan stop) with the -50 % guard switched off. The shipped file follows SPEC v2 (F3S, guard on) and cannot run D2: `InpRiskTable` refuses a rate above 5 % (SPEC 1, `CR_SIZ_PCT_MAX`), so `0:10;3000:5;10000:2;20000:1` stops the EA at OnInit; the guard has no switch (SPEC 6.2); the plan stop can be kept from arming only by an `InpStopArmPaid` above any sum that will be paid in. | The lead updates SPEC 1, 5 and 6 (cap, default table, plan stop, guard); then I raises the cap and runs T7a on D2 (it is in `growth.SCHEDULES`), J adds the guard switch, K adds a D2 golden table, updates test_release's inputs, runs T7b on D2 and regenerates dist. |
+| 7 | Lead, then I, J, K | `SPEC.md`; `src/CR_Sizing.mqh`, `src/CR_Guards.mqh`; K's tests | PROTOCOL_V3 Addendum G (committed at 08:16, after this suite had started) makes D2 the robot's stake plan: 10 % per trade below 3,000 EUR, 5 % below 10,000, 2 % below 20,000, then 1 %, read on max(balance, money paid in), no plan stop, the -50 % guard off. Its ninth clarification (09:09) runs the same shape scaled to a starting risk X of 3 to 10 %, for the user to pick X. The shipped file follows SPEC v2 (F3S, guard on). Today it can take such a table only for X up to 5 (`InpRiskTable` refuses a rate above 5 %: SPEC 1, `CR_SIZ_PCT_MAX`; X = 5 would be `0:5;3000:2.5;10000:1;20000:0.5`). The plan stop can be kept from arming only by an `InpStopArmPaid` above any sum that will be paid in, and the guard has no switch (SPEC 6.2). With D2's 10 %, the EA stops at OnInit. | Once the user picks X, the lead updates SPEC 1, 5 and 6 (rate cap, default table, plan stop, guard). Then I raises the cap if needed and runs T7a on that plan (the plans are in `growth.SCHEDULES`), J adds the guard switch, and K adds the plan's golden table, updates test_release's inputs, runs T7b on it and regenerates dist. |
 
 SPEC wording asked by the steps (for the lead):
 - §3 N30 and OC4 (D), F1 (E) and NQB (F): their orders carry `void_le` (the lab's own "exit after entry" filter); §7's
@@ -416,5 +538,5 @@ Found during the build, also for the Mac:
   6,538 of 1,469,276 US100 returns; MetaTrader's MathLog is a third implementation. The effect stays near 1e-16 (inside
   SPEC 7's 1e-12), but a decision exactly at the 6-sigma threshold could flip (none lies within 1e-9 in sample).
 - **History reads.** The EA reads the whole deal and order history (`HistorySelect(0, now + 1 day)`, SPEC R5) at least
-  once a minute. In the mock, which scans every deal per call, nine years of trading take 11 minutes of replay against about 20 s
-  without trading. The terminal's own cost with years of history is unknown: watch the timer's load on the VPS.
+  once a minute. In the mock, which scans every deal per call, nine years of trading take about 15 minutes of replay against about
+  20 s without trading. The terminal's own cost with years of history is unknown: watch the timer's load on the VPS.

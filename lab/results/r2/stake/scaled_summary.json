@@ -1,0 +1,1390 @@
+{
+ "protocol": "PROTOCOL_V3 addendum G, ninth clarification (2026-11-13), declared before the run",
+ "made_by": [
+  "python3 r2/tracks/stake/growth.py val results/r2/stake/growth_scaled.json  (the whole engine: no option runs only some plans; one logged read of 2022-2025)",
+  "python3 r2/tracks/stake/growth.py dump PATHS.npz 2000  (the month-end balances of all 2,000 paths, same draws; one logged read of 2022-2025; the file is not kept in the repository)",
+  "python3 r2/tracks/stake/scaled_summary.py PATHS.npz  (this file: reads only the result files)"
+ ],
+ "period": [
+  "2022-01-01",
+  "2026-01-01"
+ ],
+ "paths": 2000,
+ "months": 36,
+ "seed": 20261111,
+ "money": "1,000 EUR at the start and 1,000 EUR a month (36,000 EUR paid in after 3 years)",
+ "cases": {
+  "paper": "edge key 1.0 in growth_scaled.json / growth.json",
+  "without_2024": "edge key 1.0_no2024 in growth_scaled.json / growth.json",
+  "half": "edge key 0.5 in growth_scaled.json / growth.json",
+  "quarter": "edge key 0.25 in growth_scaled.json / growth.json",
+  "covers_costs": "edge key 0.0 in growth_scaled.json / growth.json",
+  "worthless": "edge key -0.5 in growth_scaled.json / growth.json"
+ },
+ "plans": {
+  "S3": {
+   "thresholds_eur": [
+    3000.0,
+    10000.0,
+    20000.0
+   ],
+   "risk_pct": [
+    3.0,
+    1.5,
+    0.6,
+    0.3
+   ],
+   "read_on": "the larger of the balance and the money paid in",
+   "stop": null,
+   "source": "growth_scaled.json",
+   "x_pct": 3.0
+  },
+  "S5": {
+   "thresholds_eur": [
+    3000.0,
+    10000.0,
+    20000.0
+   ],
+   "risk_pct": [
+    5.0,
+    2.5,
+    1.0,
+    0.5
+   ],
+   "read_on": "the larger of the balance and the money paid in",
+   "stop": null,
+   "source": "growth_scaled.json",
+   "x_pct": 5.0
+  },
+  "S6": {
+   "thresholds_eur": [
+    3000.0,
+    10000.0,
+    20000.0
+   ],
+   "risk_pct": [
+    6.0,
+    3.0,
+    1.2,
+    0.6
+   ],
+   "read_on": "the larger of the balance and the money paid in",
+   "stop": null,
+   "source": "growth_scaled.json",
+   "x_pct": 6.0
+  },
+  "S7": {
+   "thresholds_eur": [
+    3000.0,
+    10000.0,
+    20000.0
+   ],
+   "risk_pct": [
+    7.0,
+    3.5,
+    1.4,
+    0.7
+   ],
+   "read_on": "the larger of the balance and the money paid in",
+   "stop": null,
+   "source": "growth_scaled.json",
+   "x_pct": 7.0
+  },
+  "S8": {
+   "thresholds_eur": [
+    3000.0,
+    10000.0,
+    20000.0
+   ],
+   "risk_pct": [
+    8.0,
+    4.0,
+    1.6,
+    0.8
+   ],
+   "read_on": "the larger of the balance and the money paid in",
+   "stop": null,
+   "source": "growth_scaled.json",
+   "x_pct": 8.0
+  },
+  "S10": {
+   "thresholds_eur": [
+    3000.0,
+    10000.0,
+    20000.0
+   ],
+   "risk_pct": [
+    10.0,
+    5.0,
+    2.0,
+    1.0
+   ],
+   "read_on": "the larger of the balance and the money paid in",
+   "stop": null,
+   "source": "growth_scaled.json",
+   "x_pct": 10.0
+  },
+  "F3S": {
+   "thresholds_eur": [
+    3000.0,
+    6000.0,
+    12000.0
+   ],
+   "risk_pct": [
+    3.0,
+    2.0,
+    1.0,
+    0.5
+   ],
+   "read_on": "the larger of the balance and the money paid in",
+   "stop": {
+    "at_fall_of_reference": 0.25,
+    "armed_once_paid_in_eur": 12000.0
+   },
+   "source": "growth.json"
+  },
+  "D2": {
+   "thresholds_eur": [
+    3000.0,
+    10000.0,
+    20000.0
+   ],
+   "risk_pct": [
+    10.0,
+    5.0,
+    2.0,
+    1.0
+   ],
+   "read_on": "the larger of the balance and the money paid in",
+   "stop": null,
+   "source": "growth.json"
+  }
+ },
+ "definitions": {
+  "months_to_10000_eur": "from the month-end balances of each of the 2,000 paths (per-path data, not percentile curves): the first month whose end balance is at or above 10,000 EUR; median_month = the first month by which at least half the paths got there (null = fewer than half within 36 months); by_month_h_pct = share of paths that got there at the end of month h or earlier",
+  "gain_after_1_year_eur / gain_after_3_years_eur": "balance minus the money paid in at the end of month 12 / 36, per path; median and p10 (one path in ten does worse)",
+  "first_year_fall": "the deepest fall within the first 52 weeks, payments set aside (share of the money paid in + best gain so far, and in EUR): typical = median, p90 = one path in ten falls more",
+  "fall_of_50_pct_or_more_pct": "share of paths whose deepest fall over the 3 years, payments set aside, is 50 % or more",
+  "reaches_zero_pct": "share of paths whose balance reaches zero at least once"
+ },
+ "summary": {
+  "S3": {
+   "paper": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 0.7,
+     "by_month_6_pct": 32.2,
+     "by_month_9_pct": 95.0
+    },
+    "gain_after_1_year_eur": {
+     "median": 6515.0,
+     "p10": 2637.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 26727.0,
+     "p10": 16523.0
+    },
+    "first_year_fall": {
+     "typical_pct": 24.2,
+     "p90_pct": 35.5,
+     "typical_eur": 1433.2,
+     "p90_eur": 2378.0
+    },
+    "fall_of_50_pct_or_more_pct": 0.6,
+    "reaches_zero_pct": 0.0
+   },
+   "without_2024": {
+    "months_to_10000_eur": {
+     "median_month": 8,
+     "by_month_4_pct": 0.1,
+     "by_month_6_pct": 15.2,
+     "by_month_9_pct": 88.1
+    },
+    "gain_after_1_year_eur": {
+     "median": 4502.0,
+     "p10": 1195.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 18672.0,
+     "p10": 11132.0
+    },
+    "first_year_fall": {
+     "typical_pct": 25.5,
+     "p90_pct": 38.0,
+     "typical_eur": 1597.6,
+     "p90_eur": 2610.0
+    },
+    "fall_of_50_pct_or_more_pct": 0.6,
+    "reaches_zero_pct": 0.0
+   },
+   "half": {
+    "months_to_10000_eur": {
+     "median_month": 8,
+     "by_month_4_pct": 0.1,
+     "by_month_6_pct": 14.9,
+     "by_month_9_pct": 73.0
+    },
+    "gain_after_1_year_eur": {
+     "median": 3293.0,
+     "p10": -841.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 12681.0,
+     "p10": 4327.0
+    },
+    "first_year_fall": {
+     "typical_pct": 29.7,
+     "p90_pct": 40.5,
+     "typical_eur": 1950.4,
+     "p90_eur": 3438.8
+    },
+    "fall_of_50_pct_or_more_pct": 2.1,
+    "reaches_zero_pct": 0.0
+   },
+   "quarter": {
+    "months_to_10000_eur": {
+     "median_month": 9,
+     "by_month_4_pct": 0.0,
+     "by_month_6_pct": 8.8,
+     "by_month_9_pct": 55.9
+    },
+    "gain_after_1_year_eur": {
+     "median": 1671.0,
+     "p10": -2221.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 6282.0,
+     "p10": -1199.0
+    },
+    "first_year_fall": {
+     "typical_pct": 32.8,
+     "p90_pct": 44.1,
+     "typical_eur": 2318.2,
+     "p90_eur": 3985.4
+    },
+    "fall_of_50_pct_or_more_pct": 2.9,
+    "reaches_zero_pct": 0.0
+   },
+   "covers_costs": {
+    "months_to_10000_eur": {
+     "median_month": 11,
+     "by_month_4_pct": 0.0,
+     "by_month_6_pct": 4.0,
+     "by_month_9_pct": 40.8
+    },
+    "gain_after_1_year_eur": {
+     "median": 17.0,
+     "p10": -3165.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 835.0,
+     "p10": -5509.0
+    },
+    "first_year_fall": {
+     "typical_pct": 36.1,
+     "p90_pct": 47.7,
+     "typical_eur": 2700.7,
+     "p90_eur": 4506.4
+    },
+    "fall_of_50_pct_or_more_pct": 5.7,
+    "reaches_zero_pct": 0.0
+   },
+   "worthless": {
+    "months_to_10000_eur": {
+     "median_month": 13,
+     "by_month_4_pct": 0.0,
+     "by_month_6_pct": 0.8,
+     "by_month_9_pct": 15.8
+    },
+    "gain_after_1_year_eur": {
+     "median": -2690.0,
+     "p10": -4675.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -7205.0,
+     "p10": -11411.0
+    },
+    "first_year_fall": {
+     "typical_pct": 43.3,
+     "p90_pct": 53.8,
+     "typical_eur": 3775.7,
+     "p90_eur": 5368.1
+    },
+    "fall_of_50_pct_or_more_pct": 22.3,
+    "reaches_zero_pct": 0.0
+   }
+  },
+  "S5": {
+   "paper": {
+    "months_to_10000_eur": {
+     "median_month": 6,
+     "by_month_4_pct": 14.5,
+     "by_month_6_pct": 57.4,
+     "by_month_9_pct": 95.9
+    },
+    "gain_after_1_year_eur": {
+     "median": 11076.0,
+     "p10": 4105.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 55203.0,
+     "p10": 31064.0
+    },
+    "first_year_fall": {
+     "typical_pct": 37.7,
+     "p90_pct": 52.9,
+     "typical_eur": 2329.3,
+     "p90_eur": 3923.7
+    },
+    "fall_of_50_pct_or_more_pct": 14.6,
+    "reaches_zero_pct": 0.0
+   },
+   "without_2024": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 5.5,
+     "by_month_6_pct": 37.5,
+     "by_month_9_pct": 89.0
+    },
+    "gain_after_1_year_eur": {
+     "median": 8017.0,
+     "p10": 1480.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 35501.0,
+     "p10": 18545.0
+    },
+    "first_year_fall": {
+     "typical_pct": 39.8,
+     "p90_pct": 56.6,
+     "typical_eur": 2616.4,
+     "p90_eur": 4309.7
+    },
+    "fall_of_50_pct_or_more_pct": 19.8,
+    "reaches_zero_pct": 0.0
+   },
+   "half": {
+    "months_to_10000_eur": {
+     "median_month": 8,
+     "by_month_4_pct": 5.0,
+     "by_month_6_pct": 31.1,
+     "by_month_9_pct": 74.1
+    },
+    "gain_after_1_year_eur": {
+     "median": 5004.0,
+     "p10": -2047.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 21161.0,
+     "p10": 5645.0
+    },
+    "first_year_fall": {
+     "typical_pct": 46.4,
+     "p90_pct": 61.8,
+     "typical_eur": 3339.4,
+     "p90_eur": 5673.2
+    },
+    "fall_of_50_pct_or_more_pct": 37.5,
+    "reaches_zero_pct": 0.0
+   },
+   "quarter": {
+    "months_to_10000_eur": {
+     "median_month": 9,
+     "by_month_4_pct": 2.5,
+     "by_month_6_pct": 20.8,
+     "by_month_9_pct": 58.8
+    },
+    "gain_after_1_year_eur": {
+     "median": 1974.0,
+     "p10": -3907.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 9747.0,
+     "p10": -3213.0
+    },
+    "first_year_fall": {
+     "typical_pct": 51.0,
+     "p90_pct": 64.1,
+     "typical_eur": 3972.3,
+     "p90_eur": 6266.8
+    },
+    "fall_of_50_pct_or_more_pct": 53.2,
+    "reaches_zero_pct": 0.0
+   },
+   "covers_costs": {
+    "months_to_10000_eur": {
+     "median_month": 11,
+     "by_month_4_pct": 1.5,
+     "by_month_6_pct": 13.0,
+     "by_month_9_pct": 42.1
+    },
+    "gain_after_1_year_eur": {
+     "median": -805.0,
+     "p10": -5153.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -14.0,
+     "p10": -9443.0
+    },
+    "first_year_fall": {
+     "typical_pct": 55.9,
+     "p90_pct": 67.6,
+     "typical_eur": 4611.3,
+     "p90_eur": 6849.6
+    },
+    "fall_of_50_pct_or_more_pct": 68.7,
+    "reaches_zero_pct": 0.0
+   },
+   "worthless": {
+    "months_to_10000_eur": {
+     "median_month": 15,
+     "by_month_4_pct": 0.1,
+     "by_month_6_pct": 2.9,
+     "by_month_9_pct": 16.2
+    },
+    "gain_after_1_year_eur": {
+     "median": -4418.0,
+     "p10": -6720.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -11665.0,
+     "p10": -16763.0
+    },
+    "first_year_fall": {
+     "typical_pct": 63.6,
+     "p90_pct": 73.9,
+     "typical_eur": 5853.1,
+     "p90_eur": 7714.0
+    },
+    "fall_of_50_pct_or_more_pct": 91.0,
+    "reaches_zero_pct": 0.0
+   }
+  },
+  "S6": {
+   "paper": {
+    "months_to_10000_eur": {
+     "median_month": 6,
+     "by_month_4_pct": 22.6,
+     "by_month_6_pct": 63.7,
+     "by_month_9_pct": 96.0
+    },
+    "gain_after_1_year_eur": {
+     "median": 13050.0,
+     "p10": 4650.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 73437.0,
+     "p10": 38971.0
+    },
+    "first_year_fall": {
+     "typical_pct": 43.7,
+     "p90_pct": 60.1,
+     "typical_eur": 2818.7,
+     "p90_eur": 4735.8
+    },
+    "fall_of_50_pct_or_more_pct": 30.6,
+    "reaches_zero_pct": 0.0
+   },
+   "without_2024": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 8.9,
+     "by_month_6_pct": 42.4,
+     "by_month_9_pct": 88.3
+    },
+    "gain_after_1_year_eur": {
+     "median": 9184.0,
+     "p10": 1417.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 44245.0,
+     "p10": 21931.0
+    },
+    "first_year_fall": {
+     "typical_pct": 45.8,
+     "p90_pct": 63.6,
+     "typical_eur": 3196.5,
+     "p90_eur": 5054.6
+    },
+    "fall_of_50_pct_or_more_pct": 36.6,
+    "reaches_zero_pct": 0.0
+   },
+   "half": {
+    "months_to_10000_eur": {
+     "median_month": 8,
+     "by_month_4_pct": 8.9,
+     "by_month_6_pct": 34.8,
+     "by_month_9_pct": 74.0
+    },
+    "gain_after_1_year_eur": {
+     "median": 5972.0,
+     "p10": -2728.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 25942.0,
+     "p10": 5652.0
+    },
+    "first_year_fall": {
+     "typical_pct": 54.2,
+     "p90_pct": 69.0,
+     "typical_eur": 4004.6,
+     "p90_eur": 6648.3
+    },
+    "fall_of_50_pct_or_more_pct": 61.3,
+    "reaches_zero_pct": 0.0
+   },
+   "quarter": {
+    "months_to_10000_eur": {
+     "median_month": 9,
+     "by_month_4_pct": 5.3,
+     "by_month_6_pct": 24.9,
+     "by_month_9_pct": 57.6
+    },
+    "gain_after_1_year_eur": {
+     "median": 1907.0,
+     "p10": -4645.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 10771.0,
+     "p10": -4394.0
+    },
+    "first_year_fall": {
+     "typical_pct": 58.8,
+     "p90_pct": 72.8,
+     "typical_eur": 4804.5,
+     "p90_eur": 7318.6
+    },
+    "fall_of_50_pct_or_more_pct": 73.8,
+    "reaches_zero_pct": 0.0
+   },
+   "covers_costs": {
+    "months_to_10000_eur": {
+     "median_month": 11,
+     "by_month_4_pct": 2.6,
+     "by_month_6_pct": 15.4,
+     "by_month_9_pct": 42.5
+    },
+    "gain_after_1_year_eur": {
+     "median": -1339.0,
+     "p10": -5847.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -759.0,
+     "p10": -11361.0
+    },
+    "first_year_fall": {
+     "typical_pct": 63.3,
+     "p90_pct": 74.8,
+     "typical_eur": 5454.2,
+     "p90_eur": 7891.6
+    },
+    "fall_of_50_pct_or_more_pct": 84.2,
+    "reaches_zero_pct": 0.0
+   },
+   "worthless": {
+    "months_to_10000_eur": {
+     "median_month": 16,
+     "by_month_4_pct": 0.5,
+     "by_month_6_pct": 4.2,
+     "by_month_9_pct": 16.4
+    },
+    "gain_after_1_year_eur": {
+     "median": -5238.0,
+     "p10": -7449.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -13521.0,
+     "p10": -18734.0
+    },
+    "first_year_fall": {
+     "typical_pct": 70.9,
+     "p90_pct": 80.0,
+     "typical_eur": 6658.4,
+     "p90_eur": 8619.8
+    },
+    "fall_of_50_pct_or_more_pct": 97.4,
+    "reaches_zero_pct": 0.0
+   }
+  },
+  "S7": {
+   "paper": {
+    "months_to_10000_eur": {
+     "median_month": 6,
+     "by_month_4_pct": 28.5,
+     "by_month_6_pct": 65.8,
+     "by_month_9_pct": 95.0
+    },
+    "gain_after_1_year_eur": {
+     "median": 14934.0,
+     "p10": 4945.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 94380.0,
+     "p10": 47377.0
+    },
+    "first_year_fall": {
+     "typical_pct": 49.7,
+     "p90_pct": 67.3,
+     "typical_eur": 3272.3,
+     "p90_eur": 5468.2
+    },
+    "fall_of_50_pct_or_more_pct": 49.0,
+    "reaches_zero_pct": 0.0
+   },
+   "without_2024": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 13.4,
+     "by_month_6_pct": 45.8,
+     "by_month_9_pct": 87.1
+    },
+    "gain_after_1_year_eur": {
+     "median": 10290.0,
+     "p10": 846.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 53082.0,
+     "p10": 24894.0
+    },
+    "first_year_fall": {
+     "typical_pct": 52.2,
+     "p90_pct": 70.4,
+     "typical_eur": 3717.3,
+     "p90_eur": 5861.8
+    },
+    "fall_of_50_pct_or_more_pct": 58.0,
+    "reaches_zero_pct": 0.0
+   },
+   "half": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 12.9,
+     "by_month_6_pct": 37.8,
+     "by_month_9_pct": 73.0
+    },
+    "gain_after_1_year_eur": {
+     "median": 7410.0,
+     "p10": -3454.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 29641.0,
+     "p10": 5349.0
+    },
+    "first_year_fall": {
+     "typical_pct": 60.7,
+     "p90_pct": 75.5,
+     "typical_eur": 4656.4,
+     "p90_eur": 7554.3
+    },
+    "fall_of_50_pct_or_more_pct": 74.9,
+    "reaches_zero_pct": 0.0
+   },
+   "quarter": {
+    "months_to_10000_eur": {
+     "median_month": 9,
+     "by_month_4_pct": 7.7,
+     "by_month_6_pct": 27.6,
+     "by_month_9_pct": 57.1
+    },
+    "gain_after_1_year_eur": {
+     "median": 1795.0,
+     "p10": -5423.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 11297.0,
+     "p10": -5784.0
+    },
+    "first_year_fall": {
+     "typical_pct": 65.3,
+     "p90_pct": 78.0,
+     "typical_eur": 5481.8,
+     "p90_eur": 8307.8
+    },
+    "fall_of_50_pct_or_more_pct": 82.1,
+    "reaches_zero_pct": 0.0
+   },
+   "covers_costs": {
+    "months_to_10000_eur": {
+     "median_month": 12,
+     "by_month_4_pct": 3.5,
+     "by_month_6_pct": 16.7,
+     "by_month_9_pct": 41.8
+    },
+    "gain_after_1_year_eur": {
+     "median": -1765.0,
+     "p10": -6606.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -1566.0,
+     "p10": -12926.0
+    },
+    "first_year_fall": {
+     "typical_pct": 69.6,
+     "p90_pct": 80.6,
+     "typical_eur": 6167.8,
+     "p90_eur": 8756.2
+    },
+    "fall_of_50_pct_or_more_pct": 89.8,
+    "reaches_zero_pct": 0.0
+   },
+   "worthless": {
+    "months_to_10000_eur": {
+     "median_month": 18,
+     "by_month_4_pct": 0.8,
+     "by_month_6_pct": 4.9,
+     "by_month_9_pct": 16.0
+    },
+    "gain_after_1_year_eur": {
+     "median": -5808.0,
+     "p10": -8014.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -15144.0,
+     "p10": -20594.0
+    },
+    "first_year_fall": {
+     "typical_pct": 76.7,
+     "p90_pct": 84.8,
+     "typical_eur": 7312.8,
+     "p90_eur": 9394.5
+    },
+    "fall_of_50_pct_or_more_pct": 98.9,
+    "reaches_zero_pct": 0.0
+   }
+  },
+  "S8": {
+   "paper": {
+    "months_to_10000_eur": {
+     "median_month": 5,
+     "by_month_4_pct": 33.0,
+     "by_month_6_pct": 68.0,
+     "by_month_9_pct": 93.8
+    },
+    "gain_after_1_year_eur": {
+     "median": 16626.0,
+     "p10": 4993.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 118163.0,
+     "p10": 55499.0
+    },
+    "first_year_fall": {
+     "typical_pct": 55.1,
+     "p90_pct": 72.8,
+     "typical_eur": 3838.2,
+     "p90_eur": 6346.4
+    },
+    "fall_of_50_pct_or_more_pct": 59.6,
+    "reaches_zero_pct": 0.0
+   },
+   "without_2024": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 16.4,
+     "by_month_6_pct": 46.9,
+     "by_month_9_pct": 85.0
+    },
+    "gain_after_1_year_eur": {
+     "median": 11099.0,
+     "p10": -58.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 63238.0,
+     "p10": 27333.0
+    },
+    "first_year_fall": {
+     "typical_pct": 58.5,
+     "p90_pct": 75.8,
+     "typical_eur": 4266.3,
+     "p90_eur": 6609.3
+    },
+    "fall_of_50_pct_or_more_pct": 69.8,
+    "reaches_zero_pct": 0.0
+   },
+   "half": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 15.8,
+     "by_month_6_pct": 40.1,
+     "by_month_9_pct": 72.0
+    },
+    "gain_after_1_year_eur": {
+     "median": 8480.0,
+     "p10": -4131.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 34122.0,
+     "p10": 5044.0
+    },
+    "first_year_fall": {
+     "typical_pct": 66.6,
+     "p90_pct": 80.1,
+     "typical_eur": 5296.7,
+     "p90_eur": 8407.4
+    },
+    "fall_of_50_pct_or_more_pct": 79.7,
+    "reaches_zero_pct": 0.0
+   },
+   "quarter": {
+    "months_to_10000_eur": {
+     "median_month": 9,
+     "by_month_4_pct": 9.7,
+     "by_month_6_pct": 28.3,
+     "by_month_9_pct": 56.5
+    },
+    "gain_after_1_year_eur": {
+     "median": 1555.0,
+     "p10": -6089.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 12285.0,
+     "p10": -7052.0
+    },
+    "first_year_fall": {
+     "typical_pct": 71.5,
+     "p90_pct": 82.8,
+     "typical_eur": 6153.8,
+     "p90_eur": 9364.0
+    },
+    "fall_of_50_pct_or_more_pct": 87.9,
+    "reaches_zero_pct": 0.0
+   },
+   "covers_costs": {
+    "months_to_10000_eur": {
+     "median_month": 12,
+     "by_month_4_pct": 4.5,
+     "by_month_6_pct": 18.2,
+     "by_month_9_pct": 40.6
+    },
+    "gain_after_1_year_eur": {
+     "median": -2453.0,
+     "p10": -7254.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -2535.0,
+     "p10": -14505.0
+    },
+    "first_year_fall": {
+     "typical_pct": 75.2,
+     "p90_pct": 84.8,
+     "typical_eur": 6857.3,
+     "p90_eur": 9585.7
+    },
+    "fall_of_50_pct_or_more_pct": 94.7,
+    "reaches_zero_pct": 0.0
+   },
+   "worthless": {
+    "months_to_10000_eur": {
+     "median_month": 19,
+     "by_month_4_pct": 1.1,
+     "by_month_6_pct": 5.2,
+     "by_month_9_pct": 15.4
+    },
+    "gain_after_1_year_eur": {
+     "median": -6338.0,
+     "p10": -8455.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -16596.0,
+     "p10": -22132.0
+    },
+    "first_year_fall": {
+     "typical_pct": 81.4,
+     "p90_pct": 88.6,
+     "typical_eur": 7834.2,
+     "p90_eur": 10130.3
+    },
+    "fall_of_50_pct_or_more_pct": 99.6,
+    "reaches_zero_pct": 0.0
+   }
+  },
+  "S10": {
+   "paper": {
+    "months_to_10000_eur": {
+     "median_month": 5,
+     "by_month_4_pct": 38.2,
+     "by_month_6_pct": 67.8,
+     "by_month_9_pct": 91.6
+    },
+    "gain_after_1_year_eur": {
+     "median": 20151.0,
+     "p10": 4127.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 179696.0,
+     "p10": 72415.0
+    },
+    "first_year_fall": {
+     "typical_pct": 64.6,
+     "p90_pct": 82.1,
+     "typical_eur": 5086.0,
+     "p90_eur": 8154.2
+    },
+    "fall_of_50_pct_or_more_pct": 73.2,
+    "reaches_zero_pct": 0.0
+   },
+   "without_2024": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 19.7,
+     "by_month_6_pct": 48.4,
+     "by_month_9_pct": 81.2
+    },
+    "gain_after_1_year_eur": {
+     "median": 12676.0,
+     "p10": -1833.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 84979.0,
+     "p10": 31465.0
+    },
+    "first_year_fall": {
+     "typical_pct": 68.7,
+     "p90_pct": 84.5,
+     "typical_eur": 5441.3,
+     "p90_eur": 8171.7
+    },
+    "fall_of_50_pct_or_more_pct": 85.4,
+    "reaches_zero_pct": 0.0
+   },
+   "half": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 18.9,
+     "by_month_6_pct": 41.3,
+     "by_month_9_pct": 69.5
+    },
+    "gain_after_1_year_eur": {
+     "median": 9440.0,
+     "p10": -5614.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 43460.0,
+     "p10": 4250.0
+    },
+    "first_year_fall": {
+     "typical_pct": 76.3,
+     "p90_pct": 87.2,
+     "typical_eur": 6573.2,
+     "p90_eur": 10143.1
+    },
+    "fall_of_50_pct_or_more_pct": 88.3,
+    "reaches_zero_pct": 0.0
+   },
+   "quarter": {
+    "months_to_10000_eur": {
+     "median_month": 9,
+     "by_month_4_pct": 12.0,
+     "by_month_6_pct": 30.1,
+     "by_month_9_pct": 53.9
+    },
+    "gain_after_1_year_eur": {
+     "median": 358.0,
+     "p10": -7193.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 12416.0,
+     "p10": -9822.0
+    },
+    "first_year_fall": {
+     "typical_pct": 80.4,
+     "p90_pct": 89.0,
+     "typical_eur": 7411.0,
+     "p90_eur": 11050.3
+    },
+    "fall_of_50_pct_or_more_pct": 94.0,
+    "reaches_zero_pct": 0.0
+   },
+   "covers_costs": {
+    "months_to_10000_eur": {
+     "median_month": 13,
+     "by_month_4_pct": 6.5,
+     "by_month_6_pct": 19.6,
+     "by_month_9_pct": 38.6
+    },
+    "gain_after_1_year_eur": {
+     "median": -3637.0,
+     "p10": -8117.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -4695.0,
+     "p10": -17312.0
+    },
+    "first_year_fall": {
+     "typical_pct": 83.7,
+     "p90_pct": 90.6,
+     "typical_eur": 7879.6,
+     "p90_eur": 11335.9
+    },
+    "fall_of_50_pct_or_more_pct": 98.2,
+    "reaches_zero_pct": 0.0
+   },
+   "worthless": {
+    "months_to_10000_eur": {
+     "median_month": 20,
+     "by_month_4_pct": 1.7,
+     "by_month_6_pct": 5.9,
+     "by_month_9_pct": 14.8
+    },
+    "gain_after_1_year_eur": {
+     "median": -7235.0,
+     "p10": -9133.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -19046.0,
+     "p10": -24586.0
+    },
+    "first_year_fall": {
+     "typical_pct": 88.0,
+     "p90_pct": 93.3,
+     "typical_eur": 8745.4,
+     "p90_eur": 11279.9
+    },
+    "fall_of_50_pct_or_more_pct": 100.0,
+    "reaches_zero_pct": 0.0
+   }
+  },
+  "F3S": {
+   "paper": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 0.2,
+     "by_month_6_pct": 25.8,
+     "by_month_9_pct": 91.4
+    },
+    "gain_after_1_year_eur": {
+     "median": 6184.0,
+     "p10": 2652.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 44259.0,
+     "p10": 24138.0
+    },
+    "first_year_fall": {
+     "typical_pct": 24.3,
+     "p90_pct": 36.4,
+     "typical_eur": 1368.2,
+     "p90_eur": 2199.2
+    },
+    "fall_of_50_pct_or_more_pct": 0.7,
+    "reaches_zero_pct": 0.0
+   },
+   "without_2024": {
+    "months_to_10000_eur": {
+     "median_month": 8,
+     "by_month_4_pct": 0.1,
+     "by_month_6_pct": 11.8,
+     "by_month_9_pct": 82.0
+    },
+    "gain_after_1_year_eur": {
+     "median": 4383.0,
+     "p10": 1329.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 28318.0,
+     "p10": 14465.0
+    },
+    "first_year_fall": {
+     "typical_pct": 25.7,
+     "p90_pct": 39.2,
+     "typical_eur": 1507.7,
+     "p90_eur": 2313.6
+    },
+    "fall_of_50_pct_or_more_pct": 0.8,
+    "reaches_zero_pct": 0.0
+   },
+   "half": {
+    "months_to_10000_eur": {
+     "median_month": 9,
+     "by_month_4_pct": 0.1,
+     "by_month_6_pct": 10.9,
+     "by_month_9_pct": 66.1
+    },
+    "gain_after_1_year_eur": {
+     "median": 3251.0,
+     "p10": -616.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 17262.0,
+     "p10": 2106.0
+    },
+    "first_year_fall": {
+     "typical_pct": 29.4,
+     "p90_pct": 42.3,
+     "typical_eur": 1840.2,
+     "p90_eur": 3127.2
+    },
+    "fall_of_50_pct_or_more_pct": 2.5,
+    "reaches_zero_pct": 0.0
+   },
+   "quarter": {
+    "months_to_10000_eur": {
+     "median_month": 10,
+     "by_month_4_pct": 0.1,
+     "by_month_6_pct": 6.0,
+     "by_month_9_pct": 47.8
+    },
+    "gain_after_1_year_eur": {
+     "median": 1765.0,
+     "p10": -1994.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 6473.0,
+     "p10": -3370.0
+    },
+    "first_year_fall": {
+     "typical_pct": 32.6,
+     "p90_pct": 46.0,
+     "typical_eur": 2220.6,
+     "p90_eur": 3662.0
+    },
+    "fall_of_50_pct_or_more_pct": 4.3,
+    "reaches_zero_pct": 0.0
+   },
+   "covers_costs": {
+    "months_to_10000_eur": {
+     "median_month": 11,
+     "by_month_4_pct": 0.1,
+     "by_month_6_pct": 2.7,
+     "by_month_9_pct": 32.5
+    },
+    "gain_after_1_year_eur": {
+     "median": -2.0,
+     "p10": -3028.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -2057.0,
+     "p10": -4938.0
+    },
+    "first_year_fall": {
+     "typical_pct": 35.7,
+     "p90_pct": 49.0,
+     "typical_eur": 2676.4,
+     "p90_eur": 4144.6
+    },
+    "fall_of_50_pct_or_more_pct": 7.4,
+    "reaches_zero_pct": 0.0
+   },
+   "worthless": {
+    "months_to_10000_eur": {
+     "median_month": null,
+     "by_month_4_pct": 0.0,
+     "by_month_6_pct": 0.4,
+     "by_month_9_pct": 9.8
+    },
+    "gain_after_1_year_eur": {
+     "median": -2624.0,
+     "p10": -4388.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -3605.0,
+     "p10": -5507.0
+    },
+    "first_year_fall": {
+     "typical_pct": 43.1,
+     "p90_pct": 54.4,
+     "typical_eur": 3631.9,
+     "p90_eur": 5108.3
+    },
+    "fall_of_50_pct_or_more_pct": 21.9,
+    "reaches_zero_pct": 0.0
+   }
+  },
+  "D2": {
+   "paper": {
+    "months_to_10000_eur": {
+     "median_month": 5,
+     "by_month_4_pct": 38.2,
+     "by_month_6_pct": 67.8,
+     "by_month_9_pct": 91.6
+    },
+    "gain_after_1_year_eur": {
+     "median": 20151.0,
+     "p10": 4127.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 179696.0,
+     "p10": 72415.0
+    },
+    "first_year_fall": {
+     "typical_pct": 64.6,
+     "p90_pct": 82.1,
+     "typical_eur": 5086.0,
+     "p90_eur": 8154.2
+    },
+    "fall_of_50_pct_or_more_pct": 73.2,
+    "reaches_zero_pct": 0.0
+   },
+   "without_2024": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 19.7,
+     "by_month_6_pct": 48.4,
+     "by_month_9_pct": 81.2
+    },
+    "gain_after_1_year_eur": {
+     "median": 12676.0,
+     "p10": -1833.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 84979.0,
+     "p10": 31465.0
+    },
+    "first_year_fall": {
+     "typical_pct": 68.7,
+     "p90_pct": 84.5,
+     "typical_eur": 5441.3,
+     "p90_eur": 8171.7
+    },
+    "fall_of_50_pct_or_more_pct": 85.4,
+    "reaches_zero_pct": 0.0
+   },
+   "half": {
+    "months_to_10000_eur": {
+     "median_month": 7,
+     "by_month_4_pct": 18.9,
+     "by_month_6_pct": 41.3,
+     "by_month_9_pct": 69.5
+    },
+    "gain_after_1_year_eur": {
+     "median": 9440.0,
+     "p10": -5614.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 43460.0,
+     "p10": 4250.0
+    },
+    "first_year_fall": {
+     "typical_pct": 76.3,
+     "p90_pct": 87.2,
+     "typical_eur": 6573.2,
+     "p90_eur": 10143.1
+    },
+    "fall_of_50_pct_or_more_pct": 88.3,
+    "reaches_zero_pct": 0.0
+   },
+   "quarter": {
+    "months_to_10000_eur": {
+     "median_month": 9,
+     "by_month_4_pct": 12.0,
+     "by_month_6_pct": 30.1,
+     "by_month_9_pct": 53.9
+    },
+    "gain_after_1_year_eur": {
+     "median": 358.0,
+     "p10": -7193.0
+    },
+    "gain_after_3_years_eur": {
+     "median": 12416.0,
+     "p10": -9822.0
+    },
+    "first_year_fall": {
+     "typical_pct": 80.4,
+     "p90_pct": 89.0,
+     "typical_eur": 7411.0,
+     "p90_eur": 11050.3
+    },
+    "fall_of_50_pct_or_more_pct": 94.0,
+    "reaches_zero_pct": 0.0
+   },
+   "covers_costs": {
+    "months_to_10000_eur": {
+     "median_month": 13,
+     "by_month_4_pct": 6.5,
+     "by_month_6_pct": 19.6,
+     "by_month_9_pct": 38.6
+    },
+    "gain_after_1_year_eur": {
+     "median": -3637.0,
+     "p10": -8117.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -4695.0,
+     "p10": -17312.0
+    },
+    "first_year_fall": {
+     "typical_pct": 83.7,
+     "p90_pct": 90.6,
+     "typical_eur": 7879.6,
+     "p90_eur": 11335.9
+    },
+    "fall_of_50_pct_or_more_pct": 98.2,
+    "reaches_zero_pct": 0.0
+   },
+   "worthless": {
+    "months_to_10000_eur": {
+     "median_month": 20,
+     "by_month_4_pct": 1.7,
+     "by_month_6_pct": 5.9,
+     "by_month_9_pct": 14.8
+    },
+    "gain_after_1_year_eur": {
+     "median": -7235.0,
+     "p10": -9133.0
+    },
+    "gain_after_3_years_eur": {
+     "median": -19046.0,
+     "p10": -24586.0
+    },
+    "first_year_fall": {
+     "typical_pct": 88.0,
+     "p90_pct": 93.3,
+     "typical_eur": 8745.4,
+     "p90_eur": 11279.9
+    },
+    "fall_of_50_pct_or_more_pct": 100.0,
+    "reaches_zero_pct": 0.0
+   }
+  }
+ },
+ "check_S10_equals_stored_D2": {
+  "numbers_compared": 20994,
+  "other_leaves_compared": 6,
+  "differences": [],
+  "by_case": {
+   "paper": {
+    "numbers_compared": 3500,
+    "differences": 0
+   },
+   "without_2024": {
+    "numbers_compared": 3500,
+    "differences": 0
+   },
+   "half": {
+    "numbers_compared": 3500,
+    "differences": 0
+   },
+   "quarter": {
+    "numbers_compared": 3499,
+    "differences": 0
+   },
+   "covers_costs": {
+    "numbers_compared": 3498,
+    "differences": 0
+   },
+   "worthless": {
+    "numbers_compared": 3497,
+    "differences": 0
+   }
+  },
+  "real_order_2022_2025": {
+   "numbers_compared": 430,
+   "differences": []
+  },
+  "identical": true
+ },
+ "check_rest_of_growth_json_reproduced": {
+  "plans": 35,
+  "numbers_compared": 740678,
+  "other_leaves_compared": 621,
+  "differences": []
+ },
+ "check_per_path_file": {
+  "cells": 48,
+  "paths_per_cell": 2000,
+  "failures": [],
+  "S10_and_D2_paths_identical": true,
+  "median_rule_notes": []
+ },
+ "said_with_it": "The validation years 2022-2025, so optimistic. The broker's margin on crypto is not modelled (it may refuse some trades at the larger stakes). No plan stop and no disaster guard in these plans. Nothing is chosen here: the user picks the X."
+}

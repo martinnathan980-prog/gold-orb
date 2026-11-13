@@ -46,8 +46,14 @@ SCHEDULES = {                                   # (thresholds in EUR, risk % per
     "F3": ((3000.0, 6000.0, 12000.0), (3.0, 2.0, 1.0, 0.5)),        # sixth clarification: the same with a slower start
     "F2": ((6000.0, 12000.0), (2.0, 1.0, 0.5)),
     "F1": ((12000.0,), (1.0, 0.5)),
+    "S3": ((3000.0, 10000.0, 20000.0), (3.0, 1.5, 0.6, 0.3)),       # ninth clarification: D2's shape scaled by its starting
+    "S5": ((3000.0, 10000.0, 20000.0), (5.0, 2.5, 1.0, 0.5)),       # risk X (X, X/2, X/5, X/10 %, read on max(balance, paid))
+    "S6": ((3000.0, 10000.0, 20000.0), (6.0, 3.0, 1.2, 0.6)),
+    "S7": ((3000.0, 10000.0, 20000.0), (7.0, 3.5, 1.4, 0.7)),
+    "S8": ((3000.0, 10000.0, 20000.0), (8.0, 4.0, 1.6, 0.8)),
+    "S10": ((3000.0, 10000.0, 20000.0), (10.0, 5.0, 2.0, 1.0)),     # = D2, run again as a check of the engine
 }
-KEYED_ON_PAID = ("C2", "D2", "F", "F3", "F2", "F1")
+KEYED_ON_PAID = ("C2", "D2", "F", "F3", "F2", "F1", "S3", "S5", "S6", "S7", "S8", "S10")
 # second clarification of addendum G: plans that bound the loss. name -> (schedule used as cap, key of the risk rule,
 # its parameters, monthly payments made whatever happens after the first 1,000 EUR, threshold of the steps (< 0 = no
 # steps), catch-up paid with a month that is paid)
