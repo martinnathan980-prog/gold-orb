@@ -784,13 +784,14 @@ static void world_mask()
    day_bars(CR_IDX, d1, 1290000);
    day_bars(CR_IDX, d2, 1600000);
    day_bars(CR_XAU, d1, 172500);
-   // flat bars: equal to the previous close (masked), and flat but different (kept)
+   // bid-flat bars (O = H = L = C), equal to the previous close or not: all kept, since the robot has no flat-bar rule
+   // (MT5 makes a bar only when a tick came; lead decision after step B's finding 1)
    RpSym &g = w_sym(CR_XAU);
    long last = g.bars.back().time;
    long pc = (long)llround(g.bars.back().close * 100);
-   g.bars.push_back(w_bar(last + 60, pc, pc, pc, pc, 7));            // flat = previous close: masked
-   g.bars.push_back(w_bar(last + 120, pc + 5, pc + 5, pc + 5, pc + 5, 7));   // flat, not the previous close: kept
-   g.bars.push_back(w_bar(last + 180, pc + 5, pc + 5, pc + 5, pc + 5, 7));   // flat = previous close: masked
+   g.bars.push_back(w_bar(last + 60, pc, pc, pc, pc, 7));                    // flat, equal to the previous close
+   g.bars.push_back(w_bar(last + 120, pc + 5, pc + 5, pc + 5, pc + 5, 7));   // flat, not the previous close
+   g.bars.push_back(w_bar(last + 180, pc + 5, pc + 5, pc + 5, pc + 5, 7));   // flat, equal to the previous close
    // server Saturday 10:00 for gold; crypto Friday 23:56 server and Saturday 01:00 server
    g.bars.push_back(w_bar(d1 + 3 * 86400 + 10 * 3600, 172600, 172610, 172590, 172605, 5));   // 2021-03-06 is a Saturday
    w_sym(CR_BTC).bars.push_back(w_bar(d1 + 2 * 86400 + 23 * 3600 + 56 * 60, 5400000, 5400100, 5399900, 5400050, 300));
@@ -817,8 +818,16 @@ static void world_mask()
    check(BarsAt(CR_IDX, k1315 + 1, x) && x.t == d1 + 23 * 3600, "the next kept bar is 18:00 New York", S(x.t - d1));
    check(BarsMasked(CR_XAU, CR_MASK_XAU) == 60, "gold 17:00-17:59 New York masked", S(BarsMasked(CR_XAU, CR_MASK_XAU)));
    check(BarsMasked(CR_XAU, CR_MASK_HALF) == 0, "gold is not masked on half days");
-   check(BarsMasked(CR_XAU, CR_MASK_FLAT) == 2, "two flat bars equal to the previous close masked", S(BarsMasked(CR_XAU, CR_MASK_FLAT)));
    check(BarsMasked(CR_XAU, CR_MASK_WEEKEND) == 1, "gold server Saturday masked");
+   // gold: 390 bars of 12:00-18:29 New York, 3 bid-flat bars, 1 Saturday bar; 60 + 1 masked, the 3 flat bars kept
+   check(BarsMasked(CR_XAU, CR_MASK_KEPT) == 390 - 60 + 3, "gold kept bars: the three bid-flat bars included",
+         S(BarsMasked(CR_XAU, CR_MASK_KEPT)));
+   for(int k = 1; k <= 3; k++)
+     {
+      datetime tf = ClkServerToUtc(last + 60 * k);
+      check(BarsAt(CR_XAU, BarsIndex(CR_XAU, tf), x) && x.t == tf && x.bo == x.bh && x.bh == x.bl && x.bl == x.bc,
+            "bid-flat gold bar fed as a kept bar", S(k));
+     }
    check(BarsMasked(CR_BTC, CR_MASK_CRYPTO) == 2, "crypto Friday 23:56 server and Saturday masked", S(BarsMasked(CR_BTC, CR_MASK_CRYPTO)));
    check(BarsMasked(CR_BTC, CR_MASK_KEPT) == 1, "crypto Friday 23:54 server kept", S(BarsMasked(CR_BTC, CR_MASK_KEPT)));
    check(BarsMasked(CR_ETH, CR_MASK_KEPT) == 1, "ETH weekday bar kept");

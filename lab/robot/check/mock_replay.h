@@ -31,7 +31,7 @@
 // Env:
 //   MOCK_FILES=dir            MQL5\Files of the fake terminal; dir/_mock holds the state, deals.csv, orders.csv, log.txt
 //   MOCK_SYMS=A,B,...         symbols (the broker's names, e.g. XAUUSD.r); MOCK_BARS_<A>=path, MOCK_DIGITS_<A>=2
-//   MOCK_UNITS_<A> MOCK_VMIN_<A> MOCK_VSTEP_<A> MOCK_LEV_<A> MOCK_COMM_<A> MOCK_STOPS_<A> MOCK_FREEZE_<A>  specs
+//   MOCK_UNITS_<A> MOCK_VMIN_<A> MOCK_VSTEP_<A> MOCK_VMAX_<A> MOCK_LEV_<A> MOCK_COMM_<A> MOCK_STOPS_<A> MOCK_FREEZE_<A>  specs
 //   MOCK_SLIP_MKT_BPS_<A> / MOCK_SLIP_STOP_BPS_<A>   broker slippage (default: the lab's fp_costs.json values)
 //   MOCK_BALANCE=10000        starting balance (first start only)
 //   MOCK_ACCOUNT=demo|real|contest, MOCK_VPS=0|1, MOCK_TESTER=0|1, MOCK_GMT_SHIFT=s (a wrong clock)
@@ -1379,6 +1379,7 @@ int main()
       s.units = rp_envd("MOCK_UNITS_" + name, xau ? 100.0 : 1.0);
       s.vmin = rp_envd("MOCK_VMIN_" + name, idx ? 0.1 : 0.01);
       s.vstep = rp_envd("MOCK_VSTEP_" + name, idx ? 0.1 : 0.01);
+      s.vmax = rp_envd("MOCK_VMAX_" + name, 100.0);                    // SYMBOL_VOLUME_MAX (step K: T7b raises it)
       s.lev = rp_envd("MOCK_LEV_" + name, xau ? 500.0 : (idx ? 200.0 : 50.0));
       s.comm = rp_envd("MOCK_COMM_" + name, xau ? 3.0 * rp_usdeur : 0.0);
       s.stops_level = (long)rp_envd("MOCK_STOPS_" + name, 0);

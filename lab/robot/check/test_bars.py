@@ -21,10 +21,13 @@ Builds check/test_bars.cpp (the translated src/CR_Bars.mqh and src/CR_Math.mqh w
      false, a hole that fills, a hole that stays, short and no history, stability; mask on a NYSE and a typed half day);
   7. the sanitizer build (address, undefined behaviour, checked containers): the worlds, the primitives (outputs equal to
      the plain build's, byte for byte) and the 2021 store;
-  8. the symbol rows of the test equal CR_Registry.mqh's RegSym rows.
-Reported apart, not failed (for the lead): the bars SPEC 2.2's mask drops in sample (its claim "drops nothing" is false
-for the flat rule and for 20 gold bars of 2012-12-31). Outputs: check/out/test_bars/ (result.json; the large streams are
-never written to disk). In-sample only: frames are read with ts < 2022-01-01 inside the read call.
+  8. the symbol rows of the test equal CR_Registry.mqh's RegSym rows;
+  9. the mask in sample: the kept bars are the rebuilt frames, except gold bars of 17:00-17:59 New York (the xau rule; in
+     sample: 20 bars, all on 2012-12-31, the gold frame's first day). Any other dropped bar fails the test. The robot has
+     no flat-bar rule (lead decision after step B's finding 1: MT5 makes a bar only when a tick came; on the 2-digit FP
+     bid the lab's flat rule dropped 5,969 real in-sample bars), so bid-flat bars are kept.
+Outputs: check/out/test_bars/ (result.json; the large streams are never written to disk). In-sample only: frames are
+read with ts < 2022-01-01 inside the read call.
 """
 import argparse
 import importlib.util
@@ -61,7 +64,8 @@ AGG = np.dtype([("sym", "<i4"), ("kind", "<i4"), ("key", "<i8"), ("t_first", "<i
                 ("mh", "<f8"), ("ml", "<f8")])
 COST = np.dtype([("sym", "<i4"), ("pad", "<i4"), ("day", "<i8"), ("raw", "<f8"), ("pap", "<f8")])
 PRICES = ("bo", "bh", "bl", "bc", "ao", "ah", "al", "ac")
-REASONS = ("kept", "m_flat", "m_weekend", "m_crypto", "m_idx", "m_xau", "m_half")
+REASONS = ("kept", "m_weekend", "m_crypto", "m_idx", "m_xau", "m_half")      # CR_MASK_NAME, in CR_MASK_* order
+KEPT, WEEKEND, CRYPTO, IDX, XAU, HALF = range(len(REASONS))                   # CR_MASK_KEPT .. CR_MASK_HALF
 TOL = 1e-12
 
 
@@ -114,30 +118,27 @@ def half_days():
 
 
 def mask_reasons(rec, fam, halves):
-    """SPEC 2.2's mask, written again with pandas (independent of the EA): the first reason of each broker bar, 0 = kept"""
-    o, h, l, c, t = rec["o"], rec["h"], rec["l"], rec["c"], rec["t"]
+    """SPEC 2.2's mask, written again with pandas (independent of the EA): the first reason of each broker bar (KEPT ..
+    HALF, the CR_MASK_* codes), from the bar's server time only (no flat-bar rule)"""
+    t = rec["t"]
     n = len(rec)
-    prev = np.r_[np.int32(-1), c[:-1]]
-    has_prev = np.r_[False, np.ones(n - 1, bool)] if n else np.zeros(0, bool)
-    flat = (o == h) & (h == l) & (l == c) & has_prev & (c == prev)
     srv = pd.DatetimeIndex(pd.to_datetime(t, unit="s"))
     dow = srv.dayofweek.to_numpy()                         # Monday 0 .. Sunday 6
     hm = srv.hour.to_numpy() * 60 + srv.minute.to_numpy()
     ny = srv - pd.Timedelta(hours=7)                       # New York wall clock = server - 7 h
     nym = ny.hour.to_numpy() * 60 + ny.minute.to_numpy()
-    r = np.zeros(n, np.int8)
+    r = np.full(n, KEPT, np.int8)
     if fam == "IDX":
         dates = ny.normalize()
         is_half = np.isin(dates.values.astype("datetime64[D]"), np.array(sorted(halves), dtype="datetime64[D]"))
-        r[is_half & (nym >= 13 * 60 + 16) & (nym < 18 * 60)] = 6
-        r[(nym >= 16 * 60 + 15) & (nym < 18 * 60)] = 4
+        r[is_half & (nym >= 13 * 60 + 16) & (nym < 18 * 60)] = HALF
+        r[(nym >= 16 * 60 + 15) & (nym < 18 * 60)] = IDX
     if fam == "XAU":
-        r[(nym >= 17 * 60) & (nym < 18 * 60)] = 5
+        r[(nym >= 17 * 60) & (nym < 18 * 60)] = XAU
     if fam == "CRY":
-        r[(dow >= 5) | ((dow == 4) & (hm >= 23 * 60 + 55))] = 3
+        r[(dow >= 5) | ((dow == 4) & (hm >= 23 * 60 + 55))] = CRYPTO
     else:
-        r[dow >= 5] = 2
-    r[flat] = 1
+        r[dow >= 5] = WEEKEND
     return r
 
 
@@ -547,16 +548,25 @@ def check_h3(exe, sym_data, tag):
     return res
 
 
-def mask_findings(sym_data):
-    """SPEC 2.2's mask on the in-sample broker bars: what it drops, by reason and year (for the lead)"""
-    out = {}
+def mask_in_sample(sym_data):
+    """SPEC 2.2's mask (the pandas copy) on the in-sample broker bars: what it drops, by reason, year and New York date.
+    The kept bars must be the rebuilt frames except gold bars of 17:00-17:59 New York (the xau rule): any other dropped
+    bar fails (there is no flat-bar rule any more, so nothing else may go)"""
+    out, ok = {}, True
     for broker, sd in sym_data.items():
         r, tu = sd["r"], sd["tu"]
-        years = pd.DatetimeIndex(pd.to_datetime(tu[r > 0], unit="s")).year
+        drop = r != KEPT
+        years = pd.DatetimeIndex(pd.to_datetime(tu[drop], unit="s")).year
         by = {REASONS[k]: int((r == k).sum()) for k in range(1, len(REASONS)) if (r == k).any()}
-        ex = [str(pd.Timestamp(int(t), unit="s")) for t in tu[r == 5][:3]]
-        out[broker] = {"dropped": int((r > 0).sum()), "by_reason": by, "by_year": {int(y): int(c) for y, c in pd.Series(years).value_counts().sort_index().items()},
-                       "xau_break_examples_utc": ex}
+        xau_ny = pd.DatetimeIndex(pd.to_datetime(tu[r == XAU], unit="s", utc=True)).tz_convert("America/New_York")
+        other = int((drop & (r != XAU)).sum())
+        out[broker] = {"frame_bars": int(len(r)), "kept": int((~drop).sum()), "dropped": int(drop.sum()), "by_reason": by,
+                       "by_year": {int(y): int(c) for y, c in pd.Series(years).value_counts().sort_index().items()},
+                       "xau_dropped_ny_dates": sorted({str(d) for d in xau_ny.date}),
+                       "xau_dropped_ny_first_last": [str(xau_ny.min()), str(xau_ny.max())] if len(xau_ny) else [],
+                       "dropped_other_than_xau": other}
+        ok &= other == 0
+    out["pass"] = bool(ok)
     return out
 
 
@@ -583,14 +593,15 @@ def main(argv=None):
     res["costs"] = check_costs(cost, sym_data, summ["last_event_utc"], summ["last_event_srv"])
     res["aggregates"] = check_aggregates(agg, sym_data)
     res["h3"] = check_h3(exe_h3, sym_data, tag)
-    res["mask_in_sample"] = mask_findings(sym_data)
+    res["mask_in_sample"] = mask_in_sample(sym_data)
     names, series = math_inputs(sym_data)
     ops = math_ops(names, series)
     outs, raw_plain = run_math(exe, names, series, ops, os.path.join(OUT, "math_in.bin"), os.path.join(OUT, "math_out.bin"))
     res["primitives"] = check_math(names, series, ops, outs)
     res["worlds"] = run_worlds(exe)
     ok = (res["registry"]["pass"] and res["build_plain_warnings"] == 0 and res["build_h3_warnings"] == 0 and res["store"]["pass"]
-          and res["costs"]["pass"] and res["aggregates"]["pass"] and res["h3"]["pass"] and res["primitives"]["pass"] and res["worlds"]["pass"])
+          and res["costs"]["pass"] and res["aggregates"]["pass"] and res["h3"]["pass"] and res["primitives"]["pass"] and res["worlds"]["pass"]
+          and res["mask_in_sample"]["pass"])
     if not a.no_sanitize:
         exe_s, warn_s = build_test("test_bars_san", sanitize=True)
         san = {"warnings": len(warn_s), "worlds": run_worlds(exe_s)}

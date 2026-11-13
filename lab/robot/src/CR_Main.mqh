@@ -13,6 +13,17 @@
 //|   LIVE    (e) every timer pass: protections, broker-stop         |
 //|           invariant, then every new barrier minute               |
 //|   LATEBAR, a reconnection after more than 60 s: back to WAIT.    |
+//|   The REBUILD line says why it ran (start, latebar, reconnect);  |
+//|   the LATEBAR line itself is CR_Bars' (symbol and reason).       |
+//|                                                                  |
+//| Lines of this file: INIT (inputs as read, K1 table as parsed),   |
+//| SELFTEST (build constants, golden vectors, the guards' checks), |
+//| PLAN (plan start, B(T)), REBUILD, AGG / COST / DAY (daily), and  |
+//| the INIT deinit line (bars fed and masked, rebuilds).           |
+//| Step K kept S0's driver and contract; it only adds the fields    |
+//| above. It must keep compiling with the S0 stubs that the rule    |
+//| steps' tests still use: a call into a non-S0 function is guarded |
+//| by a macro only the real file defines (CR_K1_MAX, CR_GOLDEN_N).  |
 //|                                                                  |
 //| The minute contract (every rule relies on it):                   |
 //|   for every whole UTC minute M, in increasing order:             |
@@ -55,6 +66,7 @@ long     g_day_pev = 0;                // paper events this server day
 long     g_tot_fed = 0;
 datetime g_disc_since = 0;             // first pass seen disconnected (0 = connected)
 int      g_rebuilds = 0;
+string   g_rebuild_why = "start";      // why the next rebuild runs (REBUILD why=): start, latebar, reconnect
 bool     g_plan_said = false;
 datetime g_plan_push_day = 0;
 
@@ -161,8 +173,19 @@ void MainInitLine()
                + KB("tester", g_cfg.tester) + KB("observer", g_cfg.observer) + KB("entries_off", g_cfg.entries_off)
                + KB("harness", g_cfg.harness) + KI("comm_pts", CR_XAU_COMM_PTS) + KV("risk", g_cfg.risk_table)
                + KV("sleeves", g_cfg.sleeves) + MainSwitches();
+#ifdef CR_K1_MAX
+   kv = kv + KV("k1t", Brk72K1Text());          // the K1 table as CR_Rule_Brk72 parsed it (17 digits; "" = none)
+#endif
    for(int s = 0; s < CR_NSYM; s++) kv = kv + KV(g_sym[s].base, g_sym[s].name);
    Jrn(CR_EV_INIT, "-", kv);
+  }
+
+// bars the mask dropped since the last load, all reasons (SPEC 2.2), for the deinit line
+long MainMasked(const int sym)
+  {
+   long n = 0;
+   for(int r = 1; r < CR_MASK_N; r++) n += BarsMasked(sym, r);
+   return n;
   }
 
 // ---- daily lines and reminders (server day of the barrier) ------------------------------------------------------------
@@ -305,7 +328,7 @@ bool MainWait(const datetime now)
      {
       int ps = LedPlan(now);
       string st = (ps == CR_PLAN_OK) ? "ok" : ((ps == CR_PLAN_UNSET) ? "unset" : "future");
-      Jrn(CR_EV_PLAN, "-", KT("T", LedPlanStart()) + KV("state", st) + KB("demo", g_cfg.demo) + KD("B_T", LedBalance(LedPlanStart()))
+      Jrn(CR_EV_PLAN, "-", KT("T", LedPlanStart()) + KV("state", st) + KB("demo", g_cfg.demo) + KD("B_T", LedBT())
           + KV("risk", g_cfg.risk_table));
       g_plan_said = true;
      }
@@ -341,7 +364,7 @@ bool MainRebuild(const datetime now)
    g_replaying = false;
    g_M = M1;
    g_rebuilds++;
-   Jrn(CR_EV_REBUILD, "-", KI("n", g_rebuilds) + KT("from", start) + KT("to", M1) + KI("minutes", minutes)
+   Jrn(CR_EV_REBUILD, "-", KI("n", g_rebuilds) + KV("why", g_rebuild_why) + KT("from", start) + KT("to", M1) + KI("minutes", minutes)
        + KI("ms", (long)(GetTickCount64() - t0)));
    return true;
   }
@@ -361,6 +384,7 @@ void MainLive(const datetime now)
       if(longcut)
         {
          g_st = CR_ST_WAIT;                       // a reconnection after more than 60 s reruns (a)-(d)
+         g_rebuild_why = "reconnect";
          return;
         }
      }
@@ -374,8 +398,8 @@ void MainLive(const datetime now)
    if(r == CR_POLL_WAIT) return;
    if(r == CR_POLL_LATEBAR)
      {
-      Jrn(CR_EV_LATEBAR, "-", KT("M", M));
-      g_st = CR_ST_WAIT;
+      g_st = CR_ST_WAIT;                          // CR_Bars wrote the LATEBAR line (symbol, reason); REBUILD says why=latebar
+      g_rebuild_why = "latebar";
       return;
      }
    if(g_M == 0) g_M = M - 60;
@@ -425,7 +449,11 @@ int OnInit()
    if(st) st = GrdSelfTest(why);
    g_cfg.selftest_ok = st;
    MainInitLine();
-   Jrn(CR_EV_SELFTEST, "-", KB("ok", st) + KV("why", why));
+   string gk = "";
+#ifdef CR_GOLDEN_N
+   gk = KI("golden", CR_GOLDEN_N);              // vectors of CR_Golden.mqh (T10), all checked when ok=1
+#endif
+   Jrn(CR_EV_SELFTEST, "-", KB("ok", st) + KV("why", why) + gk);
    if(!st) JrnPush("auto-test en echec, aucune entree : " + why, true);
    bool timer = g_cfg.tester ? EventSetTimer(1) : EventSetMillisecondTimer(100);
    if(!timer)
@@ -437,13 +465,16 @@ int OnInit()
    g_M = 0;
    g_day = 0;
    g_plan_said = false;
+   g_rebuild_why = "start";
    return INIT_SUCCEEDED;
   }
 
 void OnDeinit(const int reason)
   {
    EventKillTimer();
-   Jrn(CR_EV_INIT, "-", KI("deinit", reason) + KI("lines", g_jrn_lines) + KI("bars_fed", g_tot_fed) + KI("rebuilds", g_rebuilds));
+   string mk = "";
+   for(int s = 0; s < CR_NSYM; s++) mk = mk + KI("masked_" + g_sym[s].base, MainMasked(s));
+   Jrn(CR_EV_INIT, "-", KI("deinit", reason) + KI("lines", g_jrn_lines) + KI("bars_fed", g_tot_fed) + KI("rebuilds", g_rebuilds) + mk);
    GrdLockRelease();
    JrnClose();
   }

@@ -11,8 +11,6 @@
 //| time (New York + 7 h).                                           |
 //|                                                                  |
 //| Mask (SPEC 2.2), each bar counted under its first reason:        |
-//|   flat    bid O = H = L = C and equal to the previous raw bar's  |
-//|           bid close (prep_round2.py:49, prep_data.py:39-41)      |
 //|   weekend gold and US100: Saturday or Sunday, server clock       |
 //|           (prep_round2.py:53)                                    |
 //|   crypto  Saturday, Sunday, or Friday from 23:55, server clock   |
@@ -22,7 +20,14 @@
 //|   half    US100 13:16-17:59 New York on NYSE half days (P6;      |
 //|           ClkNyse, typed HALF entries included)                  |
 //| The bars left are the kept bars; masked bars still count as      |
-//| broker bars for the flat rule, the hole scan and revisions.      |
+//| broker bars for the hole scan and revisions.                     |
+//| No flat-bar rule (lead decision after step B's finding 1): MT5   |
+//| makes a bar only when a tick came, so it has no filler bars. The |
+//| lab dropped flat bars on Dukascopy's 3-decimal bid; on the       |
+//| 2-digit FP bid the same rule dropped 5,969 real in-sample bars   |
+//| that the rebuilt frames keep (gold 4,905, US100 963, BTC 7,      |
+//| ETH 94). Without it the kept bars equal the rebuilt frames,      |
+//| except 20 gold bars of 2012-12-31 17:00-17:58 New York (xau).    |
 //|                                                                  |
 //| Barrier M (UTC minute; every bar starting before M is final):    |
 //|   M = the current minute when every symbol has ticked in it or   |
@@ -112,15 +117,14 @@
 
 // mask reasons (BarsMasked)
 #define CR_MASK_KEPT 0
-#define CR_MASK_FLAT 1
-#define CR_MASK_WEEKEND 2
-#define CR_MASK_CRYPTO 3
-#define CR_MASK_IDX 4
-#define CR_MASK_XAU 5
-#define CR_MASK_HALF 6
-#define CR_MASK_N 7
+#define CR_MASK_WEEKEND 1
+#define CR_MASK_CRYPTO 2
+#define CR_MASK_IDX 3
+#define CR_MASK_XAU 4
+#define CR_MASK_HALF 5
+#define CR_MASK_N 6
 
-string CR_MASK_NAME[CR_MASK_N] = {"kept", "m_flat", "m_weekend", "m_crypto", "m_idx", "m_xau", "m_half"};
+string CR_MASK_NAME[CR_MASK_N] = {"kept", "m_weekend", "m_crypto", "m_idx", "m_xau", "m_half"};
 
 // a broker bar as read (server time): the revision check compares them
 struct CrRawBar
@@ -208,10 +212,9 @@ void BarsPaperQuotes(const int sym, const double bid, const double ask, double &
    pask = NormalizeDouble(ask + g_sym[sym].h, g_sym[sym].digits);
   }
 
-// the mask reason of one broker bar (CR_MASK_*); prev_ok / prev_c: the previous broker bar's bid close
-int BarsMaskReason(const int sym, const MqlRates &r, const bool prev_ok, const double prev_c)
+// the mask reason of one broker bar (CR_MASK_*); it reads the bar's own server time only (no flat-bar rule)
+int BarsMaskReason(const int sym, const MqlRates &r)
   {
-   if(prev_ok && r.open == r.high && r.high == r.low && r.low == r.close && r.close == prev_c) return CR_MASK_FLAT;
    int fam = g_sym[sym].family;
    datetime srv = r.time;
    int dow = (int)(((srv / 86400) + 4) % 7);       // 1970-01-01 was a Thursday; 0 = Sunday
@@ -295,8 +298,6 @@ public:
    // broker bars as read
    datetime last_srv;                  // server start of the last broker bar taken (0 = none)
    datetime first_raw;                 // server start of the first broker bar taken since the load (0 = none)
-   double   prev_c;                    // bid close of the previous broker bar (flat rule)
-   bool     prev_ok;
    datetime prev_end;                  // UTC end of the previous broker bar, or the window start (hole scan); 0 = none
    CrRawBar r3[3];                     // the last 3 broker bars taken
    int      n3;
@@ -345,8 +346,6 @@ public:
       fed = 0;
       last_srv = 0;
       first_raw = 0;
-      prev_c = 0.0;
-      prev_ok = false;
       prev_end = 0;
       n3 = 0;
       for(int k = 0; k < CR_MASK_N; k++) masked[k] = 0;
@@ -426,16 +425,14 @@ public:
       holes_seen++;
      }
 
-   // one broker bar, in time order: hole scan, mask, flat-rule state, revision copy; the kept bar is stored
-   // unless store_it is false (a late bar: a rebuild was asked for)
+   // one broker bar, in time order: hole scan, mask, revision copy; the kept bar is stored unless store_it is
+   // false (a late bar: a rebuild was asked for)
    void Take(const MqlRates &r, const bool store_it)
      {
       datetime t = ClkServerToUtc(r.time);
       if(prev_end > 0 && t > prev_end) HoleAdd(prev_end, t);
       prev_end = t + 60;
-      int why = BarsMaskReason(sym, r, prev_ok, prev_c);
-      prev_c = r.close;
-      prev_ok = true;
+      int why = BarsMaskReason(sym, r);
       if(n3 == 3)
         {
          r3[0] = r3[1];
@@ -494,13 +491,6 @@ public:
       sync = SeriesInfoInteger(nm, PERIOD_M1, SERIES_SYNCHRONIZED) != 0;
       long fd = SeriesInfoInteger(nm, PERIOD_M1, SERIES_FIRSTDATE);
       depth = (fd > 0 && fd <= (long)ws_srv);
-      MqlRates p[];
-      int np = CopyRates(nm, PERIOD_M1, (datetime)(ws_srv - 1), 1, p);
-      if(np == 1 && p[0].time < ws_srv)
-        {
-         prev_c = p[0].close;
-         prev_ok = true;
-        }
       MqlRates r[];
       int k = CopyRates(nm, PERIOD_M1, (datetime)ws_srv, (datetime)(Msrv - 1), r);
       no_data = (k < 0);

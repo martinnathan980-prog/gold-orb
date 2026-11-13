@@ -3,15 +3,37 @@
 //| lab/r2/tracks/ml/models/B1_ridge_full.json["frozen"], refused     |
 //| unless its sha256 is d191cbbcc2fc4d2cae31182f14f412069a194b69c2a9 |
 //| d9ae6bca0d0f5dee644e. Constants written with %.17g.               |
+//| Do not edit by hand: run the generator again.                    |
 //|                                                                  |
-//| S0 STUB: no model (CR_F1_READY 0). Do not edit by hand.          |
+//| The F1 score (ml/strategy.py score_model :208-212, _design       |
+//| :195-205), computed by CR_Rule_F1.mqh:                           |
+//|   z_k = (x[NUM_FEAT[k]] - MEAN[k]) / STD[k], clipped to +/- CLIP |
+//|   d_j = 1 when DUM_LO[j] <= x[DUM_FEAT[j]] <= DUM_HI[j], else 0  |
+//|   score = INTERCEPT + (sum of z_k COEF[k], then d_j COEF[NNUM+j])|
+//|   taken when score >= THR (thr["0.5"], FINALISTS q 0.5)          |
+//| x = the 15 features in ml/strategy.py FEATURES order (:72-73):   |
+//|   0 brk 1 bar 2 body 3 ret4 4 ret14 5 ret70 6 chan 7 vol 8 pos   |
+//|   9 seq 10 opp 11 pdd 12 dret 13 hour 14 dow                     |
 //+------------------------------------------------------------------+
 #ifndef CR_F1MODEL_MQH
 #define CR_F1MODEL_MQH
-#define CR_F1_READY 0
-#define CR_F1_NNUM 0
-#define CR_F1_NDUM 0
+#define CR_F1_READY 1
+#define CR_F1_SHA256 "d191cbbcc2fc4d2cae31182f14f412069a194b69c2a9d9ae6bca0d0f5dee644e"
+#define CR_F1_NFEAT 15
+#define CR_F1_NNUM 13
+#define CR_F1_NDUM 5
+#define CR_F1_NCOEF 18
 #define CR_F1_CLIP 4.0
-#define CR_F1_INTERCEPT 0.0
+#define CR_F1_INTERCEPT 0.032528141279623765
 #define CR_F1_THR 0.027922380451488427
+// numeric inputs, in the model's order: brk bar body ret4 ret14 ret70 chan vol pos seq opp pdd dret
+int    CR_F1_NUM_FEAT[CR_F1_NNUM] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+double CR_F1_MEAN[CR_F1_NNUM] = {0.71308500532092667, 1.5512737966187637, 0.96420960913068066, 2.4333467452078184, 3.8241508644527737, 4.0824629164437747, 4.4349323545265333, 1.0078719035322139, 0.68484222660145089, 1.7847717168865993, 0.36221861548232304, 1.6489239385765191, 3.0019510735028621};
+double CR_F1_STD[CR_F1_NNUM] = {1.0511332012630918, 1.0720187093476934, 0.91673678364706634, 1.731594003005934, 2.4829650691631393, 6.7213277986039959, 2.1091572540703774, 0.22219138168277339, 0.28476548894509579, 1.7956728607877703, 0.77154477408543654, 2.2594491593427279, 2.2025607863709356};
+// dummies, in the model's order: hour[8,10] hour[11,12] hour[13,15] dow[0,0] dow[4,4]
+int    CR_F1_DUM_FEAT[CR_F1_NDUM] = {13, 13, 13, 14, 14};
+double CR_F1_DUM_LO[CR_F1_NDUM] = {8.0, 11.0, 13.0, 0.0, 4.0};
+double CR_F1_DUM_HI[CR_F1_NDUM] = {10.0, 12.0, 15.0, 0.0, 4.0};
+// coefficients: the numeric inputs, then the dummies
+double CR_F1_COEF[CR_F1_NCOEF] = {0.035527166091874569, -0.050994331929108266, 0.034536705278292515, -0.0015449850158405674, -0.030416538524942669, -0.01640644279761903, -0.0070119590679045395, 0.0024333042070126937, 0.030212171905429814, -0.021233724822965584, 0.0046822092122707215, 0.051648228535775498, 0.021970078931120976, 0.0083146713414126716, -0.021782492699578576, -0.038427865708166545, 0.021395951701033221, 0.0094393321135737458};
 #endif

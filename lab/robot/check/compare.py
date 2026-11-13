@@ -6,8 +6,9 @@
 
 Journal line: CR|<utc>|<EVENT>|<code>|k=v|... (utc integer seconds; doubles DoubleToString(x, -16), an exact round trip).
 Tolerances (SPEC 7): times, sides, reasons, counts and prices taken from bars are compared for equality; prices built on
-rolling, Wilder or score values to 1e-12 relative (--rel); trades still open at the end of the replay are left out.
-Python use: read_journal, events, check_parsable, cmp_orders, paper_trades, cmp_trades.
+rolling, Wilder or score values to 1e-12 relative (--rel); trades still open at the end of the replay are left out, and
+so are trades voided by a PVOID line after their PFILL (void_le, SPEC 2.5: the lab never had them).
+Python use: read_journal, events, check_parsable, cmp_orders, paper_chain, paper_trades, cmp_trades.
 """
 import argparse
 import glob
@@ -43,8 +44,16 @@ def journal_files(path):
     return []
 
 
+# NaN and infinity as a C library or MetaTrader may print them, whole values only ("info" stays text): float() takes
+# nan, inf and infinity (any case, signed); these are the other spellings
+NAN_TXT = re.compile(r"^[-+]?(nan(\(\w*\))?|1\.#(qnan|snan|ind)0*)$", re.I)
+INF_TXT = re.compile(r"^[-+]?1\.#inf0*$", re.I)
+# keys whose value is always text, even when it would parse as a number (a build hash such as 1234567e8901)
+TEXT_KEYS = {"what", "why", "reason", "state", "src", "skip", "build", "version", "k1t", "risk", "sleeves", "change"}
+
+
 def num(v):
-    """a journal value: int, float (NaN accepted in any spelling) or the text"""
+    """a journal value: int, float (NaN and infinity in their exact spellings only) or the text"""
     try:
         return int(v)
     except ValueError:
@@ -52,11 +61,10 @@ def num(v):
     try:
         return float(v)
     except ValueError:
-        low = v.lower()
-        if "nan" in low:
+        if NAN_TXT.match(v):
             return math.nan
-        if "inf" in low:
-            return -math.inf if low.startswith("-") else math.inf
+        if INF_TXT.match(v):
+            return -math.inf if v.startswith("-") else math.inf
         return v
 
 
@@ -76,7 +84,7 @@ def read_journal(path):
                 d = {"utc": int(m.group(1)), "ev": m.group(2), "code": m.group(3)}
                 for kv in m.group(4).split("|")[1:]:
                     k, v = kv.split("=", 1)
-                    d[k] = num(v)
+                    d[k] = v if k in TEXT_KEYS else num(v)
                 rows.append(d)
     if bad:
         raise ValueError(f"{len(bad)} unparsable journal line(s), first: {bad[0]}")
@@ -118,9 +126,13 @@ def cmp_orders(rows, script_csv, code, t_from=None, t_to=None, rel=0.0):
         ref = ref[ref.emit <= t_to]
     dec = [r for r in rows if r["ev"] == "DEC" and r["code"] == code and r.get("what") == "ord"]
     by_oid = {}
-    dup = 0
+    dup = reemitted = 0
     for r in dec:
-        dup += r["oid"] in by_oid
+        old = by_oid.get(r["oid"])
+        if old is not None and r["tf"] > old["tf"]:
+            reemitted += 1                  # the same intent for a later window (NQB: [g+2] when minute g+1 had no bar)
+        elif old is not None:
+            dup += 1
         by_oid[r["oid"]] = r
     missing, wrong, ok = [], [], 0
     for _, q in ref.iterrows():
@@ -140,23 +152,41 @@ def cmp_orders(rows, script_csv, code, t_from=None, t_to=None, rel=0.0):
     extra = sorted(by_oid)
     return {"code": code, "ref_orders": int(len(ref)), "dec_lines": len(dec), "equal": ok, "missing": missing[:20],
             "n_missing": len(missing), "wrong": wrong[:20], "n_wrong": len(wrong), "extra": extra[:20], "n_extra": len(extra),
-            "duplicates": dup, "pass": len(missing) == 0 and len(wrong) == 0 and len(extra) == 0 and dup == 0}
+            "duplicates": dup, "reemitted": reemitted,
+            "pass": len(missing) == 0 and len(wrong) == 0 and len(extra) == 0 and dup == 0}
+
+
+def paper_chain(rows, code, live_only=False):
+    """one sleeve's paper trades from the journal, read in the order the lines were written: per oid, its last PFILL
+    starts the trade again (a rebuild replays the chain), the last PEXIT or PREVISE after it is the exit (a PREVISE
+    replaces the exit booked on its bar), and a PVOID after it means the trade never existed (void_le: the brk72
+    wrapper drops the order, SPEC 2.5). Returns ({oid: (fill row, exit row)} of the finished trades, voided oids)."""
+    state = {}
+    for r in rows:
+        if r["code"] != code or r["ev"] not in ("PFILL", "PEXIT", "PREVISE", "PVOID") or (live_only and r.get("rp") == 1):
+            continue
+        oid = r["oid"]
+        if r["ev"] == "PFILL":
+            state[oid] = {"fill": r, "exit": None, "void": False}
+        elif oid in state:                                  # a PVOID of an order that never filled leaves no trade
+            if r["ev"] == "PVOID":
+                state[oid]["void"] = True
+            else:
+                state[oid]["exit"] = r
+    done = {k: (v["fill"], v["exit"]) for k, v in state.items() if v["exit"] is not None and not v["void"]}
+    return done, sorted(k for k, v in state.items() if v["void"])
 
 
 def paper_trades(rows, code, live_only=False):
-    """PFILL + PEXIT (and PREVISE, which replaces the exit) of one sleeve joined by oid: one row per paper trade"""
-    fills = {r["oid"]: r for r in rows if r["ev"] == "PFILL" and r["code"] == code and not (live_only and r.get("rp") == 1)}
-    out = []
-    for r in rows:
-        if r["code"] != code or r["ev"] not in ("PEXIT", "PREVISE") or r["oid"] not in fills or (live_only and r.get("rp") == 1):
-            continue
-        f = fills[r["oid"]]
-        out.append({"oid": r["oid"], "side": f["side"], "entry_time": pd.Timestamp(f["utc"], unit="s", tz="UTC"),
-                    "entry": f["px"], "stop": f["st0"], "exit_time": pd.Timestamp(r["utc"], unit="s", tz="UTC"), "exit": r["px"],
-                    "reason": r.get("reason"), "revised": r["ev"] == "PREVISE"})
+    """PFILL + PEXIT (or PREVISE, which replaces the exit) of one sleeve joined by oid: one row per paper trade, in entry
+    order; oids with a PVOID after their fill are left out (paper_chain), and so are trades still open"""
+    done, _ = paper_chain(rows, code, live_only)
+    out = [{"oid": oid, "side": f["side"], "entry_time": pd.Timestamp(f["utc"], unit="s", tz="UTC"), "entry": f["px"],
+            "stop": f["st0"], "exit_time": pd.Timestamp(x["utc"], unit="s", tz="UTC"), "exit": x["px"], "reason": x.get("reason"),
+            "revised": x["ev"] == "PREVISE"} for oid, (f, x) in done.items()]
     t = pd.DataFrame(out)
     if len(t):
-        t = t.sort_values(["entry_time", "revised"]).drop_duplicates("oid", keep="last").reset_index(drop=True)
+        t = t.sort_values(["entry_time", "oid"]).reset_index(drop=True)
     return t
 
 
@@ -164,6 +194,7 @@ def cmp_trades(rows, ref, code, t_from=None, t_to=None, rel=1e-12):
     """paper trades of the journal against lab trades: entry/exit minute, side and reason equal; prices equal or within
     rel (stops built on rolling values)"""
     ea = paper_trades(rows, code)
+    n_void = len(paper_chain(rows, code)[1])
     lab = ref.copy()
     if t_from is not None:
         lab = lab[lab.entry_time >= pd.Timestamp(t_from, unit="s", tz="UTC")]
@@ -171,21 +202,24 @@ def cmp_trades(rows, ref, code, t_from=None, t_to=None, rel=1e-12):
     if t_to is not None:
         lab = lab[lab.exit_time <= pd.Timestamp(t_to, unit="s", tz="UTC")]
     if not len(ea):
-        return {"code": code, "lab_trades": int(len(lab)), "ea_trades": 0, "pass": len(lab) == 0}
+        return {"code": code, "lab_trades": int(len(lab)), "ea_trades": 0, "voided_in_journal": n_void, "pass": len(lab) == 0}
     m = lab.merge(ea, on=["entry_time", "side"], how="outer", suffixes=("_lab", "_ea"), indicator=True)
     both = m[m._merge == "both"]
     same_exit = (both.exit_time_lab == both.exit_time_ea) & (both.reason_lab == both.reason_ea)
-    res = {"code": code, "lab_trades": int(len(lab)), "ea_trades": int(len(ea)), "same_entry": int(len(both)),
+    res = {"code": code, "lab_trades": int(len(lab)), "ea_trades": int(len(ea)), "voided_in_journal": n_void, "same_entry": int(len(both)),
            "only_lab": int((m._merge == "left_only").sum()), "only_ea": int((m._merge == "right_only").sum()),
            "same_exit_and_reason": int(same_exit.sum())}
     s = both[same_exit]
     for c in ("entry", "stop", "exit"):
-        d = (s[f"{c}_lab"] - s[f"{c}_ea"]).abs()
-        tol = rel * s[f"{c}_lab"].abs()
-        res[f"{c}_equal"] = int((d == 0).sum())
-        res[f"{c}_within_rel"] = int((d <= tol).sum())
+        a, b = s[f"{c}_lab"].astype(float), s[f"{c}_ea"].astype(float)
+        d = (a - b).abs()
+        tol = rel * a.abs()
+        nan2 = a.isna() & b.isna()                         # no stop on either side counts as equal
+        res[f"{c}_equal"] = int(((d == 0) | nan2).sum())
+        res[f"{c}_within_rel"] = int(((d <= tol) | nan2).sum())
+    # the initial stop is held to SPEC 7's tolerance too (a Wilder or rolling stop within rel), not only reported
     res["pass"] = res["only_lab"] == 0 and res["only_ea"] == 0 and res["same_exit_and_reason"] == len(both) and \
-        res["entry_within_rel"] == len(s) and res["exit_within_rel"] == len(s)
+        res["entry_within_rel"] == len(s) and res["stop_within_rel"] == len(s) and res["exit_within_rel"] == len(s)
     return res
 
 

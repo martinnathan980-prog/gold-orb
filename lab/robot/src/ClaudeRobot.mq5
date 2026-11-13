@@ -47,7 +47,7 @@ input string   InpScriptDir        = "ClaudeRobot\\script";         // Harness: 
 #include "CR_Ledger.mqh"
 #include "CR_Sizing.mqh"
 #include "CR_Broker.mqh"
+#include "CR_Guards.mqh"                  // before CR_Follower.mqh, which includes it (amalgam: no first include inside a guard)
 #include "CR_Follower.mqh"
-#include "CR_Guards.mqh"
 #include "CR_Golden.mqh"
 #include "CR_Main.mqh"
