@@ -8,7 +8,10 @@ What lives here:
   * the clocks of SPEC 2.1: server = New York + 7 h, UTC from the US summer-time rule (the same rule as
     check/test_worlds.py and CR_Clock.mqh);
   * the NYSE calendar (lab/r2/tracks/idx_us/idxus_lib.py us_holidays, loaded read-only, a copy as fallback);
-  * a tolerant journal reader built on check/compare.py's line format (bad lines are counted, not fatal);
+  * a tolerant journal reader built on check/compare.py's line format, with every field checked against the robot's
+    own (SCHEMA: numbers for numeric keys, fixed vocabularies for text keys, the fields the robot always writes,
+    printable ASCII): a line that fails is counted and located, never fatal, and its text is never kept; every line,
+    the robot's included, is scanned for account values before anything is kept;
   * French number formatting for the summaries the user reads.
 Nothing here reads market data by itself and nothing writes inside the repository.
 """
@@ -131,9 +134,10 @@ class Scrubber:
     ]
 
     def scan_log_line(self, line):
-        """a line that is not a robot line may name the account (login, server, holder's name, user folder): every
-        such value is collected so that it can never reach an output. The tools never write the text of these lines
-        anyway; this is the second lock."""
+        """a line may name the account (login, server, holder's name, user folder): every such value is collected so
+        that it can never reach an output. Every line read goes through here first, robot lines included (text glued to
+        a robot line); the tools never write the text of a line that is not a robot line anyway, this is the second
+        lock."""
         for rx, g in self.ACCOUNT_PATTERNS:
             for m in rx.finditer(line):
                 v = m.group(g).strip().strip("'\"")

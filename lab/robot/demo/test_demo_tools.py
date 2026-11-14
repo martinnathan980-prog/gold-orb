@@ -1384,6 +1384,49 @@ def test_tool2_replay(lit):
           and sb["cost_n"] > 120 and sb["cost_same"] == sb["cost_n"], {k: sb[k] for k in ("agg_days", "agg_days_same", "cost_n", "cost_same")})
     check("tool2 replay full: nothing abnormal", r["anomalies"] == [] and "Rien d'anormal" in so, r["anomalies"])
     check("tool2 replay full: replay files outside the repository", os.path.isdir(os.path.join(out, "replay", "files")))
+    # review2 follow-up (found on the reviewer's missing-last-day run): the robot stopped cleanly after a decision's stamp
+    # but before the moment it writes that decision (D4H's DEC stamped 17:59 UTC is written after the 22:00 DAY line):
+    # the replay's line comes after the stop, so it is no difference
+    now_ev = {"INIT", "SELFTEST", "PLAN", "REBUILD", "READY", "NOTREADY", "SEND", "FILL", "CLOSE", "SLMOD", "SLFIX", "REFUSED", "ADOPT",
+              "ORPHAN", "DUP", "MISSED", "LATEBAR", "GAP", "SETTLE", "CLOCK", "MARK", "LOCK", "TAKEOVER", "WATCH", "ERROR", "AGG", "COST", "DAY"}
+    jobs = os.path.join(obs, "ClaudeRobot")
+    order, now = [], None                                   # (file, line index, stamp, write time, event) in file order
+    for f in sorted(os.listdir(jobs)):
+        for i, ln in enumerate(open(os.path.join(jobs, f)).read().split("\n")):
+            p = ln.split("|")
+            if len(p) < 4 or p[0] != "CR" or "|rp=1" in ln:
+                continue
+            if p[2] in now_ev:
+                now = int(p[1]) if now is None else max(now, int(p[1]))
+            order.append((f, i, int(p[1]), max(now or 0, int(p[1])), p[2]))
+    cand = None
+    for k in range(len(order) - 1, len(order) // 2, -1):    # the latest one: every sleeve is past its warm-up
+        f, i, t, w, ev = order[k]
+        first = next(j for j in range(k, -1, -1) if j == 0 or order[j - 1][3] < w)    # the first line written at w
+        if (ev == "DEC" and w - t >= 7200 and t < C.srv_to_utc(SPAN[1]) - 2 * 86400 and first > 0 and order[first - 1][3] < w - 120
+                and order[first][0] == f):
+            cand = (f, order[first][1], w, t)
+            break
+    stop_dir = os.path.join(SCRATCH, "live_stop_before_write", "ClaudeRobot")
+    if cand:
+        shutil.copytree(jobs, stop_dir)
+        for g in sorted(os.listdir(stop_dir)):
+            if g > cand[0]:
+                os.remove(os.path.join(stop_dir, g))
+        lines = open(os.path.join(stop_dir, cand[0])).read().split("\n")[:cand[1]]
+        cr = "\r" if lines and lines[-1].endswith("\r") else ""
+        lines.append(f"CR|{cand[2] - 60}|INIT|-|deinit=1|lines={len(order)}|bars_fed=100000|rebuilds=1|masked_XAUUSD=0|masked_US100=0|"
+                     f"masked_BTCUSD=0|masked_ETHUSD=0" + cr)
+        open(os.path.join(stop_dir, cand[0]), "w").write("\n".join(lines) + "\n")
+    outs = os.path.join(SCRATCH, "out_stop_before_write")
+    rc, sos, se = run_tool("check_demo.py", ["--journals", os.path.dirname(stop_dir), "--bars", full, "--out", outs]) if cand else (1, "", "")
+    rs = json.load(open(os.path.join(outs, "report.json"))) if rc == 0 else {}
+    ds_ = rs.get("replay", {}).get("comparison", {}).get("differences", [])
+    chk("review2 follow-up: a robot stopped after a decision's stamp but before it writes that decision (the next server midnight) "
+        "gives no replay difference and nothing abnormal",
+        lambda: (cand is not None and rc == 0 and not ds_ and rs.get("anomalies") == [] and "Rien d'anormal" in sos,
+                 (cand and (cand[0], C.utc_txt(cand[3]), C.utc_txt(cand[2])), se[-300:], [(d["kind"], d["event"], d["code"], d["when"])
+                                                                                       for d in ds_][:3], rs.get("anomalies"))))
     # the VPS copy's printed lines against the Mac's files (shadow weeks, SPEC 10.12 step 3): equal
     jl_obs = []
     for f in sorted(os.listdir(os.path.join(obs, "ClaudeRobot"))):
@@ -1610,7 +1653,7 @@ def test_tool2_replay(lit):
     check("tool2 trading: the paper lines of the trading copy equal the observer replay", not paper_diff, paper_diff[:3])
     check("tool2 trading: SIZE compared on the account-free fields only", not r5["replay"]["size_mode"]["live_copy_observer"]
           and r5["replay"]["size_mode"]["compared"] == ["side", "et", "late", "f"], r5["replay"]["size_mode"])
-    chk("review2 control N1: a clean trading run has no missing journal line", lambda: (r5["journal"].get("breaks") == []
+    chk("review2 control N1: a clean trading run has no missing journal line", lambda: (not r5["journal"].get("breaks")
                                                                                      and not any("manquante" in a for a in r5["anomalies"]),
                                                                                      (r5["journal"].get("breaks"), r5["anomalies"])))
     t5 = r5["fills"]["per_sleeve"]["TOTAL"]
@@ -1620,7 +1663,7 @@ def test_tool2_replay(lit):
         "their estimate",
         lambda: (abs(t5["exit_diff_bp_mean"] - sum(ea_bp) / len(ea_bp)) < 1e-9 and t5["estimated_exits"] == len(est) > 5
                  and all(p.get("exit_est") is not None for p in est), (t5.get("exit_diff_bp_mean"), t5.get("estimated_exits"), len(est))))
-    chk("review2 control N10: every broker stop of the trading run is seen in the minutes (no 'stop jamais touche')",
+    chk("review2 N10: every broker stop of the clean trading run is checked and seen in the minutes (no false 'stop jamais touche')",
         lambda: (all(p.get("stop_seen_utc") for p in est) and not any(p["exit_kind"] == "stop_not_reached" for p in pos.values()),
                  [(p["ticket"], p["exit_kind"], p.get("stop_seen_utc")) for p in est if not p.get("stop_seen_utc")][:5]))
     print(f"   (replay tests {time.time() - t0:.0f} s)")

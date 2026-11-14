@@ -14,15 +14,21 @@ Any of these files may be missing (the folder is MQL5/Files/claude/releve on the
                  account currency, 0 when it failed (:107-108).
   tous.csv       ReleveFP.mq5 AllSymbols() (:139-162): name,path,description,digits,contract_size,vol_min,vol_step,
                  calc_mode,swap_long,swap_short,ccy_profit,trade_mode, every symbol of the server in its own order.
-  fini.txt       ReleveFP.mq5 OnStart() (:308-332): key=value lines (version, server, company, currency, leverage, demo,
+  fini.txt       ReleveFP.mq5 OnStart(): key=value lines (version 1.00 or 1.10, server, company, currency, leverage, demo,
                  server_time, server_minus_gmt_sec, all_symbols, one "BASE=NAME jours=.. minutes=.. ticks=.. du=..
-                 au=.. derniere_erreur=.. jours_incomplets=.." line per market or "BASE=INTROUVABLE", stopped,
-                 seconds). The server name is masked at once and never written or printed.
-  m1_<BASE>.csv  ReleveFP.mq5 Minutes() and Row() (:167-271): time,bo,bh,bl,bc,ao,ah,al,ac,n,sp_mean,sp_max; time =
-                 the minute's start, server seconds; bid and ask O/H/L/C of the ticks of the minute (COPY_TICKS_INFO,
-                 ticks with bid and ask > 0), prices with the symbol's digits, n ticks, sp_mean = mean of ask - bid
-                 (digits + 2 decimals), sp_max = largest ask - bid (price units, not points). Days are written newest
-                 first, minutes in order inside a day.
+                 au=.. derniere_erreur=.. jours_incomplets=.." line per market (1.10 adds " barres=.. jours_barres=..
+                 erreur_barres=.." at its end) or "BASE=INTROUVABLE", stopped, seconds). The server name is masked at
+                 once and never written or printed.
+  m1_<BASE>.csv  ReleveFP.mq5 Minutes() and Row(): time,bo,bh,bl,bc,ao,ah,al,ac,n,sp_mean,sp_max and, from version
+                 1.10, sp_min; time = the minute's start, server seconds; bid and ask O/H/L/C of the ticks of the minute
+                 (COPY_TICKS_INFO, ticks with bid and ask > 0), prices with the symbol's digits, n ticks, sp_mean = mean
+                 of ask - bid (digits + 2 decimals), sp_max and sp_min = largest and smallest ask - bid (price units, not
+                 points). Days are written newest first, minutes in order inside a day; fini.txt's minutes= counts the
+                 rows, so a shorter file was cut (its oldest days lost).
+  r1_<BASE>.csv  ReleveFP.mq5 1.10 Rates() and RateRow(): the terminal's own M1 bars, what the robot reads with
+                 CopyRates: time,open,high,low,close,tick_volume,spread,real_volume (server seconds, bid prices with the
+                 symbol's digits, MqlRates.spread in points), days newest first over InpRateDays days; fini.txt's
+                 barres=, jours_barres= and erreur_barres= (days that could not be read) count them.
   sonde.csv      SondeFP.mq5 OnStart() and Probe() (:77-197, 228, 247): base,name,status,volume,bid_before,
                  ask_before,buy_price,bid_at_close,ask_at_close,sell_price,deals,commission,fee,profit,swap,tick_size,
                  tick_value,contract_size,position (19 fields; a probe that stopped early writes "base,name,<why>",
@@ -38,6 +44,12 @@ another mode), margin (effective leverage from margin_1lot against fp_costs.json
 none on the others), swaps (annual % of the price against fp_costs.json), spreads (m1 files against fp_costs.json),
 sessions (SPEC 10.5: the Friday gold session to 23:46 server, crypto at weekends, holiday sessions against the
 robot's built-in closures of SPEC 2.1) and the server clock (SPEC 10.4: New York + 7 h).
+ReleveFP's own read, per market whatever its fiche line: the days of ticks (fini.txt), the m1 file's rows against
+minutes=, the r1 file's bars against barres= with the days they cover (fewer than 150 days leave D4H's 120-day warm-up
+short), and SPEC 10.3 as information only (never DIFFERENT): on the minutes in both files, the share where
+MqlRates.spread equals the smallest tick spread of the minute (sp_min), the first one, the last one, the rounded mean.
+Files of ReleveFP 1.00 (no sp_min, no r1, no barres=) are read without a problem. Without a usable gold fiche line the
+Friday gold session check stays, UNKNOWN.
 A holiday session counts as complete when the m1 file covers its start and either holds a later bar or ReleveFP ran
 after the session's end (fini.txt server_time: the ticks up to then are in the file), so a weekend run judges the
 Friday after Thanksgiving. A suggested InpExtraClosures window is written in absolute New York dates and times, as
@@ -99,9 +111,11 @@ T7B_TEXT = ("lecture T7b (ACCEPTANCE.md, section T7b) : a 1:2, le controle de ma
 
 
 # ---------------------------------------------------------------------------------------------- readers
-def read_fiches(path):
+def read_fiches(path, scrub=None):
     text = C.read_text(path).splitlines()
     rows, problems = {}, []
+    for ln in text if scrub is not None else []:                       # every line scanned first (an edited file)
+        scrub.scan_log_line(ln)
     if not text:
         return rows, ["fiches.csv est vide"]
     head = text[0].strip().split(",")
@@ -126,9 +140,11 @@ def read_fiches(path):
     return rows, problems
 
 
-def read_tous(path):
+def read_tous(path, scrub=None):
     text = C.read_text(path).splitlines()
     out, problems = [], []
+    for ln in text if scrub is not None else []:
+        scrub.scan_log_line(ln)
     if not text:
         return out, ["tous.csv est vide"]
     head = text[0].strip().split(",")
@@ -148,8 +164,11 @@ def read_tous(path):
 
 
 def read_fini(path, scrub):
+    """fini.txt: the account keys and one entry per market with its parsed keys only (the line's own text is never
+    kept: an edited line may hold anything)"""
     out, markets = {}, {}
     for ln in C.read_text(path).splitlines():
+        scrub.scan_log_line(ln)
         if "=" not in ln:
             continue
         k, v = ln.split("=", 1)
@@ -166,8 +185,8 @@ def read_fini(path, scrub):
             markets[k] = {"found": False}
             continue
         parts = v.split(" ", 1)
-        m = {"found": True, "name": parts[0], "info": parts[1] if len(parts) > 1 else ""}
-        info = m["info"]
+        m = {"found": True, "name": parts[0]}
+        info = parts[1] if len(parts) > 1 else ""
         # ReleveFP 1.10 adds barres, jours_barres and erreur_barres at the end of the line (1.00 files have none)
         for key in ("jours", "minutes", "ticks", "derniere_erreur", "jours_incomplets", "barres", "jours_barres", "erreur_barres"):
             mm = re.search(r"(?:^|\s)" + key + r"=(\S*)", info)
@@ -185,6 +204,8 @@ def read_fini(path, scrub):
 def read_sonde(path, scrub):
     text = C.read_text(path).splitlines()
     rows, meta, problems = {}, {}, []
+    for ln in text:
+        scrub.scan_log_line(ln)
     if not text:
         return rows, meta, ["sonde.csv est vide"]
     head = text[0].strip().split(",")
@@ -1032,9 +1053,9 @@ def run(folder, out_dir):
     r1_files = sorted(f for f in os.listdir(folder) if f.startswith("r1_") and f.endswith(".csv"))
     problems = []
     fini = read_fini(os.path.join(folder, "fini.txt"), scrub) if present["fini.txt"] else {}
-    fiches, p = read_fiches(os.path.join(folder, "fiches.csv")) if present["fiches.csv"] else ({}, [])
+    fiches, p = read_fiches(os.path.join(folder, "fiches.csv"), scrub) if present["fiches.csv"] else ({}, [])
     problems += p
-    tous, p = read_tous(os.path.join(folder, "tous.csv")) if present["tous.csv"] else ([], [])
+    tous, p = read_tous(os.path.join(folder, "tous.csv"), scrub) if present["tous.csv"] else ([], [])
     problems += p
     sonde_rows, sonde_meta, p = read_sonde(os.path.join(folder, "sonde.csv"), scrub) if present["sonde.csv"] else ({}, {}, [])
     problems += p
@@ -1053,7 +1074,7 @@ def run(folder, out_dir):
                 m1_df[base] = df
                 digits_of[base] = int(dg or 0)
         except Exception as e:                                          # one bad file never stops the others
-            problems.append(f"{fn} illisible : {str(e)[:120]}")
+            problems.append(f"{fn} illisible ({e.__class__.__name__} : ligne ou colonne illisible ; texte jamais recopie)")
     for fn in r1_files:                                                 # ReleveFP 1.10: the terminal's own M1 bars
         base = fn[3:-4]
         try:
@@ -1063,7 +1084,7 @@ def run(folder, out_dir):
                 dg = fiches.get(base, {}).get("digits") if fiches.get(base, {}).get("found") else None
                 digits_of[base] = int(dg) if dg is not None else m1_digits(os.path.join(folder, fn))
         except Exception as e:                                          # noqa: BLE001
-            problems.append(f"{fn} illisible : {str(e)[:120]}")
+            problems.append(f"{fn} illisible ({e.__class__.__name__} : ligne ou colonne illisible ; texte jamais recopie)")
     rep = Report()
     account_checks(rep, fini, sonde_rows, sonde_meta, m1)
     bases = list(C.ROBOT_BASES) + sorted((set(fiches) | set(sonde_rows) | set(m1) | set(r1_df)) - set(C.ROBOT_BASES))

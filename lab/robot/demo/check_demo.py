@@ -1,79 +1,104 @@
 """Check two weeks of the robot on the FP demo account from the files the user sends back from the Mac.
 
     python3 -I lab/robot/demo/check_demo.py --journals DIR [--bars DIR] [--printed FILE ...] [--out DIR]
-                                            [--fiches FILE] [--spread auto|open|close|mean|max|min2]
+                                            [--fiches FILE] [--spread auto|open|close|mean|max|min2|min]
                                             [--input InpName=value ...] [--no-replay] [--rebuild]
 
 --journals  the robot's daily files MQL5/Files/ClaudeRobot/<yyyymmdd>.log (CR_Journal.mqh JrnAt: one line
             CR|<utc>|<EVENT>|<code>|k=v|... per event, utc = the event's lab time, doubles DoubleToString(x, -16);
-            lines of a rebuild's replay end with |rp=1 and are written to the file only). The line format and the
-            number parser are check/compare.py's (read-only); a line that does not parse is counted, not fatal.
+            lines of a rebuild's replay end with |rp=1 and are written to the file only). The line format is
+            check/compare.py's (read-only); every field is checked against the robot's own (demo_common.SCHEMA: a
+            number for each numeric key, a fixed vocabulary for each text key, every field the robot always writes,
+            printable ASCII only): a line that fails is unreadable, counted and located, and its text is never kept.
+            Every line, the robot's included, is scanned for account values first, so that they are masked everywhere.
             A .log file that is not a robot journal (MetaTrader's own logs have the same <yyyymmdd>.log names: UTF-16,
             or no line starting with 'CR|') is skipped and named. The text of a line that is not a robot line is never
-            kept or written (it may hold the login, the server, the holder's name or the user folder): only its file
-            and line number; it is scanned so that any account value it holds is masked everywhere.
+            kept or written (it may hold the login, the server, the holder's name or the user folder).
             Missing daily files: the robot writes a DAY line for every server day it runs live (weekends included,
             written at the first minute of a later day into that day's file, CR_Main.mqh MainDaily); after a REBUILD
             the next DAY line is the rebuild day's (the replay writes none but leaves the day counter there); a start
             or a stop (INIT) breaks the chain until the next REBUILD. Any other jump in the DAY days means lost lines:
             the absent files are named, the positions whose exit lines were in them are flagged, the money estimate
-            is marked incomplete, and their hours are left out of the replay comparison.
+            is marked incomplete, and their hours are left out of the replay comparison. The chain cannot see a lost
+            last file: a journal whose last live line is not the robot's stop (INIT deinit) is flagged (robot still
+            running, or last file missing), and with ReleveFP's run time (fini.txt server_time beside the m1 files or
+            fiches.csv, fiches.csv's tick times, the end of its minutes) the days without a file up to it are named;
+            a journal that reaches ReleveFP's day without a stop line is a robot still running (no anomaly).
+            Lost lines without a lost file: lines the robot always writes in pairs are checked on the journal alone
+            (a PFILL or SIZE without the DEC of its order, a PEXIT, PREVISE, PSTOP or HOLD without its PFILL, a filled
+            SEND without its FILL and a FILL without its SEND, a CLOSE or SLMOD whose ticket has no FILL or ADOPT, a paper
+            trade with no exit before the next one of its sleeve or after its time exit): each break is 'ligne(s) du
+            journal manquante(s)' unless it falls in a hole already named, and it makes the money estimate incomplete.
+            Lines OnInit writes before its INIT line (a CLOCK of the guards' clock check, an ERROR) belong to that start.
 --printed   the Experts tab's lines (copied text, or MetaTrader's own MQL5/Logs/<yyyymmdd>.log, UTF-16 accepted):
             the same CR| lines after a terminal prefix, live lines only (rp=1 is never printed, SPEC 2.6). Other lines
             are never kept; they are only scanned for an account login or server name, which is then masked.
---bars      ReleveFP's m1_<BASE>.csv files (ReleveFP.mq5 Minutes/Row: time,bo,bh,bl,bc,ao,ah,al,ac,n,sp_mean,sp_max;
-            time = server seconds; bid and ask O/H/L/C of the ticks of the minute; sp_mean, sp_max in price units),
-            optionally with fiches.csv beside them (digits, contract sizes, minimum lots for the mock).
+--bars      ReleveFP's files: m1_<BASE>.csv (ReleveFP.mq5 Minutes/Row: time,bo,bh,bl,bc,ao,ah,al,ac,n,sp_mean,
+            sp_max and, from ReleveFP 1.10, sp_min; time = server seconds; bid and ask O/H/L/C of the ticks of the
+            minute; spreads in price units) and, from ReleveFP 1.10, r1_<BASE>.csv (Rates/RateRow: the terminal's own
+            M1 bars, what the robot reads with CopyRates: time,open,high,low,close,tick_volume,spread,real_volume, bid
+            prices, MqlRates.spread in points), optionally with fiches.csv and fini.txt beside them. Files of ReleveFP
+            1.00 (no sp_min, no r1) are read too.
 
 What it does:
  (a) the journal: builds and inputs of every INIT line (CR_BUILD must be fd6aaf01e332 or a later build of the git
      history of dist/; an older, unknown, debug or harness build is flagged), SELFTEST, PLAN, REBUILD, READY and
      NOTREADY with their durations after each start, restarts and their reasons, every ERROR, DUP, SLFIX, REFUSED,
      MISSED (with its reason), COST, LATEBAR, GUARD, STOP, MARK, WATCH line (and ORPHAN, CLOCK, GAP, SETTLE, TAKEOVER,
-     LOCK, ADOPT), and per sleeve the counts of DEC, PFILL, PEXIT, SIZE, SEND, FILL, CLOSE (live and replayed).
+     LOCK, ADOPT), and per sleeve the counts of DEC, PFILL, PEXIT, SIZE, SEND, FILL, CLOSE (live and replayed). The live
+     period runs from the first start (INIT) or rebuild, not from a decision stamped earlier (a D4H DEC is stamped at
+     its bar's decision time). The checks of missing lines and of the journal's end are described above.
  (b) fills: each real position (FILL, or ADOPT after a restart) against its paper trade (PFILL, PEXIT/PREVISE of the
      same oid): entry and exit price differences in points, bp and EUR at the real lots (EUR per point from the FILL
      line's own risk: risk = (side x (fill - sl) + 2h) / tick size x tick value x lots, CR_Broker.mqh BrkRiskMoney);
      the exits: an EA close (a CLOSE line with ok=1, rc 10009 or 10010 and a price), or a broker stop, which the
-     journal does not write (no line: its price is estimated at the broker stop, FILL sl or the last SLMOD). A CLOSE
-     with ok=1 but rc 0 and px 0 is the race where the broker's stop closed the position just before the robot's
-     request (CR_Broker.mqh BrkClose: CTrade clears its result): a broker stop too. A position whose paper trade
-     ended otherwise (time, target, rule, eod ...: not stop, trail or gap) and has no successful CLOSE was either not
-     closed by the robot or stopped by the broker before the paper's exit: with --bars, the releve's minutes say
-     whether the real quotes crossed its broker stop in between (bid low for a long, ask high for a short); else, or
-     when they did not, it is an anomaly. Its exit is then unknown and it is left out of the money totals; so is a
-     CLOSE refused (ok=0) never followed by a success. An oid with two real tickets (FILL or ADOPT) is an anomaly;
-     so is a position with no exit line whose paper exit time has passed while the journal goes on (lines missing).
-     Points are given per sleeve and per market only (their sizes differ); totals are in bp and EUR. On gold the
-     paper's prices hold the commission (h = 3
+     journal does not write (no line: its price and slippage are unknown). A CLOSE with ok=1 but rc 0 and px 0 is the
+     race where the broker's stop closed the position just before the robot's request (CR_Broker.mqh BrkClose: CTrade
+     clears its result): a broker stop too. With --bars the releve's minutes must reach the broker stop (the FILL sl,
+     then each SLMOD) for every such exit (bid low for a long, ask high for a short), else it is an anomaly ('stop
+     jamais touche') and the exit is unknown. Exits at the broker's stop stay out of the exit averages, the euros and
+     the headline; they are counted apart with an estimate at stop x (1 -/+ the lab's stop slippage), what the paper
+     books for its own stop exit, and their real slippage is in the balance difference only. A position whose paper
+     trade ended otherwise (time, target, rule, eod ...) and has no successful CLOSE was either not closed by the robot
+     or stopped by the broker before the paper's exit: with --bars, the releve's minutes say which; else, or when they
+     did not cross, it is an anomaly. Its exit is then unknown and it is left out of the money totals; so is a CLOSE
+     refused (ok=0) never followed by a success. An oid with two real tickets (FILL or ADOPT) is an anomaly; so is a
+     position with no exit line whose paper exit time has passed while the journal goes on (lines missing).
+     Points are given per sleeve and per market only (their sizes differ); totals are in bp and EUR. The total entry
+     average holds the entries on time only: a stop, limit or OCO order is sent one bar after the paper's fill by
+     design (SIZE late=1), and those entries are shown apart. On gold the paper's prices hold the commission (h = 3
      points a side, SPEC 2.2), so the differences are also given commission included (the measured COST rate, else
      the model); the broker's own slippage against the quote the request went with (SEND bid / ask); per sleeve and
-     in total, and the share of intents
-     (live SIZE lines) that became real trades. The journal holds no deal line (CR_Ledger.mqh reads DEAL_COMMISSION
-     and DEAL_SWAP but writes neither): per-trade commission and swap are UNKNOWN; the gold commission of each server
-     day comes from the COST lines (comm_usd_oz, against the robot's 0.06 USD per oz); the DAY lines' balances give an
-     estimate of costs not in the prices (commission + swap + stop slippage) against the gross result.
- (c) replay (with --bars): ReleveFP's minutes become the harness's bar files (check/mock_replay.h rp_load_bars and
+     in total, and the share of intents (live SIZE lines) that became real trades. The journal holds no deal line
+     (CR_Ledger.mqh reads DEAL_COMMISSION and DEAL_SWAP but writes neither): per-trade commission and swap are
+     UNKNOWN; the gold commission of each server day comes from the COST lines (comm_usd_oz, against the robot's 0.06
+     USD per oz); the DAY lines' balances give an estimate of costs not in the prices (commission + swap + stop
+     slippage) against the gross result.
+ (c) replay (with --bars): each market's bars become the harness's bar files (check/mock_replay.h rp_load_bars and
      check/export_frames.py: b"CRB1", int32 digits, int64 n, n x <int64 server time, int32 bid O/H/L/C in points,
      int32 spread in points>; the robot's paper ask = bid + spread x point + h on all four prices, CR_Bars.mqh
-     BarsMakeAt, so the spread is the bar's MqlRates.spread). Which ReleveFP column gives MqlRates.spread is an open
-     Mac item (SPEC 10.3: the moderator says the bar's minimum): --spread auto measures it on the live journal (every
-     paper line carries its bar's s_raw) and on the COST lines, and picks the convention that matches. All bars are
-     passed (the robot masks them itself). dist/ClaudeRobot.mq5 is built with the harness (check/build.py, name
-     demo_check_release, CR_XAU_COMM_PTS from the INIT line, 6 in the release; the dist file is read, never
-     regenerated) and replays the span as an observer (InpTrade false, SPEC 10.2 and 10.12) with the inputs of the
-     INIT line (risk table, sleeves, the three switches as resolved, the K1 table), the plan start and B(T) of the
-     PLAN line (InpPlanStart, MOCK_BALANCE), and --input for what INIT does not show (InpExtraClosures ...). Then the
-     live lines of SPEC 10.12 step 3 (DEC, PFILL, PEXIT, PSTOP, PREVISE, PVOID, PREFUSE, HOLD, SIZE, MISSED) are
-     compared line for line, matched by key (event, sleeve, oid, bar or time), every field equal (doubles built on
-     rolling or Wilder values within 1e-12 relative, SPEC 7). Every difference is listed with its first line on each
-     side. Choice for SIZE (it depends on the real account): the replay is NOT given the account's deal history,
-     because the journal does not hold it (no deal line, no broker stop fill, no commission or swap), so MOCK_DEALS
-     could only be guessed; SIZE is compared on what does not depend on the account or on the tick of the request:
-     stamp, sleeve, oid, side, entry type, late flag and stake factor; when the live copy is an observer (no FILL),
-     the balance never moved for the robot, so B, P_in, rate, m, w and the week unit are compared too (the replay
-     starts from the PLAN line's B(T)); the skip reason is compared when both copies observe and the replay's symbol
-     was READY. lots, want, r, budget and quote are never compared (account and tick). MISSED is compared for
+     BarsMakeAt, so the spread is the bar's MqlRates.spread). From r1_<BASE>.csv (ReleveFP 1.10) the bars are the
+     terminal's own: prices converted to integer points exactly, spread = MqlRates.spread, no calibration. From
+     m1_<BASE>.csv the column that gives MqlRates.spread is measured (SPEC 10.3, the moderator says the bar's
+     minimum): --spread auto matches every paper line's s_raw against the open, close, rounded mean, max, min2 and,
+     with ReleveFP 1.10, min (sp_min) conventions, and the COST lines; when no column gives 90 % of the bars, the
+     sleeves of those markets are not compared (with no r1 file at all the replay is not run and the verdict says it
+     cannot be used), instead of hundreds of differences. The report says which file each market's bars came from.
+     All bars are passed (the robot masks them itself). dist/ClaudeRobot.mq5 is built with the harness
+     (check/build.py, name demo_check_release, CR_XAU_COMM_PTS from the INIT line, 6 in the release; the dist file is
+     read, never regenerated) and replays the span as an observer (InpTrade false, SPEC 10.2 and 10.12) with the
+     inputs of the INIT line (risk table, sleeves, the three switches as resolved, the K1 table), the plan start and
+     B(T) of the PLAN line (InpPlanStart, MOCK_BALANCE), and --input for what INIT does not show (InpExtraClosures
+     ...). Then the live lines of SPEC 10.12 step 3 (DEC, PFILL, PEXIT, PSTOP, PREVISE, PVOID, PREFUSE, HOLD, SIZE,
+     MISSED) are compared line for line, matched by key (event, sleeve, oid, bar or time), every field equal (doubles
+     built on rolling or Wilder values within 1e-12 relative, SPEC 7). Every difference is listed with its first line
+     on each side. Choice for SIZE (it depends on the real account): the replay is NOT given the account's deal
+     history, because the journal does not hold it (no deal line, no broker stop fill, no commission or swap), so
+     MOCK_DEALS could only be guessed; SIZE is compared on what does not depend on the account or on the tick of the
+     request: stamp, sleeve, oid, side, entry type, late flag and stake factor; when the live copy is an observer (no
+     FILL), the balance never moved for the robot, so B, P_in, rate, m, w and the week unit are compared too (the
+     replay starts from the PLAN line's B(T)); the skip reason is compared when both copies observe and the replay's
+     symbol was READY. lots, want, r, budget and quote are never compared (account and tick). MISSED is compared for
      reason=exited (P5, account-independent); the other reasons come from the real account and are listed apart.
      Lines are compared only where both sides can hold them: inside each sleeve's own span (from the latest first
      minute to the earliest last minute among the markets it reads, READS_OF_CODE: a market whose minutes start late
@@ -82,23 +107,31 @@ What it does:
      paper chains are flat together (a trade held over the replay's start would block the next one on one side only),
      every line of one paper trade in or out together (by its oid's decision time), while the live copy was running
      live (from a REBUILD to its INIT deinit) with the same paper inputs, outside the hours of a missing daily file.
+     A line only the replay has is also judged by when the replay wrote it (the clock of the lines before it): a
+     decision stamped before the robot's stop but written after it (D4H's DEC stamped 17:59 UTC is written at the
+     next server midnight, a Friday decision on Monday) or inside a missing file's hours is not a difference.
      Each sleeve's coverage ("compare du ... au ..." or "jamais") is printed. With ReleveFP's default InpDays=30 and
-     a two-week demo at the end of it: BKB, BKE (5-day warm-up) and ORX (3 days) are compared over most of the demo,
-     N30 and NQB (25 days) over its last days only, OC4 (35), F1B, F1E, GFP (30) and D4H (120) never; InpDays=150
-     compares every sleeve over the whole demo, and the tool asks for it when a sleeve is left out. The AGG and COST
-     lines of both sides are set side by side (bars fed per server day and symbol; median spreads), which shows
-     whether ReleveFP's minutes are the broker's bars; a day that differs is an anomaly.
+     no r1 file, a two-week demo at the end of it: BKB, BKE (5-day warm-up) and ORX (3 days) are compared over most
+     of the demo, N30 and NQB (25 days) over its last days only, OC4 (35), F1B, F1E, GFP (30) and D4H (120) never;
+     ReleveFP 1.10's r1 files (InpRateDays=200) or InpDays=150 compare every sleeve over the whole demo, and the tool
+     asks for them when a sleeve is left out; minutes that end before the demo ask to run ReleveFP after it. The AGG
+     and COST lines of both sides are set side by side (bars fed per server day and symbol, each market only on the
+     days its bars cover whole; median spreads), which shows whether ReleveFP's bars are the broker's; a day that
+     differs is an anomaly.
  (d) --printed: the printed lines against the files' live lines: the same copy (the Mac's) must print every live line
-     of its files; another copy (the VPS's, INIT vps=1) is compared on SPEC 10.12's lines as above (shadow weeks).
-     A --printed file with no robot line at all (the terminal's Journal tab, say) is named as an anomaly.
+     of its files between its first and last printed line, in the files' order (write order, not stamps: a
+     Friday-close DEC stamped Saturday is written on Monday); another copy (the VPS's, INIT vps=1) is compared on
+     SPEC 10.12's lines as above (shadow weeks). A --printed file with no robot line at all (the terminal's Journal
+     tab, say) is named as an anomaly.
  MISSED: the reasons that come from the account (refused, prev_open, market_shut ...) are anomalies; 'exited' and
      'notrade' never are; 'late', 'notready' and 'exited' within 15 min of a start (a paper trade already open, SPEC
      4.8 d) are not; 'observe' is not when its stamp is before the PLAN line's start T (InpPlanStart set to the
      go-live time, SPEC 1 step 3) or the plan is not in force yet. A PLAN state 'unset' (no entry on a real account)
      is an anomaly.
 Output in --out (default: the session scratchpad; a folder inside the repository is refused): report.json,
-report_fr.txt, the converted bars and the replay's journal under replay/; a French summary on stdout that says
-"rien d'anormal" only when nothing is.
+report_fr.txt, the converted bars and the replay's journal under replay/; a French summary on stdout. When nothing
+is abnormal the verdict is "Rien d'anormal." only if the replay compared every sleeve over the whole demo; otherwise
+it reads "Rien d'anormal sur ce qui a pu etre compare (N sleeves non comparees : ...)".
 """
 import argparse
 import hashlib
@@ -140,7 +173,8 @@ DEINIT_FR = {0: "arret par le programme", 1: "robot retire du graphique", 2: "re
              9: "terminal ferme"}
 REC = np.dtype([("t", "<i8"), ("o", "<i4"), ("h", "<i4"), ("l", "<i4"), ("c", "<i4"), ("s", "<i4")])
 SPREAD_CONV = ["open", "close", "mean", "max", "min2", "min"]      # min: ReleveFP 1.10's sp_min (absent from 1.00 files)
-CONV_MATCH = 0.99                                # a convention 'matches' when it gives s_raw on 99 % of the paper bars
+CONV_MATCH = 0.99                                # below this share of the paper bars, the report warns that some bars differ
+CONV_USABLE = 0.9                                # below this, no column gives the bar spread: the m1 replay cannot be used
 REPLAY_NAME = "demo_check_release"
 # lines OnInit may write before its INIT line: the guards' clock check (GrdSelfTest), an input refused (ERROR), a lock taken
 # over (TAKEOVER), a change on a real account (INIT change=, ChangeOn); they belong to the start that follows (review2 N8 b)
@@ -429,9 +463,10 @@ def journal_end(rows, files, releve_end):
         res["kind"] = "missing_tail"
         res["missing_files"] = miss
         res["ranges"] = [(C.srv_to_utc(days[-1] + 86400) - 600, INF_T)]
+        more = f" (et {', '.join(miss[1:])} si le robot tournait encore ces jours-la)" if len(miss) > 1 else ""
         res["anomaly"] = (f"fin du journal le {res['last_line_when']} sans ligne d'arret alors que le releve de ReleveFP va jusqu'au "
-                          f"{res['releve_end_when']} : fichier(s) du jour manquant(s) probable(s) : {', '.join(miss)} (dernier fichier "
-                          "manquant, ou robot arrete sans ligne d'arret : terminal ferme d'un coup, Mac eteint ; envoyer ces fichiers s'ils existent)")
+                          f"{res['releve_end_when']} : fichier du jour manquant probable : {miss[0]}{more} (dernier fichier manquant, ou "
+                          "robot arrete sans ligne d'arret : terminal ferme d'un coup, Mac eteint ; envoyer ces fichiers s'ils existent)")
     else:
         res["kind"] = "running"
         res["note"] = ("robot encore en marche quand les fichiers ont ete copies (pas de ligne d'arret a la fin ; le journal va jusqu'au "
@@ -906,6 +941,7 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None):
                 d = side * (e["paper_exit"] - e["exit_est"])
                 e["exit_diff_est_pts"] = d / pt
                 e["exit_diff_est_bp"] = d / e["paper_exit"] * 1e4
+                e["exit_diff_est_net_bp"] = (d + comm_side[b]) / e["paper_exit"] * 1e4    # gold: the paper's prices hold h
                 e["exit_diff_est_eur"] = d * e["lots"] * k if (k and e.get("lots")) else None
         if side and e.get("exit_real") is not None and e.get("entry_real") is not None and e.get("lots") and k:
             e["gross_eur"] = side * (e["exit_real"] - e["entry_real"]) * e["lots"] * k
@@ -966,6 +1002,7 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None):
         q["entry_diff_late_eur_sum"] = sum(le) if le else None
         q["estimated_exits"] = len(est)
         q["exit_diff_est_bp_mean"] = C.mean([e["exit_diff_est_bp"] for e in est if e.get("exit_diff_est_bp") is not None])
+        q["exit_diff_est_net_bp_mean"] = C.mean([e["exit_diff_est_net_bp"] for e in est if e.get("exit_diff_est_net_bp") is not None])
         if key_ is not None:
             q["exit_diff_est_pts_mean"] = C.mean([e["exit_diff_est_pts"] for e in est if e.get("exit_diff_est_pts") is not None])
         ee = [e["exit_diff_est_eur"] for e in est if e.get("exit_diff_est_eur") is not None]
@@ -1083,7 +1120,9 @@ def calibrate(live_rows, tables):
     """which ReleveFP column gives the bar spread the robot saw: (1) every live paper line carries its bar (UTC) and that
     bar's s_raw; (2) every COST line carries the day's median raw spread in bp of the mid over the kept bars. 'min' (the
     sp_min column) exists only in ReleveFP 1.10 files. usable is False when the paper lines show that no column gives the
-    bar spread (best share below CONV_MATCH): the replay of those markets cannot be used (review2 N4)"""
+    bar spread (best share below CONV_USABLE): the replay of those markets cannot be used (review2 N4); a convention that
+    gives most bars but not all (a few days whose minutes differ from the broker's bars) keeps the replay, whose
+    differences and COST lines then show those days"""
     per = {k: {"n": 0, "match": 0} for k in SPREAD_CONV}
     min_ok = {"n": 0, "inside": 0}
     for r in live_rows:
@@ -1126,7 +1165,7 @@ def calibrate(live_rows, tables):
         best = max((k for k in SPREAD_CONV if per[k]["n"]), key=lambda k: (per[k]["match"] / per[k]["n"], k == "open"))
         share = per[best]["match"] / per[best]["n"]
         choice, why = best, f"{per[best]['match']} barres sur {per[best]['n']} egales a s_raw des lignes du papier"
-        usable = share >= CONV_MATCH
+        usable = share >= CONV_USABLE
     elif any(v for v in cost.values()):
         best = min((k for k in SPREAD_CONV if cost[k]), key=lambda k: sum(cost[k]) / len(cost[k]))
         choice, why = best, f"ecart median du jour le plus proche des lignes COST ({len(cost[best])} jours)"
@@ -1274,6 +1313,19 @@ OUT_WARMUP = "echauffement du rejeu (pas assez d'historique avant)"
 OUT_SPAN = "hors de la periode des minutes du releve"
 OUT_GAP = "journal du robot manquant a ce moment (fichier du jour absent)"
 OUT_UNUSABLE = "ecart des barres inconnu pour ce marche (aucune colonne du releve ne redonne MqlRates.spread)"
+OUT_WRITTEN = "ligne que le robot aurait ecrite apres son arret (decision datee avant, ecrite plus tard)"
+
+
+def write_times(rows):
+    """when each line was written: a journal is in write order and the NOW_STAMPED events carry the clock, so a line was
+    written at the latest of its own stamp and the clock of the lines before it (a decision stamped at its bar can be
+    written hours later, at the server's midnight: D4H's DEC stamped 17:59 UTC lies after the 22:00 DAY line)"""
+    out, now = {}, None
+    for r in rows:
+        if r["ev"] in NOW_STAMPED and r.get("rp") != 1:
+            now = r["utc"] if now is None else max(now, r["utc"])
+        out[id(r)] = r["utc"] if now is None else max(now, r["utc"])
+    return out
 
 
 class Windows:
@@ -1320,6 +1372,18 @@ class Windows:
                 return None if same_in else "autres reglages du robot a ce moment"
         return "robot pas en marche (en direct) a ce moment"
 
+    def not_live_at(self, w):
+        """why a line the replay wrote at w (its write time, not its stamp) cannot be in the live journal: inside a missing
+        daily file's hours, or while no live copy ran (after a stop, or after the last line of files copied while the robot
+        ran); None when the live copy was running then"""
+        if w is None:
+            return None
+        if any(a <= w <= b for a, b in self.gaps):
+            return OUT_GAP
+        if self.no_init or any(a < w <= b for a, b, _ in self.cover):
+            return None
+        return OUT_WRITTEN
+
 
 def disturbances(live_rows):
     """live events that change what the live robot saw: LATEBAR, GAP, REBUILD, INIT, NOTREADY, SETTLE (per symbol or all)"""
@@ -1341,6 +1405,7 @@ def near(dist, code, t):
 def compare_lines(live_rows, rep_rows, win, mode, dist, replay_ready):
     lv = keyed([r for r in live_rows if r["ev"] in COMPARE_EV and r.get("rp") != 1])
     rp = keyed([r for r in rep_rows if r["ev"] in COMPARE_EV and r.get("rp") != 1])
+    rep_written = write_times(rep_rows)
     stats = {ev: Counter() for ev in COMPARE_EV}
     diffs, account, excluded = [], [], Counter()
     compared = Counter()                                     # lines compared per sleeve (coverage)
@@ -1350,6 +1415,10 @@ def compare_lines(live_rows, rep_rows, win, mode, dist, replay_ready):
         r = a or b
         ev, code = r["ev"], r["code"]
         why = win.why_out(code, key_time(r), dec_time(r))
+        if not why and a is None:
+            # a line only the replay has: the live robot could not write it if it would have come after its stop or in a
+            # missing file's hours, although its stamp is earlier (a decision written at the next server midnight)
+            why = win.not_live_at(rep_written.get(id(b)))
         if why:
             excluded[why] += 1
             continue
@@ -1455,7 +1524,7 @@ def load_minutes(bars_dir, fiches):
                               "bl": df.bl.to_numpy().astype(float), "ah": df.ah.to_numpy().astype(float), "ah_exact": True}
                     files[b].append(os.path.basename(p))
             except Exception as e:                               # noqa: BLE001 (any unreadable file is reported, never fatal)
-                problems.append(f"m1_{b}.csv illisible : {str(e)[:100]}")
+                problems.append(f"m1_{b}.csv illisible ({e.__class__.__name__} : texte jamais recopie)")
         p = os.path.join(bars_dir, f"r1_{b}.csv")
         if os.path.exists(p):
             try:
@@ -1472,7 +1541,7 @@ def load_minutes(bars_dir, fiches):
                               "bl": df.low.to_numpy().astype(float), "ah": df.high.to_numpy().astype(float) + sp * pt, "ah_exact": False}
                     files[b].append(os.path.basename(p))
             except Exception as e:                               # noqa: BLE001
-                problems.append(f"r1_{b}.csv illisible : {str(e)[:100]}")
+                problems.append(f"r1_{b}.csv illisible ({e.__class__.__name__} : texte jamais recopie)")
         if b not in m1t and b not in r1t:
             problems.append(f"ni m1_{b}.csv ni r1_{b}.csv lisible : les regles de {b} ne sont pas rejouees")
     stop = {b: (m1t.get(b) or r1t.get(b)) for b in C.ROBOT_BASES if b in m1t or b in r1t}
@@ -1543,6 +1612,8 @@ def replay_check(rows, starts, minutes, out, fiches, spread_opt, inputs_extra, r
             tb = m1t[b]
             sc = 10.0 ** tb["digits"]
             o, h, l_, c = (np.rint(tb["df"][k].to_numpy() * sc).astype(np.int64) for k in ("bo", "bh", "bl", "bc"))
+            if conv not in tb["conv"]:
+                problems.append(f"m1_{b}.csv n'a pas la colonne de la convention {conv} (sp_min : ReleveFP 1.10) : ecart de l'ouverture pris")
             write_bin(path, tb["digits"], tb["t"], o, h, l_, c, tb["conv"].get(conv, tb["conv"]["open"]))
         else:
             dg = int((fiches.get(b) or {}).get("digits") or 2) if fiches else 2
@@ -1889,13 +1960,15 @@ def french_report(rep):
         if name in ("GFP", "D4H", "ORX", "XAUUSD"):
             net = (f" [commission comprise : entree {C.frs(q.get('entry_diff_net_pts_mean'), 2, 'pts')}, sortie "
                    f"{C.frs(q.get('exit_diff_net_pts_mean'), 2, 'pts')} ; le papier de l'or met la commission dans ses prix]")
-        ent = (f"{C.frs(q.get('entry_diff_pts_mean'), 2, 'pts')} ({C.frs(q['entry_diff_bp_mean'], 2, 'pb')})" if pts
-               else C.frs(q["entry_diff_bp_mean"], 2, "pb"))
+        ent = (f"{C.frs(q.get('entry_diff_pts_mean'), 2, 'pts')} ({C.frs(q['entry_diff_bp_mean'], 2, 'pb')}) en moyenne" if pts
+               else f"{C.frs(q['entry_diff_bp_mean'], 2, 'pb')} en moyenne")
         if pts and q.get("entries_late"):
-            ent += f" dont {q['entries_late']} en retard d'une barre par construction"
+            ent += f" (dont {q['entries_late']} en retard d'une barre par construction)"
         elif not pts and q.get("entries_late"):
-            ent += (f" pour les entrees a l'heure ; {q['entries_late']} entree(s) en retard par construction (ordres stop envoyes une "
-                    f"barre apres le papier) : {C.frs(q.get('entry_diff_late_bp_mean'), 2, 'pb')}")
+            ent = ((f"{C.frs(q['entry_diff_bp_mean'], 2, 'pb')} en moyenne pour les entrees a l'heure" if q["entry_diff_bp_mean"] is not None
+                    else "aucune a l'heure")
+                   + f" ; {q['entries_late']} entree(s) en retard par construction (ordres stop envoyes une barre apres le papier) : "
+                   f"{C.frs(q.get('entry_diff_late_bp_mean'), 2, 'pb')}")
         sor = (f"{C.frs(q.get('exit_diff_pts_mean'), 2, 'pts')} ({C.frs(q['exit_diff_bp_mean'], 2, 'pb')})" if pts
                else C.frs(q["exit_diff_bp_mean"], 2, "pb"))
         fil = (f"{C.frs(q.get('fill_vs_quote_pts_mean'), 2, 'pts')} ({C.frs(q['fill_vs_quote_bp_mean'], 2, 'pb')})" if pts
@@ -1905,8 +1978,9 @@ def french_report(rep):
         if q.get("estimated_exits"):
             est = (f" ; {q['estimated_exits']} sortie(s) par stop courtier : prix et glissement inconnus (aucune ligne), hors des moyennes et "
                    f"des euros, seulement dans la difference du solde ; estimation au stop x (1 - glissement du labo) : "
-                   f"{C.frs(q.get('exit_diff_est_bp_mean'), 2, 'pb')}, {C.frs(q.get('exit_diff_est_eur_sum'), 2, 'EUR')}")
-        return (f"  {name:6s} {q['positions']} position(s) : entree {ent} en moyenne, sortie {sor} (fermetures du robot), soit "
+                   f"{C.frs(q.get('exit_diff_est_bp_mean'), 2, 'pb')}, {C.frs(q.get('exit_diff_est_eur_sum'), 2, 'EUR')}"
+                   + (f" (commission comprise {C.frs(q.get('exit_diff_est_net_bp_mean'), 2, 'pb')})" if net else ""))
+        return (f"  {name:6s} {q['positions']} position(s) : entree {ent}, sortie {sor} (fermetures du robot), soit "
                 f"{C.frs((q['entry_diff_eur_sum'] or 0) + (q['exit_diff_eur_sum'] or 0), 2, 'EUR')} ; stops : {q['stop_exits_paper']} au papier, "
                 f"{q['broker_stops_estimated']} chez le courtier{unk} ; remplissage contre le prix de l'envoi {fil}" + est + net)
     for c in C.CODES:
@@ -2075,8 +2149,7 @@ def short_summary(rep):
                 ent += (f" (hors {tot['entries_late']} entree(s) en retard par construction : "
                         f"{C.frs(tot.get('entry_diff_late_bp_mean'), 2, 'pb')})")
         else:
-            ent = (f"{tot['entries_late']} entree(s), toutes en retard par construction : "
-                   f"{C.frs(tot.get('entry_diff_late_bp_mean'), 2, 'pb')}")
+            ent = f"{C.frs(tot.get('entry_diff_late_bp_mean'), 2, 'pb')} (les {tot['entries_late']} en retard par construction)"
         sor = C.frs(tot["exit_diff_bp_mean"], 2, "pb")
         if tot.get("estimated_exits"):
             sor += f" (hors {tot['estimated_exits']} sortie(s) par stop courtier, prix inconnu)"
