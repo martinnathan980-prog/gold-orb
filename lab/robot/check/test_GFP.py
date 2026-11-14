@@ -11,9 +11,12 @@ What runs (SPEC 7 T4/T5, SPEC 8 row G):
     InpTrade false and the three switches off.
   * The lab, each call in a fresh process (P8), every frame read with the 2022-01-01 cut inside the read call:
       rebuilt   ref_lab.one("GFP") on the frame rebuilt from the same bars (make_orders, r2.run: S0's references);
-      kept      the same lab calls on the rebuilt frame without the bars the EA's mask drops (SPEC 2.2: 20 gold bars of
-                2012-12-31 17:00-17:58 New York, the XAU rule; test_bars.mask_reasons, step B's copy of the mask):
-                the EA's own input, so "EA = lab code on the broker's bars" is checked with no exception;
+      kept      the same lab calls on the rebuilt frame without the bars the EA's mask drops (SPEC 2.2, the XAU rule;
+                test_bars.mask_reasons, step B's copy of the mask): the EA's own input, so "EA = lab code on the
+                broker's bars" is checked with no exception. Since SPEC v2.1 (change X1) export_frames.py drops the
+                gold bars of 17:00-17:59 New York itself (in sample the 20 bars of 2012-12-31 17:00-17:58, which
+                seeded the lab's hour ATR, so three January 2013 stops differed on the rebuilt frame): the mask must
+                then drop nothing, the kept frame IS the rebuilt frame, and a dropped bar fails the test;
       official  ref_lab.one on lab/data/fp (the rebuilt frame rounds the bid to 2 digits, SPEC 7).
     The per-Friday quantities of the lab's make_orders (the 13:30 bar, the 16:45 test, the hour ATR) come from the
     lab's own helpers (_open_at, _atr, _local_ns), to classify the days the lab skips.
@@ -31,7 +34,8 @@ Checks:
      entry and exit price equal, initial stop within 1e-12 relative (compare.cmp_trades with rel 1e-12 gives its own
      verdict too); trades open at the frame end left out. Against the kept frame: no difference but the hole days.
      Against the rebuilt frame: every difference must have a cause, checked: a hole day, or the mask of 2012-12-31
-     (the difference vanishes against the kept frame).
+     (the difference vanishes against the kept frame; since X1 none can remain, as the kept and rebuilt frames must be
+     the same bars).
   4. The lab on the rebuilt frame against the official trades: each difference listed with its cause.
   5. Unit worlds (a generated C++ program on the private tree's rule file, with a test copy of the mock's session hook):
      the calendar on every Friday of 2012-2035 against idxus_lib.us_holidays, typed closures, broker sessions,
@@ -1445,8 +1449,14 @@ def main(argv=None):
                   "lab_run_rebuilt_equals_ref_lab": bool(same_ref),
                   "depth_120d_atr": lab["kept"][0]["depth_120d"]}
     ok &= same_ref and lab["kept"][0]["depth_120d"]["max_rel_diff"] <= REL
+    # SPEC v2.1 change X1: export_frames.py drops the gold bars the EA's mask drops, so the rebuilt frame is the kept frame;
+    # before, 20 bars of 2012-12-31 17:00-17:58 New York seeded the lab's hour ATR and three January 2013 stops differed
+    res["lab"]["rebuilt_frame_is_kept_frame"] = bool(res["lab"]["kept_dropped"]["dropped"] == 0
+                                                     and lab["kept"][0]["bars"] == len(read_frame(frame_path("rebuilt"))))
+    ok &= res["lab"]["rebuilt_frame_is_kept_frame"]
     log(f"depth: the hour ATR at 13:30 from the last 120 days only vs the whole frame (lab code, kept frame): "
         f"{lab['kept'][0]['depth_120d']}")
+    log(f"rebuilt frame = kept frame (the mask drops no bar of the export, SPEC v2.1 X1): {res['lab']['rebuilt_frame_is_kept_frame']}")
     log(f"lab: rebuilt {reb_info['orders']} orders {reb_info['trades']} trades | kept frame {lab['kept'][0]['orders']} orders "
         f"{lab['kept'][0]['trades']} trades ({res['lab']['kept_dropped']['dropped']} bars dropped) | official {off_info['trades']} "
         f"trades | lab_run = ref_lab on the rebuilt frame: {same_ref}")

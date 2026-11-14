@@ -22,10 +22,13 @@ Builds check/test_bars.cpp (the translated src/CR_Bars.mqh and src/CR_Math.mqh w
   7. the sanitizer build (address, undefined behaviour, checked containers): the worlds, the primitives (outputs equal to
      the plain build's, byte for byte) and the 2021 store;
   8. the symbol rows of the test equal CR_Registry.mqh's RegSym rows;
-  9. the mask in sample: the kept bars are the rebuilt frames, except gold bars of 17:00-17:59 New York (the xau rule; in
-     sample: 20 bars, all on 2012-12-31, the gold frame's first day). Any other dropped bar fails the test. The robot has
-     no flat-bar rule (lead decision after step B's finding 1: MT5 makes a bar only when a tick came; on the 2-digit FP
-     bid the lab's flat rule dropped 5,969 real in-sample bars), so bid-flat bars are kept.
+  9. the mask in sample: the kept bars are exactly the rebuilt frames, so the mask drops no in-sample bar at all (SPEC
+     2.2 and 7, v2.1 change X1: export_frames.py drops the gold bars of 17:00-17:59 New York, which the EA's xau rule
+     would drop; in sample these are 20 bars, all on 2012-12-31 17:00-17:58, the gold frame's first day). Any dropped bar
+     fails the test. The export's own filter is also checked directly on the lab frame of that day (read with its row
+     filter inside the read call): the lab frame holds the 20 bars, the export keeps none of them and every other bar. The
+     robot has no flat-bar rule (lead decision after step B's finding 1: MT5 makes a bar only when a tick came; on the
+     2-digit FP bid the lab's flat rule dropped 5,969 real in-sample bars), so bid-flat bars are kept.
 Outputs: check/out/test_bars/ (result.json; the large streams are never written to disk). In-sample only: frames are
 read with ts < 2022-01-01 inside the read call.
 """
@@ -550,8 +553,10 @@ def check_h3(exe, sym_data, tag):
 
 def mask_in_sample(sym_data):
     """SPEC 2.2's mask (the pandas copy) on the in-sample broker bars: what it drops, by reason, year and New York date.
-    The kept bars must be the rebuilt frames except gold bars of 17:00-17:59 New York (the xau rule): any other dropped
-    bar fails (there is no flat-bar rule any more, so nothing else may go)"""
+    The kept bars must be exactly the rebuilt frames: export_frames.py already drops the gold bars of 17:00-17:59 New
+    York (the xau rule, v2.1 change X1), the in-sample frames hold no weekend, crypto-weekend, US100-closure or half-day
+    bar, and there is no flat-bar rule any more; so any dropped bar fails (before X1 the mask dropped the 20 gold bars of
+    2012-12-31 17:00-17:58 New York, and the GFP references ran on bars the EA did not keep)"""
     out, ok = {}, True
     for broker, sd in sym_data.items():
         r, tu = sd["r"], sd["tu"]
@@ -565,8 +570,29 @@ def mask_in_sample(sym_data):
                        "xau_dropped_ny_dates": sorted({str(d) for d in xau_ny.date}),
                        "xau_dropped_ny_first_last": [str(xau_ny.min()), str(xau_ny.max())] if len(xau_ny) else [],
                        "dropped_other_than_xau": other}
-        ok &= other == 0
+        ok &= other == 0 and int(drop.sum()) == 0
     out["pass"] = bool(ok)
+    return out
+
+
+def export_drops_xau_closure():
+    """export_frames.py's own gold filter (SPEC 2.2, v2.1 change X1), checked on the lab frame of 2012-12-31 (read with
+    its row filter inside the read call, in sample): the lab frame holds 20 bars of 17:00-17:59 New York that day, the
+    export keeps none of them and every other bar"""
+    import export_frames
+    lo, hi = pd.Timestamp("2012-12-31", tz="UTC"), pd.Timestamp("2013-01-01", tz="UTC")
+    raw = pd.read_parquet(os.path.join(LAB, "data", "fp", "xauusd_m1.parquet"), filters=[("ts", ">=", lo), ("ts", "<", hi)])
+    assert len(raw) and raw.index.max() < CUT
+    exp = export_frames.load_lab("xauusd", "2012-12-31", "2013-01-01")
+    ny_raw = raw.index.tz_convert("America/New_York")
+    ny_exp = exp.index.tz_convert("America/New_York")
+    closure_raw = int((ny_raw.hour == 17).sum())
+    closure_exp = int((ny_exp.hour == 17).sum())
+    others_kept = bool(exp.index.equals(raw.index[ny_raw.hour != 17]))
+    out = {"lab_bars": int(len(raw)), "lab_bars_17h_ny": closure_raw, "export_bars": int(len(exp)), "export_bars_17h_ny": closure_exp,
+           "lab_17h_first_last_ny": [str(ny_raw[ny_raw.hour == 17].min()), str(ny_raw[ny_raw.hour == 17].max())] if closure_raw else [],
+           "every_other_bar_kept": others_kept}
+    out["pass"] = bool(closure_raw == 20 and closure_exp == 0 and others_kept)
     return out
 
 
@@ -594,6 +620,7 @@ def main(argv=None):
     res["aggregates"] = check_aggregates(agg, sym_data)
     res["h3"] = check_h3(exe_h3, sym_data, tag)
     res["mask_in_sample"] = mask_in_sample(sym_data)
+    res["export_drops_xau_closure"] = export_drops_xau_closure()
     names, series = math_inputs(sym_data)
     ops = math_ops(names, series)
     outs, raw_plain = run_math(exe, names, series, ops, os.path.join(OUT, "math_in.bin"), os.path.join(OUT, "math_out.bin"))
@@ -601,7 +628,7 @@ def main(argv=None):
     res["worlds"] = run_worlds(exe)
     ok = (res["registry"]["pass"] and res["build_plain_warnings"] == 0 and res["build_h3_warnings"] == 0 and res["store"]["pass"]
           and res["costs"]["pass"] and res["aggregates"]["pass"] and res["h3"]["pass"] and res["primitives"]["pass"] and res["worlds"]["pass"]
-          and res["mask_in_sample"]["pass"])
+          and res["mask_in_sample"]["pass"] and res["export_drops_xau_closure"]["pass"])
     if not a.no_sanitize:
         exe_s, warn_s = build_test("test_bars_san", sanitize=True)
         san = {"warnings": len(warn_s), "worlds": run_worlds(exe_s)}

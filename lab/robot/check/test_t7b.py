@@ -1,11 +1,12 @@
 """T7b account (step K): the whole EA in the replay mock against growth.engine, 2018-02 to 2021-12, plans F3S, F2S and
 F1S, F3S with the three changes on, and D2 (the default plan: PROTOCOL_V3 Addendum G).
 
-    python3 -I lab/robot/check/test_t7b.py [--plans F3S,F2S,F1S,F3S_on,D2] [--readings] [--keep]
+    python3 -I lab/robot/check/test_t7b.py [--plans F3S,F2S,F1S,F3S_on,D2] [--no-readings | --only-readings] [--keep]
 
---readings: also D2 and S7 with the crypto margin at 1:2 (MOCK_LEV_BTCUSD.r = MOCK_LEV_ETHUSD.r = 2; FP's retail crypto
-margin may be 50 %, review F11): a reading, never a pass condition. Each reports the EA's MARGIN skips per sleeve and the
-same plan run by growth.engine with that leverage on crypto (summary_readings.json).
+The readings (run by default since SPEC v2.1, so that the suite's run gives them on the final tree; --no-readings skips
+them): D2 and S7 with the crypto margin at 1:2 (MOCK_LEV_BTCUSD.r = MOCK_LEV_ETHUSD.r = 2; FP's retail crypto margin may
+be 50 %, review F11): a reading, never a pass condition. Each reports the EA's MARGIN skips per sleeve and the same plan
+run by growth.engine with that leverage on crypto (summary_readings.json, and summary.json key "readings").
 
 The EA: dist/ClaudeRobot.mq5, harness build with CR_NO_GUARD (SPEC 7 T7b: the plans without the disaster guard) and
 CR_BRK_NOTIONAL_X raised (the lab's engine has no cap on a position's value; the release build cuts a position to 20 x the
@@ -341,7 +342,8 @@ def check_plan(exe, name):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--plans", default=",".join(PLANS))
-    ap.add_argument("--readings", action="store_true", help="also D2 and S7 with the crypto margin at 1:2 (a reading only)")
+    ap.add_argument("--readings", action="store_true", help="kept for the old command lines: the readings run by default")
+    ap.add_argument("--no-readings", action="store_true", help="skip D2 and S7 with the crypto margin at 1:2 (a reading only)")
     ap.add_argument("--only-readings", action="store_true")
     ap.add_argument("--keep", action="store_true")
     a = ap.parse_args(argv)
@@ -349,7 +351,7 @@ def main(argv=None):
     os.makedirs(OUT, exist_ok=True)
     exe, w = build(DIST, name="test_t7b_ng", defines=["CR_NO_GUARD", "CR_BRK_NOTIONAL_X=1e15"])
     names = [] if a.only_readings else a.plans.split(",")
-    reads = list(READINGS) if (a.readings or a.only_readings) else []
+    reads = [] if (a.no_readings and not a.only_readings) else list(READINGS)
     with ThreadPoolExecutor(max_workers=min(4, max(1, len(names) + len(reads)))) as ex:
         out = list(ex.map(lambda n: check_plan(exe, n), names + reads))
     res = {r[0]["plan"]: r[0] for r in out if r[0]["plan"] in PLANS}
@@ -365,6 +367,12 @@ def main(argv=None):
         return 0
     summary = {"dist_cr_build": open(DIST).readline().strip(), "build": "harness + CR_NO_GUARD",
                "warnings": len(w), "plans": res, "sec": round(time.time() - t0, 1)}
+    if rd:                                                      # a reading, never a pass condition (SPEC 7 T7b, review F11)
+        summary["readings"] = {n: {k: r.get(k) for k in ("requests", "taken_ea", "taken_lab", "skips_ea", "skips_lab",
+                                                          "margin_skips_ea_by_sleeve", "margin_skips_lab_by_sleeve",
+                                                          "final_balance_ea", "final_balance_lab", "minus_50_rule_week_lab",
+                                                          "per_trade_differences", "pass")}
+                               for n, r in rd.items()}
     summary["pass"] = bool(summary["warnings"] == 0 and all(r["pass"] for r in res.values()))
     with open(os.path.join(OUT, "summary.json"), "w") as f:
         json.dump(summary, f, indent=1, default=str)
