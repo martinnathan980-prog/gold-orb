@@ -1,7 +1,8 @@
 //+------------------------------------------------------------------+
 //|                                                    ReleveFP.mq5  |
 //|  SCRIPT a lancer une fois (le glisser sur n'importe quel          |
-//|  graphique). Il ne passe AUCUN ordre et ne modifie rien.          |
+//|  graphique). Il ne passe AUCUN ordre ; il ajoute seulement ses    |
+//|  marches a la liste Market Watch (pour lire leurs prix).          |
 //|  Il releve ce que le courtier facture vraiment :                  |
 //|   1. la fiche de chaque marche (lot minimum, taille du contrat,   |
 //|      swaps, horaires)            -> claude\releve\fiches.csv      |
@@ -12,13 +13,20 @@
 //|                                  -> claude\releve\m1_<marche>.csv |
 //|   3. la liste de tous les marches du courtier                     |
 //|                                  -> claude\releve\tous.csv        |
-//|   4. pour chaque marche, les barres M1 du terminal, celles que le |
-//|      robot lit (prix vendeur, ecart en points), sur InpRateDays   |
-//|      jours                       -> claude\releve\r1_<marche>.csv |
+//|   4. pour les marches du robot (InpRateSymbols), les barres M1 du |
+//|      terminal, celles que le robot lit (prix vendeur, ecart en    |
+//|      points), sur le nombre de jours donne pour chaque marche ;   |
+//|      les minutes de tous les marches sont ecrites avant          |
+//|                                  -> claude\releve\r1_<marche>.csv |
 //|  A la fin : claude\releve\fini.txt (resume) et une alerte. Pour   |
 //|  chaque marche : jours, minutes, ticks, du, au, derniere_erreur,  |
-//|  jours_incomplets (les minutes), puis barres, jours_barres et     |
-//|  erreur_barres (jours de barres impossibles a lire).              |
+//|  jours_incomplets (les minutes), puis pour les barres : barres,   |
+//|  jours_barres, erreur_barres (jours impossibles a lire),          |
+//|  jours_courts (moins de barres que le terminal n'en annonce),     |
+//|  erreur_r1 (derniere erreur), jours_r1 (jours demandes), debut_r1 |
+//|  et fin_r1 (premiere et derniere barre du terminal), synchro_r1   |
+//|  et attente_r1 (secondes d'attente du chargement) ; max_barres :  |
+//|  le reglage "Max bars in chart" (il faut 500000, SPEC 1).         |
 //|  Il peut rester plusieurs minutes sur un marche pendant que le    |
 //|  terminal telecharge l'historique : c'est normal.                 |
 //|  Les heures ecrites sont celles du serveur (secondes).            |
@@ -27,12 +35,13 @@
 //+------------------------------------------------------------------+
 #property copyright "gold-orb lab"
 #property version   "1.10"
-#property description "Releve des vrais frais du courtier : fiches des marches et prix acheteur / vendeur minute par minute. Ne passe aucun ordre."
+#property description "Releve des vrais frais du courtier : fiches des marches, prix acheteur / vendeur minute par minute, barres M1 du terminal (r1). Ne passe aucun ordre."
 #property script_show_inputs
 
 input string InpSymbols  = "BTCUSD,ETHUSD,US100,XAUUSD,USDJPY,JP225,EURUSD,US500,GER40"; // Marches (noms de base, du plus important au moins important)
 input int    InpDays     = 30;     // Jours d'historique de ticks a relever
-input int    InpRateDays = 200;    // Jours de barres M1 du terminal a relever (r1_<marche>.csv)
+input string InpRateSymbols = "XAUUSD:200,US100:75,BTCUSD:75,ETHUSD:75"; // Barres M1 du terminal (r1_<marche>.csv) : marche:jours
+input int    InpRateWait = 120;    // Attente maximale (secondes) du chargement des barres M1 d'un marche
 input int    InpMaxEmpty = 6;      // Passer au marche suivant apres ce nombre de jours vides d'affilee
 input bool   InpAllList  = true;   // Ecrire aussi la liste de tous les marches du courtier
 
@@ -293,63 +302,147 @@ string RateRow(const MqlRates &r, const int dg)
    return s;
   }
 
-// the newest day first, no tick read (cheap); returns the bars written (-1 = the file could not be opened);
-// info = "barres=.. jours_barres=.. erreur_barres=.." (erreur_barres: days whose bars could not be read)
-long Rates(const string base, const string nm, const int pos, const int count, string &info)
+// days of terminal bars asked for a market in InpRateSymbols ("BASE:days,..."); 0 = none (only the robot's markets need
+// them: the files stay small enough to send, review R4)
+int RateDays(const string base)
+  {
+   string part[];
+   int n = StringSplit(InpRateSymbols, ',', part);
+   for(int i = 0; i < n; i++)
+     {
+      string kv[];
+      if(StringSplit(part[i], ':', kv) != 2) continue;
+      string k = kv[0];
+      StringTrimLeft(k);
+      StringTrimRight(k);
+      if(k == base) return (int)StringToInteger(kv[1]);
+     }
+   return 0;
+  }
+
+// the terminal's M1 series of a market made ready before it is read: in a script CopyRates returns what is ready at its
+// timeout while the download goes on (MQL5 "Organizing Data Access"), so a series still loading would lose its newest days.
+// Asks for the oldest day wanted once, then waits, one second at a time and InpRateWait seconds at most, until the series is
+// synchronized with the server (SERIES_SYNCHRONIZED) and its bar count since that day (Bars) is the same twice in a row.
+// first, last: the series' first and last bar (SERIES_FIRSTDATE, SERIES_LASTBAR_DATE; 0 = unknown). True when ready in time.
+bool RatesReady(const string nm, const datetime from, datetime &first, datetime &last)
+  {
+   MqlRates one[];
+   CopyRates(nm, PERIOD_M1, from, from + 3600, one);   // starts the download of the oldest day wanted
+   ArrayFree(one);
+   int prev = -1;
+   bool ready = false;
+   for(int w = 0; w <= InpRateWait && !IsStopped(); w++)
+     {
+      bool sync = (SeriesInfoInteger(nm, PERIOD_M1, SERIES_SYNCHRONIZED) != 0);
+      int n = Bars(nm, PERIOD_M1, from, TimeTradeServer());
+      if(sync && n > 0 && n == prev)
+        {
+         ready = true;
+         break;
+        }
+      prev = n;
+      Sleep(1000);
+     }
+   first = (datetime)SeriesInfoInteger(nm, PERIOD_M1, SERIES_FIRSTDATE);
+   last = (datetime)SeriesInfoInteger(nm, PERIOD_M1, SERIES_LASTBAR_DATE);
+   return ready;
+  }
+
+// the newest day first, no tick read (cheap); returns the bars written (-1 = the file could not be opened). The days after
+// the series' last bar (a weekend run) and before its first bar (the start of the history, or the "Max bars in chart" limit)
+// are no error. A day is asked again (one second apart, 5 times at most) while CopyRates fails or gives fewer bars than the
+// terminal lists for it (Bars); the best answer is written, never a last call that could fail (review R7).
+// info = "barres=.. jours_barres=.. erreur_barres=.. jours_courts=.. erreur_r1=.. jours_r1=.. debut_r1=.. fin_r1=..
+// synchro_r1=.. attente_r1=.." (erreur_barres: days that could not be read at all; jours_courts: days with fewer bars than
+// the terminal lists)
+long Rates(const string base, const string nm, const int days_asked, const int pos, const int count, string &info)
   {
    int h = FileOpen(DIR + "r1_" + base + ".csv", FILE_WRITE | FILE_TXT | FILE_ANSI);
    if(h == INVALID_HANDLE)
      {
-      info = "barres=-1 jours_barres=0 erreur_barres=-1";
+      info = "barres=-1 jours_barres=0 erreur_barres=-1 jours_courts=0 erreur_r1=" + IntegerToString(GetLastError())
+             + " jours_r1=" + IntegerToString(days_asked);
       return -1;
      }
    FileWriteString(h, "time,open,high,low,close,tick_volume,spread,real_volume\n");
    int dg = (int)SymbolInfoInteger(nm, SYMBOL_DIGITS);
    long now = (long)TimeTradeServer();
    long day0 = now - now % 86400;
+   datetime first = 0, last = 0;
+   uint w0 = GetTickCount();
+   bool ready = RatesReady(nm, (datetime)(day0 - (long)(days_asked - 1) * 86400), first, last);
+   int waited = (int)((GetTickCount() - w0) / 1000);
    long bars = 0;
-   int days = 0, empty = 0, errors = 0;
-   for(int d = 0; d < InpRateDays && !IsStopped(); d++)
+   int days = 0, empty = 0, errors = 0, short_days = 0, lasterr = 0;
+   for(int d = 0; d < days_asked && !IsStopped(); d++)
      {
       datetime from = (datetime)(day0 - (long)d * 86400);
       datetime to = (datetime)(day0 - (long)d * 86400 + 86399);
+      if(last > 0 && from > last) continue;            // after the newest bar (a weekend run): no bar, no error
+      if(first > 0 && to < first) break;               // before the oldest bar of the series: the end of what can be read
+      int want = Bars(nm, PERIOD_M1, from, to);        // the bars the terminal lists for that day
       MqlRates r[];
+      string keep = "";
       int got = -1;
-      // CopyRates(name, PERIOD_M1, start, stop, array) copies the M1 bars whose open time lies between start and stop,
-      // oldest first, and returns how many (-1 on error). In a script it waits for missing history only up to a timeout
-      // and returns what is ready: ask again (at once, then once a second) while the count grows or the call fails,
-      // 6 times at most
-      for(int k = 0; k < 6 && !IsStopped(); k++)
+      bool in_r = false;                               // r holds the best answer (else keep has it, as text)
+      for(int k = 0; k < 5 && !IsStopped(); k++)
         {
-         if(k >= 2) Sleep(1000);                // Sleep(ms): the script waits (allowed in a script)
+         if(k > 0) Sleep(1000);                        // never two calls at once: a day still loading gets a second
+         ResetLastError();
          int n = CopyRates(nm, PERIOD_M1, from, to, r);
-         if(n < 0) continue;                    // not ready yet, or an error: ask again
-         if(n <= got) break;                    // the count no longer grows: the day is complete
-         got = n;
+         int err = GetLastError();
+         in_r = false;
+         if(n < 0)
+           {
+            lasterr = err;
+            continue;
+           }
+         if(n > got)
+           {
+            got = n;
+            in_r = true;
+            if(got >= want) break;
+            keep = "";                                 // fewer bars than listed: kept in case the next call fails
+            for(int i = 0; i < n; i++) keep += RateRow(r[i], dg);
+           }
+         want = Bars(nm, PERIOD_M1, from, to);
+         if(got >= want) break;
         }
-      int n_ok = 0;
-      if(got > 0) n_ok = CopyRates(nm, PERIOD_M1, from, to, r);   // one last call gives the bars to write
-      if(got < 0) errors++;
-      if(n_ok > 0)
+      if(got < 0)
         {
-         for(int i = 0; i < n_ok; i++) FileWriteString(h, RateRow(r[i], dg));
-         bars += n_ok;
+         errors++;                                     // no answer at all for that day
+         ArrayFree(r);
+         continue;
+        }
+      if(got < want) short_days++;
+      if(got > 0)
+        {
+         if(in_r)
+           {
+            for(int i = 0; i < got; i++) FileWriteString(h, RateRow(r[i], dg));
+           }
+         else FileWriteString(h, keep);
+         bars += got;
          days++;
          empty = 0;
         }
-      else
+      else if(first == 0)
         {
-         empty++;
-         if(empty >= InpMaxEmpty) break;        // the start of the broker's history
+         empty++;                                      // no first date known: six empty days in a row end the history
+         if(empty >= InpMaxEmpty) break;
         }
-      ArrayFree(r);                             // ArrayFree: frees the dynamic array
+      ArrayFree(r);                                    // ArrayFree: frees the dynamic array
       FileFlush(h);
       Comment("Releve FP Markets en cours (aucun ordre n'est passe)\n",
               "marche ", IntegerToString(pos + 1), "/", IntegerToString(count), " : ", nm, "\n",
-              "barres M1 du terminal, jour ", IntegerToString(d + 1), "/", IntegerToString(InpRateDays));
+              "barres M1 du terminal, jour ", IntegerToString(d + 1), "/", IntegerToString(days_asked));
      }
    FileClose(h);
-   info = "barres=" + IntegerToString(bars) + " jours_barres=" + IntegerToString(days) + " erreur_barres=" + IntegerToString(errors);
+   info = "barres=" + IntegerToString(bars) + " jours_barres=" + IntegerToString(days) + " erreur_barres=" + IntegerToString(errors)
+          + " jours_courts=" + IntegerToString(short_days) + " erreur_r1=" + IntegerToString(lasterr) + " jours_r1=" + IntegerToString(days_asked)
+          + " debut_r1=" + IntegerToString((long)first) + " fin_r1=" + IntegerToString((long)last) + " synchro_r1=" + (ready ? "1" : "0")
+          + " attente_r1=" + IntegerToString(waited);
    return bars;
   }
 
@@ -391,27 +484,48 @@ void OnStart()
    datetime srv = TimeTradeServer(), gmt = TimeGMT();
    string res = "version=1.10\n";
    res += "server=" + AccountInfoString(ACCOUNT_SERVER) + "\n";
-   res += "company=" + AccountInfoString(ACCOUNT_COMPANY) + "\n";
    res += "currency=" + AccountInfoString(ACCOUNT_CURRENCY) + "\n";
    res += "leverage=" + IntegerToString(AccountInfoInteger(ACCOUNT_LEVERAGE)) + "\n";
    res += "demo=" + IntegerToString(AccountInfoInteger(ACCOUNT_TRADE_MODE) == ACCOUNT_TRADE_MODE_DEMO ? 1 : 0) + "\n";
    res += "server_time=" + IntegerToString((long)srv) + "\n";
    res += "server_minus_gmt_sec=" + IntegerToString((long)(srv - gmt)) + "\n";
    res += "all_symbols=" + IntegerToString(all) + "\n";
+   res += "max_barres=" + IntegerToString(TerminalInfoInteger(TERMINAL_MAXBARS)) + "\n";
+   // the minutes of every market first: a slow history of the terminal's bars below never delays them (review R14)
+   string info_m[], info_r[];
+   ArrayResize(info_m, nb);
+   ArrayResize(info_r, nb);
+   for(int i = 0; i < nb; i++)
+     {
+      info_m[i] = "";
+      info_r[i] = "";
+     }
    int done = 0;
    for(int i = 0; i < nb && !IsStopped(); i++)
+     {
+      if(name[i] == "") continue;
+      string info = "";
+      long rows = Minutes(base[i], name[i], i, nb, info);
+      info_m[i] = info;
+      if(rows > 0) done++;
+     }
+   // 4. then the terminal's M1 bars of the robot's markets (InpRateSymbols)
+   for(int i = 0; i < nb && !IsStopped(); i++)
+     {
+      int rd = RateDays(base[i]);
+      if(name[i] == "" || rd <= 0) continue;
+      string rinfo = "";
+      Rates(base[i], name[i], rd, i, nb, rinfo);
+      info_r[i] = rinfo;
+     }
+   for(int i = 0; i < nb; i++)
      {
       if(name[i] == "")
         {
          res += base[i] + "=INTROUVABLE\n";
          continue;
         }
-      string info = "";
-      long rows = Minutes(base[i], name[i], i, nb, info);
-      string rinfo = "";
-      Rates(base[i], name[i], i, nb, rinfo);    // after the minutes: a problem here never stops them
-      res += base[i] + "=" + name[i] + " " + info + " " + rinfo + "\n";
-      if(rows > 0) done++;
+      res += base[i] + "=" + name[i] + " " + info_m[i] + (info_r[i] != "" ? " " + info_r[i] : "") + "\n";
      }
    res += "stopped=" + IntegerToString(IsStopped() ? 1 : 0) + "\n";
    res += "seconds=" + IntegerToString((long)((GetTickCount() - t0) / 1000)) + "\n";

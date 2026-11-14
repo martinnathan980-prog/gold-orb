@@ -13,7 +13,9 @@ What lives here:
     printable ASCII): a line that fails is counted and located, never fatal, and its text is never kept; every line,
     the robot's included, is scanned for account values before anything is kept;
   * French number formatting for the summaries the user reads.
-Nothing here reads market data by itself and nothing writes inside the repository.
+Nothing here reads market data by itself. Nothing writes inside the repository except check_demo.py's cache of the
+harness build, lab/robot/build/demo_check_release (ignored by git): the compiled robot and the hashes of its source files,
+no Mac data (review3 P7).
 """
 import calendar
 import datetime as dt
@@ -24,6 +26,7 @@ import math
 import os
 import re
 import sys
+import tempfile
 import time
 
 sys.dont_write_bytecode = True                  # never leave __pycache__ in check/ or demo/
@@ -35,7 +38,10 @@ REPO = os.path.dirname(LAB)
 CHECK = os.path.join(ROBOT, "check")
 DIST = os.path.join(ROBOT, "dist", "ClaudeRobot.mq5")
 FP_COSTS = os.path.join(LAB, "r2", "fp_costs.json")
-DEFAULT_OUT = "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/demo_out"
+# the default --out: DEMO_OUT when set, else this session's scratchpad when it exists, else the system's temp folder
+_SCRATCH_OUT = "/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/demo_out"
+DEFAULT_OUT = (os.environ.get("DEMO_OUT") or
+               (_SCRATCH_OUT if os.path.isdir(os.path.dirname(_SCRATCH_OUT)) else os.path.join(tempfile.gettempdir(), "demo_out")))
 REQUIRED_BUILD = "fd6aaf01e332"                 # the build the user installs (dist/ClaudeRobot.mq5, CR_BUILD)
 
 if CHECK not in sys.path:
@@ -61,6 +67,14 @@ CODE_OF_MAGIC = {20261200 + i: c for c, i in SLEEVE_ID.items()}
 # lab slippage per side, bps (fp_costs.json; CR_Registry.mqh RegSym): market, stop
 SLIP_BPS = {"XAUUSD": (0.3, 1.0), "US100": (0.2, 0.5), "BTCUSD": (0.5, 1.5), "ETHUSD": (0.7, 2.0)}
 XAU_COMM_PTS = 6                                 # CR_Types.mqh CR_XAU_COMM_PTS (round trip, points)
+# days of bars the replay needs before a sleeve's lines can equal the live robot's (check_demo.py; SPEC 3 look-backs, and
+# about 400 bars for a Wilder ATR to forget its seed to 1e-13)
+WARMUP_DAYS = {"N30": 25, "OC4": 35, "BKB": 5, "BKE": 5, "F1B": 30, "F1E": 30, "NQB": 25, "GFP": 30, "D4H": 120, "ORX": 3}
+DEMO_DAYS_MAX = 28                               # SPEC 1: two weeks on the demo, four at most
+# calendar days of the terminal's bars (r1) a market needs so that every sleeve reading it is compared over a demo of
+# DEMO_DAYS_MAX days (its longest warm-up + the demo + 6 days for the paper chains to align)
+R1_DAYS_NEEDED = {b: max(WARMUP_DAYS[c] for c, s in SYM_OF_CODE.items() if b in READS_OF_CODE[c]) + DEMO_DAYS_MAX + 6
+                  for b in ROBOT_BASES}
 
 
 # ---------------------------------------------------------------------------------------------- output folder
@@ -109,26 +123,35 @@ class Scrubber:
         return s
 
     def obj(self, o):
-        """a JSON-able object with every string scrubbed (keys included)"""
+        """a JSON-able object with every string scrubbed (keys included); a number whose text is a masked value (a login
+        read as a number) is masked too (review3 P2)"""
         if isinstance(o, dict):
             return {self.text(str(k)): self.obj(v) for k, v in o.items()}
         if isinstance(o, (list, tuple)):
             return [self.obj(v) for v in o]
         if isinstance(o, str):
             return self.text(o)
+        if isinstance(o, (int, float)) and not isinstance(o, bool) and self.secrets:
+            txt = str(o)
+            if txt in self.secrets or (isinstance(o, float) and o.is_integer() and str(int(o)) in self.secrets):
+                return self.MASK
         return o
 
     # what a MetaTrader log line (terminal Journal, Experts tab, the scripts' own prints) may hold about the account:
     # the login in quotes at the start of a message ("'12345678': authorized on ..."), the server ("authorized on X",
     # "server=X" printed by ReleveFP and SondeFP), a login after the word login, the holder's name in brackets after
-    # "started for <company>", and the Windows (or Wine) and Mac user folders
+    # "started for <company>", and the Windows (or Wine) and Mac user folders. The terminal runs in French on the Mac,
+    # so the same words in French too (review3 P3): "autorise sur X", "compte 1234", "demarre pour <societe> (<nom>)"
     ACCOUNT_PATTERNS = [
         (re.compile(r"'(\d{4,})'\s*:"), 1),
         (re.compile(r"authoriz\w*\s+on\s+([^\s,;]+)", re.I), 1),
+        (re.compile(r"autoris\w*\s+(?:sur|on)\s+([^\s,;]+)", re.I), 1),
         (re.compile(r"\bserver\s*=\s*([^\s,;|]+)", re.I), 1),
         (re.compile(r"\blogin\s*[:=]?\s*'?(\d{4,})", re.I), 1),
         (re.compile(r"\baccount\s*[:=#]?\s*'?(\d{4,})", re.I), 1),
+        (re.compile(r"\b(?:compte|identifiant)\s*[:=#]?\s*'?(\d{4,})", re.I), 1),
         (re.compile(r"started for [^(\r\n]*\(([^)\r\n]+)\)", re.I), 1),
+        (re.compile(r"d\w*marr\w*\s+pour\s+[^(\r\n]*\(([^)\r\n]+)\)", re.I), 1),
         (re.compile(r"[A-Za-z]:\\+users\\+([^\\/\r\n]+)", re.I), 1),
         (re.compile(r"/users/([^/\r\n]+)/", re.I), 1),
     ]
@@ -198,6 +221,41 @@ def read_text(path):
     return raw.decode("cp1252", errors="replace")
 
 
+def read_releve_csv(path, need, optional=()):
+    """a ReleveFP CSV file (m1_<BASE>.csv, r1_<BASE>.csv): the columns read by name, every value a number. A row with a
+    value that is missing or not a number, or with the wrong number of fields, is dropped and counted: one bad row never
+    rejects the file (review3 U3). ReleveFP ends every line with a line end, so a last line without one was cut while
+    the file was copied: it is dropped (review3 R10, a value cut short still reads as a number). Returns (DataFrame of
+    float columns, {"bad_rows", "cut_last", "rows"}); raises ValueError when the file is empty or a needed column absent.
+    The text of a bad row is never kept."""
+    import io
+    import numpy as np
+    import pandas as pd
+    text = open(path, "rb").read().decode("cp1252", errors="replace")
+    cut = text != "" and not text.endswith(("\n", "\r"))
+    lines = text.splitlines()
+    if not lines or not lines[0].strip():
+        raise ValueError("fichier vide")
+    head = [h.strip() for h in lines[0].split(",")]
+    miss = [c for c in need if c not in head]
+    if miss:
+        raise ValueError(f"colonnes absentes {miss}")
+    body = [ln for ln in lines[1:] if ln.strip()]
+    if cut and body:
+        body = body[:-1]
+    cols = list(need) + [c for c in optional if c in head and c not in need]
+    if not body:
+        return pd.DataFrame({c: pd.Series(dtype=float) for c in cols}), {"bad_rows": 0, "cut_last": cut, "rows": 0}
+    df = pd.read_csv(io.StringIO("\n".join([",".join(head)] + body)), header=0, dtype=str, keep_default_na=False,
+                     on_bad_lines="skip")
+    bad = len(body) - len(df)
+    df = df[cols].apply(lambda col: pd.to_numeric(col.str.strip(), errors="coerce"))
+    ok = df.notna().all(axis=1) & np.isfinite(df.to_numpy(dtype=float)).all(axis=1)
+    bad += int((~ok).sum())
+    df = df[ok].reset_index(drop=True)
+    return df, {"bad_rows": bad, "cut_last": cut, "rows": int(len(df))}
+
+
 def fnum(s):
     """a number written by DoubleToString / IntegerToString, None when empty or not a number"""
     if s is None:
@@ -218,7 +276,10 @@ def fnum(s):
 # ---------------------------------------------------------------------------------------------- clocks (SPEC 2.1)
 def us_dst(utc):
     """US summer time at a UTC instant: 2nd Sunday of March 07:00 UTC to 1st Sunday of November 06:00 UTC"""
-    y = time.gmtime(utc).tm_year
+    try:
+        y = time.gmtime(utc).tm_year
+    except (OverflowError, OSError, ValueError):                 # a time out of range (an edited file): no summer time
+        return False
 
     def nth_sunday(m, n):
         first = calendar.timegm((y, m, 1, 0, 0, 0))
@@ -258,11 +319,17 @@ def hm(t):
 
 
 def ymd(t):
-    return time.strftime("%Y-%m-%d", time.gmtime(int(t)))
+    try:
+        return time.strftime("%Y-%m-%d", time.gmtime(int(t)))
+    except (OverflowError, OSError, ValueError):                 # never a traceback for a time out of range (review3 R3-3)
+        return "?"
 
 
 def ymdhm(t):
-    return time.strftime("%Y-%m-%d %H:%M", time.gmtime(int(t)))
+    try:
+        return time.strftime("%Y-%m-%d %H:%M", time.gmtime(int(t)))
+    except (OverflowError, OSError, ValueError):
+        return "?"
 
 
 def utc_txt(u):
@@ -389,10 +456,25 @@ _CODE_NUM = re.compile(r"^code-?\d+$")
 _REFUSED_RC = re.compile(r"^refused_\d+$")
 _RISK = re.compile(r"^[0-9.:;]{0,200}$")
 _K1T = re.compile(r"^[0-9.:;eE+\-]{0,400}$")
-_SLEEVES = re.compile(r"^[A-Za-z0-9,]{0,80}$")
-_SYMNAME = re.compile(r"^[A-Za-z0-9._#+\-]{1,40}$")
-_FREE = r"[A-Za-z0-9 .:;,_+\-()=<>%/#]{0,120}"                          # an input echoed in an error (no quote)
-ERROR_WHAT = [re.compile("^" + p + "$") for p in (
+# INIT symbol names: BrkResolve (CR_Broker.mqh) picks base.r, base, an alias (alias.r, alias), else the first symbol of the
+# server's list that starts with the base, so a name always starts with the base or an alias (review3 P3)
+SYM_ALIASES = {"US100": ["NAS100", "USTEC", "NDX100"], "XAUUSD": ["GOLD"]}
+_SYM_SUFFIX = re.compile(r"^[A-Za-z0-9._#+\-]{0,12}$")
+# an input echoed in an error (no quote): a free part, kept out of every output (shown as <...>, review3 P3)
+_FREE = r"[A-Za-z0-9 .:;,_+\-()=<>%/#]{0,120}"
+FREE_SHOWN = "<...>"
+
+
+def _error_rx(p):
+    """an ERROR text pattern; each {F} is a free part (an input echoed back), captured so that it can be hidden"""
+    k = 0
+    while "{F}" in p:
+        p = p.replace("{F}", f"(?P<f{k}>{_FREE})", 1)
+        k += 1
+    return re.compile("^" + p + "$")
+
+
+ERROR_WHAT = [_error_rx(p) for p in (
     r"more than 64 positions to close at once",
     r"the instance lock was taken by another copy of ClaudeRobot: this copy sends nothing",
     r"the deal history holds more events than the ledger can sort \(-?\d+\)",
@@ -400,21 +482,50 @@ ERROR_WHAT = [re.compile("^" + p + "$") for p in (
     r"another copy of ClaudeRobot runs on this terminal", r"the timer was refused", r"lock not released",
     r"positions of the history still not listed after 60 s: reconcile goes on",
     r"more than CR_OUT_MAX (decisions|orders) at -?\d+", r"SizSize: no sleeve row -?\d+",
-    r"script file missing: " + _FREE, r"script row with -?\d+ fields", r"script: more than CR_OUT_MAX orders at -?\d+",
+    r"script file missing: {F}", r"script row with -?\d+ fields", r"script: more than CR_OUT_MAX orders at -?\d+",
     r"bars: symbol [A-Z0-9]+ has no depth or no point",
     r"symbol [A-Z0-9]+ not found \(show the four \.r symbols in the Market Watch\)", r"symbol [A-Za-z0-9._#+\-]+ has no point size",
-    r"InpK1T refused: (" + _FREE + "|'" + _FREE + "'" + _FREE + ")",
-    r"InpExtraClosures: entry \d+ '" + _FREE + "': (" + _FREE + "|expected '" + _FREE + "'" + _FREE + ")",
+    r"InpK1T refused: ({F}|'{F}'{F})",
+    r"InpExtraClosures: entry \d+ '{F}': ({F}|expected '{F}'{F})",
     r"InpFridayCloseHHMM must be 0 \(off\) or a server time HHMM",
     r"InpStopFallPct must be 0 \(no plan stop\) or lie between 0 and 100 \(excluded\)", r"InpStopArmPaid must be 0 or more",
     r"InpDailyLockStakes must be 0 or more", r"InpPlanStart must be a server time \(0 = unset\)",
     r"the daily lock needs the risk table \(SizInit runs before LedInit\)",
-    r"InpSleeves: unknown code '" + _FREE + "'", r"InpScript: unknown code '" + _FREE + "'",
+    r"InpSleeves: unknown code '{F}'", r"InpScript: unknown code '{F}'",
     r"InpK1, InpH2 and InpS075 must be -1, 0 or 1", r"rule [A-Z0-9]+: Init refused its configuration",
     r"InpRiskTable is empty", r"InpRiskTable has no pair", r"InpRiskTable has more than 16 pairs",
-    r"InpRiskTable: '" + _FREE + r"' is not a pair from:pct of plain numbers", r"InpRiskTable must start with the pair 0:pct",
-    r"InpRiskTable: the 'from' values must increase \('" + _FREE + r"'\)",
-    r"InpRiskTable: a rate must be above 0 and at most 10 % \('" + _FREE + r"'\)")]
+    r"InpRiskTable: '{F}' is not a pair from:pct of plain numbers", r"InpRiskTable must start with the pair 0:pct",
+    r"InpRiskTable: the 'from' values must increase \('{F}'\)",
+    r"InpRiskTable: a rate must be above 0 and at most 10 % \('{F}'\)")]
+
+
+def error_shown(v):
+    """an ERROR line's text with its free parts (an input echoed back: it may hold anything) replaced by <...>; None
+    when the text is none of the robot's"""
+    for rx in ERROR_WHAT:
+        m = rx.match(v)
+        if not m:
+            continue
+        spans = sorted((m.span(g) for g in rx.groupindex if m.span(g)[0] >= 0), reverse=True)
+        out = v
+        for a, z in spans:
+            out = out[:a] + FREE_SHOWN + out[z:]
+        return out
+    return None
+
+
+# time fields (integers the robot writes with KT/JT, seconds): a value outside 2015-2100 cannot be the robot's (two glued
+# stamps, extra digits): the line is unreadable (review3 R3-3). 0 is allowed where the robot writes 0 for 'none' (PLAN T,
+# DEC exp, GUARD mark_utc, a REBUILD from with no history ...); the line's own stamp and a day never are 0.
+TIME_MIN = calendar.timegm((2015, 1, 1, 0, 0, 0))
+TIME_MAX = calendar.timegm((2100, 1, 1, 0, 0, 0))
+TIME_KEYS = frozenset({"day", "bar", "x", "xh", "stamp", "tf", "tt", "exp", "from", "to", "first", "last", "T", "mark_utc", "t",
+                       "minute", "due", "open", "at"})
+TIME_NEVER_ZERO = frozenset({"day", "bar"})
+
+
+def time_ok(v, zero_ok=True):
+    return (zero_ok and v == 0) or TIME_MIN <= v < TIME_MAX
 SELFTEST_WHY = re.compile(r"^(|CR_NO_GUARD is set in a build without CR_HARNESS|CR_XAU_COMM_PTS is not 6|CR_BRK_NOTIONAL_X is not 20|"
                           r"golden( [a-z0-9_]+ -?\d+: got [-+0-9.eE/a-z]{0,200}, want [-+0-9.eE/a-z]{0,200})?|GridStop vectors|"
                           r"byte order of the sleeve names|robot comment|chart mode of [A-Za-z0-9._#+\-]+ is not bid)$")
@@ -432,9 +543,10 @@ _SUMMARY = {"bars": I, "raw": I, "first": I, "last": I, "masked": I, "m_weekend"
             "m_half": I, "holes": I, "depth_days": I}
 SCHEMA = {
     "INIT": ({"build": re.compile(r"^([0-9a-f]{6,40}|src)$"), "version": re.compile(r"^\d+(\.\d+)*$"), "demo": B, "vps": B,
-              "tester": B, "observer": B, "entries_off": B, "harness": B, "comm_pts": I, "risk": _RISK, "sleeves": _SLEEVES,
-              "K1": _W("on", "off"), "H2": _W("on", "off"), "S0.75r": _W("on", "off"), "k1t": _K1T, "XAUUSD": _SYMNAME,
-              "US100": _SYMNAME, "BTCUSD": _SYMNAME, "ETHUSD": _SYMNAME, "deinit": I, "lines": I, "bars_fed": I, "rebuilds": I,
+              "tester": B, "observer": B, "entries_off": B, "harness": B, "comm_pts": I, "risk": _RISK, "sleeves": ("sleeves",),
+              "K1": _W("on", "off"), "H2": _W("on", "off"), "S0.75r": _W("on", "off"), "k1t": _K1T, "XAUUSD": ("sym", "XAUUSD"),
+              "US100": ("sym", "US100"), "BTCUSD": ("sym", "BTCUSD"), "ETHUSD": ("sym", "ETHUSD"), "deinit": I, "lines": I,
+              "bars_fed": I, "rebuilds": I,
               "masked_XAUUSD": I, "masked_US100": I, "masked_BTCUSD": I, "masked_ETHUSD": I, "change": _W("K1", "H2", "S0.75r"),
               "on_real": B},
              lambda d: (("build", "version") + tuple(ROBOT_BASES) if "build" in d else
@@ -517,7 +629,12 @@ def _text_ok(rule, v):
         if rule == ("missed",):
             return v in SKIP_WORDS or v in MISSED_EXTRA or bool(_CODE_NUM.match(v) or _REFUSED_RC.match(v))
         if rule == ("error",):
-            return any(rx.match(v) for rx in ERROR_WHAT)
+            return error_shown(v) is not None
+        if rule == ("sleeves",):                    # InpSleeves as typed: ALL, all, empty, or codes separated by commas
+            t = v.strip()
+            return len(v) <= 80 and (t in ("", "ALL", "all") or all(p.strip() in SLEEVE_ID for p in t.split(",")))
+        if len(rule) == 2 and rule[0] == "sym":     # a symbol name: the base or an alias, then a short suffix
+            return any(v.startswith(a) and bool(_SYM_SUFFIX.match(v[len(a):])) for a in [rule[1]] + SYM_ALIASES.get(rule[1], []))
         return False
     return bool(rule.match(v))
 
@@ -525,7 +642,10 @@ def _text_ok(rule, v):
 def parse_robot_line(text):
     """one robot journal line (CR|utc|EVENT|code|k=v...) checked field by field against SCHEMA: (row, None) or (None,
     why it is not a robot line). The why names the event, the code and the key only when they are the robot's own
-    words, never the text that failed (it may hold anything)."""
+    words, never the text that failed (it may hold anything). Time fields must lie in 2015-2100 (review3 R3-3), a side
+    is -1, 0 or 1. Only the robot's own keys are kept: a numeric key a later build may add is accepted but dropped, and
+    the row's '_raw' (the text kept and shown) is rebuilt without it; an ERROR line keeps its text with the free parts
+    (an input echoed back) shown as <...> (review3 P3)."""
     if not _ASCII.match(text):
         return None, "caractere hors ASCII"
     m = compare.LINE.match(text)
@@ -537,21 +657,32 @@ def parse_robot_line(text):
     if code not in ROBOT_CODES:
         return None, f"{ev} : code inconnu"
     types, req = SCHEMA[ev]
+    if not _INT.match(m.group(1)) or not time_ok(int(m.group(1)), zero_ok=False):
+        return None, f"{ev} : heure de la ligne hors de 2015-2100"
     d = {"utc": int(m.group(1)), "ev": ev, "code": code}
+    kept, unknown, seen = [], 0, set()
     for kv in m.group(4).split("|")[1:]:
         k, v = kv.split("=", 1)
-        if k in d:
-            return None, f"{ev} : cle {k} en double"
+        if k in seen or k in ("utc", "ev", "code"):           # the robot never writes a key twice: an edited line
+            return None, (f"{ev} : cle {k} en double" if k in types else f"{ev} : cle en double")
+        seen.add(k)
         t = types.get(k)
         if t is None:
             x = _num(v)                                         # a field a later build may add: a number only
             if x is None:
                 return None, f"{ev} : cle inconnue avec du texte"
-            d[k] = x
+            unknown += 1                                        # accepted, never kept nor shown (review3 P3)
+            continue
         elif t == I:
             if not _INT.match(v):
                 return None, f"{ev} : {k} n'est pas un entier"
             d[k] = int(v)
+            if k in TIME_KEYS and not time_ok(d[k], zero_ok=k not in TIME_NEVER_ZERO):
+                return None, f"{ev} : {k} hors de 2015-2100"
+            if k == "side" and d[k] not in (-1, 0, 1):
+                return None, f"{ev} : side n'est pas -1, 0 ou 1"
+            if k == "oid" and d[k] != 0 and not time_ok(d[k] // 100, zero_ok=False):
+                return None, f"{ev} : oid hors de 2015-2100"
         elif t == B:
             if v not in ("0", "1"):
                 return None, f"{ev} : {k} n'est pas 0 ou 1"
@@ -564,11 +695,16 @@ def parse_robot_line(text):
         else:
             if not _text_ok(t, v):
                 return None, f"{ev} : {k} hors du vocabulaire du robot"
+            if t == ("error",):
+                v = error_shown(v)
             d[k] = v
+        kept.append(f"{k}={v}")
     need = req(d) if callable(req) else req
     miss = [k for k in need if k not in d]
     if miss:
         return None, f"{ev} : {miss[0]} absent (ligne coupee ?)"
+    d["_raw"] = f"CR|{m.group(1)}|{ev}|{code}" + "".join("|" + x for x in kept)
+    d["_unknown_keys"] = unknown
     return d, None
 
 
@@ -614,21 +750,33 @@ def file_of_day(srv_day):
     return time.strftime("%Y%m%d", time.gmtime(int(srv_day))) + ".log"
 
 
-def read_journal_files(paths, scrub=None, printed=False):
+_EV_OF = re.compile(r"^CR\|-?\d+\|([A-Z]+)\|")
+CUT_AT_END = "ligne coupee a la fin du fichier (copie prise pendant que le robot ecrivait ?)"
+
+
+def read_journal_files(paths, scrub=None, printed=False, any_name=False):
     """rows of the robot lines of these files, in file order (files sorted by name = server date). Returns (rows, info).
 
     Every line, robot lines included, is first scanned so that the scrubber masks whatever account value it holds
     (review2 N6). The text of a line that is not a robot line is NEVER kept or written anywhere (MetaTrader's own logs
     carry the login, the server, the holder's name and the user folder): such a line is only counted and located by
     file and line number. A line that starts like a robot line but fails parse_robot_line (a field of the wrong type,
-    a missing field, glued text) is unreadable and keeps no text either: file, line number and the reason only.
+    a missing field, glued text) is unreadable and keeps no text either: file, line number, the reason and the event
+    when it is one of the robot's words (review3 U2: an unreadable DAY line is not a missing day).
     printed=False (--journals, the robot's daily files): a robot line starts with 'CR|'. A file in UTF-16 (a MetaTrader
-    log) or with no line starting with 'CR|' is not a robot journal: it is skipped and named in info['skipped_files'].
+    log) or with no line starting with 'CR|' is not a robot journal: it is skipped and named in info['skipped_files'];
+    so is a file whose name is not the robot's <yyyymmdd>.log (a second copy such as '20211117 2.log' that the Mac makes
+    with 'Keep both', review3 R3-8), unless any_name (one file given by name). The robot ends every line with a line
+    end (CR_Journal.mqh JrnAt), so a file whose last line has none was cut while the robot wrote: that line is
+    unreadable (review3 R3-9).
     printed=True (--printed, the Experts tab): the robot's line follows a terminal prefix; MetaTrader's UTF-16 logs are
     accepted; a file with no robot line is named in info['files_without_robot_lines'].
-    Each row gets _f (file), _n (line number), _seq (its rank in file order) and _raw (the checked line)."""
+    Each row gets _f (file), _n (line number), _seq (its rank in file order) and _raw (the checked line, rebuilt from the
+    robot's own keys). info['repeated_lines'] counts live robot lines whose exact text is already in the journal (the
+    robot stamps every line to the second: a repeat is a file read twice)."""
     rows, bad, foreign, skipped, no_robot, per_file = [], [], [], [], [], {}
-    other = 0
+    other, unknown_keys = 0, 0
+    seen_txt, repeated, repeated_first = set(), 0, []
     for p in paths:
         name = os.path.basename(p)
         try:
@@ -639,6 +787,7 @@ def read_journal_files(paths, scrub=None, printed=False):
         lines = text.splitlines()
         if not printed:
             n_cr = sum(1 for ln in lines if ln.startswith("CR|"))
+            why = None
             if is_utf16(p) or n_cr == 0:
                 for ln in lines:
                     if ln.strip() and scrub is not None:
@@ -650,8 +799,17 @@ def read_journal_files(paths, scrub=None, printed=False):
                            "le donner avec --printed")
                 else:
                     why = "pas un journal du robot (aucune ligne CR|)"
+            elif not any_name and day_of_file(name) is None:
+                for ln in lines:
+                    if ln.strip() and scrub is not None:
+                        scrub.scan_log_line(ln)
+                why = ("nom qui n'est pas celui d'un fichier du robot (<aaaammjj>.log) : copie en double ('Garder les deux' du Mac) "
+                       "ou autre fichier ; ignore, ne garder que le fichier <aaaammjj>.log")
+            if why:
                 skipped.append({"file": name, "why": why})
                 continue
+        cut_last = (not printed) and text != "" and not text.endswith(("\n", "\r"))
+        last_no = max((i for i, ln in enumerate(lines, 1) if ln.strip()), default=0)
         kept = 0
         for no, ln in enumerate(lines, 1):
             ln = ln.rstrip("\r\n")
@@ -667,23 +825,37 @@ def read_journal_files(paths, scrub=None, printed=False):
                     foreign.append({"file": name, "line": no})
                 continue
             body = ln[k:]
+            em = _EV_OF.match(body)
+            ev_word = em.group(1) if em and em.group(1) in SCHEMA else None
+            if cut_last and no == last_no:
+                bad.append({"file": name, "line": no, "why": CUT_AT_END, "ev": ev_word})
+                continue
             d, why = parse_robot_line(body)
             if d is None:
-                bad.append({"file": name, "line": no, "why": why})
+                bad.append({"file": name, "line": no, "why": why, "ev": ev_word})
                 continue
+            unknown_keys += d.pop("_unknown_keys", 0)
             d["_f"] = name
             d["_n"] = no
             d["_seq"] = len(rows)
-            d["_raw"] = body
+            if not printed and d.get("rp") != 1:
+                if d["_raw"] in seen_txt:
+                    repeated += 1
+                    if len(repeated_first) < 5:
+                        repeated_first.append({"file": name, "line": no})
+                seen_txt.add(d["_raw"])
             rows.append(d)
             kept += 1
         per_file[name] = kept
         if printed and kept == 0:
             no_robot.append(name)
     used = [os.path.basename(p) for p in paths if os.path.basename(p) not in {s["file"] for s in skipped}]
-    return rows, {"files": used, "lines": len(rows), "unparsable": len(bad), "unparsable_first": bad[:10],
+    return rows, {"files": used, "lines": len(rows), "unparsable": len(bad),
+                  "unparsable_first": [{"file": b["file"], "line": b["line"], "why": b["why"]} for b in bad[:10]],
+                  "unparsable_all": [{"file": b["file"], "line": b["line"], "ev": b.get("ev"), "why": b["why"]} for b in bad],
                   "other_lines_ignored": other, "foreign_lines": len(foreign), "foreign_first": foreign[:10],
-                  "skipped_files": skipped, "files_without_robot_lines": no_robot, "robot_lines_per_file": per_file}
+                  "skipped_files": skipped, "files_without_robot_lines": no_robot, "robot_lines_per_file": per_file,
+                  "unknown_keys_dropped": unknown_keys, "repeated_lines": repeated, "repeated_first": repeated_first}
 
 
 def live(rows):
