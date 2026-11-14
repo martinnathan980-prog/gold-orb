@@ -48,7 +48,7 @@ S0 creates every file below with its final signatures and stub bodies; each file
 **Install** (Mac, once):
 1. No position with the hands' magic 20261110, or any other non-robot magic, may be open: close them by hand, then remove ClaudeMains (R3).
 2. Copy `dist/ClaudeRobot.mq5` to MQL5/Experts and compile (0 errors, 0 warnings); Max bars in chart 500000, restart; show the four `.r` symbols.
-3. Set `InpPlanStart` to the go-live server time (§5); on demo, set `InpK1T` from the lab (§10.14); check the plan inputs (default D2, below).
+3. Set `InpPlanStart` to the go-live server time (§5); on demo, set `InpK1T` from the lab (§10.14); check the plan inputs (default D2, below; the user picked S7 on 2026-11-14, so `InpRiskTable` = `0:7;3000:3.5;10000:1.4;20000:0.7`). MetaTrader's inputs dialog shows each input's comment, not its name: `InpRiskTable` is the line "Risk table from:pct, ...", `InpK1T` the line "K1 thresholds ...".
 4. Attach to one XAUUSD.r M1 chart; check the `SELFTEST`, `PLAN` and four `READY` lines; migrate "Experts and indicators" by the procedure of §10.15 (the Mac's Algo Trading off first, `InpTrade` = true while migrating).
 5. On the Mac chart set `InpTrade` = false (§10.15 step 5): that copy then observes and watches the VPS copy (§4.9).
 
@@ -75,7 +75,7 @@ An input that does not parse (risk table, K1 table, closures, a switch outside {
 | Preset | `InpRiskTable` | `InpStopFallPct`, `InpStopArmPaid` | `InpGuard` | When |
 |---|---|---|---|---|
 | D2 (default) | `0:10;3000:5;10000:2;20000:1` | 0 (no stop), 12000 | false | the user's choice now: speed first, the loss of the account accepted (Addendum G, second choice) |
-| S7 | `0:7;3000:3.5;10000:1.4;20000:0.7` | 0 (no stop), 12000 | false | X = 7 of the ninth clarification, if the user picks it next |
+| S7 | `0:7;3000:3.5;10000:1.4;20000:0.7` | 0 (no stop), 12000 | false | X = 7 of the ninth clarification: **the user's pick (2026-11-14)**, typed in `InpRiskTable` on the demo (this build's default stays D2) |
 | F3S | `0:3;3000:2;6000:1;12000:0.5` | 25, 12000 (−25 % armed at 12,000 EUR paid in) | true | the earlier choice (Addendum G, "the one that earns the most"); F2S = `0:2;6000:1;12000:0.5`, F1S = `0:1;12000:0.5` with the same stop and guard |
 
 The lab gives the other X of the ninth clarification the same way: `0:X;3000:X/2;10000:X/5;20000:X/10`, no stop, guard off.
