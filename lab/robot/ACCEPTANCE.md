@@ -26,11 +26,46 @@ the Mac compile.
 
 | File | CR_BUILD | Lines |
 |---|---|---|
-| `dist/ClaudeRobot.mq5` (what the user compiles) | `1cf1d0cab64b` | 12,367 |
-| `dist/ClaudeRobot_debug.mq5` (the same plus `CR_DEBUG`: aggregate lines, bar dump) | `415c8bd8d7fd` | 12,368 |
+| `dist/ClaudeRobot.mq5` (what the user compiles) | `fd6aaf01e332` | 12,367 |
+| `dist/ClaudeRobot_debug.mq5` (the same plus `CR_DEBUG`: aggregate lines, bar dump) | `40dce66811c6` | 12,368 |
 
 Both are `tools/amalgam.py`'s output of the 24 files of `src/` (checked byte for byte by test_release.py), pure ASCII,
 each file inlined once, the only include left `<Trade\Trade.mqh>`. The reviewed file was CR_BUILD `1ca53085c0c1`.
+
+Sections 0 to 6 were written on CR_BUILD `1cf1d0cab64b` (debug `415c8bd8d7fd`). The final file differs from it by one
+struct member's name and nothing else; the whole suite was run again on it (section 0a).
+
+## 0a. The final file (CR_BUILD `fd6aaf01e332`): one member renamed, the whole suite again
+
+**The change.** The independent recheck of the fixes (`build_reports_fixes.json`, key `recheck`, verdict
+ready_for_demo, point R4) noted that the struct member `group` of `CrOrder` and `CrTrade` shares its name with MQL5's
+`input group` keyword, which MetaEditor may refuse. It is now `grp` (commit f0f5fb8): `src/CR_Types.mqh` (the two
+declarations), `src/CR_Paper.mqh` (one copy), `src/CR_Rule_Script.mqh` (one read), `src/CR_Journal.mqh` (one write; the
+journal key was already `grp`, so no journal line changes), and in the tests `check/test_paper.cpp` and
+`check/test_paper.py` (the S0 copies that T3's end-to-end check builds get the same rename). Nothing else in `src/`
+changed. Rebuilding with `tools/amalgam.py` today gives the shipped files byte for byte (`fd6aaf01e332`, `40dce66811c6`).
+
+**The suite on this file: 31 of 31 pass**, each test run at least once on it, 2026-11-14, in four runs (`check/run_tests.py`, one
+test after the other). The first run of all 31 was cut short by a machine restart after 10 tests (disk 11 GB free,
+memory normal; the cause is not known); the remaining groups were then run one by one. A quick run before it failed
+`test_paper.py` on the test itself (its S0 copies still used the old name, a compile error); the test was corrected and
+the T3 pair passed in a later run.
+
+| Run (UTC, 2026-11-14) | Tests | Result |
+|---|---|---|
+| quick run, before the whole suite | T10 (`test_golden.cpp` 33 s, `test_release.py` 125 s), S0 (`test_s0_build.py` 81 s, `test_s0_dbl.py` 7 s, `test_s0_refs.py` 8 s, `test_s0_replay.py` 85 s, `test_s0_script.py` 17 s) | 7 of 7 pass (`test_paper.cpp` passed too; `test_paper.py` failed on the test, as above) |
+| whole suite, cut short by the restart | T4 (`test_BK.py` 248 s, `test_D4H.py` 779 s, `test_F1.py` 12 s, `test_GFP.py` 504 s, `test_N30.py` 275 s, `test_NQB.py` 341 s, `test_OC4.py` 4 s, `test_ORX.py` 38 s, `test_accept.py` 553 s), T7a (`test_account.cpp` 7 s) | 10 of 10 pass |
+| the remaining groups, 04:58 to 06:51 | T7a (`test_account.cpp` 10 s, `test_account.py` 1,399 s), T2 (`test_bars.cpp` 46 s, `test_bars.py` 163 s), T5 (`test_changes.py` 249 s), T1 (`test_clock.cpp` 18 s, `test_clock.py` 73 s), T9 (`test_exec.cpp` 35 s, `test_hands_port.py` 48 s), T7b (`test_t7b.py` 587 s), T8 (`test_worlds.py` 334 s, `test_worlds_rules.py` 676 s), T6 (`test_restarts.py` 2,975 s) | 13 of 13 pass |
+| T3 after the test's correction | `test_paper.cpp` 23 s, `test_paper.py` 354 s | 2 of 2 pass |
+
+Some times are longer than in section 2 because another job shared the machine during these runs. The verdict and the
+numbers of sections 0 to 6 hold for this file.
+
+**K1's threshold for 2026.** SPEC 10.14 asks the lab for T(2026). It is `InpK1T` = `2026:417.23813245421888`
+(`../results/r2/validation_hi/k1_T2026.json`): q_hi of the declared procedure on the ETH signals decided before
+2025-12-25, taken from the output of the single logged 2022-2025 look (no data read again). The fit skips the high side
+(E_hi = -0.065 < 0), the side the robot skips. T(2027) needs 2026 bars and stays open: until it is given, K1 is off in
+2027.
 
 ## 0. The independent review's findings: what changed, and the evidence
 
