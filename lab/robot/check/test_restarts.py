@@ -22,7 +22,9 @@ Checks:
   2. Every process: SELFTEST ok, one REBUILD, from the depth only (at most 121 days of minutes), no ERROR.
   3. Positions (SPEC 4.8): never two positions of one sleeve at once, no DUP; every robot position open across a
      restart is adopted (ADOPT) or closed with a CLOSE or ORPHAN line in the next process; ORPHAN only after an outage
-     (its paper trade ended while the EA was down); the real trades equal the continuous run's (entry and exit time and
+     (its paper trade ended while the EA was down), when its paper trade ended during the start-up, or when it ended
+     before the restart while its close was still waiting for the market to reopen (the continuous run closes it at the
+     reopening, the new process at its first reconcile); the real trades equal the continuous run's (entry and exit time and
      price, lots), except where an entry or exit falls in an outage or in a start's start-up window (from the restart to
      two minutes after its first live barrier), or where only the lots differ because the balance path changed after
      such a difference (each counted with its cause).
@@ -272,7 +274,9 @@ def startup_end(p, s):
     """the end of a start's start-up: two minutes after its first live barrier, or after the last reconcile of the
     process (a sleeve whose symbol is NOT_READY is reconciled once it is READY), whichever is later"""
     to = int(p["rebuild_to"] or s["next_start"]) + 60
-    rec = [int(r["utc"]) for r in p["fol"] if r["ev"] == "ADOPT" and r.get("why") == "reconcile" and r["utc"] < s["next_start"] + 3600]
+    # reconciles within an hour of the first live barrier (a restart inside a weekend or holiday goes live, and reconciles,
+    # only when the market reopens, which can be days after the restart)
+    rec = [int(r["utc"]) for r in p["fol"] if r["ev"] == "ADOPT" and r.get("why") == "reconcile" and r["utc"] < to + 3600]
     return max([to] + rec) + 120
 
 
@@ -436,10 +440,32 @@ def overlap(recs):
     return m
 
 
-def follower(procs, segs, cont):
+def ended_before_restart(r, t, cont, pos):
+    """an ORPHAN line r of a process that started at t: the restarted run's position (by ticket), opened before t, follows a
+    continuous-run paper trade (same sleeve and side, paper fill bar within 5 min of the real entry) that had already
+    ended before t. Its close was still waiting at the restart (the market was shut, e.g. a crypto holiday and weekend), so
+    the new process finds no paper trade for it and ORPHAN is its right decision. Returns the details, or None."""
+    q = pos.get(int(r["ticket"])) if r.get("ticket") is not None else None
+    if q is None or q["code"] != r.get("code") or int(q["u_in"]) >= t:
+        return None
+    c, side, u_in = q["code"], int(q["side"]), int(q["u_in"])
+    for o, (f, x) in cont["trades"].get(c, {}).items():
+        if int(f["side"]) == side and abs(int(f["bar"]) - u_in) <= 300:
+            if int(x["utc"]) >= t:
+                return None
+            cc = [int(z["u_out"]) for z in cont["pos"] if z["code"] == c and int(z["side"]) == side and int(z["u_in"]) == u_in
+                  and z.get("u_out") is not None]
+            return {"code": c, "oid": int(o), "paper_exit_utc": int(x["utc"]), "restart_utc": int(t), "orphan_utc": int(r["utc"]),
+                    "continuous_close_utc": cc[0] if cc else None}
+    return None
+
+
+def follower(procs, segs, cont, pos=()):
     ev = {"ADOPT": 0, "ORPHAN": 0, "DUP": 0, "SLFIX": 0, "REFUSED": 0, "MISSED": {}}
     after_outage = {k + 1 for k, s in enumerate(segs) if s["outage_s"]}
+    by_ticket = {int(q["position"]): q for q in pos}
     orphan_other = []
+    before = []
     n_after = n_start = 0
     for p in procs:
         for r in p["fol"]:
@@ -460,10 +486,17 @@ def follower(procs, segs, cont):
             c = r.get("code")
             if any(s["stop"] - 120 <= x["utc"] <= end for _, x in cont["trades"].get(c, {}).values()):
                 n_start += 1                          # its paper trade ended while the EA was starting
+                continue
+            eb = ended_before_restart(r, s["stop"], cont, by_ticket)
+            if eb is not None:
+                eb["process"] = p["k"]
+                before.append(eb)                     # its paper trade ended before the restart, its close still waiting
             else:
                 orphan_other.append({"process": p["k"], "code": c, "why": r.get("why")})
     ev["orphan_after_outage"] = n_after
     ev["orphan_paper_ended_during_start_up"] = n_start
+    ev["orphan_paper_ended_before_restart"] = len(before)
+    ev["orphan_paper_ended_before_restart_first"] = before[:10]
     ev["orphan_other"] = orphan_other[:10]
     return ev
 
@@ -507,7 +540,7 @@ def analyse(D):
     paper = {c: cmp_paper(cont, procs, segs, c) for c in CODES}
     wins = windows(segs, procs)
     pos = cmp_positions(cont["pos"], D["pos"], wins, cont, procs)
-    fol = follower(procs, segs, cont)
+    fol = follower(procs, segs, cont, D["pos"])
     ad = adopted(D["pos"], procs, segs)
     eac = ea_closes(procs, segs, cont, D["pos"])
     proc_ok = all(p["rebuilds"] == 1 and p["selftest_ok"] and not p["errors"] for p in procs)
