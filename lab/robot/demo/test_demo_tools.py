@@ -1045,7 +1045,7 @@ def test_review2_journal(lit):
         "compare', 10 sleeves not compared)",
         lambda: (g["rc"] == 0 and g["r"]["anomalies"] == [] and "Rien d'anormal sur ce qui a pu etre compare" in g["so"]
                  and "10 sleeves non comparees" in g["so"], (g["so"][-500:], g["se"][-300:])))
-    chk("review2 control N1: a clean journal has no missing line", lambda: (g["rc"] == 0 and g["r"]["journal"].get("breaks") == [],
+    chk("review2 control N1: a clean journal has no missing line", lambda: (g["rc"] == 0 and not g["r"]["journal"].get("breaks"),
                                                                        g["r"].get("journal", {}).get("breaks")))
     for name, pred, word in (("dec", lambda ln: "|DEC|ORX|" in ln, "DEC (ORX order)"),
                              ("pfill", lambda ln: "|PFILL|F1E|" in ln, "PFILL (a paper trade with no real position)"),
@@ -1067,7 +1067,7 @@ def test_review2_journal(lit):
         lambda: (g["rc"] == 0 and "20211122.log" in g["an"] and "ligne(s) du journal manquante(s)" not in g["an"], g["an"][:600]))
     g = go("n1_restart", ("restart",))
     chk("review2 control N1: a stop on Friday and a start on Monday (ADOPT of the open position) give no missing line",
-        lambda: (g["rc"] == 0 and g["r"]["anomalies"] == [] and g["r"]["journal"].get("breaks") == [], g["an"][:500]))
+        lambda: (g["rc"] == 0 and g["r"]["anomalies"] == [] and not g["r"]["journal"].get("breaks"), g["an"][:500]))
 
     # N2: an exit at the broker's stop has no price in the journal: out of the averages, the euros and the headline
     hj = os.path.join(base_dir, "n2_hand", "ClaudeRobot")
@@ -1102,8 +1102,10 @@ def test_review2_journal(lit):
     utf16_printed(pf2, mon[:5] + mon[6:])
     g3 = go("n3_printed_missing", ("late_dec",), extra=("--printed", pf2))
     chk("review2 control N3: a line missing inside that day's Experts log is still reported",
-        lambda: (g3["rc"] == 0 and g3["r"]["printed"]["n_live_not_printed"] == 1 and g3["r"]["anomalies"] != [],
+        lambda: (g3["rc"] == 0 and g3["r"]["printed"]["n_live_not_printed"] >= 1 and g3["r"]["anomalies"] != [],
                  g3["r"].get("printed", {}).get("n_live_not_printed")))
+    chk("review2 N3: that missing line is the only one reported (not the weekend's lines)",
+        lambda: (g3["rc"] == 0 and g3["r"]["printed"]["n_live_not_printed"] == 1, g3["r"].get("printed", {}).get("n_live_not_printed")))
 
     # N5: the last daily file lost
     def drop_last(jdir, info):
@@ -1124,7 +1126,9 @@ def test_review2_journal(lit):
         write(p, "\n".join(ln for ln in lines_of(p) if "|deinit=" not in ln) + "\n", crlf=True)
     g = go("n5_running", prep=drop_deinit, extra=("--bars", fdir, "--no-replay"))
     chk("review2 control N5: a robot still running when the files were copied (journal up to ReleveFP's day) is not an anomaly",
-        lambda: (g["rc"] == 0 and g["r"]["anomalies"] == [] and "encore en marche" in g["rtxt"], (g["an"][:400], g["rtxt"][-300:])))
+        lambda: (g["rc"] == 0 and g["r"]["anomalies"] == [], g["an"][:400]))
+    chk("review2 N5: the report says that robot was still running (no stop line at the end, journal up to ReleveFP's day)",
+        lambda: (g["rc"] == 0 and "encore en marche" in g["rtxt"], g["rtxt"][-400:]))
     g = go("n5_complete", extra=("--bars", fdir, "--no-replay"))
     chk("review2 control N5: a journal ending with its stop line gives no end-of-journal remark",
         lambda: (g["rc"] == 0 and g["r"]["anomalies"] == [], g["an"][:400]))
@@ -1257,8 +1261,8 @@ def test_review2_tool1(lit):
         lambda: (re.search(r'#property version\s+"1\.10"', src) is not None and hdr == lit["m1_v100"] + ",sp_min"
                  and lit["m1_v100"] == "time,bo,bh,bl,bc,ao,ah,al,ac,n,sp_mean,sp_max" and lit["r1_mq5"] == R1_HEADER
                  and re.search(r"input\s+int\s+InpRateDays\s*=\s*200\s*;", src) is not None and "CopyRates(" in src
-                 and '"r1_"' in src and "version=1.10" in src and '" barres="' in src and '" jours_barres="' in src
-                 and '" erreur_barres="' in src, (hdr, lit["r1_mq5"])))
+                 and '"r1_"' in src and "version=1.10" in src and 'info = "barres="' in src and '" jours_barres="' in src
+                 and '" erreur_barres="' in src and re.search(r'info \+ " " \+ rinfo \+ "\\n"', src) is not None, (hdr, lit["r1_mq5"])))
     rc, so, se, ck, s = go("v110")
     chk("review2 N4: ReleveFP 1.10's r1 files are read: bar count against fini.txt's barres= (OK) and the days covered",
         lambda: (rc == 0 and ck.get(("XAUUSD", "r1_rows"), {}).get("status") == "OK" and ck.get(("BTCUSD", "r1_rows"), {}).get("status") == "OK"
@@ -1637,13 +1641,17 @@ def main(argv=None):
     t0 = time.time()
     test_tool1(lit)
     test_review_tool1(lit)
+    test_review2_tool1(lit)
     test_tool2_journal(lit)
     test_review_journal(lit)
+    test_review2_journal(lit)
     if not a.quick:
         test_tool2_replay(lit)
     n_fail = sum(1 for r in RESULTS if not r["pass"])
-    print(f"\n{len(RESULTS) - n_fail}/{len(RESULTS)} checks passed in {time.time() - t0:.0f} s")
-    with open(os.path.join(os.path.dirname(SCRATCH), "demo_test_results.json"), "w") as f:
+    r2 = [r for r in RESULTS if r["test"].startswith("review2")]
+    print(f"\n{len(RESULTS) - n_fail}/{len(RESULTS)} checks passed in {time.time() - t0:.0f} s "
+          f"(review2: {sum(r['pass'] for r in r2)}/{len(r2)})")
+    with open(RESULTS_FILE, "w") as f:
         json.dump(RESULTS, f, indent=1, default=str)
     if not a.keep:
         shutil.rmtree(SCRATCH, ignore_errors=True)

@@ -139,27 +139,65 @@ DEINIT_FR = {0: "arret par le programme", 1: "robot retire du graphique", 2: "re
              4: "graphique ferme", 5: "parametres changes", 6: "autre compte", 7: "modele applique", 8: "OnInit en echec",
              9: "terminal ferme"}
 REC = np.dtype([("t", "<i8"), ("o", "<i4"), ("h", "<i4"), ("l", "<i4"), ("c", "<i4"), ("s", "<i4")])
-SPREAD_CONV = ["open", "close", "mean", "max", "min2"]
+SPREAD_CONV = ["open", "close", "mean", "max", "min2", "min"]      # min: ReleveFP 1.10's sp_min (absent from 1.00 files)
+CONV_MATCH = 0.99                                # a convention 'matches' when it gives s_raw on 99 % of the paper bars
 REPLAY_NAME = "demo_check_release"
+# lines OnInit may write before its INIT line: the guards' clock check (GrdSelfTest), an input refused (ERROR), a lock taken
+# over (TAKEOVER), a change on a real account (INIT change=, ChangeOn); they belong to the start that follows (review2 N8 b)
+ONINIT_EV = ("CLOCK", "ERROR", "TAKEOVER")
+# events stamped when they are written (Jrn: the server clock now); DEC, the paper lines and SIZE are stamped at their own
+# lab time, which can be days earlier (a Friday-close decision written on Monday), and STOP or GUARD of the history too
+NOW_STAMPED = {"INIT", "SELFTEST", "PLAN", "REBUILD", "READY", "NOTREADY", "SEND", "FILL", "CLOSE", "SLMOD", "SLFIX", "REFUSED",
+               "ADOPT", "ORPHAN", "DUP", "MISSED", "LATEBAR", "GAP", "SETTLE", "CLOCK", "MARK", "LOCK", "TAKEOVER", "WATCH", "ERROR",
+               "AGG", "COST", "DAY"}
 
 
 # ---------------------------------------------------------------------------------------------- (a) the journal
+def _oninit(r):
+    return r["ev"] in ONINIT_EV or (r["ev"] == "INIT" and "change" in r)
+
+
 def starts_of(rows):
-    """the starts (INIT with build=), each with its stop (INIT deinit=), its REBUILD lines and its live span"""
+    """the starts (INIT with build=), each with its stop (INIT deinit=), its REBUILD lines and its live span. Lines OnInit
+    writes before the INIT line (ONINIT_EV, written within 2 minutes of it) belong to that start, not to a start of
+    their own (review2 N8 b)"""
     out, cur = [], None
     last_live = None
+    pending = []                                                  # OnInit lines waiting for their INIT line
+
+    def new_start(r, init):
+        s = {"utc": r["utc"], "init": init, "rebuilds": [], "selftest": None, "plan": None, "last_live": None,
+             "ready": {}, "notready": defaultdict(list)}
+        if init is None:
+            s["no_init"] = True
+        return s
+
+    def flush_pending(into_index):
+        for p in pending:
+            p["_si"] = into_index
+        pending.clear()
     for r in rows:
         if r["ev"] == "INIT" and "build" in r:
+            if pending and pending[0]["utc"] < r["utc"] - 120:     # older lines: a start whose INIT line is lost
+                if cur is not None:
+                    cur["end"] = cur.get("deinit_utc") or cur.get("last_live") or pending[0]["utc"]
+                    out.append(cur)
+                cur = new_start(pending[0], None)
+                flush_pending(len(out))
             if cur is not None:
                 cur["end"] = cur.get("deinit_utc") or cur.get("last_live") or r["utc"]
                 out.append(cur)
-            cur = {"utc": r["utc"], "init": r, "rebuilds": [], "selftest": None, "plan": None, "last_live": None,
-                   "ready": {}, "notready": defaultdict(list)}
+            cur = new_start(r, r)
             r["_si"] = len(out)
+            flush_pending(len(out))
+            continue
+        if (cur is None or cur.get("deinit")) and _oninit(r) and r.get("rp") != 1:
+            pending.append(r)
             continue
         if cur is None:
-            cur = {"utc": r["utc"], "init": None, "rebuilds": [], "selftest": None, "plan": None, "last_live": None,
-                   "ready": {}, "notready": defaultdict(list), "no_init": True}
+            cur = new_start(pending[0] if pending else r, None)
+        if pending:
+            flush_pending(len(out))
         r["_si"] = len(out)
         ev = r["ev"]
         if ev == "INIT" and "deinit" in r:
@@ -178,6 +216,11 @@ def starts_of(rows):
         if r.get("rp") != 1:
             cur["last_live"] = max(cur["last_live"] or r["utc"], r["utc"]) if ev not in ("INIT",) else cur["last_live"]
             last_live = r["utc"]
+    if pending:                                                   # OnInit lines with no INIT after them (OnInit failed)
+        if cur is None:
+            cur = new_start(pending[0], None)
+        last_live = max(last_live or 0, pending[-1]["utc"])
+        flush_pending(len(out))
     if cur is not None:
         cur["end"] = cur.get("deinit_utc") or cur.get("last_live") or last_live
         out.append(cur)

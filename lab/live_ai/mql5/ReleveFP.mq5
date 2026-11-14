@@ -7,10 +7,18 @@
 //|      swaps, horaires)            -> claude\releve\fiches.csv      |
 //|   2. pour chaque marche, minute par minute sur les derniers       |
 //|      jours, les vrais prix vendeur (bid) et acheteur (ask) tires  |
-//|      de l'historique des ticks   -> claude\releve\m1_<marche>.csv |
+//|      de l'historique des ticks, et en derniere colonne l'ecart    |
+//|      le plus petit de la minute (sp_min)                          |
+//|                                  -> claude\releve\m1_<marche>.csv |
 //|   3. la liste de tous les marches du courtier                     |
 //|                                  -> claude\releve\tous.csv        |
-//|  A la fin : claude\releve\fini.txt (resume) et une alerte.        |
+//|   4. pour chaque marche, les barres M1 du terminal, celles que le |
+//|      robot lit (prix vendeur, ecart en points), sur InpRateDays   |
+//|      jours                       -> claude\releve\r1_<marche>.csv |
+//|  A la fin : claude\releve\fini.txt (resume) et une alerte. Pour   |
+//|  chaque marche : jours, minutes, ticks, du, au, derniere_erreur,  |
+//|  jours_incomplets (les minutes), puis barres, jours_barres et     |
+//|  erreur_barres (jours de barres impossibles a lire).              |
 //|  Il peut rester plusieurs minutes sur un marche pendant que le    |
 //|  terminal telecharge l'historique : c'est normal.                 |
 //|  Les heures ecrites sont celles du serveur (secondes).            |
@@ -18,12 +26,13 @@
 //|  aller-retour en demo (voir releve.py).                           |
 //+------------------------------------------------------------------+
 #property copyright "gold-orb lab"
-#property version   "1.00"
+#property version   "1.10"
 #property description "Releve des vrais frais du courtier : fiches des marches et prix acheteur / vendeur minute par minute. Ne passe aucun ordre."
 #property script_show_inputs
 
 input string InpSymbols  = "BTCUSD,ETHUSD,US100,XAUUSD,USDJPY,JP225,EURUSD,US500,GER40"; // Marches (noms de base, du plus important au moins important)
 input int    InpDays     = 30;     // Jours d'historique de ticks a relever
+input int    InpRateDays = 200;    // Jours de barres M1 du terminal a relever (r1_<marche>.csv)
 input int    InpMaxEmpty = 6;      // Passer au marche suivant apres ce nombre de jours vides d'affilee
 input bool   InpAllList  = true;   // Ecrire aussi la liste de tous les marches du courtier
 
@@ -166,12 +175,13 @@ int AllSymbols()
 //+------------------------------------------------------------------+
 string Row(const long minute, const int dg, const double bo, const double bh, const double bl, const double bc,
            const double ao, const double ah, const double al, const double ac, const int n, const double sps,
-           const double spx)
+           const double spx, const double spn)
   {
    string s = IntegerToString(minute * 60) + ",";
    s += DoubleToString(bo, dg) + "," + DoubleToString(bh, dg) + "," + DoubleToString(bl, dg) + "," + DoubleToString(bc, dg) + ",";
    s += DoubleToString(ao, dg) + "," + DoubleToString(ah, dg) + "," + DoubleToString(al, dg) + "," + DoubleToString(ac, dg) + ",";
-   s += IntegerToString(n) + "," + DoubleToString(sps / n, dg + 2) + "," + DoubleToString(spx, dg) + "\n";
+   s += IntegerToString(n) + "," + DoubleToString(sps / n, dg + 2) + "," + DoubleToString(spx, dg) + ",";
+   s += DoubleToString(spn, dg) + "\n";
    return s;
   }
 
@@ -184,7 +194,7 @@ long Minutes(const string base, const string nm, const int pos, const int count,
       info = "fichier impossible a ouvrir";
       return -1;
      }
-   FileWriteString(h, "time,bo,bh,bl,bc,ao,ah,al,ac,n,sp_mean,sp_max\n");
+   FileWriteString(h, "time,bo,bh,bl,bc,ao,ah,al,ac,n,sp_mean,sp_max,sp_min\n");
    int dg = (int)SymbolInfoInteger(nm, SYMBOL_DIGITS);
    long now = (long)TimeTradeServer();
    long day0 = now - now % 86400;
@@ -222,7 +232,7 @@ long Minutes(const string base, const string nm, const int pos, const int count,
       if(oldest == 0 || first < oldest) oldest = first;
       if(last > newest) newest = last;
       long cur = -1;
-      double bo = 0, bh = 0, bl = 0, bc = 0, ao = 0, ah = 0, al = 0, ac = 0, sps = 0, spx = 0;
+      double bo = 0, bh = 0, bl = 0, bc = 0, ao = 0, ah = 0, al = 0, ac = 0, sps = 0, spx = 0, spn = 0;
       int n = 0;
       for(int i = 0; i < got; i++)
         {
@@ -233,13 +243,13 @@ long Minutes(const string base, const string nm, const int pos, const int count,
            {
             if(n > 0)
               {
-               FileWriteString(h, Row(cur, dg, bo, bh, bl, bc, ao, ah, al, ac, n, sps, spx));
+               FileWriteString(h, Row(cur, dg, bo, bh, bl, bc, ao, ah, al, ac, n, sps, spx, spn));
                rows++;
               }
             cur = m;
             bo = b; bh = b; bl = b;
             ao = a; ah = a; al = a;
-            sps = 0; spx = 0; n = 0;
+            sps = 0; spx = 0; spn = 0; n = 0;
            }
          if(b > bh) bh = b;
          if(b < bl) bl = b;
@@ -250,11 +260,12 @@ long Minutes(const string base, const string nm, const int pos, const int count,
          double sp = a - b;
          sps += sp;
          if(sp > spx) spx = sp;
+         if(n == 0 || sp < spn) spn = sp;     // the smallest spread of the minute (the first tick sets it)
          n++;
         }
       if(n > 0)
         {
-         FileWriteString(h, Row(cur, dg, bo, bh, bl, bc, ao, ah, al, ac, n, sps, spx));
+         FileWriteString(h, Row(cur, dg, bo, bh, bl, bc, ao, ah, al, ac, n, sps, spx, spn));
          rows++;
         }
       FileFlush(h);
@@ -268,6 +279,78 @@ long Minutes(const string base, const string nm, const int pos, const int count,
           + " du=" + TimeToString((datetime)oldest, TIME_DATE | TIME_MINUTES) + " au=" + TimeToString((datetime)newest, TIME_DATE | TIME_MINUTES)
           + " derniere_erreur=" + IntegerToString(lasterr) + " jours_incomplets=" + IntegerToString(partial);
    return rows;
+  }
+
+//+------------------------------------------------------------------+
+//| 4. Barres M1 du terminal (celles que le robot lit)               |
+//+------------------------------------------------------------------+
+// one line of r1_<BASE>.csv: the bar as the terminal gives it (MqlRates: bid prices, spread in points)
+string RateRow(const MqlRates &r, const int dg)
+  {
+   string s = IntegerToString((long)r.time) + ",";
+   s += DoubleToString(r.open, dg) + "," + DoubleToString(r.high, dg) + "," + DoubleToString(r.low, dg) + "," + DoubleToString(r.close, dg) + ",";
+   s += IntegerToString(r.tick_volume) + "," + IntegerToString(r.spread) + "," + IntegerToString(r.real_volume) + "\n";
+   return s;
+  }
+
+// the newest day first, no tick read (cheap); returns the bars written (-1 = the file could not be opened);
+// info = "barres=.. jours_barres=.. erreur_barres=.." (erreur_barres: days whose bars could not be read)
+long Rates(const string base, const string nm, const int pos, const int count, string &info)
+  {
+   int h = FileOpen(DIR + "r1_" + base + ".csv", FILE_WRITE | FILE_TXT | FILE_ANSI);
+   if(h == INVALID_HANDLE)
+     {
+      info = "barres=-1 jours_barres=0 erreur_barres=-1";
+      return -1;
+     }
+   FileWriteString(h, "time,open,high,low,close,tick_volume,spread,real_volume\n");
+   int dg = (int)SymbolInfoInteger(nm, SYMBOL_DIGITS);
+   long now = (long)TimeTradeServer();
+   long day0 = now - now % 86400;
+   long bars = 0;
+   int days = 0, empty = 0, errors = 0;
+   for(int d = 0; d < InpRateDays && !IsStopped(); d++)
+     {
+      datetime from = (datetime)(day0 - (long)d * 86400);
+      datetime to = (datetime)(day0 - (long)d * 86400 + 86399);
+      MqlRates r[];
+      int got = -1;
+      // CopyRates(name, PERIOD_M1, start, stop, array) copies the M1 bars whose open time lies between start and stop,
+      // oldest first, and returns how many (-1 on error). In a script it waits for missing history only up to a timeout
+      // and returns what is ready: ask again (at once, then once a second) while the count grows or the call fails,
+      // 6 times at most
+      for(int k = 0; k < 6 && !IsStopped(); k++)
+        {
+         if(k >= 2) Sleep(1000);                // Sleep(ms): the script waits (allowed in a script)
+         int n = CopyRates(nm, PERIOD_M1, from, to, r);
+         if(n < 0) continue;                    // not ready yet, or an error: ask again
+         if(n <= got) break;                    // the count no longer grows: the day is complete
+         got = n;
+        }
+      int n_ok = 0;
+      if(got > 0) n_ok = CopyRates(nm, PERIOD_M1, from, to, r);   // one last call gives the bars to write
+      if(got < 0) errors++;
+      if(n_ok > 0)
+        {
+         for(int i = 0; i < n_ok; i++) FileWriteString(h, RateRow(r[i], dg));
+         bars += n_ok;
+         days++;
+         empty = 0;
+        }
+      else
+        {
+         empty++;
+         if(empty >= InpMaxEmpty) break;        // the start of the broker's history
+        }
+      ArrayFree(r);                             // ArrayFree: frees the dynamic array
+      FileFlush(h);
+      Comment("Releve FP Markets en cours (aucun ordre n'est passe)\n",
+              "marche ", IntegerToString(pos + 1), "/", IntegerToString(count), " : ", nm, "\n",
+              "barres M1 du terminal, jour ", IntegerToString(d + 1), "/", IntegerToString(InpRateDays));
+     }
+   FileClose(h);
+   info = "barres=" + IntegerToString(bars) + " jours_barres=" + IntegerToString(days) + " erreur_barres=" + IntegerToString(errors);
+   return bars;
   }
 
 //+------------------------------------------------------------------+
@@ -306,7 +389,7 @@ void OnStart()
 
    // 2. minutes
    datetime srv = TimeTradeServer(), gmt = TimeGMT();
-   string res = "version=1.00\n";
+   string res = "version=1.10\n";
    res += "server=" + AccountInfoString(ACCOUNT_SERVER) + "\n";
    res += "company=" + AccountInfoString(ACCOUNT_COMPANY) + "\n";
    res += "currency=" + AccountInfoString(ACCOUNT_CURRENCY) + "\n";
@@ -325,7 +408,9 @@ void OnStart()
         }
       string info = "";
       long rows = Minutes(base[i], name[i], i, nb, info);
-      res += base[i] + "=" + name[i] + " " + info + "\n";
+      string rinfo = "";
+      Rates(base[i], name[i], i, nb, rinfo);    // after the minutes: a problem here never stops them
+      res += base[i] + "=" + name[i] + " " + info + " " + rinfo + "\n";
       if(rows > 0) done++;
      }
    res += "stopped=" + IntegerToString(IsStopped() ? 1 : 0) + "\n";
