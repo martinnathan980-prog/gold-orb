@@ -260,7 +260,7 @@ The rule steps carry the three changes: E implements K1, S0.75r and H2 in its ru
 14. K1's threshold is an input refitted by the lab each 1 January; a year without one has K1 off.
 15. A clock mismatch lasting 10 minutes closes the robot positions (R7).
 16. A NOT_READY sleeve's position closes at its `LatestExit` only after the first READY check of the start and 10 minutes of NOT_READY (§4.8): up to 10 minutes after `LatestExit` when a symbol stays NOT_READY.
-17. No order is sent in a shut minute (§4.1): if FP quotes crypto at weekends, or a market in a known closure, those quotes trade nothing; the paper, which never keeps such a bar, agrees.
+17. No order is sent in a shut minute (§4.1): if FP quotes crypto at weekends, or a market in a known closure, those quotes trade nothing. For a masked minute the paper agrees, since it never keeps such a bar. For a known closure it may not: the mask keeps gold bars that fall inside the built-in closures (in sample 89 bars on 22 holiday dates, e.g. 2019-07-04 13:00-16:56 New York; `check/out/clock/xau_holiday_scan.csv`), so if FP quotes gold there, the paper can fill where the robot sends nothing, and the robot writes `MISSED reason=market_shut`. The effect is a missed trade, never an unwanted order; no in-sample paper fill falls on, or one minute before, such a bar (fixes recheck R2, `build_reports_fixes.json`).
 
 ## 10. Only the user's Mac, or the lab, can settle (default meanwhile)
 
