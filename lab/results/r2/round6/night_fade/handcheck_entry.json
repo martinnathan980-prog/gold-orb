@@ -1,0 +1,753 @@
+{
+ "what": "entry side (signal, mu, sigma, D, C, entry bar, fill, stop and target levels) of the first main order of 2013, 2015, 2017, 2019 and 2021, recomputed from the raw csv.gz quotes; exits are checked after the run",
+ "n_checked": 5,
+ "all_match": true,
+ "max_abs_diff_price": 0.0,
+ "engine_candidates_by_cross": 60,
+ "rows": [
+  {
+   "year": 2013,
+   "cross": "audcad",
+   "evenings_scanned_on_this_cross": 1,
+   "calendar_ok_independent": true,
+   "raw_minutes_dropped_by_hand": {
+    "flat_or_zero_volume": 407,
+    "crossed": 0,
+    "weekday": 2
+   },
+   "hand": {
+    "decision": {
+     "utc": "2013-01-29 22:20",
+     "new_york": "2013-01-29 17:20 EST"
+    },
+    "decision_ms": 1359498000000,
+    "signal_bucket_last_minute": {
+     "utc": "2013-01-29 22:19",
+     "new_york": "2013-01-29 17:19 EST"
+    },
+    "mu": 1.0486192500000002,
+    "sigma": 0.000329955584132167,
+    "close_mid": 1.04787,
+    "side": 1,
+    "D": 0.0007492500000001456,
+    "C": 0.00033672887969982135,
+    "D_over_C": 2.2250838736138947,
+    "status": "order",
+    "entry_bar": {
+     "utc": "2013-01-29 22:20",
+     "new_york": "2013-01-29 17:20 EST"
+    },
+    "entry_ms": 1359498000000,
+    "entry_delay_min": 0.0,
+    "ask_open_base": 1.048028362824425,
+    "bid_open_base": 1.047691637175575,
+    "raw_ask_open": 1.04798,
+    "raw_bid_open": 1.04774,
+    "h1_window_first": {
+     "utc": "2013-01-01 22:00",
+     "new_york": "2013-01-01 17:00 EST"
+    },
+    "h1_window_last": {
+     "utc": "2013-01-29 21:00",
+     "new_york": "2013-01-29 16:00 EST"
+    },
+    "h1_mean_range": 0.0013968441033742156,
+    "stop_distance": 0.002793688206748431,
+    "fill": 1.0480388431080532,
+    "stop": 1.0452451549013047,
+    "target": 1.0486192500000002,
+    "stop_distance_pips": 27.936882067484312,
+    "target_distance_pips": 5.804068919470495,
+    "exit21_bar": {
+     "utc": "2013-01-30 02:00",
+     "new_york": "2013-01-29 21:00 EST"
+    },
+    "exit21_i_hand": 28951,
+    "entry_i_hand": 28732,
+    "evening": "2013-01-29",
+    "k": 1
+   },
+   "engine": {
+    "cross": "audcad",
+    "evening": "2013-01-29",
+    "k": 1,
+    "decision_utc": "2013-01-29 22:20:00",
+    "side": 1,
+    "mu": 1.0486192500000002,
+    "sigma": 0.000329955584132167,
+    "D": 0.0007492500000001456,
+    "C": 0.00033672887969982135,
+    "entry_bar_utc": "2013-01-29 22:20:00+00:00",
+    "fill": 1.0480388431080532,
+    "stop_distance": 0.002793688206748431,
+    "stop": 1.0452451549013047,
+    "target": 1.0486192500000002,
+    "h1_mean_range": 0.0013968441033742156
+   },
+   "abs_diff": {
+    "mu": 0.0,
+    "sigma": 0.0,
+    "D": 0.0,
+    "C": 0.0,
+    "fill": 0.0,
+    "stop_distance": 0.0,
+    "stop": 0.0,
+    "target": 0.0
+   },
+   "exactly_equal": {
+    "mu": true,
+    "sigma": true,
+    "D": true,
+    "C": true,
+    "fill": true,
+    "stop_distance": true,
+    "stop": true,
+    "target": true
+   },
+   "hand_first_orders_by_cross": {
+    "eurcad": null,
+    "gbpcad": {
+     "evening": "2013-01-29",
+     "k": 20,
+     "entry": "2013-01-29 23:55"
+    },
+    "euraud": {
+     "evening": "2013-01-29",
+     "k": 17,
+     "entry": "2013-01-29 23:40"
+    },
+    "audcad": {
+     "evening": "2013-01-29",
+     "k": 1,
+     "entry": "2013-01-29 22:20"
+    },
+    "eurgbp": {
+     "evening": "2013-01-29",
+     "k": 17,
+     "entry": "2013-01-29 23:40"
+    },
+    "eurchf": null,
+    "gbpchf": null,
+    "audnzd": null,
+    "nzdcad": null,
+    "cadchf": null,
+    "gbpaud": {
+     "evening": "2013-01-29",
+     "k": 25,
+     "entry": "2013-01-30 00:20"
+    },
+    "eurnzd": {
+     "evening": "2013-01-29",
+     "k": 17,
+     "entry": "2013-01-29 23:40"
+    }
+   },
+   "match": true
+  },
+  {
+   "year": 2015,
+   "cross": "euraud",
+   "evenings_scanned_on_this_cross": 1,
+   "calendar_ok_independent": true,
+   "raw_minutes_dropped_by_hand": {
+    "flat_or_zero_volume": 1153,
+    "crossed": 0,
+    "weekday": 3
+   },
+   "hand": {
+    "decision": {
+     "utc": "2015-01-05 23:10",
+     "new_york": "2015-01-05 18:10 EST"
+    },
+    "decision_ms": 1420499400000,
+    "signal_bucket_last_minute": {
+     "utc": "2015-01-05 23:09",
+     "new_york": "2015-01-05 18:09 EST"
+    },
+    "mu": 1.47570025,
+    "sigma": 0.0004155342194091877,
+    "close_mid": 1.4743149999999998,
+    "side": 1,
+    "D": 0.0013852500000002266,
+    "C": 0.0005142423591000256,
+    "D_over_C": 2.6937687560872066,
+    "status": "order",
+    "entry_bar": {
+     "utc": "2015-01-05 23:10",
+     "new_york": "2015-01-05 18:10 EST"
+    },
+    "entry_ms": 1420499400000,
+    "entry_delay_min": 0.0,
+    "ask_open_base": 1.4745821271792499,
+    "bid_open_base": 1.4740678728207501,
+    "raw_ask_open": 1.47454,
+    "raw_bid_open": 1.47411,
+    "h1_window_first": {
+     "utc": "2014-12-05 09:00",
+     "new_york": "2014-12-05 04:00 EST"
+    },
+    "h1_window_last": {
+     "utc": "2015-01-05 22:00",
+     "new_york": "2015-01-05 17:00 EST"
+    },
+    "h1_mean_range": 0.002798000419026668,
+    "stop_distance": 0.005596000838053336,
+    "fill": 1.4745968730005217,
+    "stop": 1.4690008721624683,
+    "target": 1.47570025,
+    "stop_distance_pips": 55.96000838053336,
+    "target_distance_pips": 11.033769994783782,
+    "exit21_bar": {
+     "utc": "2015-01-06 02:00",
+     "new_york": "2015-01-05 21:00 EST"
+    },
+    "exit21_i_hand": 375656,
+    "entry_i_hand": 375486,
+    "evening": "2015-01-05",
+    "k": 11
+   },
+   "engine": {
+    "cross": "euraud",
+    "evening": "2015-01-05",
+    "k": 11,
+    "decision_utc": "2015-01-05 23:10:00",
+    "side": 1,
+    "mu": 1.47570025,
+    "sigma": 0.0004155342194091877,
+    "D": 0.0013852500000002266,
+    "C": 0.0005142423591000256,
+    "entry_bar_utc": "2015-01-05 23:10:00+00:00",
+    "fill": 1.4745968730005217,
+    "stop_distance": 0.005596000838053336,
+    "stop": 1.4690008721624683,
+    "target": 1.47570025,
+    "h1_mean_range": 0.002798000419026668
+   },
+   "abs_diff": {
+    "mu": 0.0,
+    "sigma": 0.0,
+    "D": 0.0,
+    "C": 0.0,
+    "fill": 0.0,
+    "stop_distance": 0.0,
+    "stop": 0.0,
+    "target": 0.0
+   },
+   "exactly_equal": {
+    "mu": true,
+    "sigma": true,
+    "D": true,
+    "C": true,
+    "fill": true,
+    "stop_distance": true,
+    "stop": true,
+    "target": true
+   },
+   "hand_first_orders_by_cross": {
+    "eurcad": null,
+    "gbpcad": null,
+    "euraud": {
+     "evening": "2015-01-05",
+     "k": 11,
+     "entry": "2015-01-05 23:10"
+    },
+    "audcad": {
+     "evening": "2015-01-05",
+     "k": 13,
+     "entry": "2015-01-05 23:20"
+    },
+    "eurgbp": {
+     "evening": "2015-01-05",
+     "k": 29,
+     "entry": "2015-01-06 00:40"
+    },
+    "eurchf": null,
+    "gbpchf": {
+     "evening": "2015-01-05",
+     "k": 28,
+     "entry": "2015-01-06 00:35"
+    },
+    "audnzd": {
+     "evening": "2015-01-05",
+     "k": 28,
+     "entry": "2015-01-06 00:35"
+    },
+    "nzdcad": {
+     "evening": "2015-01-05",
+     "k": 17,
+     "entry": "2015-01-05 23:40"
+    },
+    "cadchf": null,
+    "gbpaud": {
+     "evening": "2015-01-05",
+     "k": 11,
+     "entry": "2015-01-05 23:10"
+    },
+    "eurnzd": {
+     "evening": "2015-01-05",
+     "k": 17,
+     "entry": "2015-01-05 23:40"
+    }
+   },
+   "match": true
+  },
+  {
+   "year": 2017,
+   "cross": "euraud",
+   "evenings_scanned_on_this_cross": 1,
+   "calendar_ok_independent": true,
+   "raw_minutes_dropped_by_hand": {
+    "flat_or_zero_volume": 507,
+    "crossed": 0,
+    "weekday": 0
+   },
+   "hand": {
+    "decision": {
+     "utc": "2017-01-03 22:25",
+     "new_york": "2017-01-03 17:25 EST"
+    },
+    "decision_ms": 1483482300000,
+    "signal_bucket_last_minute": {
+     "utc": "2017-01-03 22:24",
+     "new_york": "2017-01-03 17:24 EST"
+    },
+    "mu": 1.440969,
+    "sigma": 0.0005709873028360462,
+    "close_mid": 1.44213,
+    "side": -1,
+    "D": 0.0011609999999999676,
+    "C": 0.0004824033082000412,
+    "D_over_C": 2.4066999132570803,
+    "status": "order",
+    "entry_bar": {
+     "utc": "2017-01-03 22:25",
+     "new_york": "2017-01-03 17:25 EST"
+    },
+    "entry_ms": 1483482300000,
+    "entry_delay_min": 0.0,
+    "ask_open_base": 1.44232119494015,
+    "bid_open_base": 1.44182880505985,
+    "raw_ask_open": 1.44228,
+    "raw_bid_open": 1.44187,
+    "h1_window_first": {
+     "utc": "2016-12-06 22:00",
+     "new_york": "2016-12-06 17:00 EST"
+    },
+    "h1_window_last": {
+     "utc": "2017-01-03 21:00",
+     "new_york": "2017-01-03 16:00 EST"
+    },
+    "h1_mean_range": 0.0025436984127728142,
+    "stop_distance": 0.0050873968255456285,
+    "fill": 1.4418143867717994,
+    "stop": 1.446901783597345,
+    "target": 1.440969,
+    "stop_distance_pips": 50.87396825545628,
+    "target_distance_pips": 8.453867717994612,
+    "exit21_bar": {
+     "utc": "2017-01-04 02:00",
+     "new_york": "2017-01-03 21:00 EST"
+    },
+    "exit21_i_hand": 376925,
+    "entry_i_hand": 376710,
+    "evening": "2017-01-03",
+    "k": 2
+   },
+   "engine": {
+    "cross": "euraud",
+    "evening": "2017-01-03",
+    "k": 2,
+    "decision_utc": "2017-01-03 22:25:00",
+    "side": -1,
+    "mu": 1.440969,
+    "sigma": 0.0005709873028360462,
+    "D": 0.0011609999999999676,
+    "C": 0.0004824033082000412,
+    "entry_bar_utc": "2017-01-03 22:25:00+00:00",
+    "fill": 1.4418143867717994,
+    "stop_distance": 0.0050873968255456285,
+    "stop": 1.446901783597345,
+    "target": 1.440969,
+    "h1_mean_range": 0.0025436984127728142
+   },
+   "abs_diff": {
+    "mu": 0.0,
+    "sigma": 0.0,
+    "D": 0.0,
+    "C": 0.0,
+    "fill": 0.0,
+    "stop_distance": 0.0,
+    "stop": 0.0,
+    "target": 0.0
+   },
+   "exactly_equal": {
+    "mu": true,
+    "sigma": true,
+    "D": true,
+    "C": true,
+    "fill": true,
+    "stop_distance": true,
+    "stop": true,
+    "target": true
+   },
+   "hand_first_orders_by_cross": {
+    "eurcad": null,
+    "gbpcad": null,
+    "euraud": {
+     "evening": "2017-01-03",
+     "k": 2,
+     "entry": "2017-01-03 22:25"
+    },
+    "audcad": {
+     "evening": "2017-01-03",
+     "k": 17,
+     "entry": "2017-01-03 23:40"
+    },
+    "eurgbp": {
+     "evening": "2017-01-03",
+     "k": 11,
+     "entry": "2017-01-03 23:10"
+    },
+    "eurchf": null,
+    "gbpchf": {
+     "evening": "2017-01-03",
+     "k": 12,
+     "entry": "2017-01-03 23:15"
+    },
+    "audnzd": {
+     "evening": "2017-01-03",
+     "k": 12,
+     "entry": "2017-01-03 23:15"
+    },
+    "nzdcad": {
+     "evening": "2017-01-03",
+     "k": 22,
+     "entry": "2017-01-04 00:05"
+    },
+    "cadchf": null,
+    "gbpaud": {
+     "evening": "2017-01-03",
+     "k": 12,
+     "entry": "2017-01-03 23:15"
+    },
+    "eurnzd": {
+     "evening": "2017-01-03",
+     "k": 12,
+     "entry": "2017-01-03 23:15"
+    }
+   },
+   "match": true
+  },
+  {
+   "year": 2019,
+   "cross": "audnzd",
+   "evenings_scanned_on_this_cross": 1,
+   "calendar_ok_independent": true,
+   "raw_minutes_dropped_by_hand": {
+    "flat_or_zero_volume": 2538,
+    "crossed": 0,
+    "weekday": 0
+   },
+   "hand": {
+    "decision": {
+     "utc": "2019-01-02 22:20",
+     "new_york": "2019-01-02 17:20 EST"
+    },
+    "decision_ms": 1546467600000,
+    "signal_bucket_last_minute": {
+     "utc": "2019-01-02 22:19",
+     "new_york": "2019-01-02 17:19 EST"
+    },
+    "mu": 1.0500727499999998,
+    "sigma": 0.0005346949480778888,
+    "close_mid": 1.04893,
+    "side": 1,
+    "D": 0.0011427499999998592,
+    "C": 0.0004968267283000927,
+    "D_over_C": 2.3000976696841815,
+    "status": "order",
+    "entry_bar": {
+     "utc": "2019-01-02 22:20",
+     "new_york": "2019-01-02 17:20 EST"
+    },
+    "entry_ms": 1546467600000,
+    "entry_delay_min": 0.0,
+    "ask_open_base": 1.0491284154411251,
+    "bid_open_base": 1.0486515845588749,
+    "raw_ask_open": 1.04908,
+    "raw_bid_open": 1.0487,
+    "h1_window_first": {
+     "utc": "2018-12-04 08:00",
+     "new_york": "2018-12-04 03:00 EST"
+    },
+    "h1_window_last": {
+     "utc": "2019-01-02 21:00",
+     "new_york": "2019-01-02 16:00 EST"
+    },
+    "h1_mean_range": 0.0013276255942456243,
+    "stop_distance": 0.0026552511884912486,
+    "fill": 1.0491389067252797,
+    "stop": 1.0464836555367885,
+    "target": 1.0500727499999998,
+    "stop_distance_pips": 26.552511884912484,
+    "target_distance_pips": 9.338432747201253,
+    "exit21_bar": {
+     "utc": "2019-01-03 02:00",
+     "new_york": "2019-01-02 21:00 EST"
+    },
+    "exit21_i_hand": 373939,
+    "entry_i_hand": 373719,
+    "evening": "2019-01-02",
+    "k": 1
+   },
+   "engine": {
+    "cross": "audnzd",
+    "evening": "2019-01-02",
+    "k": 1,
+    "decision_utc": "2019-01-02 22:20:00",
+    "side": 1,
+    "mu": 1.0500727499999998,
+    "sigma": 0.0005346949480778888,
+    "D": 0.0011427499999998592,
+    "C": 0.0004968267283000927,
+    "entry_bar_utc": "2019-01-02 22:20:00+00:00",
+    "fill": 1.0491389067252797,
+    "stop_distance": 0.0026552511884912486,
+    "stop": 1.0464836555367885,
+    "target": 1.0500727499999998,
+    "h1_mean_range": 0.0013276255942456243
+   },
+   "abs_diff": {
+    "mu": 0.0,
+    "sigma": 0.0,
+    "D": 0.0,
+    "C": 0.0,
+    "fill": 0.0,
+    "stop_distance": 0.0,
+    "stop": 0.0,
+    "target": 0.0
+   },
+   "exactly_equal": {
+    "mu": true,
+    "sigma": true,
+    "D": true,
+    "C": true,
+    "fill": true,
+    "stop_distance": true,
+    "stop": true,
+    "target": true
+   },
+   "hand_first_orders_by_cross": {
+    "eurcad": {
+     "evening": "2019-01-02",
+     "k": 8,
+     "entry": "2019-01-02 22:55"
+    },
+    "gbpcad": {
+     "evening": "2019-01-02",
+     "k": 10,
+     "entry": "2019-01-02 23:05"
+    },
+    "euraud": {
+     "evening": "2019-01-02",
+     "k": 5,
+     "entry": "2019-01-02 22:43"
+    },
+    "audcad": {
+     "evening": "2019-01-02",
+     "k": 5,
+     "entry": "2019-01-02 22:42"
+    },
+    "eurgbp": {
+     "evening": "2019-01-02",
+     "k": 7,
+     "entry": "2019-01-02 22:50"
+    },
+    "eurchf": {
+     "evening": "2019-01-02",
+     "k": 4,
+     "entry": "2019-01-02 22:35"
+    },
+    "gbpchf": {
+     "evening": "2019-01-02",
+     "k": 8,
+     "entry": "2019-01-02 22:55"
+    },
+    "audnzd": {
+     "evening": "2019-01-02",
+     "k": 1,
+     "entry": "2019-01-02 22:20"
+    },
+    "nzdcad": {
+     "evening": "2019-01-02",
+     "k": 9,
+     "entry": "2019-01-02 23:00"
+    },
+    "cadchf": {
+     "evening": "2019-01-02",
+     "k": 11,
+     "entry": "2019-01-02 23:10"
+    },
+    "gbpaud": {
+     "evening": "2019-01-02",
+     "k": 5,
+     "entry": "2019-01-02 22:43"
+    },
+    "eurnzd": {
+     "evening": "2019-01-02",
+     "k": 9,
+     "entry": "2019-01-02 23:00"
+    }
+   },
+   "match": true
+  },
+  {
+   "year": 2021,
+   "cross": "audnzd",
+   "evenings_scanned_on_this_cross": 1,
+   "calendar_ok_independent": true,
+   "raw_minutes_dropped_by_hand": {
+    "flat_or_zero_volume": 3167,
+    "crossed": 0,
+    "weekday": 0
+   },
+   "hand": {
+    "decision": {
+     "utc": "2021-01-04 22:15",
+     "new_york": "2021-01-04 17:15 EST"
+    },
+    "decision_ms": 1609798500000,
+    "signal_bucket_last_minute": {
+     "utc": "2021-01-04 22:14",
+     "new_york": "2021-01-04 17:14 EST"
+    },
+    "mu": 1.0681039999999995,
+    "sigma": 0.00040298138914843365,
+    "close_mid": 1.06901,
+    "side": -1,
+    "D": 0.0009060000000005175,
+    "C": 0.000438680313100015,
+    "D_over_C": 2.0652852953397933,
+    "status": "order",
+    "entry_bar": {
+     "utc": "2021-01-04 22:15",
+     "new_york": "2021-01-04 17:15 EST"
+    },
+    "entry_ms": 1609798500000,
+    "entry_delay_min": 0.0,
+    "ask_open_base": 1.0689593323102,
+    "bid_open_base": 1.0685406676898,
+    "raw_ask_open": 1.06891,
+    "raw_bid_open": 1.06859,
+    "h1_window_first": {
+     "utc": "2020-12-04 08:00",
+     "new_york": "2020-12-04 03:00 EST"
+    },
+    "h1_window_last": {
+     "utc": "2021-01-04 21:00",
+     "new_york": "2021-01-04 16:00 EST"
+    },
+    "h1_mean_range": 0.0011332715597938002,
+    "stop_distance": 0.0022665431195876004,
+    "fill": 1.0685299822831231,
+    "stop": 1.0707965254027108,
+    "target": 1.0681039999999995,
+    "stop_distance_pips": 22.665431195876003,
+    "target_distance_pips": 4.259822831236271,
+    "exit21_bar": {
+     "utc": "2021-01-05 02:00",
+     "new_york": "2021-01-04 21:00 EST"
+    },
+    "exit21_i_hand": 373473,
+    "entry_i_hand": 373256,
+    "evening": "2021-01-04",
+    "k": 0
+   },
+   "engine": {
+    "cross": "audnzd",
+    "evening": "2021-01-04",
+    "k": 0,
+    "decision_utc": "2021-01-04 22:15:00",
+    "side": -1,
+    "mu": 1.0681039999999995,
+    "sigma": 0.00040298138914843365,
+    "D": 0.0009060000000005175,
+    "C": 0.000438680313100015,
+    "entry_bar_utc": "2021-01-04 22:15:00+00:00",
+    "fill": 1.0685299822831231,
+    "stop_distance": 0.0022665431195876004,
+    "stop": 1.0707965254027108,
+    "target": 1.0681039999999995,
+    "h1_mean_range": 0.0011332715597938002
+   },
+   "abs_diff": {
+    "mu": 0.0,
+    "sigma": 0.0,
+    "D": 0.0,
+    "C": 0.0,
+    "fill": 0.0,
+    "stop_distance": 0.0,
+    "stop": 0.0,
+    "target": 0.0
+   },
+   "exactly_equal": {
+    "mu": true,
+    "sigma": true,
+    "D": true,
+    "C": true,
+    "fill": true,
+    "stop_distance": true,
+    "stop": true,
+    "target": true
+   },
+   "hand_first_orders_by_cross": {
+    "eurcad": null,
+    "gbpcad": null,
+    "euraud": {
+     "evening": "2021-01-04",
+     "k": 1,
+     "entry": "2021-01-04 22:20"
+    },
+    "audcad": null,
+    "eurgbp": {
+     "evening": "2021-01-04",
+     "k": 16,
+     "entry": "2021-01-04 23:35"
+    },
+    "eurchf": null,
+    "gbpchf": {
+     "evening": "2021-01-04",
+     "k": 17,
+     "entry": "2021-01-04 23:40"
+    },
+    "audnzd": {
+     "evening": "2021-01-04",
+     "k": 0,
+     "entry": "2021-01-04 22:15"
+    },
+    "nzdcad": null,
+    "cadchf": null,
+    "gbpaud": null,
+    "eurnzd": {
+     "evening": "2021-01-04",
+     "k": 0,
+     "entry": "2021-01-04 22:15"
+    }
+   },
+   "match": true
+  }
+ ],
+ "code_sha256": {
+  "common.py": "61dda9cf5bf85622538c8646e2833480e5253619339cc24afb8e6dcb3eb7d993",
+  "frames.py": "bfd4003891f9e0bb15f9b40957a1bf21ff7e9c238531b9973a29985befd25623",
+  "declare.py": "21e2525ab655af1cd5d0563d353897f2664b9ae3a75e791cd9d6f9428c0c8a9b",
+  "precheck.py": "9870d90428b958418a5c2208834de7cfa32a95641b00e9e85f3d9747e1425cd0",
+  "truncation.py": "13669d9b35fa0790836b229636e89e4d25897bc7321e2df122b5d925cac40824",
+  "test_synthetic.py": "8f1602e097d2d533aaed9a47cc0c7fece21e40d2e203d7da07caf1d83894bc6b",
+  "handcheck.py": "580c2c2232377653c15475d4e4ed4e6c3c162d9a667a9bfbbda82beba8838fae",
+  "run.py": "5b1f867a9bc407c560294c08bcad569c90fe18d903623620953f394fa164a7d8",
+  "null.py": "31851ba5e91c45e0769d8d35a1ccd626858a59c5e7626c05fdabd6064b5ba293",
+  "correlation.py": "6a37ec09664771774fa6dc735ec836da36245fea7100a87a1f0df6cf4e912b6e",
+  "verdict.py": "87256333ea2dce537cbe1c96b19c49419485f9eb962887f092ac6b0ecc2e7448"
+ }
+}

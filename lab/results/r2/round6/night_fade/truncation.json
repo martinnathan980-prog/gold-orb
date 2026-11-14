@@ -1,0 +1,803 @@
+{
+ "what": "truncation test: decision quantities on frames cut at the decision time vs the full frame",
+ "config": "main",
+ "seed": 0,
+ "per_cross": {
+  "eurcad": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 21,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-02-04",
+     "k": 7,
+     "decision_utc": "2013-02-04 22:50:00+00:00",
+     "cut_rows": 34390,
+     "side": 1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-03-06",
+     "k": 14,
+     "decision_utc": "2013-03-06 23:25:00+00:00",
+     "cut_rows": 65973,
+     "side": -1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-03-26",
+     "k": 22,
+     "decision_utc": "2013-03-26 23:05:00+00:00",
+     "cut_rows": 86090,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-05-01",
+     "k": 1,
+     "decision_utc": "2013-05-01 21:20:00+00:00",
+     "cut_rows": 123198,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-05-20",
+     "k": 12,
+     "decision_utc": "2013-05-20 22:15:00+00:00",
+     "cut_rows": 141838,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    }
+   ]
+  },
+  "gbpcad": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 10,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-06-26",
+     "k": 26,
+     "decision_utc": "2013-06-26 23:25:00+00:00",
+     "cut_rows": 180792,
+     "side": 1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-06-27",
+     "k": 25,
+     "decision_utc": "2013-06-27 23:20:00+00:00",
+     "cut_rows": 182222,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-07-01",
+     "k": 25,
+     "decision_utc": "2013-07-01 23:20:00+00:00",
+     "cut_rows": 185085,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-10-21",
+     "k": 23,
+     "decision_utc": "2013-10-21 23:10:00+00:00",
+     "cut_rows": 299615,
+     "side": 1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-12-05",
+     "k": 29,
+     "decision_utc": "2013-12-06 00:40:00+00:00",
+     "cut_rows": 346657,
+     "side": -1,
+     "status_full": "order",
+     "all_equal": true
+    }
+   ]
+  },
+  "euraud": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 27,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-02-25",
+     "k": 13,
+     "decision_utc": "2013-02-25 23:20:00+00:00",
+     "cut_rows": 56109,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-05-22",
+     "k": 31,
+     "decision_utc": "2013-05-22 23:50:00+00:00",
+     "cut_rows": 145385,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-08-06",
+     "k": 5,
+     "decision_utc": "2013-08-06 21:40:00+00:00",
+     "cut_rows": 222912,
+     "side": -1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-08-06",
+     "k": 16,
+     "decision_utc": "2013-08-06 22:35:00+00:00",
+     "cut_rows": 222967,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-08-22",
+     "k": 15,
+     "decision_utc": "2013-08-22 22:30:00+00:00",
+     "cut_rows": 240195,
+     "side": 1,
+     "status_full": "order",
+     "all_equal": true
+    }
+   ]
+  },
+  "audcad": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 14,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-02-12",
+     "k": 1,
+     "decision_utc": "2013-02-12 22:20:00+00:00",
+     "cut_rows": 43071,
+     "side": 1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-05-15",
+     "k": 5,
+     "decision_utc": "2013-05-15 21:40:00+00:00",
+     "cut_rows": 138031,
+     "side": 1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-06-18",
+     "k": 21,
+     "decision_utc": "2013-06-18 23:00:00+00:00",
+     "cut_rows": 172627,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-09-10",
+     "k": 30,
+     "decision_utc": "2013-09-10 23:45:00+00:00",
+     "cut_rows": 259012,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-09-19",
+     "k": 11,
+     "decision_utc": "2013-09-19 22:10:00+00:00",
+     "cut_rows": 268994,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    }
+   ]
+  },
+  "eurgbp": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 19,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-02-07",
+     "k": 4,
+     "decision_utc": "2013-02-07 22:35:00+00:00",
+     "cut_rows": 38620,
+     "side": 1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-02-07",
+     "k": 14,
+     "decision_utc": "2013-02-07 23:25:00+00:00",
+     "cut_rows": 38670,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-06-06",
+     "k": 6,
+     "decision_utc": "2013-06-06 21:45:00+00:00",
+     "cut_rows": 160342,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-06-26",
+     "k": 3,
+     "decision_utc": "2013-06-26 21:30:00+00:00",
+     "cut_rows": 180411,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-08-06",
+     "k": 28,
+     "decision_utc": "2013-08-06 23:35:00+00:00",
+     "cut_rows": 222085,
+     "side": 1,
+     "status_full": "order",
+     "all_equal": true
+    }
+   ]
+  },
+  "eurchf": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 10,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-03-11",
+     "k": 0,
+     "decision_utc": "2013-03-11 21:15:00+00:00",
+     "cut_rows": 69146,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-05-09",
+     "k": 31,
+     "decision_utc": "2013-05-09 23:50:00+00:00",
+     "cut_rows": 129938,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-05-16",
+     "k": 11,
+     "decision_utc": "2013-05-16 22:10:00+00:00",
+     "cut_rows": 136987,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-11-18",
+     "k": 17,
+     "decision_utc": "2013-11-18 23:40:00+00:00",
+     "cut_rows": 321912,
+     "side": 1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-11-26",
+     "k": 26,
+     "decision_utc": "2013-11-27 00:25:00+00:00",
+     "cut_rows": 330296,
+     "side": 1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    }
+   ]
+  },
+  "gbpchf": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 17,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-03-13",
+     "k": 23,
+     "decision_utc": "2013-03-13 23:10:00+00:00",
+     "cut_rows": 73077,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-08-12",
+     "k": 23,
+     "decision_utc": "2013-08-12 23:10:00+00:00",
+     "cut_rows": 227630,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-11-04",
+     "k": 0,
+     "decision_utc": "2013-11-04 22:15:00+00:00",
+     "cut_rows": 312655,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-11-05",
+     "k": 30,
+     "decision_utc": "2013-11-06 00:45:00+00:00",
+     "cut_rows": 314216,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-12-02",
+     "k": 18,
+     "decision_utc": "2013-12-02 23:45:00+00:00",
+     "cut_rows": 341202,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    }
+   ]
+  },
+  "audnzd": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 20,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-05-01",
+     "k": 13,
+     "decision_utc": "2013-05-01 22:20:00+00:00",
+     "cut_rows": 123381,
+     "side": 1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-06-26",
+     "k": 20,
+     "decision_utc": "2013-06-26 22:55:00+00:00",
+     "cut_rows": 180831,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-07-22",
+     "k": 8,
+     "decision_utc": "2013-07-22 21:55:00+00:00",
+     "cut_rows": 206627,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-08-19",
+     "k": 29,
+     "decision_utc": "2013-08-19 23:40:00+00:00",
+     "cut_rows": 235454,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-12-12",
+     "k": 4,
+     "decision_utc": "2013-12-12 22:35:00+00:00",
+     "cut_rows": 354203,
+     "side": -1,
+     "status_full": "order",
+     "all_equal": true
+    }
+   ]
+  },
+  "nzdcad": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 10,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-07-16",
+     "k": 31,
+     "decision_utc": "2013-07-16 23:50:00+00:00",
+     "cut_rows": 199696,
+     "side": -1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-07-23",
+     "k": 19,
+     "decision_utc": "2013-07-23 22:50:00+00:00",
+     "cut_rows": 206821,
+     "side": -1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-08-26",
+     "k": 23,
+     "decision_utc": "2013-08-26 23:10:00+00:00",
+     "cut_rows": 241255,
+     "side": 1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2014-07-10",
+     "k": 25,
+     "decision_utc": "2014-07-10 23:20:00+00:00",
+     "cut_rows": 564317,
+     "side": 1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2014-07-24",
+     "k": 26,
+     "decision_utc": "2014-07-24 23:25:00+00:00",
+     "cut_rows": 578605,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    }
+   ]
+  },
+  "cadchf": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 2,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-02-06",
+     "k": 10,
+     "decision_utc": "2013-02-06 23:05:00+00:00",
+     "cut_rows": 36944,
+     "side": 1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-06-25",
+     "k": 16,
+     "decision_utc": "2013-06-25 22:35:00+00:00",
+     "cut_rows": 178210,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-08-26",
+     "k": 24,
+     "decision_utc": "2013-08-26 23:15:00+00:00",
+     "cut_rows": 241063,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-09-09",
+     "k": 29,
+     "decision_utc": "2013-09-09 23:40:00+00:00",
+     "cut_rows": 255294,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-09-30",
+     "k": 20,
+     "decision_utc": "2013-09-30 22:55:00+00:00",
+     "cut_rows": 276449,
+     "side": 1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    }
+   ]
+  },
+  "gbpaud": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 25,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-02-14",
+     "k": 5,
+     "decision_utc": "2013-02-14 22:40:00+00:00",
+     "cut_rows": 45847,
+     "side": 1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-02-14",
+     "k": 22,
+     "decision_utc": "2013-02-15 00:05:00+00:00",
+     "cut_rows": 45932,
+     "side": -1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-04-17",
+     "k": 20,
+     "decision_utc": "2013-04-17 22:55:00+00:00",
+     "cut_rows": 109158,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-06-27",
+     "k": 21,
+     "decision_utc": "2013-06-27 23:00:00+00:00",
+     "cut_rows": 182431,
+     "side": 0,
+     "status_full": "no_band_crossing",
+     "all_equal": true
+    },
+    {
+     "evening": "2014-01-09",
+     "k": 32,
+     "decision_utc": "2014-01-10 00:55:00+00:00",
+     "cut_rows": 380931,
+     "side": -1,
+     "status_full": "order",
+     "all_equal": true
+    }
+   ]
+  },
+  "eurnzd": {
+   "n_tested": 60,
+   "n_with_band_crossing": 40,
+   "n_orders_among_them": 26,
+   "all_equal": true,
+   "failures": [],
+   "years_covered": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "sample": [
+    {
+     "evening": "2013-02-04",
+     "k": 30,
+     "decision_utc": "2013-02-05 00:45:00+00:00",
+     "cut_rows": 34596,
+     "side": 1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-02-20",
+     "k": 19,
+     "decision_utc": "2013-02-20 23:50:00+00:00",
+     "cut_rows": 51737,
+     "side": -1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-08-20",
+     "k": 7,
+     "decision_utc": "2013-08-20 21:50:00+00:00",
+     "cut_rows": 236774,
+     "side": -1,
+     "status_full": "order",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-08-29",
+     "k": 4,
+     "decision_utc": "2013-08-29 21:35:00+00:00",
+     "cut_rows": 246775,
+     "side": -1,
+     "status_full": "cost_filter",
+     "all_equal": true
+    },
+    {
+     "evening": "2013-09-11",
+     "k": 30,
+     "decision_utc": "2013-09-11 23:45:00+00:00",
+     "cut_rows": 259797,
+     "side": 1,
+     "status_full": "order",
+     "all_equal": true
+    }
+   ]
+  }
+ },
+ "all_equal": true,
+ "min_tested_per_cross": 60,
+ "seconds": 487.2,
+ "code_sha256": {
+  "common.py": "61dda9cf5bf85622538c8646e2833480e5253619339cc24afb8e6dcb3eb7d993",
+  "frames.py": "bfd4003891f9e0bb15f9b40957a1bf21ff7e9c238531b9973a29985befd25623",
+  "declare.py": "21e2525ab655af1cd5d0563d353897f2664b9ae3a75e791cd9d6f9428c0c8a9b",
+  "precheck.py": "9870d90428b958418a5c2208834de7cfa32a95641b00e9e85f3d9747e1425cd0",
+  "truncation.py": "13669d9b35fa0790836b229636e89e4d25897bc7321e2df122b5d925cac40824",
+  "test_synthetic.py": "8f1602e097d2d533aaed9a47cc0c7fece21e40d2e203d7da07caf1d83894bc6b",
+  "handcheck.py": "580c2c2232377653c15475d4e4ed4e6c3c162d9a667a9bfbbda82beba8838fae",
+  "run.py": "5b1f867a9bc407c560294c08bcad569c90fe18d903623620953f394fa164a7d8",
+  "null.py": "31851ba5e91c45e0769d8d35a1ccd626858a59c5e7626c05fdabd6064b5ba293",
+  "correlation.py": "6a37ec09664771774fa6dc735ec836da36245fea7100a87a1f0df6cf4e912b6e",
+  "verdict.py": "87256333ea2dce537cbe1c96b19c49419485f9eb962887f092ac6b0ecc2e7448"
+ }
+}

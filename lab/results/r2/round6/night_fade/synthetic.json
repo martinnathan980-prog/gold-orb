@@ -1,0 +1,401 @@
+{
+ "what": "synthetic tests of night_fade (Addendum L) with known answers; no market data read",
+ "n_checks": 76,
+ "n_failed": 0,
+ "all_pass": true,
+ "checks": {
+  "A calendar: 2018-12-26 Christmas-New Year, 2019-01-21 holiday on E, 2019-04-18 holiday on E+1 (Good Friday), 2018-12-04 and 2018-12-05 normal (special closure removed)": {
+   "pass": true
+  },
+  "A warm-up: first tradable evening 2018-11-26 (504 completed H1 bars; 2018-11-20 has 408)": {
+   "pass": true
+  },
+  "A skipped evenings absent from the tradable list": {
+   "pass": true
+  },
+  "A bands, signals, D and C equal an independent reference on all 2607 decisions (exact)": {
+   "pass": true,
+   "detail": []
+  },
+  "A sigma = 0 (all closes equal): no signal on any of the 33 decisions (strict crossing)": {
+   "pass": true
+  },
+  "A SA decision 17:15: mu = M - u, D = 19u, C = 2u exactly, buy, order": {
+   "pass": true
+  },
+  "A SS close exactly on the lower band (construction exact) -> no signal (strict)": {
+   "pass": true,
+   "detail": {
+    "close": 1.49951171875,
+    "lower": 1.49951171875
+   }
+  },
+  "A ST one unit below the lower band -> buy, D = 1.75u, C = 0.5u, order": {
+   "pass": true
+  },
+  "A SO D == 2C exactly -> kept": {
+   "pass": true
+  },
+  "A SP D < 2C -> dropped by the cost filter": {
+   "pass": true
+  },
+  "A SQ span exactly 120 min (4 empty buckets) -> usable, order": {
+   "pass": true
+  },
+  "A SR span 125 min (5 empty buckets) -> band not usable at 17:15-18:00, usable from 18:05": {
+   "pass": true
+  },
+  "A SK entry exactly 5 minutes late -> kept (entry bar 17:20)": {
+   "pass": true
+  },
+  "A SL entry 6 minutes late -> dropped; the 17:35 signal still becomes an order": {
+   "pass": true
+  },
+  "A SM buy refused (ask open >= mu); the 17:40 signal still becomes an order": {
+   "pass": true
+  },
+  "A SN sell refused (bid open <= mu)": {
+   "pass": true
+  },
+  "A stop distance = 2 x independent mean range of the 480 completed H1 bars at the decision (exact)": {
+   "pass": true,
+   "detail": 0.0
+  },
+  "A main: 27 trades exactly as derived by hand (entry, fill, stop, exit reason, time, price, R)": {
+   "pass": true,
+   "detail": {
+    "n_engine": 27,
+    "n_expected": 27,
+    "diffs": []
+   }
+  },
+  "A one position: SI sell order at 18:55 exists and is skipped while the buy is open; SJ order on the exit bar (17:20) skipped": {
+   "pass": true
+  },
+  "A DST: EST evening 2019-03-07 enters 22:15 UTC, exits 02:00 UTC; EDT evening 2019-03-11 enters 21:15 UTC, exits 01:00 UTC": {
+   "pass": true
+  },
+  "A swap 0 and no trade crosses 17:00 New York (asserted by check_trades)": {
+   "pass": true
+  },
+  "A every-signal run: one trade per order (overlaps allowed), more than the main": {
+   "pass": true
+  },
+  "A one_per_night: exactly the first order of each evening; SI and SJ keep one trade": {
+   "pass": true
+  },
+  "A first_hour: 9 decisions a night (17:15-17:55), its orders = the main's orders with k <= 8": {
+   "pass": true
+  },
+  "A stop_3.0: same orders, stop distance x 1.5 of the main's": {
+   "pass": true
+  },
+  "A width_2.5: a close 2.35 sigma below mu signals at 2.0 sigma (main order) but not at 2.5; no width_2.5 order that evening": {
+   "pass": true,
+   "detail": {
+    "z": 2.3471844566471702
+   }
+  },
+  "A m15: 11 decisions 17:15-19:45 every 15 min; 17:15 uses the [17:00,17:15) bucket: buy, mu = M - u, D = 19u": {
+   "pass": true
+  },
+  "A moving_mid: no target; exit at the 17:45 open after the [17:40,17:45) close returns to its own middle band": {
+   "pass": true
+  },
+  "A moving_mid: close == its own middle band counts (>=): SF exits at 18:45 (window all at the plateau)": {
+   "pass": true
+  },
+  "A moving_mid: a falling drift never returns to the band: capped at the 21:00 exit": {
+   "pass": true
+  },
+  "A moving_mid (review R6-1): the trigger bar [18:00,18:05) closes at M >= its own middle band M - 5.5u and no quote follows until 18:40: exit at the 18:40 open (the first M1 bar at or after 18:05, R = exit at M - 11u), not at the 18:04 open that the 30-minute gap rule would give (before the trigger close exists); main: target at the 18:04 open": {
+   "pass": true,
+   "detail": {
+    "exit": "2019-02-06 23:40:00+00:00",
+    "trigger_ok": true
+   }
+  },
+  "A moving_mid (review R6-1): every exit before the 21:00 exit bar is at the first M1 bar at or after its trigger bar's end (which is after the entry bar's start)": {
+   "pass": true,
+   "detail": []
+  },
+  "A exits by kind (review R6-6): moving_mid's market exits at its own middle band are 'moving_mid', its 21:00 exits 'time_21_00' (SV capped at 21:00, SH's band exit at 18:45 before its 20:59 exit bar); the main has no 'moving_mid' exit; the stats count them apart and the kinds add up to the engine's reasons": {
+   "pass": true,
+   "detail": {
+    "kinds": {
+     "2019-01-14": "moving_mid",
+     "2018-12-05": "moving_mid",
+     "2019-02-06": "moving_mid",
+     "2019-01-15": "time_21_00",
+     "2018-12-10": "moving_mid"
+    },
+    "stats": {
+     "moving_mid": 22,
+     "stop": 2,
+     "time_21_00": 2
+    },
+    "independent_moving_count": 22
+   }
+  },
+  "A x1.5 reading a: the filter sees 1.5 C (SY: C 7.5u -> 11.25u, dropped); SZ refused on the widened ask open": {
+   "pass": true
+  },
+  "A x1.5 reading b: the base order replayed, its fill past the target (M - 0.5u x (1 + 0.15 bp) >= M - u)": {
+   "pass": true
+  },
+  "A x1.5 reading b: SA fill = widened ask open x (1 + 0.15 bp), target still at mu": {
+   "pass": true
+  },
+  "A x1.5 reading a: rebuilt orders are a subset of the base orders": {
+   "pass": true
+  },
+  "A gross: base orders on mid quotes, no slippage (SA: fill M - 20u, exit M - u)": {
+   "pass": true
+  },
+  "A x1.5 reading a (review R6-3): its gross bp is the mean over ITS OWN orders replayed on the gross frame (SY and SZ, dropped in a, are absent), its cost bp = that gross bp - its net bp; reading b keeps the base orders' gross": {
+   "pass": true,
+   "detail": {
+    "n_a": 24,
+    "n_gross_a": 24,
+    "n_gross_base": 27
+   }
+  },
+  "A x1.5 frame (review R6-4, declared L18): the M5 mid closes equal the base frame's up to the last bits, but an H1 range is recomputed on the widened quotes and differs when the spread varies inside the hour (two minutes, spreads 0.2 and 6 pips: 42.4 pips on the base frame, 57.35 on the x1.5 frame)": {
+   "pass": true,
+   "detail": {
+    "h1_base_pips": 42.40000000000021,
+    "h1_x1.5_pips": 57.350000000000456
+   }
+  },
+  "A swap / clock assertion raises on a trade crossing 17:00 New York and on an exit after 21:30": {
+   "pass": true
+  },
+  "B frames: filter < 2022 in the read, flat and zero-volume minutes, crossed minute, Saturday minute dropped; duplicate keeps the first file's row": {
+   "pass": true,
+   "detail": {
+    "cross": "zzzaaa",
+    "file": "../../../../tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad/round6_build/synthetic/r6_b/zzzaaa_m1.parquet",
+    "rows": 3,
+    "first_bar_utc": "2015-03-03 10:00:00+00:00",
+    "last_bar_utc": "2021-12-31 21:59:00+00:00",
+    "max_ts_before_2022": true,
+    "raw_bid_minutes": 7,
+    "raw_ask_minutes": 7,
+    "minutes_with_bid_and_ask": 7,
+    "dropped_flat_or_zero_volume": 2,
+    "dropped_crossed": 1,
+    "dropped_weekday_rule": 1,
+    "bytes_on_disk": 5828
+   }
+  },
+  "B commission fold: bid - h, ask + h on all four prices, h = 0.5 x c x 1e-4 x mid close (NZDCAD c = 1.0 bp)": {
+   "pass": true
+  },
+  "C run_all: 91 trials lines (7 configurations x (12 crosses + pooled)), every reading present": {
+   "pass": true
+  },
+  "C the run refuses to run twice (trials.jsonl exists)": {
+   "pass": true
+  },
+  "C main has trades on every cross; every-signal >= main": {
+   "pass": true,
+   "detail": {
+    "main": 863,
+    "every": 2356
+   }
+  },
+  "C R = side x (exit fill - entry fill) / |entry fill - stop| on every main trade": {
+   "pass": true
+  },
+  "C one_per_night trades are main orders, at most one per cross and evening": {
+   "pass": true
+  },
+  "C first_hour entries between 17:15 and 18:00 New York": {
+   "pass": true
+  },
+  "C m15 decisions on the 15-minute grid 17:15-19:45": {
+   "pass": true
+  },
+  "C stress a orders subset of base orders; stress b and gross replay the base orders (entries among them)": {
+   "pass": true
+  },
+  "C moving_mid: no target exits": {
+   "pass": true
+  },
+  "C run.json: pooled n equals the trade files; val log unchanged": {
+   "pass": true
+  },
+  "C moving_mid (review R6-1): every band exit is at the first M1 bar at or after its trigger bar's end (12 crosses)": {
+   "pass": true,
+   "detail": {
+    "n": 755,
+    "bad": []
+   }
+  },
+  "C gross and cost bp (review R6-3): base and stress_b from the base orders' gross replay, stress_a from its own rebuilt orders' gross replay (gross_a: other orders, so another count); gross_a in every trials line": {
+   "pass": true,
+   "detail": {
+    "n_gross_a": 663,
+    "n_gross": 899
+   }
+  },
+  "C exits by kind (review R6-6): moving_mid's 'time' exits split into 'moving_mid' and 'time_21_00' in run.json and in its trials lines; the main has no 'moving_mid' exit": {
+   "pass": true,
+   "detail": {
+    "moving_mid": {
+     "moving_mid": 755,
+     "time_21_00": 171,
+     "stop": 2
+    },
+    "main": {
+     "time_21_00": 510,
+     "target": 351,
+     "stop": 2
+    }
+   }
+  },
+  "C raw figures (review R6-2): every judged figure stored unrounded next to its display value": {
+   "pass": true
+  },
+  "C bookkeeping (review R6-5): run.json records the sha256 and the line count of trials.jsonl; no temporary file left": {
+   "pass": true
+  },
+  "C null: reproducible with default_rng(0); percentile = share of replay means strictly below the main's": {
+   "pass": true
+  },
+  "C null replay: same clock time on the drawn evening (first valid of 20 candidates), stop and target distances scaled by the replay bar's mid open, 21:00 exit of that evening, same side": {
+   "pass": true
+  },
+  "C null replay: a trade with no candidate within 5 minutes in 20 draws is dropped and counted; 5 minutes late kept": {
+   "pass": true,
+   "detail": {
+    "dropped_late": 20
+   }
+  },
+  "C null replay trades all simulated (no_overlap=False) and pass the clock assertions": {
+   "pass": true
+  },
+  "C correlation: 418 W-SUN weeks, Pearson with the sum of the ten (known series)": {
+   "pass": true,
+   "detail": {
+    "rho": 0.8315,
+    "expected": 0.8315186329890165
+   }
+  },
+  "C verdict: twelve bars computed from the run (n, PF, t daily, years, both x1.5 readings, crosses, share, neighbours' median, every signal, hold, null, correlation)": {
+   "pass": true
+  },
+  "C verdict (review R6-2): the bars read the unrounded figures of run.json, null.json and correlation.json": {
+   "pass": true
+  },
+  "C bookkeeping (review R6-5): when the val log changes during the run, run.json and trials.jsonl are both written, complete (run.json holds both val hashes and the trials file's sha256), before the assertion fires": {
+   "pass": true,
+   "detail": {
+    "assertion": "results/val_access.log changed",
+    "files": [
+     "run.json",
+     "trades_01_main_base.parquet",
+     "trades_01_main_every.parquet",
+     "trades_01_main_gross.parquet",
+     "trades_01_main_gross_a.parquet",
+     "trades_01_main_stress_a.parquet",
+     "trades_01_main_stress_b.parquet",
+     "trials.jsonl",
+     "val_access.log"
+    ]
+   }
+  },
+  "C bookkeeping (review R6-5): a failure during the computation leaves neither run.json nor trials.jsonl, so the declared run can be started again and then completes": {
+   "pass": true
+  },
+  "D PF 1.119951 (shown 1.12) fails 'PF >= 1.12' (review R6-2)": {
+   "pass": true,
+   "detail": {
+    "pf_raw": 1.1199510000000001
+   }
+  },
+  "D x1.5 PF 1.039951 (shown 1.04) fails the stress bar in reading a and in reading b": {
+   "pass": true
+  },
+  "D t on daily sums 2.4997 (shown 2.5) fails 't >= 2.5'": {
+   "pass": true,
+   "detail": {
+    "t_raw": 2.499699999999998
+   }
+  },
+  "D cross share 0.25004 (shown 0.25) fails 'no cross above 25 %'; a pooled total of +0.0004 R (shown 0.0) with shares of 20 % passes it": {
+   "pass": true,
+   "detail": {
+    "share_raw": 0.25004,
+    "total_raw": 0.0004
+   }
+  },
+  "D neighbours' median of the exact PFs (1.059955, each shown 1.06) fails 'median >= 1.06'": {
+   "pass": true,
+   "detail": {
+    "value": 1.06,
+    "value_raw": 1.0599550000000002,
+    "neighbours": {
+     "first_hour": 1.0,
+     "moving_mid": 1.0,
+     "width_2.5": 1.06,
+     "m15": 1.06,
+     "stop_3.0": 2.0,
+     "one_per_night": 2.0
+    },
+    "neighbours_raw": {
+     "first_hour": 1.0,
+     "moving_mid": 1.0,
+     "width_2.5": 1.0599550000000002,
+     "m15": 1.0599550000000002,
+     "stop_3.0": 2.0,
+     "one_per_night": 2.0
+    },
+    "pass": false
+   }
+  },
+  "D every-signal expectancy +2e-6 R (shown 0.0) passes '> 0'": {
+   "pass": true
+  },
+  "D max hold 192.0004 h (shown 192.0) fails 'max hold <= 5 trading days (192 h)'": {
+   "pass": true
+  },
+  "D weekly correlation 0.30004 (shown 0.3) fails '|rho| <= 0.30' in correlation.py and in the verdict": {
+   "pass": true,
+   "detail": {
+    "rho_raw": 0.30003999999999986
+   }
+  },
+  "E moving_mid with planted quote holes (review R6-1): every band exit at the first M1 bar at or after its trigger end, including exits more than 30 minutes after it (the old gap rule exited before the trigger close there); every 21:00 exit has no earlier trigger": {
+   "pass": true,
+   "detail": {
+    "band_exits": 174,
+    "band_exits_after_a_gap_over_30_min": 1,
+    "exits_21_00": 41,
+    "bad": []
+   }
+  }
+ },
+ "info": {
+  "world_a_decisions_checked": 2607,
+  "world_a_main_trades": 27,
+  "pipeline_main_trades": 863,
+  "null_percentile_synthetic": 0.0,
+  "world_e_band_exits": 174,
+  "world_e_gap_cases": 1
+ },
+ "code_sha256": {
+  "common.py": "61dda9cf5bf85622538c8646e2833480e5253619339cc24afb8e6dcb3eb7d993",
+  "frames.py": "bfd4003891f9e0bb15f9b40957a1bf21ff7e9c238531b9973a29985befd25623",
+  "declare.py": "21e2525ab655af1cd5d0563d353897f2664b9ae3a75e791cd9d6f9428c0c8a9b",
+  "precheck.py": "9870d90428b958418a5c2208834de7cfa32a95641b00e9e85f3d9747e1425cd0",
+  "truncation.py": "13669d9b35fa0790836b229636e89e4d25897bc7321e2df122b5d925cac40824",
+  "test_synthetic.py": "8f1602e097d2d533aaed9a47cc0c7fece21e40d2e203d7da07caf1d83894bc6b",
+  "handcheck.py": "580c2c2232377653c15475d4e4ed4e6c3c162d9a667a9bfbbda82beba8838fae",
+  "run.py": "5b1f867a9bc407c560294c08bcad569c90fe18d903623620953f394fa164a7d8",
+  "null.py": "31851ba5e91c45e0769d8d35a1ccd626858a59c5e7626c05fdabd6064b5ba293",
+  "correlation.py": "6a37ec09664771774fa6dc735ec836da36245fea7100a87a1f0df6cf4e912b6e",
+  "verdict.py": "87256333ea2dce537cbe1c96b19c49419485f9eb962887f092ac6b0ecc2e7448"
+ },
+ "seconds": 35.0
+}
