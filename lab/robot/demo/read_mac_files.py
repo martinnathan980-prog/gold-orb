@@ -45,13 +45,18 @@ none on the others), swaps (annual % of the price against fp_costs.json), spread
 sessions (SPEC 10.5: the Friday gold session to 23:46 server, crypto at weekends, holiday sessions against the
 robot's built-in closures of SPEC 2.1) and the server clock (SPEC 10.4: New York + 7 h).
 ReleveFP's own read, per market whatever its fiche line: the days of ticks (fini.txt; 'fichier impossible a ouvrir'
-said plainly), the m1 file's rows against minutes= (an m1 file not copied is DIFFERENT), the r1 file's bars against
-barres= with the calendar days they cover against what the market's sleeves need over a demo of four weeks
-(demo_common.R1_DAYS_NEEDED: gold 154, US100 69, crypto 64; days with bars would undercount a 5-day market), an r1 file
-with no bar, r1 days missing where the m1 file has minutes (a series still loading), an r1 file ReleveFP could not write
-(barres=-1), and SPEC 10.3 as information only (never DIFFERENT): on the minutes in both files, the share where
-MqlRates.spread equals the smallest tick spread of the minute (sp_min), the first one, the last one, the rounded mean
-(half-way means round up). The version is kept as text and a run older than 1.10 is DIFFERENT (the new .mq5 not
+said plainly), the m1 file's rows against minutes= (an m1 file not copied, or one that does not parse, is DIFFERENT), the
+r1 file's bars against barres= (r1_rows: a file that does not parse, an r1 file with no bar, synchro_r1=0 when the M1
+series was still loading, a newest bar hours before the m1 file's last minute, weekdays without any bar inside the file,
+r1 days missing where the m1 file has minutes inside r1's own days, an r1 file ReleveFP could not write (barres=-1) are
+DIFFERENT), the calendar days the r1 file covers against what the replay needs (r1_days: the robot is READY only once its
+bars reach back 120 days on gold, 60 on the others, then a demo of four weeks and a week: demo_common.R1_DAYS_NEEDED,
+gold 155, the others 95; days with bars would undercount a 5-day market; ReleveFP 1.10's default asks 200 and 100), and
+SPEC 10.3: on the minutes in both files, the share where MqlRates.spread equals the smallest tick spread of the minute
+(sp_min), the first one, the last one, the rounded mean (half-way means round up), as information, except a bar spread
+below the minute's smallest tick spread on more than 5 % of the minutes (or 0 on most bars without sp_min): DIFFERENT,
+the robot's paper would pay less than the real spread. Times outside 2015-2100 (an m1 or r1 row, fini.txt's server_time,
+a fiche's tick time) are set aside. The version is kept as text and a run older than 1.10 is DIFFERENT (the new .mq5 not
 compiled); fini.txt's max_barres (Max bars in chart) must be 500000. Files of ReleveFP 1.00 (no sp_min, no r1, no barres=)
 are read without a reading problem. Without a usable gold fiche line the Friday gold session check stays, UNKNOWN. Only
 the lines ReleveFP and SondeFP write are kept (known keys, ReleveFP's markets, SondeFP's own status texts; the broker
@@ -171,6 +176,10 @@ def read_fiches(path, scrub=None):
         r = {"base": base, "found": True}
         for c, i in idx.items():
             r[c] = f[i].strip() if c in TEXT_FIELDS else C.fnum(f[i])
+        if not (isinstance(r.get("tick_time"), int) and C.time_ok(r["tick_time"])):
+            r["tick_time"] = None                                      # outside 2015-2100 (review4 A12); 0 = no tick
+        elif r["tick_time"] == 0:
+            r["tick_time"] = None
         if r.get("sessions") and not _SESSIONS_RX.match(r["sessions"]):
             r["sessions"], r["sessions_bad"] = "", True
             which = ("de " + base) if base in RELEVE_BASES else "d'un marche"
@@ -237,6 +246,9 @@ def read_fini(path, scrub):
         if k in FINI_INT_KEYS:
             x = C.fnum(v)
             out[k] = x if isinstance(x, int) and not isinstance(x, bool) else None
+            if k == "server_time" and out[k] is not None and not C.time_ok(out[k], zero_ok=False):
+                out[k] = None                                           # outside 2015-2100: an edited file (review4 A12)
+                out.setdefault("bad_times", []).append(k)
             continue
         if k == "currency":
             out[k] = v if re.match(r"^[A-Z]{3}$", v) else None
@@ -262,6 +274,8 @@ def read_fini(path, scrub):
             if mm:
                 x = C.fnum(mm.group(1))
                 m[key] = x if isinstance(x, int) else None
+                if key in ("debut_r1", "fin_r1") and m[key] and not C.time_ok(m[key]):
+                    m[key] = None                                       # a time outside 2015-2100 (review4 A12); 0 = unknown
         for key in ("du", "au"):
             j = info.find(key + "=")
             if j >= 0:
@@ -296,7 +310,7 @@ def read_sonde(path, scrub):
                         meta["server_present"] = True
                     elif k == "server_time":                            # review3 R2, P5: known keys only, typed
                         x = C.fnum(v)
-                        meta[k] = x if isinstance(x, int) and not isinstance(x, bool) else None
+                        meta[k] = x if isinstance(x, int) and not isinstance(x, bool) and C.time_ok(x, zero_ok=False) else None
                     elif k == "currency":
                         meta[k] = v if re.match(r"^[A-Z]{3}$", v) else None
             continue
@@ -781,7 +795,13 @@ def releve_checks(rep, base, fini_m, m1_path, r1_path, m1_df, r1_df, digits, fin
         rep.add(base, "releve_days", "historique de ticks lu", st,
                 f"{v(fini_m.get('jours'))} jours, {v(fini_m.get('minutes'))} minutes, du {v(fini_m.get('du'))} au {v(fini_m.get('au'))}",
                 "jours complets, derniere erreur 0", note, "ReleveFP.mq5")
-    if m1_path is not None:
+    if m1_path is not None and (m1_info or {}).get("unreadable"):
+        # a file that does not parse is not OK because its line count matches (review4 RC3-tool1)
+        rep.add(base, "m1_rows", "minutes du fichier m1", "DIFFERENT", f"m1_{base}.csv illisible",
+                f"minutes={fini_m.get('minutes')} (fini.txt)" if found else "un fichier de ReleveFP",
+                f"m1_{base}.csv illisible (re-enregistre par un autre programme ? autre codage ?) : le recopier tel quel depuis le Mac",
+                "ReleveFP.mq5 Minutes")
+    elif m1_path is not None:
         rows = data_rows(m1_path)
         mins = fini_m.get("minutes") if found else None
         bad = (m1_info or {}).get("bad_rows", 0)
@@ -801,7 +821,6 @@ def releve_checks(rep, base, fini_m, m1_path, r1_path, m1_df, r1_df, digits, fin
         rep.add(base, "m1_rows", "minutes du fichier m1", "DIFFERENT", f"m1_{base}.csv absent", f"minutes={fini_m['minutes']} (fini.txt)",
                 "copier aussi les fichiers m1_<marche>.csv de ReleveFP", "ReleveFP.mq5 Minutes")
     bars_f = fini_m.get("barres") if found else None
-    need = C.R1_DAYS_NEEDED.get(base)
     if r1_path is not None:
         rows = data_rows(r1_path)
         bad = (r1_info or {}).get("bad_rows", 0)
@@ -811,8 +830,16 @@ def releve_checks(rep, base, fini_m, m1_path, r1_path, m1_df, r1_df, digits, fin
             span = int((int(t[-1]) // 86400 - int(t[0]) // 86400) + 1)            # calendar days, not days with bars (R1)
             broker = f"{rows} barres sur {span} jours du calendrier, du {C.ymd(t[0])} au {C.ymd(t[-1])}"
         else:
-            broker = f"{rows} barres"
+            broker = f"{rows} lignes" + (" (fichier illisible)" if r1_df is None else " (aucune lisible)")
         notes, st = [], "OK"
+        # a file that does not parse (re-saved in UTF-16 by another program, say) is not OK because its line count matches
+        # (review4 RC3-tool1)
+        if r1_df is None:
+            st = "DIFFERENT"
+            notes.append(f"r1_{base}.csv illisible (re-enregistre par un autre programme ? autre codage ?) : le recopier tel quel depuis le Mac")
+        elif rows > 0 and not len(r1_df):
+            st = "DIFFERENT"
+            notes.append(f"aucune ligne lisible dans r1_{base}.csv : le recopier tel quel depuis le Mac")
         if isinstance(bars_f, int) and bars_f >= 0:
             if rows < bars_f:
                 st = "DIFFERENT"
@@ -840,10 +867,34 @@ def releve_checks(rep, base, fini_m, m1_path, r1_path, m1_df, r1_df, digits, fin
         if bad:
             st = "DIFFERENT"
             notes.append(f"{bad} ligne(s) illisible(s) (fichier modifie ou coupe ?) : recopier le fichier")
-        if m1_df is not None and len(m1_df) and r1_df is not None:
+        # the M1 series still loading when ReleveFP gave up waiting (synchro_r1=0 after InpRateWait, review4 RC3-R2, A9)
+        if found and base in C.ROBOT_BASES and fini_m.get("synchro_r1") == 0:
+            st = "DIFFERENT"
+            notes.append(f"barres du terminal pas synchronisees quand ReleveFP les a lues (synchro_r1=0, {v(fini_m.get('attente_r1'))} s d'attente) : "
+                         "relancer ReleveFP (l'historique se chargeait encore)")
+        have = r1_df is not None and len(r1_df) > 0
+        # the newest bar against the newest minute: ReleveFP writes the m1 files first, so the terminal's bars must reach their
+        # last minute; a newest day only half loaded keeps its day and is seen only this way (review4 RC3-R2)
+        if have and m1_df is not None and len(m1_df):
+            r1_last, m1_last = int(r1_df.time.iloc[-1]), int(m1_df.time.iloc[-1])
+            if r1_last < m1_last - R1_LAST_TOL_S:
+                st = "DIFFERENT"
+                notes.append(f"derniere barre r1 le {C.ymdhm(r1_last)} serveur, derniere minute m1 le {C.ymdhm(m1_last)} : barres du terminal pas "
+                             "finies de charger : relancer ReleveFP")
+        # weekdays without any bar inside the file's own span (a series loaded with holes, review4 A9)
+        if have and base in C.ROBOT_BASES:
+            holes = r1_weekday_holes(r1_df.time.to_numpy(), base)
+            if holes:
+                st = "DIFFERENT"
+                notes.append(f"{len(holes)} jour(s) de semaine sans barre dans r1_{base}.csv (du {C.ymd(holes[0])} au {C.ymd(holes[-1])}) : "
+                             "relancer ReleveFP (l'historique du terminal se chargeait encore)")
+        # m1 days without r1 bars, inside the days r1 covers: the m1 days before r1's first day were never asked of r1
+        # (InpRateSymbols, review4 RC3-inpdays)
+        if m1_df is not None and len(m1_df) and have:
             m1_days = set((m1_df.time.to_numpy() // 86400).tolist())
-            r1_days = set((r1_df.time.to_numpy() // 86400).tolist()) if len(r1_df) else set()
-            lacking = sorted(m1_days - r1_days)
+            r1_days = set((r1_df.time.to_numpy() // 86400).tolist())
+            first_r1 = min(r1_days)
+            lacking = sorted(d for d in m1_days - r1_days if d >= first_r1)
             if lacking and rows:
                 st = "DIFFERENT"
                 notes.append(f"barres manquantes : {len(lacking)} jour(s) ont des minutes m1 mais aucune barre r1 (du {C.ymd(lacking[0] * 86400)} au "
@@ -852,10 +903,9 @@ def releve_checks(rep, base, fini_m, m1_path, r1_path, m1_df, r1_df, digits, fin
         if isinstance(maxb, int) and maxb > 0 and rows >= 0.98 * maxb:
             st = "DIFFERENT"
             notes.append(f"le terminal garde {maxb} barres au plus (Max bars in chart) : le mettre a 500000 puis redemarrer MetaTrader et relancer ReleveFP")
-        if need and span and span < need:
-            notes.append(f"{span} jours du calendrier : il en faut {need} pour comparer toutes les sleeves de {base} (echauffement compris) sur "
-                         f"une demo de {C.DEMO_DAYS_MAX} jours ; check_demo dit lesquelles restent hors comparaison")
         rep.add(base, "r1_rows", "barres M1 du terminal (r1)", st, broker, assumed, " ; ".join(notes), "ReleveFP.mq5 Rates")
+        if have and base in C.ROBOT_BASES:
+            r1_days_check(rep, base, span, fini_m if found else {})
     elif isinstance(bars_f, int) and bars_f > 0:
         rep.add(base, "r1_rows", "barres M1 du terminal (r1)", "DIFFERENT", f"r1_{base}.csv absent", f"barres={bars_f} (fini.txt)",
                 "copier aussi les fichiers r1_<marche>.csv de ReleveFP", "ReleveFP.mq5 Rates")
@@ -869,10 +919,59 @@ def releve_checks(rep, base, fini_m, m1_path, r1_path, m1_df, r1_df, digits, fin
         bar_spread_check(rep, base, m1_df, r1_df, digits)
 
 
+R1_LAST_TOL_S = 300            # the terminal's newest bar may end this much before the m1 file's last minute (read earlier)
+BAR_BELOW_SHARE = 0.05         # MqlRates.spread below the minute's smallest tick spread on more minutes than this: DIFFERENT
+BAR_ZERO_SHARE = 0.5           # without sp_min (ReleveFP 1.00): MqlRates.spread 0 on more bars than this: DIFFERENT
+
+
+def r1_weekday_holes(t, base):
+    """server weekdays (Monday to Friday) without any bar between the first and the last bar of an r1 file (review4 A9: a
+    series loaded with holes); NYSE full holidays, Christmas and New Year's day aside (a market may be shut all day)"""
+    days = set((np.asarray(t, dtype=np.int64) // 86400).tolist())
+    lo, hi = min(days), max(days)
+    out = []
+    for d in range(lo + 1, hi):
+        dw = (d + 4) % 7
+        if dw in (0, 6) or d in days:
+            continue
+        date = dt.date(1970, 1, 1) + dt.timedelta(days=d)
+        if (date.month, date.day) in ((12, 25), (1, 1)) or C.nyse_kind(date) == "full":
+            continue
+        out.append(d * 86400)
+    return out
+
+
+def r1_days_check(rep, base, span, fini_m):
+    """the calendar days an r1 file covers against what the replay needs (review4 A1, RC3-R4): the replay robot is READY on a
+    market only once its bars reach back DEPTH_DAYS, then a demo of four weeks at most and a week (C.R1_DAYS_NEEDED); fewer
+    days leave sleeves out of the comparison or, worse, make the replay differ on SIZE and MISSED before it is READY"""
+    need = C.R1_DAYS_NEEDED[base]
+    depth = C.DEPTH_DAYS[base]
+    asked = fini_m.get("jours_r1") if fini_m else None
+    first = fini_m.get("debut_r1") if fini_m else None
+    assumed = (f"{need} jours au moins (le robot n'est pret sur {base} qu'avec {depth} jours d'historique, puis une demo de "
+               f"{C.DEMO_DAYS_MAX} jours au plus et une semaine)")
+    broker = f"{span} jours du calendrier" + (f" (ReleveFP en a demande {asked})" if isinstance(asked, int) else "")
+    if span >= need:
+        rep.add(base, "r1_days", "jours de barres r1 pour le rejeu", "OK", broker, assumed, "", "CR_Bars.mqh (profondeur), ReleveFP.mq5 InpRateSymbols")
+        return
+    if isinstance(asked, int) and asked >= need:
+        why = ("le terminal n'en avait pas plus" + (f" (sa serie M1 commence le {C.ymd(first)})" if first else "")
+               + " : Max bars in chart a 500000 ? sinon l'historique du courtier ne remonte pas plus loin")
+    else:
+        why = ("ReleveFP n'en a pas demande assez" + (f" ({asked} jours dans InpRateSymbols)" if isinstance(asked, int) else ""))
+    note = (f"{why} : relancer ReleveFP 1.10 avec son reglage par defaut InpRateSymbols = {C.RELEVE_RATE_TEXT} ; sinon les sleeves de "
+            f"{base} ne sont comparees qu'une fois le rejeu pret (check_demo dit lesquelles et depuis quand)")
+    rep.add(base, "r1_days", "jours de barres r1 pour le rejeu", "DIFFERENT", broker, assumed, note,
+            "CR_Bars.mqh (profondeur), ReleveFP.mq5 InpRateSymbols")
+
+
 def bar_spread_check(rep, base, m1_df, r1_df, digits):
-    """SPEC 10.3 (information only, never a difference): on the minutes in both the m1 file (built from ticks) and the r1
-    file (the terminal's bars), how often MqlRates.spread equals the smallest spread of the minute's ticks (sp_min,
-    ReleveFP 1.10), the first tick's (open), the last tick's (close) and the rounded mean"""
+    """SPEC 10.3: on the minutes in both the m1 file (built from ticks) and the r1 file (the terminal's bars), how often
+    MqlRates.spread equals the smallest spread of the minute's ticks (sp_min, ReleveFP 1.10), the first tick's (open), the
+    last tick's (close) and the rounded mean: information, except a bar spread below the minute's smallest tick spread
+    (or 0 on most bars, without sp_min): DIFFERENT, the robot's paper (ask = bid + MqlRates.spread) would pay less than the
+    real spread (review4 A8)"""
     j = m1_df.merge(r1_df[["time", "spread"]], on="time", how="inner")
     if not len(j):
         rep.add(base, "bar_spread", "ecart des barres du terminal (SPEC 10.3)", "UNKNOWN", "aucune minute commune aux fichiers m1 et r1",
@@ -886,13 +985,25 @@ def bar_spread_check(rep, base, m1_df, r1_df, digits):
     o = np.rint(j.ao.to_numpy() * sc) - np.rint(j.bo.to_numpy() * sc)
     c = np.rint(j.ac.to_numpy() * sc) - np.rint(j.bc.to_numpy() * sc)
     mean_ = np.floor(j.sp_mean.to_numpy() * sc + 0.5 + 1e-7)                 # half-way means round up (review3 R9)
-    parts = [f"minimum {fmtv(share(np.rint(j.sp_min.to_numpy() * sc)), 1)} %" if "sp_min" in j.columns else
-             "minimum ? (m1 sans sp_min : ReleveFP 1.00)",
+    spn = np.rint(j.sp_min.to_numpy() * sc) if "sp_min" in j.columns else None
+    parts = [f"minimum {fmtv(share(spn), 1)} %" if spn is not None else "minimum ? (m1 sans sp_min : ReleveFP 1.00)",
              f"ouverture {fmtv(share(o), 1)} %", f"fermeture {fmtv(share(c), 1)} %", f"moyenne arrondie {fmtv(share(mean_), 1)} %"]
-    rep.add(base, "bar_spread", "ecart des barres du terminal (SPEC 10.3)", "OK",
-            "MqlRates.spread egal a l'ecart des ticks de la minute : " + ", ".join(parts) + f" ({len(j)} minutes communes)",
-            "ask = bid + MqlRates.spread (le robot)", "information : l'ecart que MT5 garde dans ses barres M1 ; check_demo rejoue les "
-            "barres r1 telles quelles", "SPEC 10.3")
+    below = float(np.mean(sp < spn)) if spn is not None else None
+    zero = float(np.mean(sp == 0))
+    st, note = "OK", "information : l'ecart que MT5 garde dans ses barres M1 ; check_demo rejoue les barres r1 telles quelles"
+    if below is not None and below > BAR_BELOW_SHARE:
+        st = "DIFFERENT"
+        note = (f"MqlRates.spread plus petit que le plus petit ecart des ticks de la minute sur {fmtv(100 * below, 1)} % des minutes communes "
+                f"(0 sur {fmtv(100 * zero, 1)} %) : le papier du robot (prix acheteur = bid + MqlRates.spread) paierait moins que l'ecart reel ; "
+                "a regarder avec le labo (SPEC 10.3)")
+    elif below is None and zero > BAR_ZERO_SHARE:
+        st = "DIFFERENT"
+        note = (f"MqlRates.spread vaut 0 sur {fmtv(100 * zero, 1)} % des minutes : le papier du robot ne paierait aucun ecart ; a regarder avec "
+                "le labo (SPEC 10.3)")
+    rep.add(base, "bar_spread", "ecart des barres du terminal (SPEC 10.3)", st,
+            "MqlRates.spread egal a l'ecart des ticks de la minute : " + ", ".join(parts) + f" ({len(j)} minutes communes)"
+            + (f" ; plus petit que le plus petit des ticks : {fmtv(100 * below, 1)} %" if below else ""),
+            "ask = bid + MqlRates.spread (le robot)", note, "SPEC 10.3")
 
 
 def commission_check(rep, base, fiche, s, is_robot, usd_rate):
@@ -1206,6 +1317,8 @@ def run(folder, out_dir):
     r1_files = sorted(f for f in os.listdir(folder) if f.startswith("r1_") and f.endswith(".csv"))
     problems = []
     fini = read_fini(os.path.join(folder, "fini.txt"), scrub) if present["fini.txt"] else {}
+    for k in fini.get("bad_times", []):                                 # review4 A12
+        problems.append(f"fini.txt : {k} hors de 2015-2100 (fichier modifie ?) : valeur laissee de cote")
     fiches, p = read_fiches(os.path.join(folder, "fiches.csv"), scrub) if present["fiches.csv"] else ({}, [])
     problems += p
     tous, p = read_tous(os.path.join(folder, "tous.csv"), scrub) if present["tous.csv"] else ([], [])
@@ -1230,6 +1343,7 @@ def run(folder, out_dir):
                 digits_of[base] = int(dg or 0)
         except Exception as e:                                          # one bad file never stops the others
             problems.append(f"{fn} illisible ({e.__class__.__name__} : ligne ou colonne illisible ; texte jamais recopie)")
+            m1_info[base]["unreadable"] = True
     for fn in r1_files:                                                 # ReleveFP 1.10: the terminal's own M1 bars
         base = fn[3:-4]
         try:

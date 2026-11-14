@@ -71,10 +71,65 @@ XAU_COMM_PTS = 6                                 # CR_Types.mqh CR_XAU_COMM_PTS 
 # about 400 bars for a Wilder ATR to forget its seed to 1e-13)
 WARMUP_DAYS = {"N30": 25, "OC4": 35, "BKB": 5, "BKE": 5, "F1B": 30, "F1E": 30, "NQB": 25, "GFP": 30, "D4H": 120, "ORX": 3}
 DEMO_DAYS_MAX = 28                               # SPEC 1: two weeks on the demo, four at most
-# calendar days of the terminal's bars (r1) a market needs so that every sleeve reading it is compared over a demo of
-# DEMO_DAYS_MAX days (its longest warm-up + the demo + 6 days for the paper chains to align)
-R1_DAYS_NEEDED = {b: max(WARMUP_DAYS[c] for c, s in SYM_OF_CODE.items() if b in READS_OF_CODE[c]) + DEMO_DAYS_MAX + 6
-                  for b in ROBOT_BASES}
+RELEVE_DELAY_DAYS = 7                            # ReleveFP may run up to a week after the demo's end
+
+
+def r1_days_needed(b, demo_days=DEMO_DAYS_MAX):
+    """calendar days of the terminal's bars (r1) a robot market needs so that the replay compares every sleeve reading it over
+    a demo of demo_days days (review4 A1): the replay robot is READY on the market only once its bars reach back DEPTH_DAYS
+    (CR_Bars.mqh: SERIES_FIRSTDATE <= now - depth; gold 120, the others 60) and the rules need their warm-up, whichever is
+    longer; then the demo, and a week between its end and ReleveFP's run (6 days of it also let the paper chains align)"""
+    warm = max(WARMUP_DAYS[c] for c, s in SYM_OF_CODE.items() if b in READS_OF_CODE[c])
+    return max(warm, DEPTH_DAYS[b]) + int(demo_days) + RELEVE_DELAY_DAYS
+
+
+R1_DAYS_NEEDED = {b: r1_days_needed(b) for b in ROBOT_BASES}       # gold 155, US100, BTCUSD, ETHUSD 95
+# ReleveFP 1.10's default InpRateSymbols (lab/live_ai/mql5/ReleveFP.mq5): at least R1_DAYS_NEEDED for every robot market
+RELEVE_RATE_DAYS = {"XAUUSD": 200, "US100": 100, "BTCUSD": 100, "ETHUSD": 100}
+RELEVE_RATE_TEXT = ",".join(f"{b}:{RELEVE_RATE_DAYS[b]}" for b in ROBOT_BASES)
+# the robot's risk tables (CR_Golden.mqh CR_GOLD_RISK_NAME / _TXT; SPEC 1): the user picked S7 for the demo (SPEC 1 step 3), the
+# build's default is D2 (InpRiskTable not typed)
+RISK_PRESETS = {"F3S": "0:3;3000:2;6000:1;12000:0.5", "F2S": "0:2;6000:1;12000:0.5", "F1S": "0:1;12000:0.5",
+                "D2": "0:10;3000:5;10000:2;20000:1", "S7": "0:7;3000:3.5;10000:1.4;20000:0.7"}
+RISK_EXPECTED = "S7"
+
+
+def risk_pairs(text):
+    """a risk table 'from:pct;...' as a tuple of (from, pct) floats, None when it is not one (an input typed otherwise)"""
+    out = []
+    for part in str(text or "").split(";"):
+        if not part.strip():
+            continue
+        a, sep, b = part.partition(":")
+        try:
+            out.append((float(a), float(b)))
+        except ValueError:
+            return None
+        if not sep:
+            return None
+    return tuple(out) or None
+
+
+def risk_preset(text):
+    """the preset name of a risk table (S7, D2 ...), None when it is none of them"""
+    p = risk_pairs(text)
+    return next((k for k, v in RISK_PRESETS.items() if p is not None and risk_pairs(v) == p), None)
+
+
+# INIT symbol names shown in the outputs (review4 A14): the base or one of BrkResolve's aliases, then a suffix brokers use; any
+# other suffix (an edited line may hold a login or a user name there) is never written, only its length
+SYM_SUFFIX_SHOWN = frozenset({"", ".r", ".cash", ".raw", ".pro", ".std", ".m", "m", ".a", ".b", ".i", "_i", "#", "+", "-"})
+
+
+def sym_shown(base, name):
+    """an INIT symbol name as the outputs may show it: itself when its suffix is a usual one, else '<alias><autre suffixe (n
+    caracteres)>' (the text is never kept)"""
+    name = str(name or "")
+    for a in sorted([base] + SYM_ALIASES.get(base, []), key=len, reverse=True):
+        if name.startswith(a):
+            suf = name[len(a):]
+            return name if suf in SYM_SUFFIX_SHOWN else f"{a}<autre suffixe ({len(suf)} caracteres)>"
+    return f"{base}<autre nom>"
 
 
 # ---------------------------------------------------------------------------------------------- output folder
@@ -223,11 +278,11 @@ def read_text(path):
 
 def read_releve_csv(path, need, optional=()):
     """a ReleveFP CSV file (m1_<BASE>.csv, r1_<BASE>.csv): the columns read by name, every value a number. A row with a
-    value that is missing or not a number, or with the wrong number of fields, is dropped and counted: one bad row never
-    rejects the file (review3 U3). ReleveFP ends every line with a line end, so a last line without one was cut while
-    the file was copied: it is dropped (review3 R10, a value cut short still reads as a number). Returns (DataFrame of
-    float columns, {"bad_rows", "cut_last", "rows"}); raises ValueError when the file is empty or a needed column absent.
-    The text of a bad row is never kept."""
+    value that is missing or not a number, with the wrong number of fields, or with a time outside 2015-2100 (review4 A12:
+    an edited row), is dropped and counted: one bad row never rejects the file (review3 U3). ReleveFP ends every line with
+    a line end, so a last line without one was cut while the file was copied: it is dropped (review3 R10, a value cut
+    short still reads as a number). Returns (DataFrame of float columns, {"bad_rows", "cut_last", "rows"}); raises
+    ValueError when the file is empty or a needed column absent. The text of a bad row is never kept."""
     import io
     import numpy as np
     import pandas as pd
@@ -251,6 +306,8 @@ def read_releve_csv(path, need, optional=()):
     bad = len(body) - len(df)
     df = df[cols].apply(lambda col: pd.to_numeric(col.str.strip(), errors="coerce"))
     ok = df.notna().all(axis=1) & np.isfinite(df.to_numpy(dtype=float)).all(axis=1)
+    if "time" in df.columns:                                     # a time outside 2015-2100 cannot be ReleveFP's (review4 A12)
+        ok &= (df["time"] >= TIME_MIN) & (df["time"] < TIME_MAX)
     bad += int((~ok).sum())
     df = df[ok].reset_index(drop=True)
     return df, {"bad_rows": bad, "cut_last": cut, "rows": int(len(df))}
@@ -275,17 +332,24 @@ def fnum(s):
 
 # ---------------------------------------------------------------------------------------------- clocks (SPEC 2.1)
 def us_dst(utc):
-    """US summer time at a UTC instant: 2nd Sunday of March 07:00 UTC to 1st Sunday of November 06:00 UTC"""
+    """US summer time at a UTC instant: 2nd Sunday of March 07:00 UTC to 1st Sunday of November 06:00 UTC; False for a time
+    outside 2015-2100 (an edited file: no year to look at; calendar.timegm refuses years after 9999, review4 A12)"""
     try:
+        utc = int(utc)
+        if not TIME_MIN <= utc < TIME_MAX:
+            return False
         y = time.gmtime(utc).tm_year
-    except (OverflowError, OSError, ValueError):                 # a time out of range (an edited file): no summer time
+    except (OverflowError, OSError, ValueError, TypeError):      # a time out of range (an edited file): no summer time
         return False
 
     def nth_sunday(m, n):
         first = calendar.timegm((y, m, 1, 0, 0, 0))
         wd = time.gmtime(first).tm_wday
         return first + ((6 - wd) % 7) * 86400 + 7 * 86400 * (n - 1)
-    return nth_sunday(3, 2) + 7 * 3600 <= utc < nth_sunday(11, 1) + 6 * 3600
+    try:
+        return nth_sunday(3, 2) + 7 * 3600 <= utc < nth_sunday(11, 1) + 6 * 3600
+    except (OverflowError, OSError, ValueError):
+        return False
 
 
 def srv_to_utc(s):
@@ -645,7 +709,8 @@ def parse_robot_line(text):
     words, never the text that failed (it may hold anything). Time fields must lie in 2015-2100 (review3 R3-3), a side
     is -1, 0 or 1. Only the robot's own keys are kept: a numeric key a later build may add is accepted but dropped, and
     the row's '_raw' (the text kept and shown) is rebuilt without it; an ERROR line keeps its text with the free parts
-    (an input echoed back) shown as <...> (review3 P3)."""
+    (an input echoed back) shown as <...> (review3 P3); an INIT symbol name whose suffix is not a usual one keeps only the
+    suffix's length (sym_shown, review4 A14)."""
     if not _ASCII.match(text):
         return None, "caractere hors ASCII"
     m = compare.LINE.match(text)
@@ -697,6 +762,8 @@ def parse_robot_line(text):
                 return None, f"{ev} : {k} hors du vocabulaire du robot"
             if t == ("error",):
                 v = error_shown(v)
+            elif isinstance(t, tuple) and len(t) == 2 and t[0] == "sym":
+                v = sym_shown(t[1], v)                          # an unusual suffix is never kept (review4 A14)
             d[k] = v
         kept.append(f"{k}={v}")
     need = req(d) if callable(req) else req

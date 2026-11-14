@@ -15,8 +15,10 @@
 //|                                  -> claude\releve\tous.csv        |
 //|   4. pour les marches du robot (InpRateSymbols), les barres M1 du |
 //|      terminal, celles que le robot lit (prix vendeur, ecart en    |
-//|      points), sur le nombre de jours donne pour chaque marche ;   |
-//|      les minutes de tous les marches sont ecrites avant          |
+//|      points), sur le nombre de jours donne pour chaque marche     |
+//|      (or 200, les autres 100 : le robot attend 120 ou 60 jours    |
+//|      d'historique avant d'etre pret, plus la demo) ; les minutes  |
+//|      de tous les marches sont ecrites avant                       |
 //|                                  -> claude\releve\r1_<marche>.csv |
 //|  A la fin : claude\releve\fini.txt (resume) et une alerte. Pour   |
 //|  chaque marche : jours, minutes, ticks, du, au, derniere_erreur,  |
@@ -40,8 +42,10 @@
 
 input string InpSymbols  = "BTCUSD,ETHUSD,US100,XAUUSD,USDJPY,JP225,EURUSD,US500,GER40"; // Marches (noms de base, du plus important au moins important)
 input int    InpDays     = 30;     // Jours d'historique de ticks a relever
-input string InpRateSymbols = "XAUUSD:200,US100:75,BTCUSD:75,ETHUSD:75"; // Barres M1 du terminal (r1_<marche>.csv) : marche:jours
-input int    InpRateWait = 120;    // Attente maximale (secondes) du chargement des barres M1 d'un marche
+// r1 days per market: the robot is READY on a market only once its bars reach back 120 days (gold) or 60 days (the others,
+// CR_Registry.mqh depth), so the replay of the demo needs that depth + a demo of four weeks at most + a week: 155 and 95 days
+input string InpRateSymbols = "XAUUSD:200,US100:100,BTCUSD:100,ETHUSD:100"; // Barres M1 du terminal (r1_<marche>.csv) : marche:jours
+input int    InpRateWait = 300;    // Attente maximale (secondes) du chargement des barres M1 d'un marche
 input int    InpMaxEmpty = 6;      // Passer au marche suivant apres ce nombre de jours vides d'affilee
 input bool   InpAllList  = true;   // Ecrire aussi la liste de tous les marches du courtier
 
