@@ -56,8 +56,12 @@ SPEC 10.3: on the minutes in both files, the share where MqlRates.spread equals 
 (sp_min), the first one, the last one, the rounded mean (half-way means round up), as information, except a bar spread
 below the minute's smallest tick spread on more than 5 % of the minutes (or 0 on most bars without sp_min): DIFFERENT,
 the robot's paper would pay less than the real spread. Times outside 2015-2100 (an m1 or r1 row, fini.txt's server_time,
-a fiche's tick time) are set aside. The version is kept as text and a run older than 1.10 is DIFFERENT (the new .mq5 not
-compiled); fini.txt's max_barres (Max bars in chart) must be 500000. Files of ReleveFP 1.00 (no sp_min, no r1, no barres=)
+a fiche's tick time) are set aside, and the server clock then says server_time is unreadable (review4b R4V-5 c). An r1 or m1 row
+whose prices are 0 or less, whose low lies above its open or close or whose high below them, or whose spread is negative, is
+dropped and counted (review4b ADV5-12). ReleveFP's other files without fini.txt are DIFFERENT (it deletes fini.txt at its start
+and writes it last: a run that did not finish, review4b ADV5-8); without fiches.csv, a DIFFERENT item says so and each robot
+market's fiche items are listed UNKNOWN (review4b ADV5-9). The version is kept as text and a run older than 1.10 is DIFFERENT (the
+new .mq5 not compiled); fini.txt's max_barres (Max bars in chart) must be 500000. Files of ReleveFP 1.00 (no sp_min, no r1, no barres=)
 are read without a reading problem. Without a usable gold fiche line the Friday gold session check stays, UNKNOWN. Only
 the lines ReleveFP and SondeFP write are kept (known keys, ReleveFP's markets, SondeFP's own status texts; the broker
 company is not kept); a bad row of an m1 or r1 file is dropped and counted; a fiches.csv or tous.csv re-saved by a
@@ -589,7 +593,7 @@ NO_COMMISSION = {"US100", "BTCUSD", "ETHUSD", "US500", "US30", "GER40", "JP225"}
 INFO = "information : ni le robot ni le labo n'ont d'hypothese pour ce marche"
 
 
-def market_checks(rep, base, fiche, tous, costs, sonde, m1, fini_m, is_robot, usd_rate):
+def market_checks(rep, base, fiche, tous, costs, sonde, m1, fini_m, is_robot, usd_rate, no_fiches=False):
     lab = costs.get(C.LAB_SYM.get(base, ""), {})
     src_lab = "fp_costs.json" if lab else ""
     # 1. name (BrkResolve on tous.csv for the robot's markets, ReleveFP's Resolve for the others)
@@ -619,6 +623,14 @@ def market_checks(rep, base, fiche, tous, costs, sonde, m1, fini_m, is_robot, us
         if (sonde and sonde.get(base)) or m1.get(base):
             comm_price, comm_ok = commission_check(rep, base, None, sonde.get(base) if sonde else None, is_robot, usd_rate)
             spread_check(rep, base, None, m1.get(base), lab, comm_price, is_robot, comm_ok)
+        if is_robot and fiche is None:
+            # the items a fiche line gives, said UNKNOWN rather than dropped (review4b ADV5-9: the US100 minimum lot is one of them)
+            why = "fiches.csv absent" if no_fiches else "pas de ligne de ce marche dans fiches.csv (ligne coupee ?)"
+            for item, label in (("digits", "decimales"), ("point", "point"), ("tick_size", "pas de cotation"), ("contract_size", "taille du contrat"),
+                                ("vol_min", "lot minimum"), ("vol_step", "pas du lot"), ("vol_max", "lot maximum"), ("tick_value_eur", "valeur du pas"),
+                                ("stops_level", "distance minimale des stops"), ("margin", "marge (levier effectif)"), ("swap_long", "swap long"),
+                                ("swap_short", "swap short"), ("trade_mode", "trading autorise")):
+                rep.add(base, item, label, "UNKNOWN", why, None, "recopier fiches.csv (ou relancer ReleveFP)", "ReleveFP.mq5 Fiche")
         return
     name = fiche["name"]
     tm = next((r.get("trade_mode") for r in tous if r["name"] == name), None) if tous else None
@@ -1228,7 +1240,17 @@ def session_checks(rep, fiches, m1):
                         "FP cote encore pendant la fermeture du robot (il n'y trade pas)" if lm >= c0 else "", "SPEC 2.1")
 
 
-def account_checks(rep, fini, sonde_rows, sonde_meta, m1):
+def account_checks(rep, fini, sonde_rows, sonde_meta, m1, present=None, releve_files=False):
+    # ReleveFP deletes fini.txt at its start and writes it last: its other files without fini.txt are a run that did not finish, or a
+    # copy without it (review4b ADV5-8); fiches.csv is written first, so its absence beside the others is a copy left incomplete (ADV5-9)
+    if present is not None and releve_files and not present.get("fini.txt"):
+        rep.add("compte", "releve_finished", "releve termine (fini.txt)", "DIFFERENT", "fini.txt absent", "fini.txt ecrit a la fin",
+                "ReleveFP n'a pas fini (il efface fini.txt au depart et l'ecrit en dernier) ou fini.txt n'a pas ete copie : relancer ReleveFP "
+                "jusqu'a l'alerte 'Releve termine' et recopier le dossier releve en entier", "ReleveFP.mq5 OnStart")
+    if present is not None and releve_files and not present.get("fiches.csv"):
+        rep.add("compte", "fiches_present", "fiches des marches (fiches.csv)", "DIFFERENT", "fiches.csv absent", "fiches.csv (ecrit en premier)",
+                "recopier le dossier releve en entier, ou relancer ReleveFP : sans les fiches, les decimales, le pas, les lots, la marge, les "
+                "swaps et les seances des marches ne sont pas verifies (INCONNU)", "ReleveFP.mq5 Fiche")
     if fini:
         cur = fini.get("currency")
         rep.add("compte", "currency", "devise du compte", "OK" if cur == "EUR" else ("UNKNOWN" if cur is None else "DIFFERENT"),
@@ -1281,6 +1303,11 @@ def account_checks(rep, fini, sonde_rows, sonde_meta, m1):
         rep.add("compte", "server_clock", "heure du serveur = New York + 7 h", st,
                 f"serveur - GMT = {meas} s le {C.ymdhm(srv)} (serveur)", f"{rule} s (New York + 7 h a cette date)",
                 "" if st == "OK" else "ecart de plus de 120 s : le robot bloquerait les entrees (CLOCK)", "SPEC 2.1, 6.5, 10.4")
+    elif fini:                                   # fini.txt read, its server_time set aside (review4 A12) or absent (review4b R4V-5 c)
+        bad = "server_time" in (fini.get("bad_times") or [])
+        rep.add("compte", "server_clock", "heure du serveur = New York + 7 h", "UNKNOWN",
+                "server_time illisible dans fini.txt (hors de 2015-2100 : fichier modifie ?)" if bad else "server_time absent de fini.txt",
+                "New York + 7 h", "recopier fini.txt tel quel depuis le Mac", "SPEC 10.4")
     else:
         rep.add("compte", "server_clock", "heure du serveur = New York + 7 h", "UNKNOWN", "fini.txt absent", "New York + 7 h", "", "SPEC 10.4")
     st = m1.get("XAUUSD")
@@ -1356,7 +1383,8 @@ def run(folder, out_dir):
         except Exception as e:                                          # noqa: BLE001
             problems.append(f"{fn} illisible ({e.__class__.__name__} : ligne ou colonne illisible ; texte jamais recopie)")
     rep = Report()
-    account_checks(rep, fini, sonde_rows, sonde_meta, m1)
+    account_checks(rep, fini, sonde_rows, sonde_meta, m1, present, bool(present["fiches.csv"] or present["tous.csv"])
+                   if not present["fini.txt"] else bool(m1_files or r1_files or present["tous.csv"]))
     bases = list(C.ROBOT_BASES) + sorted((set(fiches) | set(sonde_rows) | set(m1) | set(r1_df) | set(fini.get("markets", {}) if fini else {}))
                                          - set(C.ROBOT_BASES))
     usd_rate = next((eur_per_usd(f) for f in fiches.values() if f.get("found") and f.get("ccy_profit") == "USD"
@@ -1365,7 +1393,8 @@ def run(folder, out_dir):
         if b == "":
             continue
         fini_m = fini.get("markets", {}).get(b) if fini else None
-        market_checks(rep, b, fiches.get(b) if fiches else None, tous, costs, sonde_rows, m1, fini_m, b in C.ROBOT_BASES, usd_rate)
+        market_checks(rep, b, fiches.get(b) if fiches else None, tous, costs, sonde_rows, m1, fini_m, b in C.ROBOT_BASES, usd_rate,
+                      not present["fiches.csv"])
         releve_checks(rep, b, fini_m, os.path.join(folder, f"m1_{b}.csv") if f"m1_{b}.csv" in m1_files else None,
                       os.path.join(folder, f"r1_{b}.csv") if f"r1_{b}.csv" in r1_files else None, m1_df.get(b), r1_df.get(b),
                       digits_of.get(b), fini, m1_info.get(b), r1_info.get(b))

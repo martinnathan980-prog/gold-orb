@@ -92,6 +92,26 @@ RELEVE_RATE_TEXT = ",".join(f"{b}:{RELEVE_RATE_DAYS[b]}" for b in ROBOT_BASES)
 RISK_PRESETS = {"F3S": "0:3;3000:2;6000:1;12000:0.5", "F2S": "0:2;6000:1;12000:0.5", "F1S": "0:1;12000:0.5",
                 "D2": "0:10;3000:5;10000:2;20000:1", "S7": "0:7;3000:3.5;10000:1.4;20000:0.7"}
 RISK_EXPECTED = "S7"
+# the K1 threshold the lab gives for each year of the demo (SPEC 1 step 3, 10.14): the user types InpK1T = 2026:417.23813245421888; a
+# year with no lab value keeps K1 off (T(2027) is decided later), so only these years are checked (review4b ADV5-5)
+K1T_LAB = {2026: 417.23813245421888}
+K1T_TEXT = "2026:417.23813245421888"            # as the user types it (17 significant digits, SPEC 10.14)
+
+
+def k1t_table(text):
+    """an INIT k1t (Brk72K1Text: 'YYYY:T;...', T with 17 digits) as {year: T}; None when it is not one"""
+    out = {}
+    for part in str(text or "").split(";"):
+        if not part.strip():
+            continue
+        y, sep, t = part.partition(":")
+        try:
+            out[int(y)] = float(t)
+        except ValueError:
+            return None
+        if not sep:
+            return None
+    return out
 
 
 def risk_pairs(text):
@@ -308,9 +328,25 @@ def read_releve_csv(path, need, optional=()):
     ok = df.notna().all(axis=1) & np.isfinite(df.to_numpy(dtype=float)).all(axis=1)
     if "time" in df.columns:                                     # a time outside 2015-2100 cannot be ReleveFP's (review4 A12)
         ok &= (df["time"] >= TIME_MIN) & (df["time"] < TIME_MAX)
+    # prices: above 0, the low under the open and the close, the high above them; counts and spreads 0 or more (review4b ADV5-12:
+    # an edited row is no bar, it is never fed to the replay)
+    vals = ok.copy()
+    for c in ("open", "high", "low", "close", "bo", "bh", "bl", "bc", "ao", "ah", "al", "ac"):
+        if c in df.columns:
+            ok &= df[c] > 0
+    for c in ("spread", "tick_volume", "real_volume", "n", "sp_mean", "sp_max", "sp_min"):
+        if c in df.columns:
+            ok &= df[c] >= 0
+    for o, h, lo, c in (("open", "high", "low", "close"), ("bo", "bh", "bl", "bc"), ("ao", "ah", "al", "ac")):
+        if all(x in df.columns for x in (o, h, lo, c)):
+            tol = 1e-9 * df[h].abs()
+            ok &= (df[lo] <= df[[o, c]].min(axis=1) + tol) & (df[h] >= df[[o, c]].max(axis=1) - tol)
+    bad_times = []
+    if "time" in df.columns:                                     # the times of the bars set aside for their prices (a readable time)
+        bad_times = sorted(int(x) for x in df["time"][vals & ~ok].tolist())[:200]
     bad += int((~ok).sum())
     df = df[ok].reset_index(drop=True)
-    return df, {"bad_rows": bad, "cut_last": cut, "rows": int(len(df))}
+    return df, {"bad_rows": bad, "cut_last": cut, "rows": int(len(df)), "bad_times": bad_times}
 
 
 def fnum(s):
@@ -590,6 +626,12 @@ TIME_NEVER_ZERO = frozenset({"day", "bar"})
 
 def time_ok(v, zero_ok=True):
     return (zero_ok and v == 0) or TIME_MIN <= v < TIME_MAX
+
+
+# small counters the robot writes, with the most they can hold (review4b ADV5-14): a value beyond (a login glued onto the number, say)
+# makes the line unreadable, so that its digits never reach an output. COST comm_n counts the gold deals of one server day; INIT deinit is
+# an MQL5 reason code; SELFTEST golden the number of vectors of CR_Golden.mqh
+INT_MAX = {("COST", "comm_n"): 1000, ("INIT", "deinit"): 99, ("SELFTEST", "golden"): 100000, ("INIT", "comm_pts"): 1000}
 SELFTEST_WHY = re.compile(r"^(|CR_NO_GUARD is set in a build without CR_HARNESS|CR_XAU_COMM_PTS is not 6|CR_BRK_NOTIONAL_X is not 20|"
                           r"golden( [a-z0-9_]+ -?\d+: got [-+0-9.eE/a-z]{0,200}, want [-+0-9.eE/a-z]{0,200})?|GridStop vectors|"
                           r"byte order of the sleeve names|robot comment|chart mode of [A-Za-z0-9._#+\-]+ is not bid)$")
@@ -748,6 +790,8 @@ def parse_robot_line(text):
                 return None, f"{ev} : side n'est pas -1, 0 ou 1"
             if k == "oid" and d[k] != 0 and not time_ok(d[k] // 100, zero_ok=False):
                 return None, f"{ev} : oid hors de 2015-2100"
+            if (ev, k) in INT_MAX and not 0 <= d[k] <= INT_MAX[(ev, k)]:
+                return None, f"{ev} : {k} hors des valeurs du robot"
         elif t == B:
             if v not in ("0", "1"):
                 return None, f"{ev} : {k} n'est pas 0 ou 1"
@@ -818,6 +862,10 @@ def file_of_day(srv_day):
 
 
 _EV_OF = re.compile(r"^CR\|-?\d+\|([A-Z]+)\|")
+# a line of MetaTrader's logs: code, severity, time, source, message (tab separated); the Experts tab's source is a program on a chart
+# ('ReleveFP (EURUSD,M1)'), the terminal's Journal tab's a part of the terminal ('Network', 'Terminal', 'Experts', 'Trades' ...)
+_TAB_SOURCE = re.compile(r"^[^\t]*\t\d+\t[0-9:.]+\t([^\t]+)\t")
+_PROGRAM_SOURCE = re.compile(r"^\S[^\t]* \([^(),\t]+,[A-Z0-9]+\)$")
 CUT_AT_END = "ligne coupee a la fin du fichier (copie prise pendant que le robot ecrivait ?)"
 
 
@@ -837,11 +885,13 @@ def read_journal_files(paths, scrub=None, printed=False, any_name=False):
     end (CR_Journal.mqh JrnAt), so a file whose last line has none was cut while the robot wrote: that line is
     unreadable (review3 R3-9).
     printed=True (--printed, the Experts tab): the robot's line follows a terminal prefix; MetaTrader's UTF-16 logs are
-    accepted; a file with no robot line is named in info['files_without_robot_lines'].
+    accepted; a file with no robot line is named in info['files_without_robot_lines'], and in info['files_other_programs_only'] when
+    its lines are all the Experts tab's prints of other programs on a chart (ReleveFP, SondeFP: a day the robot printed nothing,
+    review4b ADV5-7), not the terminal's Journal tab.
     Each row gets _f (file), _n (line number), _seq (its rank in file order) and _raw (the checked line, rebuilt from the
     robot's own keys). info['repeated_lines'] counts live robot lines whose exact text is already in the journal (the
     robot stamps every line to the second: a repeat is a file read twice)."""
-    rows, bad, foreign, skipped, no_robot, per_file = [], [], [], [], [], {}
+    rows, bad, foreign, skipped, no_robot, per_file, program_only = [], [], [], [], [], {}, []
     other, unknown_keys = 0, 0
     seen_txt, repeated, repeated_first = set(), 0, []
     for p in paths:
@@ -878,6 +928,7 @@ def read_journal_files(paths, scrub=None, printed=False, any_name=False):
         cut_last = (not printed) and text != "" and not text.endswith(("\n", "\r"))
         last_no = max((i for i, ln in enumerate(lines, 1) if ln.strip()), default=0)
         kept = 0
+        n_prog = n_sub = 0                                  # Experts-tab lines of programs on a chart, Journal-tab lines (review4b ADV5-7)
         for no, ln in enumerate(lines, 1):
             ln = ln.rstrip("\r\n")
             if not ln.strip():
@@ -885,6 +936,13 @@ def read_journal_files(paths, scrub=None, printed=False, any_name=False):
             if scrub is not None:
                 scrub.scan_log_line(ln)                     # every line, the robot's included, before anything is kept
             k = ln.find("CR|") if printed else (0 if ln.startswith("CR|") else -1)
+            if printed:
+                ms = _TAB_SOURCE.match(ln)
+                if ms:
+                    if _PROGRAM_SOURCE.match(ms.group(1).strip()):
+                        n_prog += 1
+                    else:
+                        n_sub += 1
             if k < 0:
                 if printed:
                     other += 1
@@ -916,12 +974,15 @@ def read_journal_files(paths, scrub=None, printed=False, any_name=False):
         per_file[name] = kept
         if printed and kept == 0:
             no_robot.append(name)
+            if n_prog and not n_sub:
+                program_only.append(name)
     used = [os.path.basename(p) for p in paths if os.path.basename(p) not in {s["file"] for s in skipped}]
     return rows, {"files": used, "lines": len(rows), "unparsable": len(bad),
                   "unparsable_first": [{"file": b["file"], "line": b["line"], "why": b["why"]} for b in bad[:10]],
                   "unparsable_all": [{"file": b["file"], "line": b["line"], "ev": b.get("ev"), "why": b["why"]} for b in bad],
                   "other_lines_ignored": other, "foreign_lines": len(foreign), "foreign_first": foreign[:10],
                   "skipped_files": skipped, "files_without_robot_lines": no_robot, "robot_lines_per_file": per_file,
+                  "files_other_programs_only": program_only,
                   "unknown_keys_dropped": unknown_keys, "repeated_lines": repeated, "repeated_first": repeated_first}
 
 

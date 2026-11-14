@@ -44,6 +44,14 @@ synchronized or with days missing, an observer restarted with another risk table
 copy without INIT or from the VPS, symbol suffixes, reconnections (a line written during the outage, a sizing skip restated, the
 outage said), a first start purged before a restart, a stop on the tick grid, and values that divide by zero. The hand-made journals
 use S7 and a balance that follows their trades since review4 (the checks of A4 and A7 would flag the earlier D2 and flat balances).
+The cases of the fourth review's second round are the tests named 'review4b ...' (the verifiers' ids R4V-1..6 and ADV5-1..14): a plan
+start hours after the first start (SIZE observe with B = P_in = 0), execution costs under the timing noise of real orders (small
+journals of noisy trades), a swap credit, the wording of r1 spans, READY and B(T), a printed VPS copy whose lines differ (no traceback),
+printed logs file by file (an earlier run, purged days, a lost restart file, a day of other programs' prints only), ORPHAN at a
+reconcile, InpK1T on a 2026 demo, fini.txt's server_time one digit too long, fini.txt absent, Max bars and stopped=1, fiches.csv absent,
+a CLOSE cut at the end of its file, the money check's limit said, a releve row with a negative price, a time exit after the releve's last
+bar, a login glued onto a counter; and with the replay, the Mac asleep (the process frozen, then a catch-up at the wake), built against
+the self-test's own copy of the harness with MOCK_SLEEP (check/ itself is never changed).
 --quick: tool 1, the ReleveFP harness and the journal-only checks of tool 2 (no robot build or replay).
 DEMO_TEST_SCRATCH and DEMO_TEST_RESULTS (environment) move the scratch folder and the results file (used to run this
 file against a copy of earlier tools).
@@ -430,12 +438,13 @@ D2 = "0:10;3000:5;10000:2;20000:1"                 # the build's default (InpRis
 
 
 def init_line(utc, build=C.REQUIRED_BUILD, observer=0, harness=0, demo=1, vps=0, comm=6, risk=S7, sleeves="ALL", sw=("on", "on", "on"),
-              syms=None):
-    """the INIT line of a start as the demo has it (S7 typed, sleeves ALL, the three switches on, the .r names; review4 A4)"""
+              syms=None, k1t=""):
+    """the INIT line of a start as the demo has it (S7 typed, sleeves ALL, the three switches on, the .r names; review4 A4); k1t: the
+    K1 table as the robot writes it back (Brk72K1Text, review4b ADV5-5)"""
     syms = dict({b: b + ".r" for b in C.ROBOT_BASES}, **(syms or {}))
     return jl(utc, "INIT", "-", ("build", build), ("version", "2.00"), ("demo", demo), ("vps", vps), ("tester", 0), ("observer", observer),
               ("entries_off", observer), ("harness", harness), ("comm_pts", comm), ("risk", risk),
-              ("sleeves", sleeves), ("S0.75r", sw[2]), ("K1", sw[0]), ("H2", sw[1]), ("k1t", ""), ("XAUUSD", syms["XAUUSD"]),
+              ("sleeves", sleeves), ("S0.75r", sw[2]), ("K1", sw[0]), ("H2", sw[1]), ("k1t", k1t), ("XAUUSD", syms["XAUUSD"]),
               ("US100", syms["US100"]), ("BTCUSD", syms["BTCUSD"]), ("ETHUSD", syms["ETHUSD"]))
 
 
@@ -655,13 +664,16 @@ def md_journal(folder, variant=(), style="live"):
     cap-skipped paper trade is open: the reconcile writes MISSED cap), 'missed_twice' (a MISSED refused written twice for one
     N30 trade), 'outage' (a reconnection: a paper trade opened and closed while offline, another still open: MISSED late),
     'n30_stop_grid' (N30 ends at its paper stop 16200.10, the broker stop on US100's 0.25 grid at 16200.00), 'orx_stopped' (with
-    'no_close': the balance books ORX at its broker stop, the case where the minutes show that stop crossed)."""
+    'no_close': the balance books ORX at its broker stop, the case where the minutes show that stop crossed).
+    Variants of review4b: 'plan_late' (InpPlanStart 20 h after the start: an intent before it sized observe, B = P_in = 0),
+    'orphan_reconcile' (with 'outage': an ORPHAN at the reconnection's reconcile), 'orphan_mid' (an ORPHAN far from any start or
+    reconnection)."""
     os.makedirs(folder, exist_ok=True)
     L = []                                                              # (server write time, line)
 
     def add(t_srv, line):
         L.append((int(t_srv), line))
-    T = srv("2022-11-17 08:00") if "plan_future" in variant else srv("2021-11-17 08:00")
+    T = srv("2022-11-17 08:00") if "plan_future" in variant else (srv("2021-11-18 04:00") if "plan_late" in variant else srv("2021-11-17 08:00"))
     k_gold, k_usd = 86.0, 0.86
     risk = D2 if "risk_d2" in variant else S7
     closes = []                                                         # (server time, EUR) each close books on the balance
@@ -673,7 +685,7 @@ def md_journal(folder, variant=(), style="live"):
         add(a, init_line(C.srv_to_utc(a), risk=risk, sleeves="GFP" if "sleeves_gfp" in variant else "ALL", demo=0 if "demo0" in variant else 1,
                          sw=("off" if "k1_off" in variant else "on", "on", "on"), syms={"US100": "US100"} if "sym_noR" in variant else None))
         add(a, jl(C.srv_to_utc(a), "SELFTEST", "-", ("ok", 1), ("why", ""), ("golden", 366)))
-        state = "unset" if "plan_unset" in variant else ("future" if "plan_future" in variant else "ok")
+        state = "unset" if "plan_unset" in variant else ("future" if ("plan_future" in variant or "plan_late" in variant) else "ok")
         add(a + 60, jl(C.srv_to_utc(a + 60), "PLAN", "-", ("T", T), ("state", state), ("demo", 0 if "demo0" in variant else 1),
                        ("B_T", 10000.0), ("risk", risk)))
         add(a + 60, jl(C.srv_to_utc(a + 60), "REBUILD", "-", ("n", 1), ("why", "start"), ("from", C.srv_to_utc(a) - 120 * 86400),
@@ -692,6 +704,19 @@ def md_journal(folder, variant=(), style="live"):
     add(srv("2021-11-17 20:00"), jl(U("2021-11-17 20:00"), "PEXIT", "BKB", ("oid", oid0), ("side", 1), ("bar", U("2021-11-17 20:00")),
                                     ("px", 60100.0), ("stop", 59000.0), ("st0", 59000.0), ("x", U("2021-11-17 20:00")), ("reason", "time"),
                                     ("s_raw", 2600), ("s_paper", 26.0)))
+    if "plan_late" in variant:                                          # an intent before the plan start: sized observe, B = P_in = 0
+        on = U("2021-11-17 12:00") * 100 + C.SLEEVE_ID["NQB"]
+        a = srv("2021-11-17 12:00")
+        add(a, dec_ord(C.srv_to_utc(a), "NQB", on, 1, 0, 57100.0, 56500.0, U("2021-11-17 13:00")))
+        add(a, jl(C.srv_to_utc(a), "PFILL", "NQB", ("oid", on), ("side", 1), ("bar", C.srv_to_utc(a)), ("px", 57100.0), ("stop", 56500.0),
+                  ("st0", 56500.0), ("x", U("2021-11-17 13:00")), ("s_raw", 2600), ("s_paper", 26.0)))
+        add(a, jl(C.srv_to_utc(a), "SIZE", "NQB", ("oid", on), ("side", 1), ("et", 0), ("lots", 0.0), ("want", 0.0), ("skip", "observe"),
+                  ("B", 0.0), ("P_in", 0.0), ("rate", 0.0), ("m", 0.0), ("f", 1.0), ("unit", 0.0), ("w", 0.0), ("r", 0.0), ("budget", 0.0),
+                  ("late", 0), ("quote", 0.0)))
+        add(a + 300, jl(C.srv_to_utc(a) + 300, "MISSED", "NQB", ("oid", on), ("stamp", C.srv_to_utc(a)), ("reason", "observe")))
+        add(srv("2021-11-17 13:00"), jl(U("2021-11-17 13:00"), "PEXIT", "NQB", ("oid", on), ("side", 1), ("bar", U("2021-11-17 13:00")),
+                                        ("px", 57150.0), ("stop", 56500.0), ("st0", 56500.0), ("x", U("2021-11-17 13:00")), ("reason", "time"),
+                                        ("s_raw", 2600), ("s_paper", 26.0)))
     if "observe_late" in variant:
         add(srv("2021-11-18 12:02"), jl(U("2021-11-18 12:02"), "MISSED", "NQB", ("oid", U("2021-11-18 12:00") * 100 + 7),
                                         ("stamp", U("2021-11-18 12:00")), ("reason", "observe")))
@@ -848,9 +873,19 @@ def md_journal(folder, variant=(), style="live"):
         add(w, jl(U("2021-11-23 12:00") + 2, "REBUILD", "-", ("n", 2), ("why", "reconnect"), ("from", U("2021-11-23 12:00") - 120 * 86400),
                   ("to", U("2021-11-23 12:00")), ("minutes", 172800), ("ms", 900)))
         add(w + 60, jl(U("2021-11-23 12:01"), "MISSED", "BKE", ("oid", ob), ("stamp", U("2021-11-23 11:50")), ("reason", "late")))
+        if "orphan_reconcile" in variant:                               # a position whose paper trade ended during the outage
+            add(w + 61, jl(U("2021-11-23 12:01") + 1, "CLOSE", "F1B", ("ticket", 70000199), ("magic", 20261205), ("px", 57300.0),
+                           ("why", "orphan"), ("rc", 10009), ("ok", 1)))
+            add(w + 61, jl(U("2021-11-23 12:01") + 1, "ORPHAN", "F1B", ("ticket", 70000199), ("why", "not_the_paper_trade"),
+                           ("magic", 20261205), ("at", "reconcile")))
         add(srv("2021-11-23 13:00"), jl(U("2021-11-23 13:00"), "PEXIT", "BKE", ("oid", ob), ("side", 1), ("bar", U("2021-11-23 13:00")),
                                         ("px", 4260.0), ("stop", 4200.0), ("st0", 4200.0), ("x", U("2021-11-23 13:00")), ("reason", "time"),
                                         ("s_raw", 300), ("s_paper", 3.0)))
+    if "orphan_mid" in variant:                                         # an ORPHAN far from any start or reconnection: still an anomaly
+        add(srv("2021-11-24 15:00"), jl(U("2021-11-24 15:00"), "CLOSE", "F1B", ("ticket", 70000198), ("magic", 20261205), ("px", 57300.0),
+                                        ("why", "orphan"), ("rc", 10009), ("ok", 1)))
+        add(srv("2021-11-24 15:00"), jl(U("2021-11-24 15:00"), "ORPHAN", "F1B", ("ticket", 70000198), ("why", "not_the_paper_trade"),
+                                        ("magic", 20261205), ("at", "reconcile")))
     if "restart" in variant:                                            # stopped Friday night, started again on Monday
         add(srv("2021-11-19 23:30"), jl(U("2021-11-19 23:30"), "INIT", "-", ("deinit", 1), ("lines", 100), ("bars_fed", 9000), ("rebuilds", 1)))
         start("2021-11-22 08:00")
@@ -1463,14 +1498,18 @@ def raw_gold(base, rec):
     return rec
 
 
-def harness_live(name, span, env_extra, mutate=None, frm=LIVE_FROM, to=None, restarts=()):
+def harness_live(name, span, env_extra, mutate=None, frm=LIVE_FROM, to=None, restarts=(), exe=None):
     """the 'live' robot: dist/ClaudeRobot.mq5 in the harness (demo_check_release, gold commission 6 points) on in-sample
     bars, with the user's risk table S7 (SPEC 1 step 3; env_extra may change it); its journal then gets harness=0 in its
     INIT lines, as the release file writes. to: the run's end (default the bars' end); restarts: [(stop, back, env)] a stop
-    at server time stop and a start at back with these inputs changed (review4 A10)"""
+    at server time stop and a start at back with these inputs changed (review4 A10); exe: another build of the release file
+    (the self-test's copy of the harness with MOCK_SLEEP, review4b ADV5-2)"""
     import check_demo as D
     from build import replay
-    exe, warn, cached = D.build_exe(6)
+    if exe is None:
+        exe, warn, cached = D.build_exe(6)
+    else:
+        cached = True
     work = os.path.join(SCRATCH, name)
     os.makedirs(os.path.join(work, "bars"), exist_ok=True)
     bars = {}
@@ -1499,6 +1538,56 @@ def harness_live(name, span, env_extra, mutate=None, frm=LIVE_FROM, to=None, res
         t = open(p).read().replace("|harness=1|", "|harness=0|")
         open(p, "w").write(t)
     return files, wall, cached
+
+
+SLEEP_ANCHOR = "   ev.erase(std::unique(ev.begin(), ev.end()), ev.end());\n"
+SLEEP_PATCH = """   // review4b (the self-test's own copy of the harness, never check/'s file): MOCK_SLEEP="a-b,a-b" removes every event in
+   // [a, b) (server seconds): the Mac asleep, the MetaTrader process frozen (no timer pass, no tick); the broker's stops still
+   // run, booked at the next event
+   if(const char *sl = getenv("MOCK_SLEEP"))
+     {
+      std::vector<std::pair<long, long>> w;
+      std::stringstream hs(sl);
+      string it;
+      while(std::getline(hs, it, ','))
+        {
+         long a = 0, b = 0;
+         if(sscanf(it.c_str(), "%ld-%ld", &a, &b) == 2) w.push_back({a, b});
+        }
+      std::vector<long> kept;
+      for(long t : ev)
+        {
+         bool asleep = false;
+         for(auto &x : w) if(t >= x.first && t < x.second) asleep = true;
+         if(!asleep) kept.push_back(t);
+        }
+      ev.swap(kept);
+     }
+"""
+
+
+def sleep_harness_exe(root):
+    """the release file dist/ClaudeRobot.mq5 built against a copy of check/'s harness under root (the scratch folder; check/
+    itself is never changed) that adds MOCK_SLEEP: the Mac asleep, its process frozen (review4b ADV5-2). Returns the binary"""
+    import importlib.util
+    chk = os.path.join(root, "robot", "check")
+    os.makedirs(chk, exist_ok=True)
+    for f in ("build.py", "to_cpp.py", "mql5_shim.h", "mock_faults.h"):
+        shutil.copy(os.path.join(C.CHECK, f), chk)
+    src = open(os.path.join(C.CHECK, "mock_replay.h")).read()
+    if src.count(SLEEP_ANCHOR) != 1:
+        raise RuntimeError("mock_replay.h changed: the MOCK_SLEEP patch of the self-test no longer applies")
+    with open(os.path.join(chk, "mock_replay.h"), "w") as f:
+        f.write(src.replace(SLEEP_ANCHOR, SLEEP_ANCHOR + SLEEP_PATCH))
+    for d in ("src", "dist"):
+        link = os.path.join(root, "robot", d)
+        if not os.path.lexists(link):
+            os.symlink(os.path.join(C.ROBOT, d), link)
+    spec = importlib.util.spec_from_file_location("build_sleep_copy", os.path.join(chk, "build.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    exe, warn = mod.build(C.DIST, name="sleep_release", comm_pts=6)
+    return exe
 
 
 def csv_dir(name, span, lit, mutate=None, style="open", version="1.10", r1=False):
@@ -2991,6 +3080,449 @@ def test_review4_replay(lit):
     print(f"   (review4 replay tests {time.time() - t0:.0f} s)")
 
 
+# ---------------------------------------------------------------------------------------------- the fourth review, second round
+K1T_2026 = "2026:4.1723813245421888e+02"           # INIT k1t as the robot writes back InpK1T = 2026:417.23813245421888 (SPEC 10.14)
+MINI_K = {"XAUUSD": 86.0, "US100": 0.86, "BTCUSD": 0.86, "ETHUSD": 0.86}      # EUR per price unit and lot (0.86 EUR per USD)
+MINI_H = {"XAUUSD": 0.03, "US100": 0.0, "BTCUSD": 0.0, "ETHUSD": 0.0}          # the gold paper's commission per side (3 points)
+
+
+def mini_journal(folder, start, end, trades=(), k1t="", balance0=1000.0, extra=None):
+    """a small trading journal as JrnAt writes it, one daily file per server date (review4b): a start at server time `start`
+    (INIT with the K1 table k1t, SELFTEST, PLAN from the start with B(T) = balance0, REBUILD, READY), the trades, then the AGG,
+    COST and DAY lines of every server day the robot ran (the balance books each close: the gross result less the model's
+    gold commission, plus extra(server day) EUR) and the stop at `end`. trades: dicts with code, side, at (server seconds),
+    hold (seconds), ppx (paper entry), stop, fill (the real fill), quote (the SEND quote), lots, ticket, xpx (paper exit),
+    close (the robot's close)"""
+    os.makedirs(folder, exist_ok=True)
+    L = []
+
+    def add(t_srv, line):
+        L.append((int(t_srv), line))
+    u0 = C.srv_to_utc(start)
+    add(start, init_line(u0, k1t=k1t))
+    add(start, jl(u0, "SELFTEST", "-", ("ok", 1), ("why", ""), ("golden", 366)))
+    add(start + 60, jl(u0 + 60, "PLAN", "-", ("T", start), ("state", "ok"), ("demo", 1), ("B_T", balance0), ("risk", S7)))
+    add(start + 60, jl(u0 + 60, "REBUILD", "-", ("n", 1), ("why", "start"), ("from", u0 - 120 * 86400), ("to", u0 + 60), ("minutes", 172800),
+                       ("ms", 700)))
+    for b in C.ROBOT_BASES:
+        add(start + 62, jl(u0 + 62, "READY", b, ("bars", 100000), ("raw", 100000), ("first", u0 - 120 * 86400), ("last", u0), ("masked", 0),
+                           ("holes", 0), ("depth_days", C.DEPTH_DAYS[b])))
+    closes = []
+    for t in trades:
+        code, side, a = t["code"], t["side"], int(t["at"])
+        b = C.SYM_OF_CODE[code]
+        ua, ux = C.srv_to_utc(a), C.srv_to_utc(a + t["hold"])
+        oid = ua * 100 + C.SLEEVE_ID[code]
+        h, k = MINI_H[b], MINI_K[b]
+        sp = {"XAUUSD": 0.12, "US100": 1.0, "BTCUSD": 25.0, "ETHUSD": 3.0}[b]
+        add(a, dec_ord(ua, code, oid, side, 0, t["ppx"], t["stop"], ux))
+        add(a, jl(ua, "PFILL", code, ("oid", oid), ("side", side), ("bar", ua), ("px", t["ppx"]), ("stop", t["stop"]), ("st0", t["stop"]),
+                  ("x", ux), ("s_raw", 12), ("s_paper", 0.12)))
+        add(a, jl(ua, "SIZE", code, ("oid", oid), ("side", side), ("et", 0), ("lots", t["lots"]), ("want", t["lots"]), ("skip", "none"),
+                  ("B", balance0), ("P_in", balance0), ("rate", 7.0), ("m", 1.0), ("f", 1.0), ("unit", 70.0), ("w", 0.0), ("r", 10.0),
+                  ("budget", 70.0), ("late", 0), ("quote", t["quote"])))
+        q = t["quote"]
+        add(a + 1, jl(ua + 1, "SEND", code, ("oid", oid), ("side", side), ("lots", t["lots"]), ("want", t["lots"]), ("sl", t["stop"]),
+                      ("bid", q - (sp if side > 0 else 0.0)), ("ask", q + (0.0 if side > 0 else sp)), ("stamp", ua), ("dev", 24), ("cut", "-"),
+                      ("result", "filled"), ("rc", 10009), ("s_raw", 12), ("s_paper", 0.12)))
+        risk = (side * (t["fill"] - t["stop"]) + 2 * h) * k * t["lots"]
+        add(a + 1, jl(ua + 1, "FILL", code, ("oid", oid), ("ticket", t["ticket"]), ("side", side), ("px", t["fill"]), ("lots", t["lots"]),
+                      ("sl", t["stop"]), ("listed", 1), ("risk", risk), ("budget", 70.0), ("stamp", ua), ("s_raw", 12), ("s_paper", 0.12)))
+        add(a + t["hold"], jl(ux, "PEXIT", code, ("oid", oid), ("side", side), ("bar", ux), ("px", t["xpx"]), ("stop", t["stop"]),
+                              ("st0", t["stop"]), ("x", ux), ("reason", "time"), ("s_raw", 12), ("s_paper", 0.12)))
+        add(a + t["hold"] + 2, jl(ux + 2, "CLOSE", code, ("ticket", t["ticket"]), ("magic", 20261200 + C.SLEEVE_ID[code]), ("px", t["close"]),
+                                  ("why", "time"), ("rc", 10009), ("ok", 1)))
+        closes.append((a + t["hold"] + 2, side * (t["close"] - t["fill"]) * t["lots"] * k - 2 * h * t["lots"] * k))
+    d0 = start - start % 86400
+    for pd in range(d0, end - end % 86400, 86400):
+        tw = pd + 86400 + 30
+        bal = round(balance0 + sum(pl for tc, pl in closes if tc < pd + 86400) + (extra(pd) if extra else 0.0), 2)
+        wk = C.dow(pd) in (0, 6)
+        uw = C.srv_to_utc(tw)
+        add(tw, jl(uw, "AGG", "-", ("day", pd), ("XAUUSD", 0 if wk else 1300), ("US100", 0 if wk else 800), ("BTCUSD", 0 if wk else 1440),
+                   ("ETHUSD", 0 if wk else 1440), ("dec", 10), ("pev", 3)))
+        if not wk:
+            add(tw, jl(uw, "COST", "XAUUSD", ("day", pd), ("raw_bp", 0.2), ("paper_bp", 0.53), ("model_bp", 0.47), ("comm_usd_oz", 0.06),
+                       ("comm_n", 2)))
+            for b_, m_ in (("US100", 0.37), ("BTCUSD", 2.96), ("ETHUSD", 13.0)):
+                add(tw, jl(uw, "COST", b_, ("day", pd), ("raw_bp", m_), ("paper_bp", m_), ("model_bp", m_)))
+        add(tw, jl(uw, "DAY", "-", ("day", pd), ("balance", bal), ("equity", bal), ("bars_fed", 5000)))
+    add(end, jl(C.srv_to_utc(end), "INIT", "-", ("deinit", 9), ("lines", 300), ("bars_fed", 50000), ("rebuilds", 1)))
+    L.sort(key=lambda x: x[0])
+    files = {}
+    for t, ln in L:
+        files.setdefault(time.strftime("%Y%m%d", time.gmtime(t)) + ".log", []).append(ln)
+    for name, lines in files.items():
+        write(os.path.join(folder, name), "\n".join(lines) + "\n", crlf=True)
+    return sorted(files)
+
+
+A5_SD = {"XAUUSD": 0.5, "US100": 0.6, "BTCUSD": 1.5, "ETHUSD": 2.0}            # bp: the price moves in the seconds between the bar's
+A5_N = {"XAUUSD": 8, "US100": 15, "BTCUSD": 17, "ETHUSD": 10}                 # open and the order (review4b R4V-2); trades per market
+A5_SLEEVES = {"XAUUSD": ("GFP", "ORX", "D4H"), "US100": ("N30", "OC4"), "BTCUSD": ("BKB", "F1B", "NQB"), "ETHUSD": ("BKE", "F1E")}
+A5_PX = {"XAUUSD": 1860.0, "US100": 16300.0, "BTCUSD": 57000.0, "ETHUSD": 4200.0}
+A5_LOTS = {"XAUUSD": 0.05, "US100": 1.0, "BTCUSD": 0.05, "ETHUSD": 0.5}
+
+
+def noisy_trades(seed, start, mult=1.0):
+    """trades of a broker whose slippage is mult x the lab's (fp_costs.json), the real order a second or so after the bar's open (the
+    paper's price): every entry and every close off the paper by a zero-mean drift of A5_SD bp, the fill against the request's quote at
+    exactly mult x the lab's slippage (review4b R4V-2)"""
+    rng = random.Random(seed)
+    out, tk = [], 70001000
+    for b in C.ROBOT_BASES:
+        lab = C.SLIP_BPS[b][0]
+        h = MINI_H[b]
+        for n in range(A5_N[b]):
+            code = A5_SLEEVES[b][n % len(A5_SLEEVES[b])]
+            day = n // 4
+            a = start + day * 86400 + 3600 * (2 + (n % 4) * 3) + 600 * C.ROBOT_BASES.index(b)
+            while C.dow(a) in (0, 6):
+                a += 86400
+            side = 1 if (n + seed) % 3 else -1
+            ppx = A5_PX[b] * (1 + 0.001 * n)
+            stop = ppx * (1 - side * 0.01)
+            d = rng.gauss(0.0, A5_SD[b]) + (mult - 1.0) * lab        # beyond the paper (which books the lab's slippage)
+            e = rng.gauss(0.0, A5_SD[b]) + (mult - 1.0) * lab
+            fill = ppx + side * (d * 1e-4 * ppx - h)                 # gold: the paper's price holds the commission h
+            quote = fill / (1 + side * mult * lab * 1e-4)
+            xpx = ppx * (1 + side * 0.002)
+            close = xpx - side * (e * 1e-4 * xpx - h)
+            out.append({"code": code, "side": side, "at": a, "hold": 3600, "ppx": ppx, "stop": stop, "fill": fill, "quote": quote,
+                        "lots": A5_LOTS[b], "ticket": tk, "xpx": xpx, "close": close})
+            tk += 1
+    return out
+
+
+def printed_files(folder, jdir, names=None, edit=None):
+    """MetaTrader's own Experts logs (MQL5/Logs/<yyyymmdd>.log, UTF-16) of a journal folder: one file per daily journal file, its live
+    lines after the Experts tab's prefix (review4b ADV5-4); edit(name, lines) may change them. Returns the paths"""
+    os.makedirs(folder, exist_ok=True)
+    out = []
+    for fn in sorted(names or os.listdir(jdir)):
+        lines = [ln for ln in lines_of(os.path.join(jdir, fn)) if ln.startswith("CR|") and "|rp=1" not in ln]
+        if edit:
+            lines = edit(fn, lines)
+        p = os.path.join(folder, fn)
+        utf16_printed(p, lines, extra_other=False)
+        out.append(p)
+    return out
+
+
+def experts_others(path):
+    """an Experts log of a day the robot printed nothing: only ReleveFP's and SondeFP's own prints (review4b ADV5-7)"""
+    out = ["GH\t0\t11:00:01.104\tReleveFP (EURUSD,M1)\tReleve termine : 9 marches sur 9. Vous pouvez le dire a Claude.",
+           "KJ\t0\t11:00:01.105\tReleveFP (EURUSD,M1)\tReleveFP termine", f"QH\t0\t11:00:01.106\tReleveFP (EURUSD,M1)\tserver={FAKE_SERVER}",
+           "LO\t0\t11:20:44.310\tSondeFP (EURUSD,M1)\tsonde terminee : 4 marches"]
+    with open(path, "wb") as f:
+        f.write(b"\xff\xfe" + ("\r\n".join(out) + "\r\n").encode("utf-16-le"))
+
+
+def test_review4b_journal(lit):
+    """the fourth review's second round, journal cases: R4V-1 (a plan start hours after the first start: SIZE observe B = P_in = 0), R4V-2
+    (execution costs under timing noise), R4V-3 (a swap credit), R4V-5 (wording), ADV5-1 (a printed other copy whose lines differ), ADV5-3
+    (ORPHAN at a reconnection's reconcile), ADV5-4 (printed logs of another run or of purged days), ADV5-5 (InpK1T), ADV5-6 (fini.txt's
+    server_time one digit too long), ADV5-7 (an Experts log of a day without robot line), ADV5-8 (ReleveFP interrupted, Max bars), ADV5-10
+    (a cut CLOSE), ADV5-11 (the threshold said), ADV5-12 (a bad r1 row), ADV5-13 (a line written after the releve's last bar), ADV5-14 (a
+    login glued to a counter)"""
+    base_dir = os.path.join(SCRATCH, "rv4bj")
+
+    def go(name, variant=(), extra=(), prep=None, style="live", mini=None):
+        jdir = os.path.join(base_dir, "j_" + name, "ClaudeRobot")
+        info = mini_journal(jdir, **mini) if mini is not None else md_journal(jdir, variant, style)
+        if prep:
+            prep(jdir, info)
+        out = os.path.join(base_dir, "out_" + name)
+        rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(jdir), "--out", out] + list(extra(jdir) if callable(extra) else extra))
+        rp = os.path.join(out, "report.json")
+        r = json.load(open(rp)) if rc == 0 and os.path.exists(rp) else {}
+        rt = os.path.join(out, "report_fr.txt")
+        rtxt = open(rt, encoding="utf-8").read() if rc == 0 and os.path.exists(rt) else ""
+        return {"rc": rc, "so": so, "se": se, "r": r, "rtxt": rtxt, "info": info, "jdir": jdir, "an": " | ".join(r.get("anomalies", [])),
+                "txt": (outputs_text(out) if rc == 0 else "") + so + se, "out": out}
+    # R4V-1: InpPlanStart 20 h after the first start (SPEC 1 step 3, accepted by A4): the intent before it is sized observe with B = P_in = 0
+    g = go("r4v1_plan_late", ("plan_late",))
+    m = (g["r"].get("fills") or {}).get("money_estimate") or {}
+    chk("review4b R4V-1: a plan start 20 h after the first start, with an intent sized observe before it (SIZE B = P_in = 0), is no payment "
+        "('versement ou retrait') and leaves the money estimate complete",
+        lambda: (g["rc"] == 0 and "versement" not in g["an"] and m.get("complete") is True and not m.get("payments"), (g["an"][:500], m.get("incomplete_why"))))
+    tline = next((ln for ln in g["so"].splitlines() if ln.startswith("Solde")), "")
+    chk("review4b R4V-5 (d): with the plan starting later than the first start, the money line dates B(T) at the plan's start T, not at the "
+        "first start", lambda: (g["rc"] == 0 and "B(T)" in tline and "2021-11-18 02:00 UTC" in tline and "2021-11-17 06:00 UTC" not in tline, tline))
+    # R4V-2: timing noise around the lab's slippage (the broker slips exactly as the lab) stays in the margin; seeds chosen where the earlier
+    # rule (mean > 0.5 x lab and > 2 standard errors above 0) called it beyond
+    flagged = []
+    for seed in (8, 11, 12, 21, 28):
+        g = go(f"r4v2_noise{seed}", mini={"start": srv("2021-11-15 00:00"), "end": srv("2021-11-27 10:00"),
+                                          "trades": noisy_trades(seed, srv("2021-11-15 00:00"))})
+        if g["rc"] != 0 or "glissement" in g["an"] or "dans la marge" not in g["so"]:
+            flagged.append((seed, g["rc"], [a for a in g["r"].get("anomalies", []) if "glissement" in a][:2], g["se"][-200:]))
+    chk("review4b R4V-2: entries and closes off the paper by zero-mean timing noise (0.5 to 2 bp a trade) with the broker's slippage at "
+        "the lab's: 'dans la marge' on five demos, no 'glissement ... au-dela' (judged against 1.5 x the lab, not against 0)",
+        lambda: (not flagged, flagged))
+    # R4V-3: a swap credited on a gold short held two weeks (the lab books gold shorts at 0)
+    tr = [{"code": "D4H", "side": -1, "at": srv("2021-11-15 10:00"), "hold": 11 * 86400, "ppx": 1860.0, "stop": 1878.6, "fill": 1860.03,
+           "quote": 1860.03 / (1 - 0.3e-4), "lots": 0.05, "ticket": 70002001, "xpx": 1850.0, "close": 1849.97}]
+    g = go("r4v3_credit", mini={"start": srv("2021-11-15 08:00"), "end": srv("2021-11-27 10:00"), "trades": tr,
+                                "extra": lambda pd: 4.0 if pd >= srv("2021-11-26 00:00") else 0.0})
+    chk("review4b R4V-3: a 4 EUR swap credit on a 0.05 lot gold short held eleven days (1,000 EUR account) is not 'le solde a bouge pour une "
+        "autre raison'", lambda: (g["rc"] == 0 and "le solde a bouge" not in g["an"], g["an"][:400]))
+    # ADV5-1: a printed VPS copy whose SIZE and MISSED lines differ from the files' (compared on SPEC 10.12: no traceback, the VPS note)
+    base = go("base")
+    allv = [ln for fn in sorted(os.listdir(base["jdir"])) for ln in lines_of(os.path.join(base["jdir"], fn)) if "|rp=1" not in ln]
+    vps_lines = []
+    for ln in allv:
+        if "|SIZE|N30|" in ln:
+            ln = ln.replace("|f=1.0000000000000000e+00|", "|f=5.0000000000000000e-01|")
+        vps_lines.append(ln)
+    vps_lines.append(jl(U("2021-11-24 17:05"), "MISSED", "OC4", ("oid", U("2021-11-24 17:00") * 100 + 2), ("stamp", U("2021-11-24 17:00")),
+                        ("reason", "observe")))
+    pv = os.path.join(base_dir, "experts_vps_diff.log")
+    utf16_printed(pv, vps_lines, vps=True)
+    g = go("adv51_vps_diff", extra=("--printed", pv))
+    chk("review4b ADV5-1: a printed VPS copy whose SIZE and MISSED lines differ from the files' gives a report (no traceback), the differences "
+        "on SPEC 10.12's lines and the plain note that VPS copies are not checked yet",
+        lambda: (g["rc"] == 0 and "Traceback" not in g["se"] and "VPS" in g["so"] and "pas encore verifi" in g["so"]
+                 and len(((g["r"].get("printed") or {}).get("other_copy") or g["r"].get("printed") or {}).get("comparison", {}).get("differences", [])) >= 1,
+                 (g["rc"], g["se"][-600:], (g["r"].get("printed") or {}).get("kind"))))
+    # ADV5-1 / ADV5-4: the restart day's journal file lost, the Mac's own Experts logs kept (one per day)
+    def drop_restart_file(jdir, info):
+        os.remove(os.path.join(jdir, "20211122.log"))
+    g0 = go("adv51_lost_restart_src", ("restart",))
+    logs = printed_files(os.path.join(base_dir, "logs_restart"), g0["jdir"])
+    g = go("adv51_lost_restart", ("restart",), prep=drop_restart_file, extra=[x for p in logs for x in ("--printed", p)])
+    pr = g["r"].get("printed") or {}
+    chk("review4b ADV5-1/ADV5-4: the restart day's journal file lost while the Mac's Experts logs keep it: a report, the logs are the same "
+        "copy (not 'autre copie (VPS ?)'), no VPS note",
+        lambda: (g["rc"] == 0 and "Traceback" not in g["se"] and pr.get("same_copy_as_files") is True and "VPS" not in g["so"]
+                 and "autre copie" not in str(pr.get("kind")), (g["rc"], pr.get("kind"), g["se"][-400:], g["so"][-300:])))
+    # ADV5-4: MQL5/Logs also holds an earlier short run of the robot on this Mac (D2, a week before the demo)
+    od = os.path.join(base_dir, "logs_old")
+    logs = printed_files(od, base["jdir"])
+    old = os.path.join(od, "20211110.log")
+    a = srv("2021-11-10 09:00")
+    utf16_printed(old, [init_line(C.srv_to_utc(a), risk=D2), jl(C.srv_to_utc(a), "SELFTEST", "-", ("ok", 1), ("why", ""), ("golden", 366)),
+                        jl(C.srv_to_utc(a) + 60, "REBUILD", "-", ("n", 1), ("why", "start"), ("from", C.srv_to_utc(a) - 120 * 86400),
+                           ("to", C.srv_to_utc(a) + 60), ("minutes", 172800), ("ms", 650)),
+                        jl(C.srv_to_utc(a) + 7200, "INIT", "-", ("deinit", 1), ("lines", 9), ("bars_fed", 100), ("rebuilds", 1))], extra_other=False)
+    g = go("adv54_old_run", extra=[x for p in [old] + logs for x in ("--printed", p)])
+    pr = g["r"].get("printed") or {}
+    chk("review4b ADV5-4: the Experts logs of an earlier run (before the journal) beside the demo's own: the demo's logs are checked as the "
+        "same copy, the earlier run is named apart, no VPS note",
+        lambda: (g["rc"] == 0 and pr.get("same_copy_as_files") is True and "VPS" not in g["so"] and "20211110.log" in json.dumps(pr.get("other_period_files", [])),
+                 (pr.get("kind"), pr.get("other_period_files"), g["so"][-400:])))
+    # ADV5-4: the journal's first days gone (the robot's 30-day purge, or not sent), the Experts logs of every day kept
+    def drop_first(jdir, info):
+        for f in ("20211117.log", "20211118.log"):
+            os.remove(os.path.join(jdir, f))
+    logs = printed_files(os.path.join(base_dir, "logs_all"), base["jdir"])
+    g = go("adv54_purged", prep=drop_first, extra=[x for p in logs for x in ("--printed", p)])
+    pr = g["r"].get("printed") or {}
+    chk("review4b ADV5-4: the journal's first two days missing, the Experts logs of every day kept: the logs of the journal's days are the "
+        "same copy, the earlier days named apart, no VPS note",
+        lambda: (g["rc"] == 0 and pr.get("same_copy_as_files") is True and "VPS" not in g["so"] and "20211117.log" in json.dumps(pr.get("other_period_files", [])),
+                 (pr.get("kind"), pr.get("other_period_files"), g["so"][-400:])))
+    # ADV5-7: the Experts log of the last day holds only ReleveFP's and SondeFP's prints (the robot printed nothing that day)
+    logs = printed_files(os.path.join(base_dir, "logs_last"), base["jdir"])
+    last = os.path.join(base_dir, "logs_last", "20211126.log")
+    experts_others(last)
+    g = go("adv57_last_day", extra=[x for p in logs + [last] for x in ("--printed", p)])
+    chk("review4b ADV5-7: an Experts log holding only other programs' prints (ReleveFP, SondeFP) is information, not 'journal du terminal ?'",
+        lambda: (g["rc"] == 0 and "20211126.log" not in g["an"] and g["r"]["anomalies"] == [] and leak_free(g["txt"]) == [],
+                 (g["an"][:400], leak_free(g["txt"]))))
+    # ADV5-3: ORPHAN at a reconnection's reconcile (a position whose paper trade ended during the outage) is normal; elsewhere it is not
+    g = go("adv53_orphan", ("outage", "orphan_reconcile"))
+    chk("review4b ADV5-3: an ORPHAN at=reconcile just after a reconnection (its paper trade ended during the outage) is no anomaly; it is said "
+        "in report_fr.txt", lambda: (g["rc"] == 0 and "ORPHAN" not in g["an"] and "ORPHAN" in g["rtxt"], g["an"][:400]))
+    g = go("adv53_orphan_mid", ("orphan_mid",))
+    chk("review4b control ADV5-3: an ORPHAN far from any start or reconnection stays an anomaly",
+        lambda: (g["rc"] == 0 and "ORPHAN" in g["an"], g["an"][:400]))
+    # ADV5-5: InpK1T, one of the two values the user types, on a 2026 demo
+    s26, e26 = srv("2026-11-16 08:00"), srv("2026-11-18 10:00")
+    g = go("adv55_k1t_empty", mini={"start": s26, "end": e26, "k1t": ""})
+    chk("review4b ADV5-5: a 2026 demo started with InpK1T empty (K1 on, no threshold for 2026) is an anomaly naming K1 and the value to type",
+        lambda: (g["rc"] == 0 and "K1" in g["an"] and "2026:417.23813245421888" in g["an"], g["an"][:400]))
+    g = go("adv55_k1t_wrong", mini={"start": s26, "end": e26, "k1t": "2026:4.0000000000000000e+02"})
+    chk("review4b ADV5-5: a 2026 demo started with a mistyped InpK1T (2026:400) is an anomaly", lambda: (g["rc"] == 0 and "InpK1T" in g["an"], g["an"][:400]))
+    g = go("adv55_k1t_ok", mini={"start": s26, "end": e26, "k1t": K1T_2026})
+    chk("review4b control ADV5-5: a 2026 demo started with InpK1T = 2026:417.23813245421888 has nothing abnormal",
+        lambda: (g["rc"] == 0 and g["r"]["anomalies"] == [], g["an"][:400]))
+    # ADV5-6: fini.txt's server_time with one digit too many (a year in the 2400s): set aside, no flood of file names
+    rdir = os.path.join(base_dir, "rel_st1")
+    make_releve(rdir, lit, "good", m1_from="2021-11-15 00:00", m1_to="2021-11-26 00:00")
+    p = os.path.join(rdir, "fini.txt")
+    write(p, "\n".join(re.sub(r"^server_time=(\d+)", r"server_time=\g<1>0", ln) for ln in lines_of(p)) + "\n")
+
+    def drop_deinit(jdir, info):
+        edit_lines(os.path.join(jdir, "20211125.log"), lambda ls_: [ln for ln in ls_ if "|deinit=" not in ln])
+    g = go("adv56_st1", prep=drop_deinit, extra=("--bars", rdir, "--no-replay"))
+    size = os.path.getsize(os.path.join(g["out"], "report.json")) if g["rc"] == 0 else -1
+    chk("review4b ADV5-6: fini.txt's server_time one digit too long is set aside: a small report (no list of file names up to the year 2400s)",
+        lambda: (g["rc"] == 0 and 0 < size < 2_000_000 and len(g["so"]) < 20_000 and re.search(r"\b2[1-9]\d\d-\d\d-\d\d", g["so"]) is None, (size, len(g["so"]), g["an"][:300])))
+    # ADV5-8: ReleveFP interrupted (no fini.txt), Max bars in chart left at 100000, stopped=1: the cause is named
+    rdir = os.path.join(base_dir, "rel_nofini")
+    make_releve(rdir, lit, "good", m1_from="2021-11-15 00:00", m1_to="2021-11-26 00:00")
+    os.remove(os.path.join(rdir, "fini.txt"))
+    g = go("adv58_nofini", extra=("--bars", rdir, "--no-replay"))
+    chk("review4b ADV5-8: no fini.txt beside the releve (ReleveFP deletes it at its start and writes it last: interrupted) is an anomaly "
+        "asking to run ReleveFP again to its end", lambda: (g["rc"] == 0 and "fini.txt" in g["an"] and "relancer ReleveFP" in g["an"], g["an"][:400]))
+    rdir = os.path.join(base_dir, "rel_maxbars")
+    make_releve(rdir, lit, "good", m1_from="2021-11-15 00:00", m1_to="2021-11-26 00:00")
+    p = os.path.join(rdir, "fini.txt")
+    write(p, "\n".join(lines_of(p) + ["max_barres=100000"]).replace("stopped=0", "stopped=1") + "\n")
+    g = go("adv58_maxbars", extra=("--bars", rdir, "--no-replay"))
+    chk("review4b ADV5-8: fini.txt's max_barres=100000 and stopped=1 are named (Max bars in chart 500000, ReleveFP stopped before its end)",
+        lambda: (g["rc"] == 0 and "500000" in g["an"] and "stopped" in g["an"], g["an"][:500]))
+    # ADV5-10: the last line of a file cut while the robot wrote it, here the N30 CLOSE: the exit is unknown, the robot is not blamed
+    def cut_close(jdir, info):
+        p = os.path.join(jdir, "20211124.log")
+        raw = open(p, "rb").read()
+        assert b"|CLOSE|N30|" in raw.splitlines()[-1]
+        open(p, "wb").write(raw[:-37])
+    g = go("adv510_cut_close", prep=cut_close)
+    chk("review4b ADV5-10: a CLOSE cut at the end of its file is the unreadable line (one anomaly), not 'position non fermee par le robot'",
+        lambda: (g["rc"] == 0 and "illisible" in g["an"] and "non fermee" not in g["an"] and "sans ligne CLOSE" not in g["an"], g["an"][:500]))
+    # ADV5-11: the size of a balance move the money check can see is said
+    chk("review4b ADV5-11: report_fr.txt says how large a move of the balance from outside the robot must be to be seen",
+        lambda: (base["rc"] == 0 and "ne se voit pas" in base["rtxt"], [ln for ln in base["rtxt"].splitlines() if "solde" in ln.lower()][:3]))
+    # ADV5-12: an r1 row with a negative price is not a bar
+    rdir = os.path.join(base_dir, "rel_neg")
+    make_releve(rdir, lit, "good", m1_from="2021-11-15 00:00", m1_to="2021-11-26 00:00")
+    p = os.path.join(rdir, "r1_XAUUSD.csv")
+    ls = lines_of(p)
+    f = ls[5].split(",")
+    f[3] = "-" + f[3]
+    ls[5] = ",".join(f)
+    write(p, "\n".join(ls) + "\n")
+    g = go("adv512_neg", extra=("--bars", rdir, "--no-replay"))
+    chk("review4b ADV5-12: an r1 row with a negative low is dropped and counted (an anomaly naming r1_XAUUSD.csv), never fed to the replay",
+        lambda: (g["rc"] == 0 and "r1_XAUUSD.csv : 1 ligne(s) illisible(s)" in g["an"], g["an"][:400]))
+    # ADV5-13: a time exit written after the releve's last bar (crypto at weekends) is out of the replay's span
+    import check_demo as D
+    t0_, t1_ = srv("2021-11-01 00:00"), srv("2021-11-27 09:00")
+    w = D.Windows([], {"BKB": (t0_, t1_)}, None)
+    chk("review4b ADV5-13: a PREVISE stamped at Friday's last kept bar whose time exit comes after the releve's last bar is out of the span",
+        lambda: (w.why_out("BKB", t1_ - 40000, t1_ - 40000, "PREVISE", t_end=t1_ + 60) is not None
+                 and w.why_out("BKB", t1_ - 40000, t1_ - 40000, "PREVISE", t_end=t1_ - 39000) is None, None))
+    # ADV5-14: a login glued onto a counter (COST comm_n) makes the line unreadable: the number never reaches an output
+    def glue_comm(jdir, info):
+        edit_lines(os.path.join(jdir, "20211119.log"), lambda ls_: [ln.replace("|comm_n=2", "|comm_n=2" + FAKE_LOGIN, 1) if "|COST|XAUUSD|" in ln else ln
+                                                                   for ln in ls_])
+    g = go("adv514_glue", prep=glue_comm)
+    chk("review4b ADV5-14: a login glued onto COST comm_n makes the line unreadable; the login never reaches report.json, report_fr.txt or stdout",
+        lambda: (g["rc"] == 0 and FAKE_LOGIN not in g["txt"] and "illisible" in g["an"], [w_ for w_ in (FAKE_LOGIN,) if w_ in g["txt"]]))
+
+
+def test_review4b_tool1(lit):
+    """the fourth review's second round on read_mac_files.py: R4V-5 (c) (server_time set aside is not 'fini.txt absent'), ADV5-8 (fini.txt
+    absent), ADV5-9 (fiches.csv absent), ADV5-12 (an r1 row with a negative price)"""
+    base_dir = os.path.join(SCRATCH, "rv4bt1")
+
+    def go(name, prep=None, **kw):
+        folder = os.path.join(base_dir, "in_" + name)
+        out = os.path.join(base_dir, "out_" + name)
+        make_releve(folder, lit, "good", **kw)
+        if prep:
+            prep(folder)
+        rc, so, se = run_tool("read_mac_files.py", [folder, "--out", out])
+        s = json.load(open(os.path.join(out, "summary.json"))) if rc == 0 else {"checks": [], "problems": []}
+        return {"rc": rc, "so": so, "se": se, "ck": {(c["market"], c["item"]): c for c in s["checks"]}, "s": s}
+
+    def fini_edit(folder, fn):
+        p = os.path.join(folder, "fini.txt")
+        write(p, "\n".join(fn(lines_of(p))) + "\n")
+    g = go("r4v5c_st", prep=lambda f: fini_edit(f, lambda ls: [re.sub(r"^server_time=(\d+)", r"server_time=\g<1>000000", ln) for ln in ls]))
+    sc = g["ck"].get(("compte", "server_clock"), {})
+    chk("review4b R4V-5 (c) (tool 1): fini.txt present with its server_time set aside: the server clock says the value is unreadable, not "
+        "'fini.txt absent'", lambda: (g["rc"] == 0 and "fini.txt absent" not in str(sc.get("broker")) and "server_time" in str(sc.get("broker")), sc))
+    g = go("adv58_nofini", prep=lambda f: os.remove(os.path.join(f, "fini.txt")))
+    chk("review4b ADV5-8 (tool 1): fini.txt absent beside ReleveFP's other files is DIFFERENT (ReleveFP interrupted: run it again to its end)",
+        lambda: (g["rc"] == 0 and any(c["status"] == "DIFFERENT" and "fini.txt" in str(c.get("broker")) + str(c.get("note")) for c in g["s"]["checks"]),
+                 [c for c in g["s"]["checks"] if c["market"] == "compte"][:6]))
+    g = go("adv59_nofiches", prep=lambda f: os.remove(os.path.join(f, "fiches.csv")))
+    xau = [c for c in g["s"]["checks"] if c["market"] == "XAUUSD"]
+    chk("review4b ADV5-9 (tool 1): fiches.csv absent is DIFFERENT, and the robot markets' fiche items (digits, tick size, minimum lot ...) are "
+        "listed as UNKNOWN instead of dropped",
+        lambda: (g["rc"] == 0 and any(c["status"] == "DIFFERENT" and "fiches.csv" in str(c.get("broker")) + str(c.get("note")) for c in g["s"]["checks"])
+                 and any(c["item"] == "digits" and c["status"] == "UNKNOWN" for c in xau) and any(c["item"] == "vol_min" for c in xau),
+                 [(c["item"], c["status"]) for c in xau]))
+
+    def neg_row(folder):
+        p = os.path.join(folder, "r1_XAUUSD.csv")
+        ls = lines_of(p)
+        f = ls[5].split(",")
+        f[3] = "-" + f[3]
+        ls[5] = ",".join(f)
+        write(p, "\n".join(ls) + "\n")
+    g = go("adv512_neg", prep=neg_row)
+    chk("review4b ADV5-12 (tool 1): an r1 row with a negative low is dropped and counted (r1_rows DIFFERENT 'ligne(s) illisible(s)')",
+        lambda: (g["rc"] == 0 and g["ck"].get(("XAUUSD", "r1_rows"), {}).get("status") == "DIFFERENT"
+                 and "illisible" in g["ck"].get(("XAUUSD", "r1_rows"), {}).get("note", ""), g["ck"].get(("XAUUSD", "r1_rows"))))
+
+
+SLEEP_NIGHT = (srv("2021-11-02 23:40"), srv("2021-11-03 07:10"))     # Tuesday night: the terminal's bars of the sleep 90 s after the wake
+SLEEP_WEEKEND = (srv("2021-11-05 22:30"), srv("2021-11-08 08:15"))   # Friday night to Monday morning: the bars there at the wake
+
+
+def test_review4b_replay(lit):
+    """the fourth review's second round with the replay: ADV5-2 (the Mac asleep: the process frozen, then a catch-up at the wake; built
+    against the self-test's own copy of the harness with MOCK_SLEEP), R4V-5 (a) and (b) on the clean demo of review4"""
+    t0 = time.time()
+
+    def check_demo(name, jfiles, bars=None, extra=()):
+        out = os.path.join(SCRATCH, "out4b_" + name)
+        rc, so, se = run_tool("check_demo.py", ["--journals", jfiles, "--out", out] + (["--bars", bars] if bars else []) + list(extra))
+        r = json.load(open(os.path.join(out, "report.json"))) if rc == 0 else {}
+        rp = r.get("replay", {})
+        dif = rp.get("comparison", {}).get("differences", [])
+        rt = os.path.join(out, "report_fr.txt")
+        return {"rc": rc, "so": so, "se": se, "r": r, "rp": rp, "dif": dif, "an": " | ".join(r.get("anomalies", [])),
+                "rtxt": open(rt, encoding="utf-8").read() if rc == 0 and os.path.exists(rt) else "",
+                "short": [(d["kind"], d["event"], d["code"], d["when"], d.get("fields")) for d in dif[:4]]}
+    exe, err = None, None
+    try:
+        exe = sleep_harness_exe(os.path.join(SCRATCH, "harness_sleep"))
+    except Exception as e:                                              # noqa: BLE001
+        err = f"{e.__class__.__name__}: {str(e)[-300:]}"
+    check("review4b ADV5-2: the self-test's copy of the harness with MOCK_SLEEP builds (check/ itself unchanged)", exe is not None, err)
+    rel = releve_replay("rel4b_sleep", lit, RUN4)
+    g = gj = None
+    if exe:
+        env = {"MOCK_INPUT_InpTrade": "true", "MOCK_INPUT_InpPlanStart": str(GO4), "MOCK_BALANCE": "1000",
+               "MOCK_SLEEP": f"{SLEEP_NIGHT[0]}-{SLEEP_NIGHT[1]},{SLEEP_WEEKEND[0]}-{SLEEP_WEEKEND[1]}"}
+        for b in C.ROBOT_BASES:
+            env[f"MOCK_HOLE_{b}.r"] = f"{SLEEP_NIGHT[0]}-{SLEEP_NIGHT[1]}@{SLEEP_NIGHT[1] + 90}"
+        jd, _, _ = harness_live("live4b_sleep", HIST4, env, frm=GO4, to=END4, exe=exe)
+        g = check_demo("sleep", jd, rel)
+        gj = check_demo("sleep_nobars", jd)
+    chk("review4b ADV5-2: the Mac asleep one night (the bars of the sleep after the wake: REBUILD why=latebar) and over a weekend (no "
+        "rebuild): no replay difference, no 'MISSED non envoyes', no AGG or COST anomaly",
+        lambda: (g is not None and g["rc"] == 0 and g["rp"].get("status") == "done" and not g["dif"] and "MISSED non envoyes" not in g["an"]
+                 and "nombre de barres different" not in g["an"] and "COST" not in g["an"], (g and g["short"], g and g["an"][:600], g and g["se"][-300:])))
+    chk("review4b ADV5-2: both sleeps are said plainly on stdout: the robot offline (Mac asleep or MetaTrader frozen ?) and for how long at most",
+        lambda: (g is not None and g["rc"] == 0 and "hors ligne" in g["so"] and "veille" in g["so"]
+                 and len([o for o in g["r"]["journal"].get("outages", []) if o.get("why") == "sleep"]) == 2,
+                 (g and [ln for ln in g["so"].splitlines() if "ligne" in ln.lower()][:4], g and g["r"]["journal"].get("outages"))))
+    chk("review4b ADV5-2: the early check without the releve (journal only) says the sleeps too and raises no 'MISSED non envoyes'",
+        lambda: (gj is not None and gj["rc"] == 0 and "hors ligne" in gj["so"] and "MISSED non envoyes" not in gj["an"], (gj and gj["so"][-500:])))
+    # R4V-5 (a), (b): the clean review4 demo with ReleveFP's default files
+    clean = os.path.join(SCRATCH, "live4_clean", "files")
+    rel100 = os.path.join(SCRATCH, "rel4_100")
+    if not os.path.isdir(clean):
+        clean, _, _ = harness_live("live4_clean", HIST4, {"MOCK_INPUT_InpTrade": "true", "MOCK_INPUT_InpPlanStart": str(GO4),
+                                                          "MOCK_BALANCE": "1000"}, frm=GO4, to=END4)
+    if not os.path.isdir(rel100):
+        rel100 = releve_replay("rel4_100", lit, RUN4)
+    g = check_demo("clean", clean, rel100)
+    chk("review4b R4V-5 (a): r1 files of ReleveFP's default days (200 for gold, 100 for the others) give no note 'plus tard que les autres "
+        "marches' (the shorter span is by design)", lambda: (g["rc"] == 0 and "plus tard que les autres" not in g["rtxt"],
+                                                              [ln for ln in g["rtxt"].splitlines() if "plus tard" in ln][:3]))
+    exc = g["rp"].get("comparison", {}).get("excluded", {})
+    chk("review4b R4V-5 (b): lines from before the robot's live start are counted 'robot pas en marche', never 'rejeu pas encore pret'",
+        lambda: (g["rc"] == 0 and not any("pas encore pret" in k for k in exc), exc))
+    print(f"   (review4b replay tests {time.time() - t0:.0f} s)")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
@@ -3013,16 +3545,20 @@ def main(argv=None):
     test_review4_releve(lit)
     test_review4_tool1(lit)
     test_review4_journal(lit)
+    test_review4b_tool1(lit)
+    test_review4b_journal(lit)
     if not a.quick:
         test_tool2_replay(lit)
         test_review4_replay(lit)
+        test_review4b_replay(lit)
     n_fail = sum(1 for r in RESULTS if not r["pass"])
     r2 = [r for r in RESULTS if r["test"].startswith("review2")]
     r3 = [r for r in RESULTS if r["test"].startswith("review3")]
-    r4 = [r for r in RESULTS if r["test"].startswith("review4")]
+    r4 = [r for r in RESULTS if r["test"].startswith("review4 ")]
+    r4b = [r for r in RESULTS if r["test"].startswith("review4b ")]
     print(f"\n{len(RESULTS) - n_fail}/{len(RESULTS)} checks passed in {time.time() - t0:.0f} s "
           f"(review2: {sum(r['pass'] for r in r2)}/{len(r2)}, review3: {sum(r['pass'] for r in r3)}/{len(r3)}, "
-          f"review4: {sum(r['pass'] for r in r4)}/{len(r4)})")
+          f"review4: {sum(r['pass'] for r in r4)}/{len(r4)}, review4b: {sum(r['pass'] for r in r4b)}/{len(r4b)})")
     with open(RESULTS_FILE, "w") as f:
         json.dump(RESULTS, f, indent=1, default=str)
     if not a.keep:
