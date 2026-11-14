@@ -1101,3 +1101,38 @@ on PF, costs × 1.5 and years; the null can pass even then (it tests timing, not
 about 8 %, of a later 2022–2025 pass about 3 %; |ρ| with the ten below 0.1. If it passed: a small sleeve on a clock
 and a market the ten never touch, not a multiplier; at 7 % per trade a per-evening risk budget would be declared
 before any real use.
+
+### Addendum L — outcome (2026-11-14, `results/r2/round6/night_fade/results.json`, `run.json`)
+**The main configuration fails 8 of the 12 bars. The fail is final: nothing is kept, nothing needs attacking and no
+look at 2022–2025 is declared.** The readings were written in `declared.json` (2026-11-14 12:17:47 UTC, sha256
+`c399625ef117…`) and committed with the frozen code (c9d94bf) before any return was computed; 91 lines in
+`trials.jsonl`; frames read with the filter ts < 2022-01-01; `val_access.log` unchanged; the 2026 holdout not touched.
+- **Before the run.** The independent review found 6 points (major: the `moving_mid` exit could fill before its own
+  trigger bar closed when quotes had a gap of more than 30 minutes; minor: bars judged on rounded figures, reading (a)'s
+  gross taken from other trades, the wording of L18, the write order of the run files, exit kinds). All were fixed with
+  synthetic proofs (76/76 checks). The reviewer's own re-implementation scripts, re-run on the final code, match the
+  main, readings (a) and (b), gross and the six neighbours trade for trade on noisy synthetic frames with quote holes.
+  Pre-check: coverage 100 % for all twelve crosses (none dropped), truncation 720/720 exact. Hand checks from the raw
+  quotes with independent code: entry side 5/5 and exit side 5/5 exact.
+- **Main**: 12,138 trades, PF 0.711, t −8.90 on daily sums, −0.0485 R per trade (−589 R in all, −1.55 bp net per
+  trade), 57.2 % winners, average win 0.21 R against average loss 0.39 R (ratio 0.53), 0 of 9 years positive (every
+  year from −36 to −107 R), 0 of 12 crosses positive, PF 0.571 (a, rebuilt) and 0.493 (b, same orders) at costs × 1.5,
+  every-signal expectancy −0.0494 R (28,238 orders), max hold 3.75 h, null percentile 100 (random evenings at the
+  same clock times: −0.103 R per trade), weekly correlation with the ten 0.089. Exits: target 5,820, 21:00 5,543,
+  stop 775.
+- **Before any cost** (mid quotes, no slippage): PF 1.48, 67.8 % winners, +1.78 bp per trade. The all-in cost is
+  3.34 bp per trade. On the same trades the costs would have to fall by 1.48 bp (44 %) to break even and by 2.0 bp
+  (60 %) to reach PF 1.12. Every cross has a gross edge (gross PF 1.22–1.89) smaller than its costs, from EURGBP
+  (+1.91 bp gross, 2.70 bp cost) to CADCHF (+1.23 bp gross, 4.51 bp cost).
+- **Neighbours** (one change each): PF 0.824 (`first_hour`), 0.661 (`moving_mid`), 0.734 (`width_2.5`), 0.737
+  (`m15`), 0.724 (`stop_3.0`), 0.690 (`one_per_night`); median 0.729; gross PF 1.46–1.83 for all six.
+- **As said before the run**: it fails on PF, costs × 1.5 and years; the null passes (the timing is real, the costs
+  are not paid); |ρ| < 0.1. The measured trade count (12,138) sits inside the expected range; the win rate (57 % net,
+  68 % before costs) and the win/loss ratio (0.53) are below signal 683917's 70.5 % and 0.75.
+- **Information only, not judged**: in MetaTrader 5 a buy limit triggers when the ask reaches it (a sell limit when
+  the bid does), so resting orders at the band, as the vendors do, do not avoid the spread; they only change when the
+  entry happens (a new idea, with its own declaration, if ever). Only night quotes well below half of Dukascopy's
+  would change the arithmetic, which nothing in the sources suggests; the ReleveFP reading of the twelve crosses is
+  therefore not needed. At 7 % per trade on 1,000 EUR the worst evening (2016-10-12) would have cost about 665 EUR:
+  up to 12 crosses were open at once and up to 5 trades on one currency and side.
+- Both ideas of the MQL5 survey are now closed (Addenda K and L). The account stays the ten rules.

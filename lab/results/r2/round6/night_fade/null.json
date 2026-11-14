@@ -1,0 +1,40 @@
+{
+ "what": "basket null of the main (same clock time, random tradable evening, same cross), Addendum L",
+ "n_replays": 200,
+ "seed": 0,
+ "max_draws": 20,
+ "no_overlap": false,
+ "main_n": 12138,
+ "main_mean_R": -0.048535,
+ "null_mean_R": -0.103428,
+ "null_sd_R": 0.00282,
+ "null_p50_R": -0.10342,
+ "null_p975_R": -0.097348,
+ "null_max_R": -0.095522,
+ "percentile": 100.0,
+ "percentile_raw": 100.0,
+ "main_mean_R_raw": -0.048535323221768595,
+ "pass": true,
+ "replay_trades_min_max": [
+  12138,
+  12138
+ ],
+ "dropped_after_20_late_draws_mean": 0.0,
+ "dropped_exit_not_after_entry_mean": 0.0,
+ "tradable_evenings": {
+  "eurcad": 1739,
+  "gbpcad": 1739,
+  "euraud": 1739,
+  "audcad": 1739,
+  "eurgbp": 1739,
+  "eurchf": 1738,
+  "gbpchf": 1739,
+  "audnzd": 1739,
+  "nzdcad": 1739,
+  "cadchf": 1739,
+  "gbpaud": 1739,
+  "eurnzd": 1739
+ },
+ "declared_sha256": "c399625ef11745af5e49f0993257fe3752e6c03bda1cc5d0a08c838e7f23ca37",
+ "seconds": 100.0
+}
