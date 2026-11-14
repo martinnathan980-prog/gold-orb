@@ -1,0 +1,19 @@
+{
+ "what": "K1 threshold for 2026 (robot input InpK1T), SPEC 10.14: q_hi of the declared procedure (synthesis_B, vhi_sleeves._k1_folds) fitted on the brk72_24h_wd ETH signals decided before 2025-12-25 (CUT 2026-01-01 minus the 7-day purge), terciles q = 1/3, labels with FP costs, worse side skipped only if min(E_lo, E_hi) < 0.",
+ "source": "results/r2/validation_hi/look/autopsy_HI_look__cut2026-01-01.json",
+ "source_sha256": "bc8ead56c4d0f5946735297ad09aa4c5374f94cd369c1dd615ce4baae8c2e5f7",
+ "source_key": "sleeves['brk72_24h_wd__ethusd+K1'].runs['fp/lab'].info.change_diag.fit_for_year_starting_at_cut_full (identical in fp/live, stress/lab, stress/live)",
+ "no_new_data_read": "taken from the output of the single logged look (track autopsy_HI_look); nothing was read again, so no new val_access.log line",
+ "fit": {
+  "q_lo": 296.29851196015335,
+  "q_hi": 417.2381324542189,
+  "E_lo": 0.2923072454897937,
+  "E_hi": -0.06511746594619308,
+  "skip": "hi",
+  "n_train": 4685
+ },
+ "T_2026_bp_17_significant_digits": "417.23813245421888",
+ "InpK1T": "2026:417.23813245421888",
+ "robot_reading": "skip side 'hi' (the robot skips the high side only, L2): a BKE signal decided in 2026 with riskbp >= T is skipped when K1 is on (InpK1 -1 on demo, 0 on real until judged)",
+ "open_for_2027": "T(2027) needs the ETH signals decided before 2026-12-25, i.e. 2026 bars: how that is done without breaking the 2026 holdout rule is to be decided before 1 January 2027; until then 2027 has no entry and K1 is off in 2027 (the robot pushes 'K1 with no T for the year')."
+}
