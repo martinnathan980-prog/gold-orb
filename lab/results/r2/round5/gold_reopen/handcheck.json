@@ -1,0 +1,424 @@
+{
+ "declared_sha256": "3bb98b52eb177632fd93fe8ddfacfbc0cfde16f6ab9eba0b0764b8861bf95150",
+ "what": "independent recomputation of main trades from the raw in-sample M1 quotes",
+ "n_checked": 8,
+ "n_core": 5,
+ "core_regimes": [
+  "New York summer time (EDT)",
+  "New York winter time (EST)",
+  "first stop-out"
+ ],
+ "any_stop_out_in_sample": true,
+ "all_match": true,
+ "max_abs_R_diff": 0.0,
+ "rows": [
+  {
+   "why": "first stop-out",
+   "trade_index": 41,
+   "hand": {
+    "evening": "2013-04-15",
+    "weekday": "Monday",
+    "calendar_ok": true,
+    "quotes_18_00_18_15": 15,
+    "entry_bar": {
+     "utc": "2013-04-15 22:15",
+     "new_york": "2013-04-15 18:15 EDT"
+    },
+    "entry_price_usd": 1367.0355721682704,
+    "entry_ask_open_usd": 1366.9945623314004,
+    "entry_bid_open_usd": 1366.9354376686,
+    "h1_window_first": {
+     "utc": "2013-03-15 01:00",
+     "new_york": "2013-03-14 21:00 EDT"
+    },
+    "h1_window_last": {
+     "utc": "2013-04-15 20:00",
+     "new_york": "2013-04-15 16:00 EDT"
+    },
+    "h1_mean_range_usd": 4.264050738443584,
+    "stop_usd": 1358.5074706913833,
+    "stop_distance_bp": 62.38390317349637,
+    "exit_reason": "stop",
+    "exit_bar": {
+     "utc": "2013-04-15 22:20",
+     "new_york": "2013-04-15 18:20 EDT"
+    },
+    "exit_time": {
+     "utc": "2013-04-15 22:21",
+     "new_york": "2013-04-15 18:21 EDT"
+    },
+    "exit_price_usd": 1358.3716199443143,
+    "R": -1.0159297760981452,
+    "net_bp": -63.37766478317853
+   },
+   "engine": {
+    "entry_time": "2013-04-15 22:15:00+00:00",
+    "entry": 1367.0355721682704,
+    "h1_mean_range": 4.264050738443584,
+    "stop": 1358.5074706913833,
+    "reason": "stop",
+    "exit_time": "2013-04-15 22:21:00+00:00",
+    "exit": 1358.3716199443143,
+    "R": -1.0159297760981452
+   },
+   "match": true
+  },
+  {
+   "why": "New York winter time (EST)",
+   "trade_index": 1573,
+   "hand": {
+    "evening": "2021-03-09",
+    "weekday": "Tuesday",
+    "calendar_ok": true,
+    "quotes_18_00_18_15": 15,
+    "entry_bar": {
+     "utc": "2021-03-09 23:15",
+     "new_york": "2021-03-09 18:15 EST"
+    },
+    "entry_price_usd": 1714.972792461802,
+    "entry_ask_open_usd": 1714.9213448214575,
+    "entry_bid_open_usd": 1714.8286551785425,
+    "h1_window_first": {
+     "utc": "2021-02-08 21:00",
+     "new_york": "2021-02-08 16:00 EST"
+    },
+    "h1_window_last": {
+     "utc": "2021-03-09 21:00",
+     "new_york": "2021-03-09 16:00 EST"
+    },
+    "h1_mean_range_usd": 5.867955247196472,
+    "stop_usd": 1703.236881967409,
+    "stop_distance_bp": 68.43205061898617,
+    "exit_reason": "time",
+    "exit_bar": {
+     "utc": "2021-03-10 01:15",
+     "new_york": "2021-03-09 20:15 EST"
+    },
+    "exit_time": {
+     "utc": "2021-03-10 01:15",
+     "new_york": "2021-03-09 20:15 EST"
+    },
+    "exit_price_usd": 1718.1845977962782,
+    "R": 0.273673298378564,
+    "net_bp": 18.728025007706798
+   },
+   "engine": {
+    "entry_time": "2021-03-09 23:15:00+00:00",
+    "entry": 1714.972792461802,
+    "h1_mean_range": 5.867955247196472,
+    "stop": 1703.236881967409,
+    "reason": "time",
+    "exit_time": "2021-03-10 01:15:00+00:00",
+    "exit": 1718.1845977962782,
+    "R": 0.273673298378564
+   },
+   "match": true
+  },
+  {
+   "why": "New York winter time (EST)",
+   "trade_index": 1127,
+   "hand": {
+    "evening": "2018-11-26",
+    "weekday": "Monday",
+    "calendar_ok": true,
+    "quotes_18_00_18_15": 13,
+    "entry_bar": {
+     "utc": "2018-11-26 23:15",
+     "new_york": "2018-11-26 18:15 EST"
+    },
+    "entry_price_usd": 1222.64411237146,
+    "entry_ask_open_usd": 1222.6074341484357,
+    "entry_bid_open_usd": 1222.542565851564,
+    "h1_window_first": {
+     "utc": "2018-10-26 17:00",
+     "new_york": "2018-10-26 13:00 EDT"
+    },
+    "h1_window_last": {
+     "utc": "2018-11-26 21:00",
+     "new_york": "2018-11-26 16:00 EST"
+    },
+    "h1_mean_range_usd": 2.136456668948797,
+    "stop_usd": 1218.3711990335626,
+    "stop_distance_bp": 34.9481365399922,
+    "exit_reason": "time",
+    "exit_bar": {
+     "utc": "2018-11-27 01:15",
+     "new_york": "2018-11-26 20:15 EST"
+    },
+    "exit_time": {
+     "utc": "2018-11-27 01:15",
+     "new_york": "2018-11-26 20:15 EST"
+    },
+    "exit_price_usd": 1222.6413101304963,
+    "R": -0.0006558150709307545,
+    "net_bp": -0.022919514643872672
+   },
+   "engine": {
+    "entry_time": "2018-11-26 23:15:00+00:00",
+    "entry": 1222.64411237146,
+    "h1_mean_range": 2.136456668948797,
+    "stop": 1218.3711990335626,
+    "reason": "time",
+    "exit_time": "2018-11-27 01:15:00+00:00",
+    "exit": 1222.6413101304963,
+    "R": -0.0006558150709307545
+   },
+   "match": true
+  },
+  {
+   "why": "New York summer time (EDT)",
+   "trade_index": 1588,
+   "hand": {
+    "evening": "2021-04-06",
+    "weekday": "Tuesday",
+    "calendar_ok": true,
+    "quotes_18_00_18_15": 15,
+    "entry_bar": {
+     "utc": "2021-04-06 22:15",
+     "new_york": "2021-04-06 18:15 EDT"
+    },
+    "entry_price_usd": 1743.047223589212,
+    "entry_ask_open_usd": 1742.9949337412,
+    "entry_bid_open_usd": 1742.9120662588002,
+    "h1_window_first": {
+     "utc": "2021-03-08 02:00",
+     "new_york": "2021-03-07 21:00 EST"
+    },
+    "h1_window_last": {
+     "utc": "2021-04-06 20:00",
+     "new_york": "2021-04-06 16:00 EDT"
+    },
+    "h1_mean_range_usd": 4.477301990602598,
+    "stop_usd": 1734.0926196080068,
+    "stop_distance_bp": 51.373272393425765,
+    "exit_reason": "time",
+    "exit_bar": {
+     "utc": "2021-04-07 00:15",
+     "new_york": "2021-04-06 20:15 EDT"
+    },
+    "exit_time": {
+     "utc": "2021-04-07 00:15",
+     "new_york": "2021-04-06 20:15 EDT"
+    },
+    "exit_price_usd": 1741.5847765838691,
+    "R": -0.16331788747022724,
+    "net_bp": -8.39017431972684
+   },
+   "engine": {
+    "entry_time": "2021-04-06 22:15:00+00:00",
+    "entry": 1743.047223589212,
+    "h1_mean_range": 4.477301990602598,
+    "stop": 1734.0926196080068,
+    "reason": "time",
+    "exit_time": "2021-04-07 00:15:00+00:00",
+    "exit": 1741.5847765838691,
+    "R": -0.16331788747022724
+   },
+   "match": true
+  },
+  {
+   "why": "New York summer time (EDT)",
+   "trade_index": 1020,
+   "hand": {
+    "evening": "2018-05-10",
+    "weekday": "Thursday",
+    "calendar_ok": true,
+    "quotes_18_00_18_15": 15,
+    "entry_bar": {
+     "utc": "2018-05-10 22:15",
+     "new_york": "2018-05-10 18:15 EDT"
+    },
+    "entry_price_usd": 1321.5139745216154,
+    "entry_ask_open_usd": 1321.4743302917068,
+    "entry_bid_open_usd": 1321.3986697082933,
+    "h1_window_first": {
+     "utc": "2018-04-12 01:00",
+     "new_york": "2018-04-11 21:00 EDT"
+    },
+    "h1_window_last": {
+     "utc": "2018-05-10 20:00",
+     "new_york": "2018-05-10 16:00 EDT"
+    },
+    "h1_mean_range_usd": 2.431181638648415,
+    "stop_usd": 1316.6516112443185,
+    "stop_distance_bp": 36.793884673501836,
+    "exit_reason": "time",
+    "exit_bar": {
+     "utc": "2018-05-11 00:15",
+     "new_york": "2018-05-10 20:15 EDT"
+    },
+    "exit_time": {
+     "utc": "2018-05-11 00:15",
+     "new_york": "2018-05-10 20:15 EDT"
+    },
+    "exit_price_usd": 1321.2028587552343,
+    "R": -0.06398447599211254,
+    "net_bp": -2.3542374305482356
+   },
+   "engine": {
+    "entry_time": "2018-05-10 22:15:00+00:00",
+    "entry": 1321.5139745216154,
+    "h1_mean_range": 2.431181638648415,
+    "stop": 1316.6516112443185,
+    "reason": "time",
+    "exit_time": "2018-05-11 00:15:00+00:00",
+    "exit": 1321.2028587552343,
+    "R": -0.06398447599211254
+   },
+   "match": true
+  },
+  {
+   "why": "extra: first trade",
+   "trade_index": 0,
+   "hand": {
+    "evening": "2013-01-29",
+    "weekday": "Tuesday",
+    "calendar_ok": true,
+    "quotes_18_00_18_15": 8,
+    "entry_bar": {
+     "utc": "2013-01-29 23:15",
+     "new_york": "2013-01-29 18:15 EST"
+    },
+    "entry_price_usd": 1663.772730239871,
+    "entry_ask_open_usd": 1663.7228185553142,
+    "entry_bid_open_usd": 1663.617181444686,
+    "h1_window_first": {
+     "utc": "2012-12-31 01:00",
+     "new_york": "2012-12-30 20:00 EST"
+    },
+    "h1_window_last": {
+     "utc": "2013-01-29 21:00",
+     "new_york": "2013-01-29 16:00 EST"
+    },
+    "h1_mean_range_usd": 3.3657079274099226,
+    "stop_usd": 1657.041314385051,
+    "stop_distance_bp": 40.458746152483556,
+    "exit_reason": "time",
+    "exit_bar": {
+     "utc": "2013-01-30 01:15",
+     "new_york": "2013-01-29 20:15 EST"
+    },
+    "exit_time": {
+     "utc": "2013-01-30 01:15",
+     "new_york": "2013-01-29 20:15 EST"
+    },
+    "exit_price_usd": 1663.2430346576582,
+    "R": -0.07869006961343375,
+    "net_bp": -3.183701551211175
+   },
+   "engine": {
+    "entry_time": "2013-01-29 23:15:00+00:00",
+    "entry": 1663.772730239871,
+    "h1_mean_range": 3.3657079274099226,
+    "stop": 1657.041314385051,
+    "reason": "time",
+    "exit_time": "2013-01-30 01:15:00+00:00",
+    "exit": 1663.2430346576582,
+    "R": -0.07869006961343375
+   },
+   "match": true
+  },
+  {
+   "why": "extra: first entry delayed over 5 minutes",
+   "trade_index": 22,
+   "hand": {
+    "evening": "2013-03-11",
+    "weekday": "Monday",
+    "calendar_ok": true,
+    "quotes_18_00_18_15": 1,
+    "entry_bar": {
+     "utc": "2013-03-11 22:23",
+     "new_york": "2013-03-11 18:23 EDT"
+    },
+    "entry_price_usd": 1581.8584042632847,
+    "entry_ask_open_usd": 1581.8109499347868,
+    "entry_bid_open_usd": 1581.7290500652132,
+    "h1_window_first": {
+     "utc": "2013-02-08 21:00",
+     "new_york": "2013-02-08 16:00 EST"
+    },
+    "h1_window_last": {
+     "utc": "2013-03-11 20:00",
+     "new_york": "2013-03-11 16:00 EDT"
+    },
+    "h1_mean_range_usd": 3.7499255251883334,
+    "stop_usd": 1574.358553212908,
+    "stop_distance_bp": 47.41164588539521,
+    "exit_reason": "time",
+    "exit_bar": {
+     "utc": "2013-03-12 00:23",
+     "new_york": "2013-03-11 20:23 EDT"
+    },
+    "exit_time": {
+     "utc": "2013-03-12 00:23",
+     "new_york": "2013-03-11 20:23 EDT"
+    },
+    "exit_price_usd": 1581.2035035307329,
+    "R": -0.08732183188077147,
+    "net_bp": -4.140071771195151
+   },
+   "engine": {
+    "entry_time": "2013-03-11 22:23:00+00:00",
+    "entry": 1581.8584042632847,
+    "h1_mean_range": 3.7499255251883334,
+    "stop": 1574.358553212908,
+    "reason": "time",
+    "exit_time": "2013-03-12 00:23:00+00:00",
+    "exit": 1581.2035035307329,
+    "R": -0.08732183188077147
+   },
+   "match": true
+  },
+  {
+   "why": "extra: first exit bar after its scheduled time",
+   "trade_index": 137,
+   "hand": {
+    "evening": "2013-10-07",
+    "weekday": "Monday",
+    "calendar_ok": true,
+    "quotes_18_00_18_15": 14,
+    "entry_bar": {
+     "utc": "2013-10-07 22:15",
+     "new_york": "2013-10-07 18:15 EDT"
+    },
+    "entry_price_usd": 1323.1302386645048,
+    "entry_ask_open_usd": 1323.0905459481264,
+    "entry_bid_open_usd": 1323.009454051874,
+    "h1_window_first": {
+     "utc": "2013-09-09 01:00",
+     "new_york": "2013-09-08 21:00 EDT"
+    },
+    "h1_window_last": {
+     "utc": "2013-10-07 20:00",
+     "new_york": "2013-10-07 16:00 EDT"
+    },
+    "h1_mean_range_usd": 4.876762770004072,
+    "stop_usd": 1313.3767131244965,
+    "stop_distance_bp": 73.7155364981524,
+    "exit_reason": "time",
+    "exit_bar": {
+     "utc": "2013-10-08 00:16",
+     "new_york": "2013-10-07 20:16 EDT"
+    },
+    "exit_time": {
+     "utc": "2013-10-08 00:16",
+     "new_york": "2013-10-07 20:16 EDT"
+    },
+    "exit_price_usd": 1323.7140898952325,
+    "R": 0.05986053231037793,
+    "net_bp": 4.412651254324496
+   },
+   "engine": {
+    "entry_time": "2013-10-07 22:15:00+00:00",
+    "entry": 1323.1302386645048,
+    "h1_mean_range": 4.876762770004072,
+    "stop": 1313.3767131244965,
+    "reason": "time",
+    "exit_time": "2013-10-08 00:16:00+00:00",
+    "exit": 1323.7140898952325,
+    "R": 0.05986053231037793
+   },
+   "match": true
+  }
+ ]
+}

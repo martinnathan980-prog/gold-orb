@@ -945,3 +945,27 @@ signal), frozen now:
 - **Said before the run:** our own 2013–2021 hour table shows about +0.8 bp gross for the two hours after the reopen
   (all evenings), against about +2.5 bp needed for t ≥ 2.5 after costs; the prior of a pass is low. If it passes it adds
   a small independent sleeve, not a multiplier of gains.
+
+### Addendum K — outcome (2026-11-14, `results/r2/round5/gold_reopen/results.json`, `attack.json`)
+**The main configuration fails 7 of the 10 bars, so nothing is kept and no look at 2022–2025 is declared.** The
+interpretation choices were written in `declared.json` (2026-11-14 04:09:10 UTC, sha256 `3bb98b52eb17…`) before any
+return was computed; 7 configurations logged in `trials.jsonl`; frames read with the filter ts < 2022-01-01;
+`val_access.log` unchanged; the 2026 holdout not touched.
+- **Main** (buy at the first M1 bar at or after 18:15 New York, Monday–Thursday evenings, stop 2.0 × mean H1 range,
+  exit after 120 min): 1,737 trades, PF 0.811, t −2.93, −0.0243 R per trade (−42.3 R in all, −1.20 bp net), 2 of 9
+  years positive (2016, 2020), PF 0.728 at costs ×1.5, random-time null percentile 61.0, weekly correlation with the
+  ten 0.067. Before any cost: PF 1.014, t 0.19, −0.01 bp per trade: there is no gross edge to pay the costs with.
+- **Neighbours** (one parameter each): PF 0.846 / 0.798 (entry 18:10 / 18:30), 0.793 / 0.832 (hold 96 / 144 min),
+  0.804 / 0.816 (stop 1.6 / 2.4); median 0.810.
+- **Attack** (independent re-implementation: own holiday calendar, own H1 range, own simulator): **confirmed**. The
+  main and all six neighbours are identical trade for trade (max |ΔR| = 0); stress and gross R within 0.0012 R
+  because the lab's stress rebuilds the H1 range on the re-spread quotes (I1). Four minor points, none changes a
+  verdict: I1; the holiday calendar and the frame disagree on four days (Columbus Day halts 2013/2014, 2019-07-04
+  traded in the frame) (I2); six evenings of 2014 and 2017 pass the quote test on one stray 18:00 bar and enter at
+  19:00 (I3); the null's random replays pay the swap at the 17:00 rollover, the rule never does, which favours the
+  rule by about 0.004 R (I4; without it the percentile is about 50). Eight other readings keep PF within 0.805–0.821.
+- Information only, not judged, not a new rule: on the same evenings gold's mid rises +1.36 bp from 18:00 to 20:00,
+  of which +1.05 bp between 18:00 and 18:15, the minutes with the widest spreads of the day; from 18:15 to 20:15 it is
+  +0.04 bp. Addendum K's pre-run figure (+0.8 bp for the two hours after the reopen) mostly lies in that first quarter
+  hour. An earlier entry would be a new idea needing its own declaration, with real reopen spreads first.
+- The account stays the ten rules.

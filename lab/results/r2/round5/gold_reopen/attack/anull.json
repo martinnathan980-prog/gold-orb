@@ -1,0 +1,129 @@
+{
+ "rule": {
+  "n": 1737,
+  "mean_R": -0.02435
+ },
+ "mine_clock_independent_with_swap": {
+  "replays": 200,
+  "seed": 20261114,
+  "duration": "clock",
+  "swap_charged": true,
+  "one_position_at_a_time": false,
+  "rule_mean_R": -0.02435,
+  "null_mean_R": -0.02714,
+  "null_sd_R": 0.013,
+  "null_p50_R": -0.02819,
+  "null_p975_R": 0.00012,
+  "null_max_R": 0.01164,
+  "percentile": 63.0,
+  "pass": false
+ },
+ "mine_clock_one_position_with_swap": {
+  "replays": 200,
+  "seed": 20261114,
+  "duration": "clock",
+  "swap_charged": true,
+  "one_position_at_a_time": true,
+  "rule_mean_R": -0.02435,
+  "null_mean_R": -0.02701,
+  "null_sd_R": 0.01296,
+  "null_p50_R": -0.02826,
+  "null_p975_R": -0.00068,
+  "null_max_R": 0.01276,
+  "percentile": 61.5,
+  "pass": false
+ },
+ "mine_bars_independent_with_swap": {
+  "replays": 200,
+  "seed": 20261114,
+  "duration": "bars",
+  "swap_charged": true,
+  "one_position_at_a_time": false,
+  "rule_mean_R": -0.02435,
+  "null_mean_R": -0.02715,
+  "null_sd_R": 0.01316,
+  "null_p50_R": -0.02821,
+  "null_p975_R": 0.00047,
+  "null_max_R": 0.01436,
+  "percentile": 60.0,
+  "pass": false
+ },
+ "mine_bars_one_position_with_swap": {
+  "replays": 200,
+  "seed": 20261114,
+  "duration": "bars",
+  "swap_charged": true,
+  "one_position_at_a_time": true,
+  "rule_mean_R": -0.02435,
+  "null_mean_R": -0.02711,
+  "null_sd_R": 0.0131,
+  "null_p50_R": -0.02836,
+  "null_p975_R": -0.00091,
+  "null_max_R": 0.01616,
+  "percentile": 61.5,
+  "pass": false
+ },
+ "mine_clock_independent_with_swap_other_seeds": {
+  "20261115": {
+   "percentile": 56.5,
+   "null_mean_R": -0.02725,
+   "null_p975_R": -0.00252
+  },
+  "20261116": {
+   "percentile": 60.5,
+   "null_mean_R": -0.02755,
+   "null_p975_R": -0.00386
+  },
+  "20261117": {
+   "percentile": 59.5,
+   "null_mean_R": -0.02688,
+   "null_p975_R": -0.00222
+  },
+  "20261118": {
+   "percentile": 60.0,
+   "null_mean_R": -0.027,
+   "null_p975_R": -0.00134
+  }
+ },
+ "r2_null_test_seed0_on_my_orders": {
+  "n": 1737,
+  "mode": "time",
+  "rule_mean_R": -0.0243,
+  "null_mean_R": -0.0279,
+  "null_p95_R": -0.0036,
+  "null_max_R": 0.0122,
+  "percentile": 61.0,
+  "pass": false
+ },
+ "engineer_null_json": {
+  "rule_mean_R": -0.0243,
+  "null_mean_R": -0.0279,
+  "null_p95_R": -0.0036,
+  "null_max_R": 0.0122,
+  "percentile": 61.0,
+  "pass": false
+ },
+ "r2_reproduces_engineer": true,
+ "r2_null_test_other_seeds": {
+  "1": {
+   "percentile": 61.5,
+   "null_mean_R": -0.0282
+  },
+  "2": {
+   "percentile": 59.5,
+   "null_mean_R": -0.0274
+  },
+  "3": {
+   "percentile": 64.0,
+   "null_mean_R": -0.0287
+  },
+  "4": {
+   "percentile": 62.5,
+   "null_mean_R": -0.0279
+  },
+  "5": {
+   "percentile": 55.5,
+   "null_mean_R": -0.0261
+  }
+ }
+}

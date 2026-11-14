@@ -1,0 +1,1674 @@
+{
+ "declared_sha256": "3bb98b52eb177632fd93fe8ddfacfbc0cfde16f6ab9eba0b0764b8861bf95150",
+ "frame": {
+  "file": "lab/data/fp/xauusd_m1.parquet (read with the filter ts < 2022-01-01 00:00 UTC)",
+  "first_bar": {
+   "utc": "2012-12-31 00:00",
+   "new_york": "2012-12-30 19:00 EST"
+  },
+  "last_bar": {
+   "utc": "2021-12-31 21:59",
+   "new_york": "2021-12-31 16:59 EST"
+  },
+  "rows": 3172985,
+  "max_ts_before_2022": true,
+  "h1_bars": 53133,
+  "h1_bars_starting_17h_new_york": [
+   "2012-12-31 17:00:00-05:00"
+  ],
+  "m1_bars_17h_new_york": 20
+ },
+ "candidate_evenings": {
+  "first": "2012-12-31",
+  "last": "2021-12-30",
+  "n": 1880,
+  "n_from_2013": 1879
+ },
+ "per_year": {
+  "2012": {
+   "candidates": 1,
+   "sessions_main": 0,
+   "skipped_first_reason": {
+    "cal_holiday_next_day": 1
+   }
+  },
+  "2013": {
+   "candidates": 209,
+   "sessions_main": 180,
+   "skipped_first_reason": {
+    "h1_lt_480": 14,
+    "cal_holiday_evening": 9,
+    "cal_holiday_next_day": 5,
+    "no_quote_1800_entry": 1
+   }
+  },
+  "2014": {
+   "candidates": 209,
+   "sessions_main": 178,
+   "skipped_first_reason": {
+    "no_quote_1800_entry": 18,
+    "cal_holiday_evening": 8,
+    "cal_holiday_next_day": 5
+   }
+  },
+  "2015": {
+   "candidates": 209,
+   "sessions_main": 195,
+   "skipped_first_reason": {
+    "cal_holiday_evening": 7,
+    "cal_holiday_next_day": 5,
+    "no_quote_1800_entry": 2
+   }
+  },
+  "2016": {
+   "candidates": 208,
+   "sessions_main": 199,
+   "skipped_first_reason": {
+    "cal_holiday_evening": 7,
+    "cal_holiday_next_day": 2
+   }
+  },
+  "2017": {
+   "candidates": 208,
+   "sessions_main": 197,
+   "skipped_first_reason": {
+    "cal_holiday_evening": 8,
+    "cal_holiday_next_day": 3
+   }
+  },
+  "2018": {
+   "candidates": 209,
+   "sessions_main": 196,
+   "skipped_first_reason": {
+    "cal_holiday_evening": 9,
+    "cal_holiday_next_day": 4
+   }
+  },
+  "2019": {
+   "candidates": 209,
+   "sessions_main": 195,
+   "skipped_first_reason": {
+    "cal_holiday_evening": 9,
+    "cal_holiday_next_day": 5
+   }
+  },
+  "2020": {
+   "candidates": 210,
+   "sessions_main": 198,
+   "skipped_first_reason": {
+    "cal_holiday_evening": 7,
+    "cal_holiday_next_day": 5
+   }
+  },
+  "2021": {
+   "candidates": 208,
+   "sessions_main": 199,
+   "skipped_first_reason": {
+    "cal_holiday_evening": 6,
+    "cal_holiday_next_day": 3
+   }
+  }
+ },
+ "skipped_by_first_reason_all_years": {
+  "cal_holiday_evening": 70,
+  "cal_holiday_next_day": 38,
+  "no_quote_1800_entry": 21,
+  "h1_lt_480": 14
+ },
+ "each_test_on_its_own_all_years": {
+  "cal_holiday_evening": 70,
+  "cal_holiday_next_day": 53,
+  "no_quote_1800_entry": 46,
+  "no_entry_bar": 16,
+  "h1_lt_480": 17,
+  "exit_not_after_entry": 23
+ },
+ "calendar_skipped_evenings": [
+  {
+   "evening": "2012-12-31",
+   "weekday": "Monday",
+   "evening_day_kind": "none",
+   "next_day": "2013-01-01",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 1
+  },
+  {
+   "evening": "2013-01-01",
+   "weekday": "Tuesday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2013-01-02",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 14
+  },
+  {
+   "evening": "2013-01-21",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2013-01-22",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 14
+  },
+  {
+   "evening": "2013-02-18",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2013-02-19",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 11
+  },
+  {
+   "evening": "2013-03-28",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2013-03-29",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2013-05-27",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2013-05-28",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 13
+  },
+  {
+   "evening": "2013-07-03",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2013-07-04",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 14
+  },
+  {
+   "evening": "2013-07-04",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2013-07-05",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2013-09-02",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2013-09-03",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 12
+  },
+  {
+   "evening": "2013-11-27",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2013-11-28",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2013-11-28",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2013-11-29",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2013-12-23",
+   "weekday": "Monday",
+   "evening_day_kind": "none",
+   "next_day": "2013-12-24",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 12
+  },
+  {
+   "evening": "2013-12-24",
+   "weekday": "Tuesday",
+   "evening_day_kind": "early close 13:45",
+   "next_day": "2013-12-25",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2013-12-25",
+   "weekday": "Wednesday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2013-12-26",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2013-12-31",
+   "weekday": "Tuesday",
+   "evening_day_kind": "none",
+   "next_day": "2014-01-01",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2014-01-01",
+   "weekday": "Wednesday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2014-01-02",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2014-01-20",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2014-01-21",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 14
+  },
+  {
+   "evening": "2014-02-17",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2014-02-18",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 14
+  },
+  {
+   "evening": "2014-04-17",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2014-04-18",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2014-05-26",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2014-05-27",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2014-07-03",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2014-07-04",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2014-09-01",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2014-09-02",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2014-11-26",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2014-11-27",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2014-11-27",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2014-11-28",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2014-12-23",
+   "weekday": "Tuesday",
+   "evening_day_kind": "none",
+   "next_day": "2014-12-24",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2014-12-24",
+   "weekday": "Wednesday",
+   "evening_day_kind": "early close 13:45",
+   "next_day": "2014-12-25",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2014-12-25",
+   "weekday": "Thursday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2014-12-26",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 14
+  },
+  {
+   "evening": "2014-12-31",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2015-01-01",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2015-01-01",
+   "weekday": "Thursday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2015-01-02",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2015-01-19",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2015-01-20",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2015-02-16",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2015-02-17",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2015-04-02",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2015-04-03",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2015-05-25",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2015-05-26",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2015-07-02",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2015-07-03",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2015-09-07",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2015-09-08",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2015-11-25",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2015-11-26",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2015-11-26",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2015-11-27",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2015-12-23",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2015-12-24",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2015-12-24",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:45",
+   "next_day": "2015-12-25",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2015-12-31",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2016-01-01",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2016-01-18",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2016-01-19",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2016-02-15",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2016-02-16",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2016-03-24",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2016-03-25",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2016-05-30",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2016-05-31",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2016-07-04",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2016-07-05",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2016-09-05",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2016-09-06",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2016-11-23",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2016-11-24",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2016-11-24",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2016-11-25",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2016-12-26",
+   "weekday": "Monday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2016-12-27",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2017-01-02",
+   "weekday": "Monday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2017-01-03",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2017-01-16",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2017-01-17",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2017-02-20",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2017-02-21",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2017-04-13",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2017-04-14",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2017-05-29",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2017-05-30",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 14
+  },
+  {
+   "evening": "2017-07-03",
+   "weekday": "Monday",
+   "evening_day_kind": "none",
+   "next_day": "2017-07-04",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2017-07-04",
+   "weekday": "Tuesday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2017-07-05",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2017-09-04",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2017-09-05",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2017-11-22",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2017-11-23",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2017-11-23",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2017-11-24",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2017-12-25",
+   "weekday": "Monday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2017-12-26",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2018-01-01",
+   "weekday": "Monday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2018-01-02",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2018-01-15",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2018-01-16",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2018-02-19",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2018-02-20",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2018-03-29",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2018-03-30",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2018-05-28",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2018-05-29",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2018-07-03",
+   "weekday": "Tuesday",
+   "evening_day_kind": "none",
+   "next_day": "2018-07-04",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2018-07-04",
+   "weekday": "Wednesday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2018-07-05",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2018-09-03",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2018-09-04",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2018-11-21",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2018-11-22",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2018-11-22",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2018-11-23",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 11
+  },
+  {
+   "evening": "2018-12-24",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:45",
+   "next_day": "2018-12-25",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2018-12-25",
+   "weekday": "Tuesday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2018-12-26",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2018-12-31",
+   "weekday": "Monday",
+   "evening_day_kind": "none",
+   "next_day": "2019-01-01",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2019-01-01",
+   "weekday": "Tuesday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2019-01-02",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 14
+  },
+  {
+   "evening": "2019-01-21",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2019-01-22",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2019-02-18",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2019-02-19",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 14
+  },
+  {
+   "evening": "2019-04-18",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2019-04-19",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2019-05-27",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2019-05-28",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2019-07-03",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2019-07-04",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2019-07-04",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2019-07-05",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2019-09-02",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2019-09-03",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2019-11-27",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2019-11-28",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2019-11-28",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2019-11-29",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2019-12-23",
+   "weekday": "Monday",
+   "evening_day_kind": "none",
+   "next_day": "2019-12-24",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2019-12-24",
+   "weekday": "Tuesday",
+   "evening_day_kind": "early close 13:45",
+   "next_day": "2019-12-25",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2019-12-25",
+   "weekday": "Wednesday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2019-12-26",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2019-12-31",
+   "weekday": "Tuesday",
+   "evening_day_kind": "none",
+   "next_day": "2020-01-01",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2020-01-01",
+   "weekday": "Wednesday",
+   "evening_day_kind": "closure (day before 17:00 to 18:00)",
+   "next_day": "2020-01-02",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2020-01-20",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2020-01-21",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2020-02-17",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2020-02-18",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2020-04-09",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2020-04-10",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2020-05-25",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2020-05-26",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2020-07-02",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2020-07-03",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2020-09-07",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2020-09-08",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2020-11-25",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2020-11-26",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2020-11-26",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2020-11-27",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2020-12-23",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2020-12-24",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2020-12-24",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:45",
+   "next_day": "2020-12-25",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2020-12-31",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2021-01-01",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2021-01-18",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2021-01-19",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2021-02-15",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2021-02-16",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2021-04-01",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2021-04-02",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2021-05-31",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2021-06-01",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2021-07-05",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2021-07-06",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2021-09-06",
+   "weekday": "Monday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2021-09-07",
+   "next_day_kind": "none",
+   "quotes_18_00_18_15": 14
+  },
+  {
+   "evening": "2021-11-24",
+   "weekday": "Wednesday",
+   "evening_day_kind": "none",
+   "next_day": "2021-11-25",
+   "next_day_kind": "early close 13:00",
+   "quotes_18_00_18_15": 15
+  },
+  {
+   "evening": "2021-11-25",
+   "weekday": "Thursday",
+   "evening_day_kind": "early close 13:00",
+   "next_day": "2021-11-26",
+   "next_day_kind": "early close 13:45",
+   "quotes_18_00_18_15": 0
+  },
+  {
+   "evening": "2021-12-23",
+   "weekday": "Thursday",
+   "evening_day_kind": "none",
+   "next_day": "2021-12-24",
+   "next_day_kind": "closure (day before 17:00 to 18:00)",
+   "quotes_18_00_18_15": 0
+  }
+ ],
+ "calendar_skips_per_year": {
+  "2012": 1,
+  "2013": 14,
+  "2014": 13,
+  "2015": 12,
+  "2016": 9,
+  "2017": 11,
+  "2018": 13,
+  "2019": 14,
+  "2020": 12,
+  "2021": 9
+ },
+ "no_quote_evenings": [
+  {
+   "evening": "2013-12-26",
+   "weekday": "Thursday"
+  },
+  {
+   "evening": "2014-03-10",
+   "weekday": "Monday"
+  },
+  {
+   "evening": "2014-03-11",
+   "weekday": "Tuesday"
+  },
+  {
+   "evening": "2014-03-12",
+   "weekday": "Wednesday"
+  },
+  {
+   "evening": "2014-03-17",
+   "weekday": "Monday"
+  },
+  {
+   "evening": "2014-03-18",
+   "weekday": "Tuesday"
+  },
+  {
+   "evening": "2014-03-19",
+   "weekday": "Wednesday"
+  },
+  {
+   "evening": "2014-03-24",
+   "weekday": "Monday"
+  },
+  {
+   "evening": "2014-03-25",
+   "weekday": "Tuesday"
+  },
+  {
+   "evening": "2014-03-27",
+   "weekday": "Thursday"
+  },
+  {
+   "evening": "2014-03-31",
+   "weekday": "Monday"
+  },
+  {
+   "evening": "2014-04-01",
+   "weekday": "Tuesday"
+  },
+  {
+   "evening": "2014-04-02",
+   "weekday": "Wednesday"
+  },
+  {
+   "evening": "2014-04-03",
+   "weekday": "Thursday"
+  },
+  {
+   "evening": "2014-04-07",
+   "weekday": "Monday"
+  },
+  {
+   "evening": "2014-04-10",
+   "weekday": "Thursday"
+  },
+  {
+   "evening": "2014-04-14",
+   "weekday": "Monday"
+  },
+  {
+   "evening": "2014-04-15",
+   "weekday": "Tuesday"
+  },
+  {
+   "evening": "2014-04-16",
+   "weekday": "Wednesday"
+  },
+  {
+   "evening": "2015-03-09",
+   "weekday": "Monday"
+  },
+  {
+   "evening": "2015-06-30",
+   "weekday": "Tuesday"
+  }
+ ],
+ "reopen_minute_counts": {
+  "18:00": 1737,
+  "18:15 or later, same evening": 21,
+  "18:01": 8,
+  "18:02-18:14": 6
+ },
+ "entry_bar_examples": [
+  {
+   "evening": "2013-02-05",
+   "weekday": "Tuesday",
+   "status": "ok",
+   "target_18_15_new_york": {
+    "utc": "2013-02-05 23:15",
+    "new_york": "2013-02-05 18:15 EST"
+   },
+   "entry_bar": {
+    "utc": "2013-02-05 23:15",
+    "new_york": "2013-02-05 18:15 EST"
+   },
+   "scheduled_exit": {
+    "utc": "2013-02-06 01:15",
+    "new_york": "2013-02-05 20:15 EST"
+   },
+   "exit_bar": {
+    "utc": "2013-02-06 01:15",
+    "new_york": "2013-02-05 20:15 EST"
+   }
+  },
+  {
+   "evening": "2013-07-09",
+   "weekday": "Tuesday",
+   "status": "ok",
+   "target_18_15_new_york": {
+    "utc": "2013-07-09 22:15",
+    "new_york": "2013-07-09 18:15 EDT"
+   },
+   "entry_bar": {
+    "utc": "2013-07-09 22:15",
+    "new_york": "2013-07-09 18:15 EDT"
+   },
+   "scheduled_exit": {
+    "utc": "2013-07-10 00:15",
+    "new_york": "2013-07-09 20:15 EDT"
+   },
+   "exit_bar": {
+    "utc": "2013-07-10 00:15",
+    "new_york": "2013-07-09 20:15 EDT"
+   }
+  },
+  {
+   "evening": "2015-01-13",
+   "weekday": "Tuesday",
+   "status": "ok",
+   "target_18_15_new_york": {
+    "utc": "2015-01-13 23:15",
+    "new_york": "2015-01-13 18:15 EST"
+   },
+   "entry_bar": {
+    "utc": "2015-01-13 23:15",
+    "new_york": "2015-01-13 18:15 EST"
+   },
+   "scheduled_exit": {
+    "utc": "2015-01-14 01:15",
+    "new_york": "2015-01-13 20:15 EST"
+   },
+   "exit_bar": {
+    "utc": "2015-01-14 01:15",
+    "new_york": "2015-01-13 20:15 EST"
+   }
+  },
+  {
+   "evening": "2015-07-14",
+   "weekday": "Tuesday",
+   "status": "ok",
+   "target_18_15_new_york": {
+    "utc": "2015-07-14 22:15",
+    "new_york": "2015-07-14 18:15 EDT"
+   },
+   "entry_bar": {
+    "utc": "2015-07-14 22:15",
+    "new_york": "2015-07-14 18:15 EDT"
+   },
+   "scheduled_exit": {
+    "utc": "2015-07-15 00:15",
+    "new_york": "2015-07-14 20:15 EDT"
+   },
+   "exit_bar": {
+    "utc": "2015-07-15 00:15",
+    "new_york": "2015-07-14 20:15 EDT"
+   }
+  },
+  {
+   "evening": "2019-03-07",
+   "weekday": "Thursday",
+   "status": "ok",
+   "target_18_15_new_york": {
+    "utc": "2019-03-07 23:15",
+    "new_york": "2019-03-07 18:15 EST"
+   },
+   "entry_bar": {
+    "utc": "2019-03-07 23:15",
+    "new_york": "2019-03-07 18:15 EST"
+   },
+   "scheduled_exit": {
+    "utc": "2019-03-08 01:15",
+    "new_york": "2019-03-07 20:15 EST"
+   },
+   "exit_bar": {
+    "utc": "2019-03-08 01:15",
+    "new_york": "2019-03-07 20:15 EST"
+   }
+  },
+  {
+   "evening": "2019-03-11",
+   "weekday": "Monday",
+   "status": "ok",
+   "target_18_15_new_york": {
+    "utc": "2019-03-11 22:15",
+    "new_york": "2019-03-11 18:15 EDT"
+   },
+   "entry_bar": {
+    "utc": "2019-03-11 22:15",
+    "new_york": "2019-03-11 18:15 EDT"
+   },
+   "scheduled_exit": {
+    "utc": "2019-03-12 00:15",
+    "new_york": "2019-03-11 20:15 EDT"
+   },
+   "exit_bar": {
+    "utc": "2019-03-12 00:15",
+    "new_york": "2019-03-11 20:15 EDT"
+   }
+  },
+  {
+   "evening": "2019-10-31",
+   "weekday": "Thursday",
+   "status": "ok",
+   "target_18_15_new_york": {
+    "utc": "2019-10-31 22:15",
+    "new_york": "2019-10-31 18:15 EDT"
+   },
+   "entry_bar": {
+    "utc": "2019-10-31 22:15",
+    "new_york": "2019-10-31 18:15 EDT"
+   },
+   "scheduled_exit": {
+    "utc": "2019-11-01 00:15",
+    "new_york": "2019-10-31 20:15 EDT"
+   },
+   "exit_bar": {
+    "utc": "2019-11-01 00:15",
+    "new_york": "2019-10-31 20:15 EDT"
+   }
+  },
+  {
+   "evening": "2019-11-04",
+   "weekday": "Monday",
+   "status": "ok",
+   "target_18_15_new_york": {
+    "utc": "2019-11-04 23:15",
+    "new_york": "2019-11-04 18:15 EST"
+   },
+   "entry_bar": {
+    "utc": "2019-11-04 23:15",
+    "new_york": "2019-11-04 18:15 EST"
+   },
+   "scheduled_exit": {
+    "utc": "2019-11-05 01:15",
+    "new_york": "2019-11-04 20:15 EST"
+   },
+   "exit_bar": {
+    "utc": "2019-11-05 01:15",
+    "new_york": "2019-11-04 20:15 EST"
+   }
+  },
+  {
+   "evening": "2020-01-14",
+   "weekday": "Tuesday",
+   "status": "ok",
+   "target_18_15_new_york": {
+    "utc": "2020-01-14 23:15",
+    "new_york": "2020-01-14 18:15 EST"
+   },
+   "entry_bar": {
+    "utc": "2020-01-14 23:15",
+    "new_york": "2020-01-14 18:15 EST"
+   },
+   "scheduled_exit": {
+    "utc": "2020-01-15 01:15",
+    "new_york": "2020-01-14 20:15 EST"
+   },
+   "exit_bar": {
+    "utc": "2020-01-15 01:15",
+    "new_york": "2020-01-14 20:15 EST"
+   }
+  },
+  {
+   "evening": "2020-07-14",
+   "weekday": "Tuesday",
+   "status": "ok",
+   "target_18_15_new_york": {
+    "utc": "2020-07-14 22:15",
+    "new_york": "2020-07-14 18:15 EDT"
+   },
+   "entry_bar": {
+    "utc": "2020-07-14 22:15",
+    "new_york": "2020-07-14 18:15 EDT"
+   },
+   "scheduled_exit": {
+    "utc": "2020-07-15 00:15",
+    "new_york": "2020-07-14 20:15 EDT"
+   },
+   "exit_bar": {
+    "utc": "2020-07-15 00:15",
+    "new_york": "2020-07-14 20:15 EDT"
+   }
+  },
+  {
+   "evening": "2021-12-30",
+   "weekday": "Thursday",
+   "status": "ok",
+   "target_18_15_new_york": {
+    "utc": "2021-12-30 23:15",
+    "new_york": "2021-12-30 18:15 EST"
+   },
+   "entry_bar": {
+    "utc": "2021-12-30 23:15",
+    "new_york": "2021-12-30 18:15 EST"
+   },
+   "scheduled_exit": {
+    "utc": "2021-12-31 01:15",
+    "new_york": "2021-12-30 20:15 EST"
+   },
+   "exit_bar": {
+    "utc": "2021-12-31 01:15",
+    "new_york": "2021-12-30 20:15 EST"
+   }
+  }
+ ],
+ "h1_range_examples": [
+  {
+   "evening": "2013-01-29",
+   "entry_bar": {
+    "utc": "2013-01-29 23:15",
+    "new_york": "2013-01-29 18:15 EST"
+   },
+   "n_h1_completed": 481,
+   "window_first_h1": {
+    "utc": "2012-12-31 01:00",
+    "new_york": "2012-12-30 20:00 EST"
+   },
+   "window_last_h1": {
+    "utc": "2013-01-29 21:00",
+    "new_york": "2013-01-29 16:00 EST"
+   },
+   "window_span_days": 29.8,
+   "mean_h1_range_usd": 3.3657,
+   "entry_bar_mid_open_usd": 1663.67,
+   "mean_h1_range_bp": 20.23,
+   "stop_distance_2x_bp": 40.46
+  },
+  {
+   "evening": "2015-05-26",
+   "entry_bar": {
+    "utc": "2015-05-26 22:15",
+    "new_york": "2015-05-26 18:15 EDT"
+   },
+   "n_h1_completed": 14112,
+   "window_first_h1": {
+    "utc": "2015-04-27 22:00",
+    "new_york": "2015-04-27 18:00 EDT"
+   },
+   "window_last_h1": {
+    "utc": "2015-05-26 20:00",
+    "new_york": "2015-05-26 16:00 EDT"
+   },
+   "window_span_days": 28.9,
+   "mean_h1_range_usd": 2.65,
+   "entry_bar_mid_open_usd": 1187.601,
+   "mean_h1_range_bp": 22.31,
+   "stop_distance_2x_bp": 44.63
+  },
+  {
+   "evening": "2017-08-03",
+   "entry_bar": {
+    "utc": "2017-08-03 22:15",
+    "new_york": "2017-08-03 18:15 EDT"
+   },
+   "n_h1_completed": 27077,
+   "window_first_h1": {
+    "utc": "2017-07-06 01:00",
+    "new_york": "2017-07-05 21:00 EDT"
+   },
+   "window_last_h1": {
+    "utc": "2017-08-03 20:00",
+    "new_york": "2017-08-03 16:00 EDT"
+   },
+   "window_span_days": 28.8,
+   "mean_h1_range_usd": 2.1487,
+   "entry_bar_mid_open_usd": 1268.955,
+   "mean_h1_range_bp": 16.93,
+   "stop_distance_2x_bp": 33.87
+  },
+  {
+   "evening": "2020-03-16",
+   "entry_bar": {
+    "utc": "2020-03-16 22:15",
+    "new_york": "2020-03-16 18:15 EDT"
+   },
+   "n_h1_completed": 42514,
+   "window_first_h1": {
+    "utc": "2020-02-14 21:00",
+    "new_york": "2020-02-14 16:00 EST"
+   },
+   "window_last_h1": {
+    "utc": "2020-03-16 20:00",
+    "new_york": "2020-03-16 16:00 EDT"
+   },
+   "window_span_days": 31.0,
+   "mean_h1_range_usd": 8.5905,
+   "entry_bar_mid_open_usd": 1510.43,
+   "mean_h1_range_bp": 56.87,
+   "stop_distance_2x_bp": 113.75
+  },
+  {
+   "evening": "2021-12-30",
+   "entry_bar": {
+    "utc": "2021-12-30 23:15",
+    "new_york": "2021-12-30 18:15 EST"
+   },
+   "n_h1_completed": 53110,
+   "window_first_h1": {
+    "utc": "2021-12-01 02:00",
+    "new_york": "2021-11-30 21:00 EST"
+   },
+   "window_last_h1": {
+    "utc": "2021-12-30 21:00",
+    "new_york": "2021-12-30 16:00 EST"
+   },
+   "window_span_days": 29.8,
+   "mean_h1_range_usd": 3.4632,
+   "entry_bar_mid_open_usd": 1815.251,
+   "mean_h1_range_bp": 19.08,
+   "stop_distance_2x_bp": 38.16
+  }
+ ],
+ "h1_range_bp_over_sessions": {
+  "min": 13.71,
+  "median": 23.27,
+  "max": 72.87
+ },
+ "h1_window_last_bar_new_york_hour": {
+  "16": 1729,
+  "18": 6,
+  "13": 2
+ },
+ "entry_delays_main": {
+  "over_0_min": 24,
+  "over_5_min": 7,
+  "list": [
+   {
+    "evening": "2013-02-27",
+    "entry_bar": {
+     "utc": "2013-02-27 23:17",
+     "new_york": "2013-02-27 18:17 EST"
+    },
+    "delay_min": 2.0
+   },
+   {
+    "evening": "2013-03-11",
+    "entry_bar": {
+     "utc": "2013-03-11 22:23",
+     "new_york": "2013-03-11 18:23 EDT"
+    },
+    "delay_min": 8.0
+   },
+   {
+    "evening": "2013-04-03",
+    "entry_bar": {
+     "utc": "2013-04-03 22:16",
+     "new_york": "2013-04-03 18:16 EDT"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2013-07-08",
+    "entry_bar": {
+     "utc": "2013-07-08 22:16",
+     "new_york": "2013-07-08 18:16 EDT"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2013-09-09",
+    "entry_bar": {
+     "utc": "2013-09-09 22:17",
+     "new_york": "2013-09-09 18:17 EDT"
+    },
+    "delay_min": 2.0
+   },
+   {
+    "evening": "2014-03-13",
+    "entry_bar": {
+     "utc": "2014-03-13 23:00",
+     "new_york": "2014-03-13 19:00 EDT"
+    },
+    "delay_min": 45.0
+   },
+   {
+    "evening": "2014-03-20",
+    "entry_bar": {
+     "utc": "2014-03-20 23:00",
+     "new_york": "2014-03-20 19:00 EDT"
+    },
+    "delay_min": 45.0
+   },
+   {
+    "evening": "2014-03-26",
+    "entry_bar": {
+     "utc": "2014-03-26 23:00",
+     "new_york": "2014-03-26 19:00 EDT"
+    },
+    "delay_min": 45.0
+   },
+   {
+    "evening": "2014-04-08",
+    "entry_bar": {
+     "utc": "2014-04-08 23:00",
+     "new_york": "2014-04-08 19:00 EDT"
+    },
+    "delay_min": 45.0
+   },
+   {
+    "evening": "2014-04-09",
+    "entry_bar": {
+     "utc": "2014-04-09 23:00",
+     "new_york": "2014-04-09 19:00 EDT"
+    },
+    "delay_min": 45.0
+   },
+   {
+    "evening": "2014-06-26",
+    "entry_bar": {
+     "utc": "2014-06-26 22:16",
+     "new_york": "2014-06-26 18:16 EDT"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2017-03-13",
+    "entry_bar": {
+     "utc": "2017-03-13 23:00",
+     "new_york": "2017-03-13 19:00 EDT"
+    },
+    "delay_min": 45.0
+   },
+   {
+    "evening": "2017-03-20",
+    "entry_bar": {
+     "utc": "2017-03-20 22:17",
+     "new_york": "2017-03-20 18:17 EDT"
+    },
+    "delay_min": 2.0
+   },
+   {
+    "evening": "2018-11-05",
+    "entry_bar": {
+     "utc": "2018-11-05 23:17",
+     "new_york": "2018-11-05 18:17 EST"
+    },
+    "delay_min": 2.0
+   },
+   {
+    "evening": "2018-11-13",
+    "entry_bar": {
+     "utc": "2018-11-13 23:16",
+     "new_york": "2018-11-13 18:16 EST"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2018-11-28",
+    "entry_bar": {
+     "utc": "2018-11-28 23:16",
+     "new_york": "2018-11-28 18:16 EST"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2018-12-18",
+    "entry_bar": {
+     "utc": "2018-12-18 23:16",
+     "new_york": "2018-12-18 18:16 EST"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2018-12-27",
+    "entry_bar": {
+     "utc": "2018-12-27 23:16",
+     "new_york": "2018-12-27 18:16 EST"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2019-01-07",
+    "entry_bar": {
+     "utc": "2019-01-07 23:16",
+     "new_york": "2019-01-07 18:16 EST"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2019-02-12",
+    "entry_bar": {
+     "utc": "2019-02-12 23:16",
+     "new_york": "2019-02-12 18:16 EST"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2019-03-06",
+    "entry_bar": {
+     "utc": "2019-03-06 23:16",
+     "new_york": "2019-03-06 18:16 EST"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2019-06-05",
+    "entry_bar": {
+     "utc": "2019-06-05 22:16",
+     "new_york": "2019-06-05 18:16 EDT"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2019-12-19",
+    "entry_bar": {
+     "utc": "2019-12-19 23:16",
+     "new_york": "2019-12-19 18:16 EST"
+    },
+    "delay_min": 1.0
+   },
+   {
+    "evening": "2020-04-02",
+    "entry_bar": {
+     "utc": "2020-04-02 22:16",
+     "new_york": "2020-04-02 18:16 EDT"
+    },
+    "delay_min": 1.0
+   }
+  ]
+ },
+ "exits_moved_before_gap_main": [],
+ "exits_after_scheduled_time_main": 7,
+ "exits_moved_before_gap_h96": [],
+ "exits_after_scheduled_time_h96": 11,
+ "exits_moved_before_gap_h144": [],
+ "exits_after_scheduled_time_h144": 9,
+ "quote_window_1810_vs_1815_disagree": [
+  "2017-01-09"
+ ],
+ "status_disagreements_vs_main": {
+  "e1810": [
+   {
+    "evening": "2017-01-09",
+    "main": "ok",
+    "e1810": "no_quote_1800_entry"
+   }
+  ],
+  "e1830": [],
+  "h96": [],
+  "h144": []
+ },
+ "expected_n": {
+  "main": 1737,
+  "e1810": 1736,
+  "e1830": 1737,
+  "h96": 1737,
+  "h144": 1737,
+  "stop_1.6_and_2.4": 1737
+ },
+ "max_entry_or_exit_bar_before_2022": true
+}

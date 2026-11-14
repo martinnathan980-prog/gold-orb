@@ -1,0 +1,2039 @@
+{
+ "frame": {
+  "rows": 3172985,
+  "first_bar_utc": "2012-12-31 00:00:00+00:00",
+  "last_bar_utc": "2021-12-31 21:59:00+00:00"
+ },
+ "calendar_vs_frame": {
+  "days_listed": 100,
+  "disagreements": [
+   {
+    "date": "2013-10-14",
+    "weekday": "Mon",
+    "calendar": null,
+    "holiday": null,
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": false
+   },
+   {
+    "date": "2013-12-26",
+    "weekday": "Thu",
+    "calendar": null,
+    "holiday": null,
+    "frame_close_ny": null,
+    "frame_reopen_ny": "19:00",
+    "agree": false
+   },
+   {
+    "date": "2014-10-13",
+    "weekday": "Mon",
+    "calendar": null,
+    "holiday": null,
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": false
+   },
+   {
+    "date": "2014-11-03",
+    "weekday": "Mon",
+    "calendar": null,
+    "holiday": null,
+    "frame_close_ny": "16:00",
+    "frame_reopen_ny": "18:00",
+    "agree": false
+   },
+   {
+    "date": "2019-07-04",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "independence",
+    "frame_close_ny": "16:56",
+    "frame_reopen_ny": "18:00",
+    "agree": false
+   }
+  ],
+  "all": [
+   {
+    "date": "2013-01-01",
+    "weekday": "Tue",
+    "calendar": "closure",
+    "holiday": "new_year",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:00",
+    "agree": true
+   },
+   {
+    "date": "2013-01-21",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "martin_luther_king",
+    "frame_close_ny": "12:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2013-02-18",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "presidents",
+    "frame_close_ny": "13:15",
+    "frame_reopen_ny": "18:01",
+    "agree": "True"
+   },
+   {
+    "date": "2013-03-29",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "good_friday",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2013-05-27",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "memorial",
+    "frame_close_ny": "13:54",
+    "frame_reopen_ny": "18:02",
+    "agree": "True"
+   },
+   {
+    "date": "2013-07-04",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "independence",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "19:55",
+    "agree": "True"
+   },
+   {
+    "date": "2013-09-02",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "labor",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:03",
+    "agree": "True"
+   },
+   {
+    "date": "2013-10-14",
+    "weekday": "Mon",
+    "calendar": null,
+    "holiday": null,
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": false
+   },
+   {
+    "date": "2013-11-28",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "thanksgiving",
+    "frame_close_ny": "12:09",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2013-11-29",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "day_after_thanksgiving",
+    "frame_close_ny": "13:42",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2013-12-24",
+    "weekday": "Tue",
+    "calendar": "early",
+    "holiday": "christmas_eve",
+    "frame_close_ny": "13:29",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2013-12-25",
+    "weekday": "Wed",
+    "calendar": "closure",
+    "holiday": "christmas",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2013-12-26",
+    "weekday": "Thu",
+    "calendar": null,
+    "holiday": null,
+    "frame_close_ny": null,
+    "frame_reopen_ny": "19:00",
+    "agree": false
+   },
+   {
+    "date": "2014-01-01",
+    "weekday": "Wed",
+    "calendar": "closure",
+    "holiday": "new_year",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:00",
+    "agree": true
+   },
+   {
+    "date": "2014-01-20",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "martin_luther_king",
+    "frame_close_ny": "11:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2014-02-17",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "presidents",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2014-04-18",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "good_friday",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2014-05-26",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "memorial",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2014-07-04",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "independence",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2014-09-01",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "labor",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2014-10-13",
+    "weekday": "Mon",
+    "calendar": null,
+    "holiday": null,
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": false
+   },
+   {
+    "date": "2014-11-03",
+    "weekday": "Mon",
+    "calendar": null,
+    "holiday": null,
+    "frame_close_ny": "16:00",
+    "frame_reopen_ny": "18:00",
+    "agree": false
+   },
+   {
+    "date": "2014-11-27",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "thanksgiving",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2014-11-28",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "day_after_thanksgiving",
+    "frame_close_ny": "13:44",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2014-12-24",
+    "weekday": "Wed",
+    "calendar": "early",
+    "holiday": "christmas_eve",
+    "frame_close_ny": "13:44",
+    "frame_reopen_ny": "19:00",
+    "agree": "True"
+   },
+   {
+    "date": "2014-12-25",
+    "weekday": "Thu",
+    "calendar": "closure",
+    "holiday": "christmas",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:01",
+    "agree": true
+   },
+   {
+    "date": "2015-01-01",
+    "weekday": "Thu",
+    "calendar": "closure",
+    "holiday": "new_year",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:00",
+    "agree": true
+   },
+   {
+    "date": "2015-01-19",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "martin_luther_king",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2015-02-16",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "presidents",
+    "frame_close_ny": "12:29",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2015-04-03",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "good_friday",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2015-05-25",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "memorial",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2015-07-03",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "independence",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2015-09-07",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "labor",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2015-11-26",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "thanksgiving",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2015-11-27",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "day_after_thanksgiving",
+    "frame_close_ny": "13:45",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2015-12-24",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "christmas_eve",
+    "frame_close_ny": "13:30",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2015-12-25",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "christmas",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2016-01-01",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "new_year",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2016-01-18",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "martin_luther_king",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2016-02-15",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "presidents",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2016-03-25",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "good_friday",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2016-05-30",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "memorial",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2016-07-04",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "independence",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2016-09-05",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "labor",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2016-11-24",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "thanksgiving",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2016-11-25",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "day_after_thanksgiving",
+    "frame_close_ny": "13:44",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2016-12-26",
+    "weekday": "Mon",
+    "calendar": "closure",
+    "holiday": "christmas",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:00",
+    "agree": true
+   },
+   {
+    "date": "2017-01-02",
+    "weekday": "Mon",
+    "calendar": "closure",
+    "holiday": "new_year",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:00",
+    "agree": true
+   },
+   {
+    "date": "2017-01-16",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "martin_luther_king",
+    "frame_close_ny": "12:30",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2017-02-20",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "presidents",
+    "frame_close_ny": "12:30",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2017-04-14",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "good_friday",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2017-05-29",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "memorial",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2017-07-04",
+    "weekday": "Tue",
+    "calendar": "early",
+    "holiday": "independence",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2017-09-04",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "labor",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2017-11-23",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "thanksgiving",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2017-11-24",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "day_after_thanksgiving",
+    "frame_close_ny": "13:44",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2017-12-25",
+    "weekday": "Mon",
+    "calendar": "closure",
+    "holiday": "christmas",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:00",
+    "agree": true
+   },
+   {
+    "date": "2018-01-01",
+    "weekday": "Mon",
+    "calendar": "closure",
+    "holiday": "new_year",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:00",
+    "agree": true
+   },
+   {
+    "date": "2018-01-15",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "martin_luther_king",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2018-02-19",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "presidents",
+    "frame_close_ny": "13:26",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2018-03-30",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "good_friday",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2018-05-28",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "memorial",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2018-07-04",
+    "weekday": "Wed",
+    "calendar": "early",
+    "holiday": "independence",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2018-09-03",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "labor",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2018-11-22",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "thanksgiving",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2018-11-23",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "day_after_thanksgiving",
+    "frame_close_ny": "13:44",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2018-12-24",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "christmas_eve",
+    "frame_close_ny": "13:44",
+    "frame_reopen_ny": "19:00",
+    "agree": "True"
+   },
+   {
+    "date": "2018-12-25",
+    "weekday": "Tue",
+    "calendar": "closure",
+    "holiday": "christmas",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:00",
+    "agree": true
+   },
+   {
+    "date": "2019-01-01",
+    "weekday": "Tue",
+    "calendar": "closure",
+    "holiday": "new_year",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:00",
+    "agree": true
+   },
+   {
+    "date": "2019-01-21",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "martin_luther_king",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2019-02-18",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "presidents",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2019-04-19",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "good_friday",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2019-05-27",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "memorial",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2019-07-04",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "independence",
+    "frame_close_ny": "16:56",
+    "frame_reopen_ny": "18:00",
+    "agree": false
+   },
+   {
+    "date": "2019-09-02",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "labor",
+    "frame_close_ny": "14:16",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2019-11-28",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "thanksgiving",
+    "frame_close_ny": "13:00",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2019-11-29",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "day_after_thanksgiving",
+    "frame_close_ny": "14:05",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2019-12-24",
+    "weekday": "Tue",
+    "calendar": "early",
+    "holiday": "christmas_eve",
+    "frame_close_ny": "13:44",
+    "frame_reopen_ny": "19:00",
+    "agree": "True"
+   },
+   {
+    "date": "2019-12-25",
+    "weekday": "Wed",
+    "calendar": "closure",
+    "holiday": "christmas",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:00",
+    "agree": true
+   },
+   {
+    "date": "2020-01-01",
+    "weekday": "Wed",
+    "calendar": "closure",
+    "holiday": "new_year",
+    "frame_close_ny": null,
+    "frame_reopen_ny": "18:00",
+    "agree": true
+   },
+   {
+    "date": "2020-01-20",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "martin_luther_king",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2020-02-17",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "presidents",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2020-04-10",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "good_friday",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2020-05-25",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "memorial",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2020-07-03",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "independence",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2020-09-07",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "labor",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2020-11-26",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "thanksgiving",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2020-11-27",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "day_after_thanksgiving",
+    "frame_close_ny": "13:44",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2020-12-24",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "christmas_eve",
+    "frame_close_ny": "13:43",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2020-12-25",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "christmas",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2021-01-01",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "new_year",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2021-01-18",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "martin_luther_king",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2021-02-15",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "presidents",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2021-04-02",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "good_friday",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   },
+   {
+    "date": "2021-05-31",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "memorial",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2021-07-05",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "independence",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2021-09-06",
+    "weekday": "Mon",
+    "calendar": "early",
+    "holiday": "labor",
+    "frame_close_ny": "12:59",
+    "frame_reopen_ny": "18:00",
+    "agree": "True"
+   },
+   {
+    "date": "2021-11-25",
+    "weekday": "Thu",
+    "calendar": "early",
+    "holiday": "thanksgiving",
+    "frame_close_ny": "12:58",
+    "frame_reopen_ny": "18:18",
+    "agree": "True"
+   },
+   {
+    "date": "2021-11-26",
+    "weekday": "Fri",
+    "calendar": "early",
+    "holiday": "day_after_thanksgiving",
+    "frame_close_ny": "13:43",
+    "frame_reopen_ny": null,
+    "agree": "True"
+   },
+   {
+    "date": "2021-12-24",
+    "weekday": "Fri",
+    "calendar": "closure",
+    "holiday": "christmas",
+    "frame_close_ny": null,
+    "frame_reopen_ny": null,
+    "agree": true
+   }
+  ]
+ },
+ "sessions_union": {
+  "candidates": 1880,
+  "by_status": {
+   "ok": 1737,
+   "holiday": 108,
+   "no_quote_1800_1815": 21,
+   "fewer_than_480_h1": 14
+  },
+  "by_year": {
+   "2012": {
+    "fewer_than_480_h1": 0,
+    "holiday": 1,
+    "no_quote_1800_1815": 0,
+    "ok": 0
+   },
+   "2013": {
+    "fewer_than_480_h1": 14,
+    "holiday": 14,
+    "no_quote_1800_1815": 1,
+    "ok": 180
+   },
+   "2014": {
+    "fewer_than_480_h1": 0,
+    "holiday": 13,
+    "no_quote_1800_1815": 18,
+    "ok": 178
+   },
+   "2015": {
+    "fewer_than_480_h1": 0,
+    "holiday": 12,
+    "no_quote_1800_1815": 2,
+    "ok": 195
+   },
+   "2016": {
+    "fewer_than_480_h1": 0,
+    "holiday": 9,
+    "no_quote_1800_1815": 0,
+    "ok": 199
+   },
+   "2017": {
+    "fewer_than_480_h1": 0,
+    "holiday": 11,
+    "no_quote_1800_1815": 0,
+    "ok": 197
+   },
+   "2018": {
+    "fewer_than_480_h1": 0,
+    "holiday": 13,
+    "no_quote_1800_1815": 0,
+    "ok": 196
+   },
+   "2019": {
+    "fewer_than_480_h1": 0,
+    "holiday": 14,
+    "no_quote_1800_1815": 0,
+    "ok": 195
+   },
+   "2020": {
+    "fewer_than_480_h1": 0,
+    "holiday": 12,
+    "no_quote_1800_1815": 0,
+    "ok": 198
+   },
+   "2021": {
+    "fewer_than_480_h1": 0,
+    "holiday": 9,
+    "no_quote_1800_1815": 0,
+    "ok": 199
+   }
+  },
+  "holiday_evenings": [
+   "2012-12-31",
+   "2013-01-01",
+   "2013-01-21",
+   "2013-02-18",
+   "2013-03-28",
+   "2013-05-27",
+   "2013-07-03",
+   "2013-07-04",
+   "2013-09-02",
+   "2013-11-27",
+   "2013-11-28",
+   "2013-12-23",
+   "2013-12-24",
+   "2013-12-25",
+   "2013-12-31",
+   "2014-01-01",
+   "2014-01-20",
+   "2014-02-17",
+   "2014-04-17",
+   "2014-05-26",
+   "2014-07-03",
+   "2014-09-01",
+   "2014-11-26",
+   "2014-11-27",
+   "2014-12-23",
+   "2014-12-24",
+   "2014-12-25",
+   "2014-12-31",
+   "2015-01-01",
+   "2015-01-19",
+   "2015-02-16",
+   "2015-04-02",
+   "2015-05-25",
+   "2015-07-02",
+   "2015-09-07",
+   "2015-11-25",
+   "2015-11-26",
+   "2015-12-23",
+   "2015-12-24",
+   "2015-12-31",
+   "2016-01-18",
+   "2016-02-15",
+   "2016-03-24",
+   "2016-05-30",
+   "2016-07-04",
+   "2016-09-05",
+   "2016-11-23",
+   "2016-11-24",
+   "2016-12-26",
+   "2017-01-02",
+   "2017-01-16",
+   "2017-02-20",
+   "2017-04-13",
+   "2017-05-29",
+   "2017-07-03",
+   "2017-07-04",
+   "2017-09-04",
+   "2017-11-22",
+   "2017-11-23",
+   "2017-12-25",
+   "2018-01-01",
+   "2018-01-15",
+   "2018-02-19",
+   "2018-03-29",
+   "2018-05-28",
+   "2018-07-03",
+   "2018-07-04",
+   "2018-09-03",
+   "2018-11-21",
+   "2018-11-22",
+   "2018-12-24",
+   "2018-12-25",
+   "2018-12-31",
+   "2019-01-01",
+   "2019-01-21",
+   "2019-02-18",
+   "2019-04-18",
+   "2019-05-27",
+   "2019-07-03",
+   "2019-07-04",
+   "2019-09-02",
+   "2019-11-27",
+   "2019-11-28",
+   "2019-12-23",
+   "2019-12-24",
+   "2019-12-25",
+   "2019-12-31",
+   "2020-01-01",
+   "2020-01-20",
+   "2020-02-17",
+   "2020-04-09",
+   "2020-05-25",
+   "2020-07-02",
+   "2020-09-07",
+   "2020-11-25",
+   "2020-11-26",
+   "2020-12-23",
+   "2020-12-24",
+   "2020-12-31",
+   "2021-01-18",
+   "2021-02-15",
+   "2021-04-01",
+   "2021-05-31",
+   "2021-07-05",
+   "2021-09-06",
+   "2021-11-24",
+   "2021-11-25",
+   "2021-12-23"
+  ]
+ },
+ "sessions_session": {
+  "candidates": 1880,
+  "by_status": {
+   "ok": 1788,
+   "holiday": 53,
+   "no_quote_1800_1815": 23,
+   "fewer_than_480_h1": 16
+  },
+  "by_year": {
+   "2012": {
+    "fewer_than_480_h1": 0,
+    "holiday": 1,
+    "no_quote_1800_1815": 0,
+    "ok": 0
+   },
+   "2013": {
+    "fewer_than_480_h1": 16,
+    "holiday": 7,
+    "no_quote_1800_1815": 3,
+    "ok": 183
+   },
+   "2014": {
+    "fewer_than_480_h1": 0,
+    "holiday": 7,
+    "no_quote_1800_1815": 18,
+    "ok": 184
+   },
+   "2015": {
+    "fewer_than_480_h1": 0,
+    "holiday": 7,
+    "no_quote_1800_1815": 2,
+    "ok": 200
+   },
+   "2016": {
+    "fewer_than_480_h1": 0,
+    "holiday": 3,
+    "no_quote_1800_1815": 0,
+    "ok": 205
+   },
+   "2017": {
+    "fewer_than_480_h1": 0,
+    "holiday": 4,
+    "no_quote_1800_1815": 0,
+    "ok": 204
+   },
+   "2018": {
+    "fewer_than_480_h1": 0,
+    "holiday": 6,
+    "no_quote_1800_1815": 0,
+    "ok": 203
+   },
+   "2019": {
+    "fewer_than_480_h1": 0,
+    "holiday": 7,
+    "no_quote_1800_1815": 0,
+    "ok": 202
+   },
+   "2020": {
+    "fewer_than_480_h1": 0,
+    "holiday": 7,
+    "no_quote_1800_1815": 0,
+    "ok": 203
+   },
+   "2021": {
+    "fewer_than_480_h1": 0,
+    "holiday": 4,
+    "no_quote_1800_1815": 0,
+    "ok": 204
+   }
+  },
+  "holiday_evenings": [
+   "2012-12-31",
+   "2013-03-28",
+   "2013-07-03",
+   "2013-11-27",
+   "2013-11-28",
+   "2013-12-23",
+   "2013-12-24",
+   "2013-12-31",
+   "2014-04-17",
+   "2014-07-03",
+   "2014-11-26",
+   "2014-11-27",
+   "2014-12-23",
+   "2014-12-24",
+   "2014-12-31",
+   "2015-04-02",
+   "2015-07-02",
+   "2015-11-25",
+   "2015-11-26",
+   "2015-12-23",
+   "2015-12-24",
+   "2015-12-31",
+   "2016-03-24",
+   "2016-11-23",
+   "2016-11-24",
+   "2017-04-13",
+   "2017-07-03",
+   "2017-11-22",
+   "2017-11-23",
+   "2018-03-29",
+   "2018-07-03",
+   "2018-11-21",
+   "2018-11-22",
+   "2018-12-24",
+   "2018-12-31",
+   "2019-04-18",
+   "2019-07-03",
+   "2019-11-27",
+   "2019-11-28",
+   "2019-12-23",
+   "2019-12-24",
+   "2019-12-31",
+   "2020-04-09",
+   "2020-07-02",
+   "2020-11-25",
+   "2020-11-26",
+   "2020-12-23",
+   "2020-12-24",
+   "2020-12-31",
+   "2021-04-01",
+   "2021-11-24",
+   "2021-11-25",
+   "2021-12-23"
+  ]
+ },
+ "sessions_evening": {
+  "candidates": 1880,
+  "by_status": {
+   "ok": 1758,
+   "holiday": 70,
+   "no_quote_1800_1815": 37,
+   "fewer_than_480_h1": 15
+  },
+  "by_year": {
+   "2012": {
+    "fewer_than_480_h1": 1,
+    "holiday": 0,
+    "no_quote_1800_1815": 0,
+    "ok": 0
+   },
+   "2013": {
+    "fewer_than_480_h1": 14,
+    "holiday": 9,
+    "no_quote_1800_1815": 3,
+    "ok": 183
+   },
+   "2014": {
+    "fewer_than_480_h1": 0,
+    "holiday": 8,
+    "no_quote_1800_1815": 20,
+    "ok": 181
+   },
+   "2015": {
+    "fewer_than_480_h1": 0,
+    "holiday": 7,
+    "no_quote_1800_1815": 4,
+    "ok": 198
+   },
+   "2016": {
+    "fewer_than_480_h1": 0,
+    "holiday": 7,
+    "no_quote_1800_1815": 1,
+    "ok": 200
+   },
+   "2017": {
+    "fewer_than_480_h1": 0,
+    "holiday": 8,
+    "no_quote_1800_1815": 1,
+    "ok": 199
+   },
+   "2018": {
+    "fewer_than_480_h1": 0,
+    "holiday": 9,
+    "no_quote_1800_1815": 2,
+    "ok": 198
+   },
+   "2019": {
+    "fewer_than_480_h1": 0,
+    "holiday": 9,
+    "no_quote_1800_1815": 2,
+    "ok": 198
+   },
+   "2020": {
+    "fewer_than_480_h1": 0,
+    "holiday": 7,
+    "no_quote_1800_1815": 2,
+    "ok": 201
+   },
+   "2021": {
+    "fewer_than_480_h1": 0,
+    "holiday": 6,
+    "no_quote_1800_1815": 2,
+    "ok": 200
+   }
+  },
+  "holiday_evenings": [
+   "2013-01-01",
+   "2013-01-21",
+   "2013-02-18",
+   "2013-05-27",
+   "2013-07-04",
+   "2013-09-02",
+   "2013-11-28",
+   "2013-12-24",
+   "2013-12-25",
+   "2014-01-01",
+   "2014-01-20",
+   "2014-02-17",
+   "2014-05-26",
+   "2014-09-01",
+   "2014-11-27",
+   "2014-12-24",
+   "2014-12-25",
+   "2015-01-01",
+   "2015-01-19",
+   "2015-02-16",
+   "2015-05-25",
+   "2015-09-07",
+   "2015-11-26",
+   "2015-12-24",
+   "2016-01-18",
+   "2016-02-15",
+   "2016-05-30",
+   "2016-07-04",
+   "2016-09-05",
+   "2016-11-24",
+   "2016-12-26",
+   "2017-01-02",
+   "2017-01-16",
+   "2017-02-20",
+   "2017-05-29",
+   "2017-07-04",
+   "2017-09-04",
+   "2017-11-23",
+   "2017-12-25",
+   "2018-01-01",
+   "2018-01-15",
+   "2018-02-19",
+   "2018-05-28",
+   "2018-07-04",
+   "2018-09-03",
+   "2018-11-22",
+   "2018-12-24",
+   "2018-12-25",
+   "2019-01-01",
+   "2019-01-21",
+   "2019-02-18",
+   "2019-05-27",
+   "2019-07-04",
+   "2019-09-02",
+   "2019-11-28",
+   "2019-12-24",
+   "2019-12-25",
+   "2020-01-01",
+   "2020-01-20",
+   "2020-02-17",
+   "2020-05-25",
+   "2020-09-07",
+   "2020-11-26",
+   "2020-12-24",
+   "2021-01-18",
+   "2021-02-15",
+   "2021-05-31",
+   "2021-07-05",
+   "2021-09-06",
+   "2021-11-25"
+  ]
+ },
+ "no_quote_evenings": [
+  "2013-12-26",
+  "2014-03-10",
+  "2014-03-11",
+  "2014-03-12",
+  "2014-03-17",
+  "2014-03-18",
+  "2014-03-19",
+  "2014-03-24",
+  "2014-03-25",
+  "2014-03-27",
+  "2014-03-31",
+  "2014-04-01",
+  "2014-04-02",
+  "2014-04-03",
+  "2014-04-07",
+  "2014-04-10",
+  "2014-04-14",
+  "2014-04-15",
+  "2014-04-16",
+  "2015-03-09",
+  "2015-06-30"
+ ],
+ "no_entry_bar_evenings": [],
+ "fewer_than_480_h1_evenings": [
+  "2013-01-02",
+  "2013-01-03",
+  "2013-01-07",
+  "2013-01-08",
+  "2013-01-09",
+  "2013-01-10",
+  "2013-01-14",
+  "2013-01-15",
+  "2013-01-16",
+  "2013-01-17",
+  "2013-01-22",
+  "2013-01-23",
+  "2013-01-24",
+  "2013-01-28"
+ ],
+ "n_entry_1810_quote_window_difference": [
+  {
+   "evening": "2017-01-09",
+   "window_1810": "no_quote_1800_1815",
+   "window_1815": "ok"
+  }
+ ],
+ "dst_evenings": [
+  {
+   "switch": "spring",
+   "evening": "2013-03-06",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2013-03-06 23:15:00+00:00",
+   "fp_server_time": "2013-03-07 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2013-03-07",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2013-03-07 23:15:00+00:00",
+   "fp_server_time": "2013-03-08 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2013-03-11",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2013-03-11 22:15:00+00:00",
+   "fp_server_time": "2013-03-12 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2013-03-12",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2013-03-12 22:15:00+00:00",
+   "fp_server_time": "2013-03-13 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2013-10-30",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2013-10-30 22:15:00+00:00",
+   "fp_server_time": "2013-10-31 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2013-10-31",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2013-10-31 22:15:00+00:00",
+   "fp_server_time": "2013-11-01 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2013-11-04",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2013-11-04 23:15:00+00:00",
+   "fp_server_time": "2013-11-05 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2013-11-05",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2013-11-05 23:15:00+00:00",
+   "fp_server_time": "2013-11-06 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2014-03-05",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2014-03-05 23:15:00+00:00",
+   "fp_server_time": "2014-03-06 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2014-03-06",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2014-03-06 23:15:00+00:00",
+   "fp_server_time": "2014-03-07 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2014-03-10",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2014-03-10 22:15:00+00:00",
+   "fp_server_time": "2014-03-11 01:15:00",
+   "status": "no_quote_1800_1815"
+  },
+  {
+   "switch": "spring",
+   "evening": "2014-03-11",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2014-03-11 22:15:00+00:00",
+   "fp_server_time": "2014-03-12 01:15:00",
+   "status": "no_quote_1800_1815"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2014-10-29",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2014-10-29 22:15:00+00:00",
+   "fp_server_time": "2014-10-30 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2014-10-30",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2014-10-30 22:15:00+00:00",
+   "fp_server_time": "2014-10-31 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2014-11-03",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2014-11-03 23:15:00+00:00",
+   "fp_server_time": "2014-11-04 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2014-11-04",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2014-11-04 23:15:00+00:00",
+   "fp_server_time": "2014-11-05 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2015-03-04",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2015-03-04 23:15:00+00:00",
+   "fp_server_time": "2015-03-05 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2015-03-05",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2015-03-05 23:15:00+00:00",
+   "fp_server_time": "2015-03-06 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2015-03-09",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2015-03-09 22:15:00+00:00",
+   "fp_server_time": "2015-03-10 01:15:00",
+   "status": "no_quote_1800_1815"
+  },
+  {
+   "switch": "spring",
+   "evening": "2015-03-10",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2015-03-10 22:15:00+00:00",
+   "fp_server_time": "2015-03-11 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2015-10-28",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2015-10-28 22:15:00+00:00",
+   "fp_server_time": "2015-10-29 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2015-10-29",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2015-10-29 22:15:00+00:00",
+   "fp_server_time": "2015-10-30 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2015-11-02",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2015-11-02 23:15:00+00:00",
+   "fp_server_time": "2015-11-03 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2015-11-03",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2015-11-03 23:15:00+00:00",
+   "fp_server_time": "2015-11-04 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2016-03-09",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2016-03-09 23:15:00+00:00",
+   "fp_server_time": "2016-03-10 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2016-03-10",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2016-03-10 23:15:00+00:00",
+   "fp_server_time": "2016-03-11 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2016-03-14",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2016-03-14 22:15:00+00:00",
+   "fp_server_time": "2016-03-15 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2016-03-15",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2016-03-15 22:15:00+00:00",
+   "fp_server_time": "2016-03-16 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2016-11-02",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2016-11-02 22:15:00+00:00",
+   "fp_server_time": "2016-11-03 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2016-11-03",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2016-11-03 22:15:00+00:00",
+   "fp_server_time": "2016-11-04 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2016-11-07",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2016-11-07 23:15:00+00:00",
+   "fp_server_time": "2016-11-08 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2016-11-08",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2016-11-08 23:15:00+00:00",
+   "fp_server_time": "2016-11-09 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2017-03-08",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2017-03-08 23:15:00+00:00",
+   "fp_server_time": "2017-03-09 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2017-03-09",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2017-03-09 23:15:00+00:00",
+   "fp_server_time": "2017-03-10 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2017-03-13",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2017-03-13 22:15:00+00:00",
+   "fp_server_time": "2017-03-14 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2017-03-14",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2017-03-14 22:15:00+00:00",
+   "fp_server_time": "2017-03-15 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2017-11-01",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2017-11-01 22:15:00+00:00",
+   "fp_server_time": "2017-11-02 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2017-11-02",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2017-11-02 22:15:00+00:00",
+   "fp_server_time": "2017-11-03 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2017-11-06",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2017-11-06 23:15:00+00:00",
+   "fp_server_time": "2017-11-07 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2017-11-07",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2017-11-07 23:15:00+00:00",
+   "fp_server_time": "2017-11-08 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2018-03-07",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2018-03-07 23:15:00+00:00",
+   "fp_server_time": "2018-03-08 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2018-03-08",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2018-03-08 23:15:00+00:00",
+   "fp_server_time": "2018-03-09 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2018-03-12",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2018-03-12 22:15:00+00:00",
+   "fp_server_time": "2018-03-13 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2018-03-13",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2018-03-13 22:15:00+00:00",
+   "fp_server_time": "2018-03-14 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2018-10-31",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2018-10-31 22:15:00+00:00",
+   "fp_server_time": "2018-11-01 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2018-11-01",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2018-11-01 22:15:00+00:00",
+   "fp_server_time": "2018-11-02 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2018-11-05",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2018-11-05 23:15:00+00:00",
+   "fp_server_time": "2018-11-06 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2018-11-06",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2018-11-06 23:15:00+00:00",
+   "fp_server_time": "2018-11-07 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2019-03-06",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2019-03-06 23:15:00+00:00",
+   "fp_server_time": "2019-03-07 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2019-03-07",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2019-03-07 23:15:00+00:00",
+   "fp_server_time": "2019-03-08 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2019-03-11",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2019-03-11 22:15:00+00:00",
+   "fp_server_time": "2019-03-12 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2019-03-12",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2019-03-12 22:15:00+00:00",
+   "fp_server_time": "2019-03-13 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2019-10-30",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2019-10-30 22:15:00+00:00",
+   "fp_server_time": "2019-10-31 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2019-10-31",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2019-10-31 22:15:00+00:00",
+   "fp_server_time": "2019-11-01 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2019-11-04",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2019-11-04 23:15:00+00:00",
+   "fp_server_time": "2019-11-05 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2019-11-05",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2019-11-05 23:15:00+00:00",
+   "fp_server_time": "2019-11-06 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2020-03-04",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2020-03-04 23:15:00+00:00",
+   "fp_server_time": "2020-03-05 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2020-03-05",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2020-03-05 23:15:00+00:00",
+   "fp_server_time": "2020-03-06 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2020-03-09",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2020-03-09 22:15:00+00:00",
+   "fp_server_time": "2020-03-10 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2020-03-10",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2020-03-10 22:15:00+00:00",
+   "fp_server_time": "2020-03-11 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2020-10-28",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2020-10-28 22:15:00+00:00",
+   "fp_server_time": "2020-10-29 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2020-10-29",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2020-10-29 22:15:00+00:00",
+   "fp_server_time": "2020-10-30 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2020-11-02",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2020-11-02 23:15:00+00:00",
+   "fp_server_time": "2020-11-03 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2020-11-03",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2020-11-03 23:15:00+00:00",
+   "fp_server_time": "2020-11-04 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2021-03-10",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2021-03-10 23:15:00+00:00",
+   "fp_server_time": "2021-03-11 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2021-03-11",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2021-03-11 23:15:00+00:00",
+   "fp_server_time": "2021-03-12 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2021-03-15",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2021-03-15 22:15:00+00:00",
+   "fp_server_time": "2021-03-16 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "spring",
+   "evening": "2021-03-16",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2021-03-16 22:15:00+00:00",
+   "fp_server_time": "2021-03-17 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2021-11-03",
+   "weekday": "Wed",
+   "entry_1815_ny_in_utc": "2021-11-03 22:15:00+00:00",
+   "fp_server_time": "2021-11-04 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2021-11-04",
+   "weekday": "Thu",
+   "entry_1815_ny_in_utc": "2021-11-04 22:15:00+00:00",
+   "fp_server_time": "2021-11-05 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2021-11-08",
+   "weekday": "Mon",
+   "entry_1815_ny_in_utc": "2021-11-08 23:15:00+00:00",
+   "fp_server_time": "2021-11-09 01:15:00",
+   "status": "ok"
+  },
+  {
+   "switch": "autumn",
+   "evening": "2021-11-09",
+   "weekday": "Tue",
+   "entry_1815_ny_in_utc": "2021-11-09 23:15:00+00:00",
+   "fp_server_time": "2021-11-10 01:15:00",
+   "status": "ok"
+  }
+ ],
+ "h1": {
+  "bars": 53133,
+  "m1_rows_per_h1_median": 60.0,
+  "h1_with_fewer_than_30_m1": 59
+ }
+}

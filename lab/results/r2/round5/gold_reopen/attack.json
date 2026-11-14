@@ -1,0 +1,1074 @@
+{
+ "what": "Attack (independent re-implementation) of PROTOCOL_V3 Addendum K, gold daily-reopen drift, in sample 2013-2021; engineer's test in lab/r2/tracks/round5/gold_reopen/, attack code in its attack/ folder",
+ "written_utc": "2026-11-14T04:42:40+00:00",
+ "units": "R = multiples of the initial risk (entry fill - stop); bp = basis points of the entry fill; prices in USD per troy ounce; times in UTC unless New York is written",
+ "trade_by_trade": {
+  "01_main": {
+   "engineer_n": 1737,
+   "attack_n": 1737,
+   "sessions_only_in_engineer": [],
+   "sessions_only_in_attack": [],
+   "same_entry_time": true,
+   "same_exit_time": true,
+   "same_exit_reason": true,
+   "max_abs_entry_diff_usd": 0.0,
+   "max_abs_stop_diff_usd": 0.0,
+   "max_abs_exit_diff_usd": 0.0,
+   "max_abs_R_diff": 0.0,
+   "trades_with_R_diff_over_1e-12": 0,
+   "max_abs_mean_h1_range_diff_usd": 0.0,
+   "engineer_swap_total": 0.0
+  },
+  "01_main_costs_x1.5": {
+   "engineer_n": 1737,
+   "attack_n": 1737,
+   "sessions_only_in_engineer": [],
+   "sessions_only_in_attack": [],
+   "same_entry_time": true,
+   "same_exit_time": true,
+   "same_exit_reason": true,
+   "max_abs_entry_diff_usd": 0.0,
+   "max_abs_stop_diff_usd": 0.0025191420616010873,
+   "max_abs_exit_diff_usd": 0.0023464538026019,
+   "max_abs_R_diff": 0.0010933514801338973,
+   "trades_with_R_diff_over_1e-12": 1737,
+   "max_abs_mean_h1_range_diff_usd": 0.0012595710307081731,
+   "engineer_swap_total": 0.0
+  },
+  "01_main_gross": {
+   "engineer_n": 1737,
+   "attack_n": 1737,
+   "sessions_only_in_engineer": [],
+   "sessions_only_in_attack": [],
+   "same_entry_time": true,
+   "same_exit_time": true,
+   "same_exit_reason": true,
+   "max_abs_entry_diff_usd": 0.0,
+   "max_abs_stop_diff_usd": 0.0030509194052683597,
+   "max_abs_exit_diff_usd": 0.002371069522723701,
+   "max_abs_R_diff": 0.0011906322073738096,
+   "trades_with_R_diff_over_1e-12": 1714,
+   "max_abs_mean_h1_range_diff_usd": 0.0015254597026639338,
+   "engineer_swap_total": 0.0
+  },
+  "02_n_entry_1810": {
+   "engineer_n": 1736,
+   "attack_n": 1736,
+   "sessions_only_in_engineer": [],
+   "sessions_only_in_attack": [],
+   "same_entry_time": true,
+   "same_exit_time": true,
+   "same_exit_reason": true,
+   "max_abs_entry_diff_usd": 0.0,
+   "max_abs_stop_diff_usd": 0.0,
+   "max_abs_exit_diff_usd": 0.0,
+   "max_abs_R_diff": 0.0,
+   "trades_with_R_diff_over_1e-12": 0,
+   "max_abs_mean_h1_range_diff_usd": 0.0,
+   "engineer_swap_total": 0.0
+  },
+  "03_n_entry_1830": {
+   "engineer_n": 1737,
+   "attack_n": 1737,
+   "sessions_only_in_engineer": [],
+   "sessions_only_in_attack": [],
+   "same_entry_time": true,
+   "same_exit_time": true,
+   "same_exit_reason": true,
+   "max_abs_entry_diff_usd": 0.0,
+   "max_abs_stop_diff_usd": 0.0,
+   "max_abs_exit_diff_usd": 0.0,
+   "max_abs_R_diff": 0.0,
+   "trades_with_R_diff_over_1e-12": 0,
+   "max_abs_mean_h1_range_diff_usd": 0.0,
+   "engineer_swap_total": 0.0
+  },
+  "04_n_hold_96": {
+   "engineer_n": 1737,
+   "attack_n": 1737,
+   "sessions_only_in_engineer": [],
+   "sessions_only_in_attack": [],
+   "same_entry_time": true,
+   "same_exit_time": true,
+   "same_exit_reason": true,
+   "max_abs_entry_diff_usd": 0.0,
+   "max_abs_stop_diff_usd": 0.0,
+   "max_abs_exit_diff_usd": 0.0,
+   "max_abs_R_diff": 0.0,
+   "trades_with_R_diff_over_1e-12": 0,
+   "max_abs_mean_h1_range_diff_usd": 0.0,
+   "engineer_swap_total": 0.0
+  },
+  "05_n_hold_144": {
+   "engineer_n": 1737,
+   "attack_n": 1737,
+   "sessions_only_in_engineer": [],
+   "sessions_only_in_attack": [],
+   "same_entry_time": true,
+   "same_exit_time": true,
+   "same_exit_reason": true,
+   "max_abs_entry_diff_usd": 0.0,
+   "max_abs_stop_diff_usd": 0.0,
+   "max_abs_exit_diff_usd": 0.0,
+   "max_abs_R_diff": 0.0,
+   "trades_with_R_diff_over_1e-12": 0,
+   "max_abs_mean_h1_range_diff_usd": 0.0,
+   "engineer_swap_total": 0.0
+  },
+  "06_n_stop_1.6": {
+   "engineer_n": 1737,
+   "attack_n": 1737,
+   "sessions_only_in_engineer": [],
+   "sessions_only_in_attack": [],
+   "same_entry_time": true,
+   "same_exit_time": true,
+   "same_exit_reason": true,
+   "max_abs_entry_diff_usd": 0.0,
+   "max_abs_stop_diff_usd": 0.0,
+   "max_abs_exit_diff_usd": 0.0,
+   "max_abs_R_diff": 0.0,
+   "trades_with_R_diff_over_1e-12": 0,
+   "max_abs_mean_h1_range_diff_usd": 0.0,
+   "engineer_swap_total": 0.0
+  },
+  "07_n_stop_2.4": {
+   "engineer_n": 1737,
+   "attack_n": 1737,
+   "sessions_only_in_engineer": [],
+   "sessions_only_in_attack": [],
+   "same_entry_time": true,
+   "same_exit_time": true,
+   "same_exit_reason": true,
+   "max_abs_entry_diff_usd": 0.0,
+   "max_abs_stop_diff_usd": 0.0,
+   "max_abs_exit_diff_usd": 0.0,
+   "max_abs_R_diff": 0.0,
+   "trades_with_R_diff_over_1e-12": 0,
+   "max_abs_mean_h1_range_diff_usd": 0.0,
+   "engineer_swap_total": 0.0
+  }
+ },
+ "criteria_comparison": [
+  {
+   "criterion": "n >= 250",
+   "engineer_value": 1737,
+   "engineer_pass": true,
+   "attack_value": 1737,
+   "attack_pass": true,
+   "same_verdict": true,
+   "difference": "none (same 1,737 sessions)"
+  },
+  {
+   "criterion": "PF >= 1.12",
+   "engineer_value": 0.811,
+   "engineer_pass": false,
+   "attack_value": 0.8106,
+   "attack_pass": false,
+   "same_verdict": true,
+   "difference": "none (0.8106 both before rounding)"
+  },
+  {
+   "criterion": "t >= 2.5",
+   "engineer_value": -2.93,
+   "engineer_pass": false,
+   "attack_value": -2.931,
+   "attack_pass": false,
+   "same_verdict": true,
+   "difference": "none (-2.931)"
+  },
+  {
+   "criterion": ">= 60 % of years positive",
+   "engineer_value": "2/9",
+   "engineer_pass": false,
+   "attack_value": "2/9",
+   "attack_pass": false,
+   "same_verdict": true,
+   "difference": "none (same R in every year)"
+  },
+  {
+   "criterion": "PF at costs x1.5 >= 1.04",
+   "engineer_value": 0.728,
+   "engineer_pass": false,
+   "attack_value": 0.7277,
+   "attack_pass": false,
+   "same_verdict": true,
+   "difference": "0.72763 engineer vs 0.72765 attack: the engineer's H1 range is recomputed on the x1.5 frame (issue I1)"
+  },
+  {
+   "criterion": "neighbours' median PF >= 1.06",
+   "engineer_value": 0.81,
+   "engineer_pass": false,
+   "attack_value": 0.8096,
+   "attack_pass": false,
+   "same_verdict": true,
+   "difference": "none (six neighbours identical trade for trade)"
+  },
+  {
+   "criterion": "every-signal expectancy > 0",
+   "engineer_value": -0.0243,
+   "engineer_pass": false,
+   "attack_value": -0.02435,
+   "attack_pass": false,
+   "same_verdict": true,
+   "difference": "none (no overlap: every signal = main)"
+  },
+  {
+   "criterion": "hold <= 5 trading days",
+   "engineer_value": "122.0 min",
+   "engineer_pass": true,
+   "attack_value": "122.0 min",
+   "attack_pass": true,
+   "same_verdict": true,
+   "difference": "none"
+  },
+  {
+   "criterion": "random-time null >= 97.5th percentile",
+   "engineer_value": 61.0,
+   "engineer_pass": false,
+   "attack_value": 63.0,
+   "attack_pass": false,
+   "same_verdict": true,
+   "difference": "engineer 61.0 (r2.null_test seed 0, reproduced exactly on my orders); my own null 56.5-63.0 over variants and seeds; 49-50 if the replays' swap is not charged (my first run): fails in every case"
+  },
+  {
+   "criterion": "|weekly correlation with the sum of the ten| <= 0.30",
+   "engineer_value": 0.067,
+   "engineer_pass": true,
+   "attack_value": 0.0675,
+   "attack_pass": true,
+   "same_verdict": true,
+   "difference": "0.067 (3 decimals) vs 0.0675"
+  }
+ ],
+ "criteria_verdicts_differ": [],
+ "engineer_main_pass": false,
+ "attack_main_pass": false,
+ "attack_numbers": {
+  "main_fp": {
+   "n": 1737,
+   "pf": 0.8106,
+   "t": -2.931,
+   "expectancy_R": -0.02435,
+   "total_R": -42.29,
+   "win_rate": 0.4439,
+   "years_pos": "2/9",
+   "per_year_R": {
+    "2013": -7.9,
+    "2014": -9.06,
+    "2015": -3.58,
+    "2016": 4.04,
+    "2017": -10.57,
+    "2018": -1.34,
+    "2019": -4.29,
+    "2020": 2.32,
+    "2021": -11.9
+   },
+   "max_hold_min": 122.0,
+   "net_bp_mean": -1.203,
+   "mean_stop_bp": 50.06,
+   "n_stop": 26,
+   "n_entry_delayed": 24,
+   "n_entry_delayed_over_5min": 7,
+   "n_exit_bar_late_over_30min": 0,
+   "first_entry": "2013-01-29 23:15:00+00:00",
+   "last_exit": "2021-12-31 01:15:00+00:00"
+  },
+  "main_costs_x1.5": {
+   "n": 1737,
+   "pf": 0.7277,
+   "t": -4.446,
+   "expectancy_R": -0.03701,
+   "total_R": -64.29,
+   "win_rate": 0.4226,
+   "years_pos": "2/9",
+   "per_year_R": {
+    "2013": -9.61,
+    "2014": -11.2,
+    "2015": -5.84,
+    "2016": 1.86,
+    "2017": -13.76,
+    "2018": -4.34,
+    "2019": -7.2,
+    "2020": 0.23,
+    "2021": -14.42
+   },
+   "max_hold_min": 122.0,
+   "net_bp_mean": -1.792,
+   "mean_stop_bp": 50.06,
+   "n_stop": 30,
+   "n_entry_delayed": 24,
+   "n_entry_delayed_over_5min": 7,
+   "n_exit_bar_late_over_30min": 0,
+   "first_entry": "2013-01-29 23:15:00+00:00",
+   "last_exit": "2021-12-31 01:15:00+00:00"
+  },
+  "main_gross": {
+   "n": 1737,
+   "pf": 1.0141,
+   "t": 0.194,
+   "expectancy_R": 0.0016,
+   "total_R": 2.79,
+   "win_rate": 0.4842,
+   "years_pos": "5/9",
+   "per_year_R": {
+    "2013": -4.48,
+    "2014": -4.77,
+    "2015": 1.11,
+    "2016": 9.58,
+    "2017": -4.6,
+    "2018": 4.67,
+    "2019": 2.49,
+    "2020": 6.23,
+    "2021": -7.45
+   },
+   "max_hold_min": 122.0,
+   "net_bp_mean": -0.008,
+   "mean_stop_bp": 50.06,
+   "n_stop": 22,
+   "n_entry_delayed": 24,
+   "n_entry_delayed_over_5min": 7,
+   "n_exit_bar_late_over_30min": 0,
+   "first_entry": "2013-01-29 23:15:00+00:00",
+   "last_exit": "2021-12-31 01:15:00+00:00"
+  },
+  "main_gross_bp_mean": -0.008,
+  "neighbours": {
+   "n_entry_1810": {
+    "n": 1736,
+    "pf": 0.8458,
+    "t": -2.352,
+    "expectancy_R": -0.01875,
+    "total_R": -32.55,
+    "years_pos": "2/9",
+    "pf_costs_x1.5": 0.7571
+   },
+   "n_entry_1830": {
+    "n": 1737,
+    "pf": 0.7978,
+    "t": -3.325,
+    "expectancy_R": -0.02757,
+    "total_R": -47.89,
+    "years_pos": "2/9",
+    "pf_costs_x1.5": 0.7171
+   },
+   "n_hold_96": {
+    "n": 1737,
+    "pf": 0.7935,
+    "t": -2.901,
+    "expectancy_R": -0.02097,
+    "total_R": -36.43,
+    "years_pos": "2/9",
+    "pf_costs_x1.5": 0.6927
+   },
+   "n_hold_144": {
+    "n": 1737,
+    "pf": 0.8318,
+    "t": -2.634,
+    "expectancy_R": -0.02412,
+    "total_R": -41.89,
+    "years_pos": "2/9",
+    "pf_costs_x1.5": 0.7529
+   },
+   "n_stop_1.6": {
+    "n": 1737,
+    "pf": 0.8037,
+    "t": -3.076,
+    "expectancy_R": -0.03177,
+    "total_R": -55.19,
+    "years_pos": "2/9",
+    "pf_costs_x1.5": 0.7232
+   },
+   "n_stop_2.4": {
+    "n": 1737,
+    "pf": 0.8156,
+    "t": -2.832,
+    "expectancy_R": -0.01965,
+    "total_R": -34.14,
+    "years_pos": "2/9",
+    "pf_costs_x1.5": 0.7338
+   }
+  },
+  "neighbours_median_pf": 0.8096,
+  "every_signal": {
+   "overlapping_trades": 0,
+   "n": 1737,
+   "expectancy_R": -0.02435,
+   "note": "one order per session, sessions about a day apart, holds at most about 2.5 h: no order is ever skipped by 'one position at a time', so every signal = the main, trade for trade"
+  },
+  "null_main": {
+   "replays": 200,
+   "seed": 20261114,
+   "duration": "clock",
+   "swap_charged": true,
+   "one_position_at_a_time": false,
+   "rule_mean_R": -0.02435,
+   "null_mean_R": -0.02714,
+   "null_sd_R": 0.013,
+   "null_p50_R": -0.02819,
+   "null_p975_R": 0.00012,
+   "null_max_R": 0.01164,
+   "percentile": 63.0,
+   "pass": false
+  },
+  "null_variants": {
+   "mine_clock_independent_with_swap": {
+    "duration": "clock",
+    "swap_charged": true,
+    "one_position_at_a_time": false,
+    "null_mean_R": -0.02714,
+    "null_p975_R": 0.00012,
+    "percentile": 63.0
+   },
+   "mine_clock_one_position_with_swap": {
+    "duration": "clock",
+    "swap_charged": true,
+    "one_position_at_a_time": true,
+    "null_mean_R": -0.02701,
+    "null_p975_R": -0.00068,
+    "percentile": 61.5
+   },
+   "mine_bars_independent_with_swap": {
+    "duration": "bars",
+    "swap_charged": true,
+    "one_position_at_a_time": false,
+    "null_mean_R": -0.02715,
+    "null_p975_R": 0.00047,
+    "percentile": 60.0
+   },
+   "mine_bars_one_position_with_swap": {
+    "duration": "bars",
+    "swap_charged": true,
+    "one_position_at_a_time": true,
+    "null_mean_R": -0.02711,
+    "null_p975_R": -0.00091,
+    "percentile": 61.5
+   }
+  },
+  "null_other_seeds": {
+   "20261115": {
+    "percentile": 56.5,
+    "null_mean_R": -0.02725,
+    "null_p975_R": -0.00252
+   },
+   "20261116": {
+    "percentile": 60.5,
+    "null_mean_R": -0.02755,
+    "null_p975_R": -0.00386
+   },
+   "20261117": {
+    "percentile": 59.5,
+    "null_mean_R": -0.02688,
+    "null_p975_R": -0.00222
+   },
+   "20261118": {
+    "percentile": 60.0,
+    "null_mean_R": -0.027,
+    "null_p975_R": -0.00134
+   }
+  },
+  "null_first_run_without_replay_swap": {
+   "clock": {
+    "null_mean_R": -0.02311,
+    "percentile": 49.0
+   },
+   "bars": {
+    "null_mean_R": -0.02312,
+    "percentile": 50.0
+   }
+  },
+  "engineer_null_call_reproduced_on_my_orders": {
+   "n": 1737,
+   "mode": "time",
+   "rule_mean_R": -0.0243,
+   "null_mean_R": -0.0279,
+   "null_p95_R": -0.0036,
+   "null_max_R": 0.0122,
+   "percentile": 61.0,
+   "pass": false
+  },
+  "engineer_null_call_other_seeds": {
+   "1": {
+    "percentile": 61.5,
+    "null_mean_R": -0.0282
+   },
+   "2": {
+    "percentile": 59.5,
+    "null_mean_R": -0.0274
+   },
+   "3": {
+    "percentile": 64.0,
+    "null_mean_R": -0.0287
+   },
+   "4": {
+    "percentile": 62.5,
+    "null_mean_R": -0.0279
+   },
+   "5": {
+    "percentile": 55.5,
+    "null_mean_R": -0.0261
+   }
+  },
+  "correlation_2014_2021": {
+   "rho": 0.0675,
+   "n_weeks": 418,
+   "first_week": "2013-12-30/2014-01-05",
+   "last_week": "2021-12-27/2022-01-02",
+   "weeks_with_an_exit": 416,
+   "each_sleeve": {
+    "noise30:us100": 0.0073,
+    "ocm4:us100": 0.0293,
+    "brk72_24h_wd:btcusd": 0.049,
+    "brk72_24h_wd:ethusd": 0.022,
+    "F1_brk_ridge_filter:btcusd": 0.0512,
+    "F1_brk_ridge_filter:ethusd": 0.1108,
+    "nq_btc_follow:btcusd": -0.0381,
+    "GOLD_FRI_PM:xauusd": -0.0786,
+    "donch4h_stop:xauusd": 0.0238,
+    "orb_asia_2d_buf10:xauusd": 0.0198
+   }
+  }
+ },
+ "per_year_R": {
+  "2013": {
+   "engineer": -7.9,
+   "attack": -7.9
+  },
+  "2014": {
+   "engineer": -9.1,
+   "attack": -9.06
+  },
+  "2015": {
+   "engineer": -3.6,
+   "attack": -3.58
+  },
+  "2016": {
+   "engineer": 4.0,
+   "attack": 4.04
+  },
+  "2017": {
+   "engineer": -10.6,
+   "attack": -10.57
+  },
+  "2018": {
+   "engineer": -1.3,
+   "attack": -1.34
+  },
+  "2019": {
+   "engineer": -4.3,
+   "attack": -4.29
+  },
+  "2020": {
+   "engineer": 2.3,
+   "attack": 2.32
+  },
+  "2021": {
+   "engineer": -11.9,
+   "attack": -11.9
+  }
+ },
+ "checks": {
+  "dst": {
+   "entries_without_delay": 1713,
+   "all_at_18_15_new_york": true,
+   "summer_time_entries_at_22_15_utc": true,
+   "winter_time_entries_at_23_15_utc": true,
+   "n_summer": 1150,
+   "n_winter": 563,
+   "fp_server_time_all_01_15": true,
+   "switch_evenings_checked": [
+    {
+     "switch": "spring",
+     "evening": "2013-03-06",
+     "weekday": "Wed",
+     "entry_1815_ny_in_utc": "2013-03-06 23:15:00+00:00",
+     "fp_server_time": "2013-03-07 01:15:00",
+     "status": "ok"
+    },
+    {
+     "switch": "spring",
+     "evening": "2013-03-07",
+     "weekday": "Thu",
+     "entry_1815_ny_in_utc": "2013-03-07 23:15:00+00:00",
+     "fp_server_time": "2013-03-08 01:15:00",
+     "status": "ok"
+    },
+    {
+     "switch": "spring",
+     "evening": "2013-03-11",
+     "weekday": "Mon",
+     "entry_1815_ny_in_utc": "2013-03-11 22:15:00+00:00",
+     "fp_server_time": "2013-03-12 01:15:00",
+     "status": "ok"
+    },
+    {
+     "switch": "spring",
+     "evening": "2013-03-12",
+     "weekday": "Tue",
+     "entry_1815_ny_in_utc": "2013-03-12 22:15:00+00:00",
+     "fp_server_time": "2013-03-13 01:15:00",
+     "status": "ok"
+    },
+    {
+     "switch": "autumn",
+     "evening": "2013-10-30",
+     "weekday": "Wed",
+     "entry_1815_ny_in_utc": "2013-10-30 22:15:00+00:00",
+     "fp_server_time": "2013-10-31 01:15:00",
+     "status": "ok"
+    },
+    {
+     "switch": "autumn",
+     "evening": "2013-10-31",
+     "weekday": "Thu",
+     "entry_1815_ny_in_utc": "2013-10-31 22:15:00+00:00",
+     "fp_server_time": "2013-11-01 01:15:00",
+     "status": "ok"
+    },
+    {
+     "switch": "autumn",
+     "evening": "2013-11-04",
+     "weekday": "Mon",
+     "entry_1815_ny_in_utc": "2013-11-04 23:15:00+00:00",
+     "fp_server_time": "2013-11-05 01:15:00",
+     "status": "ok"
+    },
+    {
+     "switch": "autumn",
+     "evening": "2013-11-05",
+     "weekday": "Tue",
+     "entry_1815_ny_in_utc": "2013-11-05 23:15:00+00:00",
+     "fp_server_time": "2013-11-06 01:15:00",
+     "status": "ok"
+    },
+    {
+     "switch": "spring",
+     "evening": "2014-03-05",
+     "weekday": "Wed",
+     "entry_1815_ny_in_utc": "2014-03-05 23:15:00+00:00",
+     "fp_server_time": "2014-03-06 01:15:00",
+     "status": "ok"
+    },
+    {
+     "switch": "spring",
+     "evening": "2014-03-06",
+     "weekday": "Thu",
+     "entry_1815_ny_in_utc": "2014-03-06 23:15:00+00:00",
+     "fp_server_time": "2014-03-07 01:15:00",
+     "status": "ok"
+    },
+    {
+     "switch": "autumn",
+     "evening": "2014-10-29",
+     "weekday": "Wed",
+     "entry_1815_ny_in_utc": "2014-10-29 22:15:00+00:00",
+     "fp_server_time": "2014-10-30 01:15:00",
+     "status": "ok"
+    },
+    {
+     "switch": "autumn",
+     "evening": "2014-10-30",
+     "weekday": "Thu",
+     "entry_1815_ny_in_utc": "2014-10-30 22:15:00+00:00",
+     "fp_server_time": "2014-10-31 01:15:00",
+     "status": "ok"
+    }
+   ],
+   "verdict": "correct: New York wall clock from the tz database on both sides of every switch"
+  },
+  "sunday_reopen_excluded": {
+   "evening_weekdays": {
+    "0": 412,
+    "1": 451,
+    "2": 442,
+    "3": 432
+   },
+   "no_sunday_friday_saturday": true
+  },
+  "holiday_and_early_close_evenings": {
+   "attack_skipped": 108,
+   "engineer_skipped": 108,
+   "identical_sets": true,
+   "per_year": {
+    "2012": {
+     "fewer_than_480_h1": 0,
+     "holiday": 1,
+     "no_quote_1800_1815": 0,
+     "ok": 0
+    },
+    "2013": {
+     "fewer_than_480_h1": 14,
+     "holiday": 14,
+     "no_quote_1800_1815": 1,
+     "ok": 180
+    },
+    "2014": {
+     "fewer_than_480_h1": 0,
+     "holiday": 13,
+     "no_quote_1800_1815": 18,
+     "ok": 178
+    },
+    "2015": {
+     "fewer_than_480_h1": 0,
+     "holiday": 12,
+     "no_quote_1800_1815": 2,
+     "ok": 195
+    },
+    "2016": {
+     "fewer_than_480_h1": 0,
+     "holiday": 9,
+     "no_quote_1800_1815": 0,
+     "ok": 199
+    },
+    "2017": {
+     "fewer_than_480_h1": 0,
+     "holiday": 11,
+     "no_quote_1800_1815": 0,
+     "ok": 197
+    },
+    "2018": {
+     "fewer_than_480_h1": 0,
+     "holiday": 13,
+     "no_quote_1800_1815": 0,
+     "ok": 196
+    },
+    "2019": {
+     "fewer_than_480_h1": 0,
+     "holiday": 14,
+     "no_quote_1800_1815": 0,
+     "ok": 195
+    },
+    "2020": {
+     "fewer_than_480_h1": 0,
+     "holiday": 12,
+     "no_quote_1800_1815": 0,
+     "ok": 198
+    },
+    "2021": {
+     "fewer_than_480_h1": 0,
+     "holiday": 9,
+     "no_quote_1800_1815": 0,
+     "ok": 199
+    }
+   },
+   "frame_disagreements_with_rule_calendar": [
+    {
+     "date": "2013-10-14",
+     "weekday": "Mon",
+     "calendar": null,
+     "holiday": null,
+     "frame_close_ny": "13:00",
+     "frame_reopen_ny": "18:00",
+     "agree": false
+    },
+    {
+     "date": "2013-12-26",
+     "weekday": "Thu",
+     "calendar": null,
+     "holiday": null,
+     "frame_close_ny": null,
+     "frame_reopen_ny": "19:00",
+     "agree": false
+    },
+    {
+     "date": "2014-10-13",
+     "weekday": "Mon",
+     "calendar": null,
+     "holiday": null,
+     "frame_close_ny": "13:00",
+     "frame_reopen_ny": "18:00",
+     "agree": false
+    },
+    {
+     "date": "2014-11-03",
+     "weekday": "Mon",
+     "calendar": null,
+     "holiday": null,
+     "frame_close_ny": "16:00",
+     "frame_reopen_ny": "18:00",
+     "agree": false
+    },
+    {
+     "date": "2019-07-04",
+     "weekday": "Thu",
+     "calendar": "early",
+     "holiday": "independence",
+     "frame_close_ny": "16:56",
+     "frame_reopen_ny": "18:00",
+     "agree": false
+    }
+   ],
+   "verdict": "same 108 evenings; the calendar is the US market rule calendar mapped to gold; the frame itself shows two Columbus Day halts not in it and a normal 2019-07-04 (issue I2)"
+  },
+  "no_quote_18_00_18_15": {
+   "attack": 21,
+   "engineer": 21,
+   "identical_sets": true,
+   "evenings": [
+    "2013-12-26",
+    "2014-03-10",
+    "2014-03-11",
+    "2014-03-12",
+    "2014-03-17",
+    "2014-03-18",
+    "2014-03-19",
+    "2014-03-24",
+    "2014-03-25",
+    "2014-03-27",
+    "2014-03-31",
+    "2014-04-01",
+    "2014-04-02",
+    "2014-04-03",
+    "2014-04-07",
+    "2014-04-10",
+    "2014-04-14",
+    "2014-04-15",
+    "2014-04-16",
+    "2015-03-09",
+    "2015-06-30"
+   ],
+   "note": "18 of the 21 are 2014-03-10..2014-04-16 and 2015-03-09, when the feed reopened at 19:00 New York; 2015-06-30 is the leap-second evening (reopen 20:00); 2013-12-26 reopens at 19:00"
+  },
+  "h1_480_completed_before_entry": {
+   "every_last_h1_bar_ends_at_or_before_entry_bar_start": true,
+   "every_window_is_480_existing_hours": true,
+   "last_h1_bar_new_york_hour_counts": {
+    "16": 1729,
+    "18": 6,
+    "13": 2
+   },
+   "verdict": "no look-ahead: the forming 18:00 bar is never used except on the six 19:00 entries, where it has ended"
+  },
+  "costs": {
+   "fp": "identical fills (ask open +0.3 bp, stop or gapped bid open -1.0 bp, bid open -0.3 bp; spread from the FP frame = 0.19 USD at 4,080 USD x Dukascopy shape); swap 0 on every trade (no 17:00 New York rollover crossed, asserted in both codes)",
+   "x1.5": "spread x1.5 around the mid and slippage x1.5 (0.45 bp market, 1.5 bp stop) in both; same trades; R within 0.0011 because of issue I1",
+   "gross": "mid quotes, no cost, same trades; R within 0.0012 (issue I1); gross mean -0.0075 bp engineer, -0.0076 bp attack"
+  },
+  "null": {
+   "declared_mode": "time",
+   "mode_is_right": true,
+   "statistic": "mean R per trade of the rule vs the 200 replay means, percentile = share strictly below (PROTOCOL_V2 section 4: the rule's expectancy must beat 97.5 % of 200 replays)",
+   "engineer_value_reproduced_exactly": true,
+   "engineer": {
+    "rule_mean_R": -0.0243,
+    "null_mean_R": -0.0279,
+    "null_p975_R": -0.0024,
+    "percentile": 61.0
+   },
+   "verdict": "right mode (random day and time for a time-of-day rule), right statistic, right percentile"
+  },
+  "correlation": {
+   "engineer_rho": 0.067,
+   "attack_rho": 0.0675,
+   "n_weeks": 418,
+   "weeks_with_an_exit": 416,
+   "engineer_weeks_with_an_exit": 416,
+   "each_sleeve_engineer": {
+    "noise30:us100": 0.007,
+    "ocm4:us100": 0.029,
+    "brk72_24h_wd:btcusd": 0.049,
+    "brk72_24h_wd:ethusd": 0.022,
+    "F1_brk_ridge_filter:btcusd": 0.051,
+    "F1_brk_ridge_filter:ethusd": 0.111,
+    "nq_btc_follow:btcusd": -0.038,
+    "GOLD_FRI_PM:xauusd": -0.079,
+    "donch4h_stop:xauusd": 0.024,
+    "orb_asia_2d_buf10:xauusd": 0.02
+   },
+   "each_sleeve_attack": {
+    "noise30:us100": 0.0073,
+    "ocm4:us100": 0.0293,
+    "brk72_24h_wd:btcusd": 0.049,
+    "brk72_24h_wd:ethusd": 0.022,
+    "F1_brk_ridge_filter:btcusd": 0.0512,
+    "F1_brk_ridge_filter:ethusd": 0.1108,
+    "nq_btc_follow:btcusd": -0.0381,
+    "GOLD_FRI_PM:xauusd": -0.0786,
+    "donch4h_stop:xauusd": 0.0238,
+    "orb_asia_2d_buf10:xauusd": 0.0198
+   },
+   "verdict": "same convention as round4/fomc_cycle/correlation.py; same value"
+  },
+  "trial_logging": {
+   "engineer_trials_lines": 7,
+   "names": [
+    "main",
+    "n_entry_1810",
+    "n_entry_1830",
+    "n_hold_96",
+    "n_hold_144",
+    "n_stop_1.6",
+    "n_stop_2.4"
+   ],
+   "declared_seven_only": true,
+   "attack_log": "results/r2/round5/gold_reopen/attack/attack_trials.jsonl (my 7 configurations at FP and x1.5, the main gross, and 7 readings-sensitivity runs of the same rule; the engineer's trials.jsonl is not touched)"
+  },
+  "in_sample_only": {
+   "engineer_reads": "gold frame: pandas.read_parquet(filters=[('ts','<',2022-01-01)]) + max < cut asserted (common.load_is), used by precheck, run, handcheck, verdict; goldlab.r2.load wrapped to raise on any uncached symbol (r2.load reads whole files) and to assert every returned frame ends before the cut; the ten sleeves' trades read with filter entry_time < 2022-01-01 and exits >= 2022 dropped; test_synthetic.py uses a made-up frame and checks the guard refuses r2.load('us100') before any read; idxus_lib reads no file; every trade's entry and exit asserted < 2022-01-01",
+   "attack_reads": "the same parquet filter in acommon.load_is (max < cut asserted), the ten sleeves with the same filter, the engineer's 2013-2021 outputs; r2.null_test only on the installed in-sample slice with r2.load unable to read a file",
+   "val_access_log_sha256_now": "af8b4aac123015a06d0afc2eb3b44a37708086ed6a9ba0a833097de757e0bc4b",
+   "val_access_log_sha256_engineer_before_after": [
+    "af8b4aac123015a06d0afc2eb3b44a37708086ed6a9ba0a833097de757e0bc4b",
+    "af8b4aac123015a06d0afc2eb3b44a37708086ed6a9ba0a833097de757e0bc4b"
+   ],
+   "val_access_log_unchanged": true,
+   "holdout_or_2022_files_opened": false
+  }
+ },
+ "sensitivities_main": {
+  "holiday_reading_session_only": {
+   "n": 1788,
+   "pf": 0.8214,
+   "t": -2.796,
+   "expectancy_R": -0.02302,
+   "years_pos": "2/9"
+  },
+  "holiday_reading_evening_only": {
+   "n": 1758,
+   "pf": 0.8178,
+   "t": -2.826,
+   "expectancy_R": -0.02329,
+   "years_pos": "2/9"
+  },
+  "calendar_plus_columbus_2013_2014_halts": {
+   "n": 1735,
+   "pf": 0.8135,
+   "t": -2.879,
+   "expectancy_R": -0.02392,
+   "years_pos": "2/9"
+  },
+  "calendar_without_2019_07_04_normal_in_frame": {
+   "n": 1739,
+   "pf": 0.8122,
+   "t": -2.906,
+   "expectancy_R": -0.02412,
+   "years_pos": "2/9"
+  },
+  "calendar_plus_nyse_july_3_half_days": {
+   "n": 1733,
+   "pf": 0.8155,
+   "t": -2.846,
+   "expectancy_R": -0.02363,
+   "years_pos": "2/9"
+  },
+  "h1_range_on_bid_quotes": {
+   "n": 1737,
+   "pf": 0.8106,
+   "t": -2.932,
+   "expectancy_R": -0.02435,
+   "years_pos": "2/9"
+  },
+  "n_entry_1810_with_quote_window_1800_1815": {
+   "n": 1737,
+   "pf": 0.8457,
+   "t": -2.355,
+   "expectancy_R": -0.01876,
+   "years_pos": "2/9"
+  },
+  "without_the_7_entries_delayed_over_5_min": {
+   "n": 1730,
+   "pf": 0.8048,
+   "t": -3.023,
+   "expectancy_R": -0.02517,
+   "years_pos": "2/9"
+  }
+ },
+ "sensitivities_note": "other readings of the open details, same rule, not new configurations: none moves PF above 0.85, t above -2.3 or the years above 2/9, so no criterion verdict depends on them",
+ "declared_choices_judged": {
+  "timing": "declared.json written 2026-11-14 04:09:10 UTC (sha256 3bb98b52... matches today), 3 h 48 min after Addendum K's commit 4950eeb (00:21:38 UTC) and 8 min before the first trades file (04:17:26); its note says only the parquet schema and row-group time statistics had been read; the precheck (04:12) computed no return; nothing in it could have been chosen after seeing a result",
+  "D1 in sample": "natural and stricter than the brief (r2.load never allowed to read)",
+  "D2 sessions": "natural (Mon-Thu evenings, trading days Tue-Fri, Sunday never)",
+  "D3 holidays": "defensible: the US market rule calendar mapped to gold, and the union of the two readings of 'skip US holiday closures and early closes' (the evening's own day, or the trading day it opens); the union is the conservative choice; single readings give PF 0.818 / 0.821",
+  "D4 quote test": "natural; the 18:10 neighbour's shorter window avoids looking past the entry (one evening, 2017-01-09, PF 0.8458 vs 0.8457)",
+  "D5 entry": "literal text (no delay limit); see issue I3",
+  "D6 H1 range": "lab convention (goldlab bars, mid, UTC clock hours, completed before the entry bar); the claim that the stop distance does not depend on the cost scenario is slightly wrong (issue I1); a bid range (MetaTrader chart) gives PF 0.8106 too",
+  "D7 stop, D8 exit": "natural; the 30-minute gap rule never fires (no exit moved, none late over 30 min)",
+  "D9 one position": "natural; never binds",
+  "D10-D12 costs and R": "the lab's FP model; verified fill by fill",
+  "D13 every signal": "natural; identical to the main",
+  "D14 null": "the right mode and statistic; the replays pay the 5.5 %/yr swap when they cross 17:00 New York and the rule never does (issue I4, the lab's convention, not stated in D14)",
+  "D15 correlation": "exactly round 4's convention; |rho| reading is the stricter one",
+  "D16 criteria": "PROTOCOL_V2 section 4 plus Addendum K's correlation bar, on the main only: correct"
+ },
+ "differences_explained": [
+  {
+   "what": "costs x1.5 and gross runs: same 1,737 trades, same entry and exit bars and reasons, R different by at most 0.0011 (x1.5) and 0.0012 (gross)",
+   "why": "the engineer's make_orders rebuilds the 480-bar H1 range on the re-spread frame r2.run passes it; the lab's mid high = (max bid high + max ask high)/2 is not invariant when the half-spread (constant within an M1 bar, different across bars) is scaled, so the mean range moves by up to 0.0015 USD (of about 3.5 USD); I compute it once on the FP frame",
+   "whose_reading_is_right": "both defensible: the text fixes the stop from H1 bars and says nothing about the stress scenario; r2.run's documented contract is to rebuild orders on the stressed quotes. Effect: stress PF 0.72763 vs 0.72765, gross -0.0075 vs -0.0076 bp; no verdict",
+   "size": "PF difference 0.00002"
+  },
+  {
+   "what": "random-time null: my first null mean -0.0231 R (percentile 49-50) vs engineer -0.0279 R (61.0)",
+   "why": "my first null did not charge the long swap that a random replay pays when it crosses the 17:00 New York rollover (about 9 % of replays; 0.03 R a night, x3 on Wednesday); goldlab.sim charges it from fp_costs.json. With the swap added my null mean is -0.0269 to -0.0276 R and the percentile 56.5-63.0 over variants and seeds; the engineer's own call reproduced on my orders gives exactly 61.0",
+   "whose_reading_is_right": "the engineer's (the lab's cost model applied to the replays); my first run was my error, corrected before writing this file",
+   "size": "no verdict: the rule's mean R -0.0243 is near the middle of every null, the 97.5th percentile is -0.0039 to +0.0005 R"
+  },
+  {
+   "what": "correlation 0.067 vs 0.0675",
+   "why": "rounding to 3 decimals in the engineer's file",
+   "size": "none"
+  }
+ ],
+ "issues": [
+  {
+   "id": "I1",
+   "severity": "minor",
+   "what": "declared.json D6 says the stop distance does not depend on the cost scenario; it does, slightly: r2.run 'stress' and 'gross' rebuild the H1 range on re-spread quotes and the lab's bid/ask-aggregated mid range changes",
+   "evidence": "every one of the 1,737 evenings has a mean H1 range different by up to 0.0013 USD (x1.5) and 0.0015 USD (gross); R up to 0.0011 / 0.0012 apart; stress PF 0.72763 vs 0.72765",
+   "fix": "say so in D6, or compute the stop distance once on the FP frame and pass it to the stressed run"
+  },
+  {
+   "id": "I2",
+   "severity": "minor",
+   "what": "the holiday calendar (US market rules) and the frame disagree on four days: Columbus Day 2013-10-14 and 2014-10-13 show a 13:00 New York gold halt (not skipped; their H1 windows end at the 13:00 bar) and 2019-07-04 is a normal full day in the frame (it and its eve are skipped)",
+   "evidence": "aprecheck.json calendar_vs_frame; sensitivity: PF 0.8135 (Columbus evenings skipped), 0.8122 (2019-07-03/04 traded)",
+   "fix": "none needed for this verdict; for the robot, decide whether the calendar follows the rules or the broker's actual hours"
+  },
+  {
+   "id": "I3",
+   "severity": "minor",
+   "what": "six evenings (2014-03-13, 03-20, 03-26, 04-08, 04-09 and 2017-03-13) pass the quote test on a single stray M1 bar at 18:00 while the feed really reopened at 19:00 New York; the trade enters 45 minutes late at 19:00 and its H1 window ends with the near-empty 18:00 hour",
+   "evidence": "bars 16:59, 18:00, 19:00, 19:01... on each of these evenings; precheck.json entry_delays_main; sensitivity without the 7 entries delayed over 5 min (the six plus 2013-03-11, 8 min): n 1,730, PF 0.8048, t -3.02, 2/9 years positive",
+   "fix": "literal text followed by both implementations; a robot should cap the entry delay"
+  },
+  {
+   "id": "I4",
+   "severity": "minor",
+   "what": "the null replays pay the long swap when they cross the 17:00 New York rollover while the rule's trades never do; this lowers the null by about 0.004 R and so favours the rule; D14 does not state it",
+   "evidence": "null percentile 61.0 with it (engineer, reproduced), 49-50 without it (attack first run)",
+   "fix": "state it in D14; it cannot change this verdict (fail either way)"
+  }
+ ],
+ "verdict": "confirmed",
+ "verdict_text": "CONFIRMED: every criterion verdict of the engineer's main configuration stands under my independent implementation. The main fails in sample (PF 0.811, t -2.93, 2 of 9 years positive, PF 0.728 at costs x1.5, neighbours' median PF 0.810, every-signal expectancy -0.0243 R, null percentile 56-64); n, hold and correlation pass. The 1,737 main trades and all six neighbours are identical trade for trade; the only numeric differences are 0.00002 in the stressed PF and the null's seed and swap convention, none near a threshold.",
+ "files": {
+  "attack_code": [
+   "lab/r2/tracks/round5/gold_reopen/attack/acommon.py",
+   "lab/r2/tracks/round5/gold_reopen/attack/aprecheck.py",
+   "lab/r2/tracks/round5/gold_reopen/attack/arun.py",
+   "lab/r2/tracks/round5/gold_reopen/attack/ahand.py",
+   "lab/r2/tracks/round5/gold_reopen/attack/anull.py",
+   "lab/r2/tracks/round5/gold_reopen/attack/acompare.py"
+  ],
+  "attack_outputs": "lab/results/r2/round5/gold_reopen/attack/ (attack_results.json, anull.json, ahand.json, aprecheck.json, attack_trials.jsonl, trades_*.parquet, sessions_main.parquet, null_means_*.npy)"
+ },
+ "hand_check": {
+  "n_checked": 33,
+  "all_match": true,
+  "max_abs_R_diff": 0.0,
+  "lab_engine_on_my_orders": {
+   "n_lab": 1737,
+   "n_mine": 1737,
+   "skipped": 0,
+   "max_abs_entry_diff_usd": 0.0,
+   "max_abs_exit_diff_usd": 0.0,
+   "max_abs_R_diff": 0.0,
+   "same_reasons": true,
+   "max_abs_swap": 0.0
+  },
+  "engineer_hand_check": {
+   "n_checked": 8,
+   "all_match": true,
+   "max_abs_R_diff": 0.0
+  }
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "declared_sha256": "3bb98b52eb177632fd93fe8ddfacfbc0cfde16f6ab9eba0b0764b8861bf95150",
+ "period_weeks": "2013-12-30/2014-01-05 .. 2021-12-27/2022-01-02",
+ "n_weeks": 418,
+ "convention": "weekly sums of R by exit week (W-SUN, UTC), every calendar week counted, Pearson; official trades read with entry_time < 2022-01-01, exits in 2022 dropped (as round4/fomc_cycle/correlation.py)",
+ "ten_trades_read": {
+  "noise30:us100": 1643,
+  "ocm4:us100": 999,
+  "brk72_24h_wd:btcusd": 645,
+  "brk72_24h_wd:ethusd": 519,
+  "F1_brk_ridge_filter:btcusd": 631,
+  "F1_brk_ridge_filter:ethusd": 517,
+  "nq_btc_follow:btcusd": 1063,
+  "GOLD_FRI_PM:xauusd": 414,
+  "donch4h_stop:xauusd": 494,
+  "orb_asia_2d_buf10:xauusd": 1038
+ },
+ "main": {
+  "weeks_with_an_exit": 416,
+  "trades_exiting_in_these_weeks": 1558,
+  "corr_with_sum_of_ten": 0.067,
+  "corr_with_clusters": {
+   "us100 opening momentum (ocm4 + noise30)": 0.025,
+   "gold (donch4h_stop + orb_asia_2d_buf10 + GOLD_FRI_PM)": 0.019,
+   "crypto (brk72_24h_wd x2 + F1_brk_ridge_filter x2 + nq_btc_follow)": 0.065
+  },
+  "corr_with_each_sleeve": {
+   "noise30:us100": 0.007,
+   "ocm4:us100": 0.029,
+   "brk72_24h_wd:btcusd": 0.049,
+   "brk72_24h_wd:ethusd": 0.022,
+   "F1_brk_ridge_filter:btcusd": 0.051,
+   "F1_brk_ridge_filter:ethusd": 0.111,
+   "nq_btc_follow:btcusd": -0.038,
+   "GOLD_FRI_PM:xauusd": -0.079,
+   "donch4h_stop:xauusd": 0.024,
+   "orb_asia_2d_buf10:xauusd": 0.02
+  }
+ },
+ "bar": "|rho with the sum of the ten| <= 0.30 (D15)",
+ "pass": true
+}
