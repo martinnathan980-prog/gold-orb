@@ -52,6 +52,27 @@ reconcile, InpK1T on a 2026 demo, fini.txt's server_time one digit too long, fin
 a CLOSE cut at the end of its file, the money check's limit said, a releve row with a negative price, a time exit after the releve's last
 bar, a login glued onto a counter; and with the replay, the Mac asleep (the process frozen, then a catch-up at the wake), built against
 the self-test's own copy of the harness with MOCK_SLEEP (check/ itself is never changed).
+The cases of the fifth review are the tests named 'review5 ...': START, check_start.py on the start's lines the user pastes into the chat
+(the Experts tab copied with right-click -> Copy, the account planted around them): the right settings, the INIT line alone, D2 left, a comma
+in the risk table, InpK1T empty or 2026:417 or with a three-digit exponent, a name without .r, a real account, an older build, the stop line
+only, ERROR lines only, two starts, a cut line, a wrapped line, UTF-16, quotes and a byte-order mark, spaces around InpRiskTable, CLOCK,
+SELFTEST ok=0, an observer copy, markets not READY yet, the agreement with check_demo on the same start and, with the harness, the release
+file's own start lines; FV4b-1, the Mac's Experts logs cut by its local date (printed_files: Paris = server - 1 h, - 2 h in the weeks when
+Paris and New York have not both changed clocks) with a lost middle day, a lost restart day, two lost days, a lost last file with and without
+--bars, across the end of October and of March; FV4b-2, two logs of the same name from two folders; FV4b-3 (with the replay), a US100 row
+of the releve with a negative low and the NQB differences it causes days later; FV4b-4, a hand gain just under and just over the threshold
+the report prints; MAC-ZIP, trees laid out like an extracted Finder zip (with __MACOSX, with AppleDouble files beside the files, without them)
+given to both tools. The review4b printed cases use printed_files too (review5: the logs cut by the Mac's local date, as MetaTrader cuts them;
+before review5 they were cut by the server day of the journal files, which hid FV4b-1).
+The cases of the fifth round's second pass are the tests named 'review5b ...' (the verifiers' ids), on journals of the user's November 2026 demo
+built by story_journal (starts, refused starts, stops, positions adopted across a stop, refused closes, positions open at the copy): check_start.py
+with one chat word after the INIT line (START-TRAILING-WORD), the start lines glued with the Experts prefix between them (START-GLUED-PREFIX), a
+refused last start (RH5-5: relaunch, not F7); check_demo with a start OnInit refused then the relaunch, and alone (RH5-1, with check_start's
+verdict on the same lines), a start replaced by a later one, with and without real trades (RH5-2), an observer copy during the demo
+(OBSERVER-NORMAL), a restart in a lost daily file seen in the Experts logs (PRINTED-RESTART-UNCHECKED, md_journal 'restart_d2'), a close or
+stop moves in a lost file (LOST-FILE-POSITIONS), closes refused with Algo Trading off (RH5-3), the copy taken while the robot runs and --copie
+(RH5-4), a paper trade while MetaTrader was closed (RH5-6), a position closed while the robot was stopped and the balance difference (RH5-7), the
+Mac asleep (RH5-8), a position open at the copy (RH5-9) and the Paris times on stdout (RH5-10).
 --quick: tool 1, the ReleveFP harness and the journal-only checks of tool 2 (no robot build or replay).
 DEMO_TEST_SCRATCH and DEMO_TEST_RESULTS (environment) move the scratch folder and the results file (used to run this
 file against a copy of earlier tools).
@@ -667,7 +688,7 @@ def md_journal(folder, variant=(), style="live"):
     'no_close': the balance books ORX at its broker stop, the case where the minutes show that stop crossed).
     Variants of review4b: 'plan_late' (InpPlanStart 20 h after the start: an intent before it sized observe, B = P_in = 0),
     'orphan_reconcile' (with 'outage': an ORPHAN at the reconnection's reconcile), 'orphan_mid' (an ORPHAN far from any start or
-    reconnection)."""
+    reconnection). Variant of review5b: 'restart_d2' ('restart' with the build's default D2 at the restart: InpRiskTable not typed)."""
     os.makedirs(folder, exist_ok=True)
     L = []                                                              # (server write time, line)
 
@@ -682,12 +703,13 @@ def md_journal(folder, variant=(), style="live"):
         a = srv(at)
         if "clock_first" in variant and at == "2021-11-17 08:00":     # OnInit: the guards' clock check writes before INIT
             add(a, jl(C.srv_to_utc(a), "CLOCK", "-", ("state", "wrong"), ("measured_s", 3600), ("rule_s", 7200)))
-        add(a, init_line(C.srv_to_utc(a), risk=risk, sleeves="GFP" if "sleeves_gfp" in variant else "ALL", demo=0 if "demo0" in variant else 1,
+        r_ = D2 if ("restart_d2" in variant and at != "2021-11-17 08:00") else risk    # review5b: the restart with InpRiskTable not typed
+        add(a, init_line(C.srv_to_utc(a), risk=r_, sleeves="GFP" if "sleeves_gfp" in variant else "ALL", demo=0 if "demo0" in variant else 1,
                          sw=("off" if "k1_off" in variant else "on", "on", "on"), syms={"US100": "US100"} if "sym_noR" in variant else None))
         add(a, jl(C.srv_to_utc(a), "SELFTEST", "-", ("ok", 1), ("why", ""), ("golden", 366)))
         state = "unset" if "plan_unset" in variant else ("future" if ("plan_future" in variant or "plan_late" in variant) else "ok")
         add(a + 60, jl(C.srv_to_utc(a + 60), "PLAN", "-", ("T", T), ("state", state), ("demo", 0 if "demo0" in variant else 1),
-                       ("B_T", 10000.0), ("risk", risk)))
+                       ("B_T", 10000.0), ("risk", r_)))
         add(a + 60, jl(C.srv_to_utc(a + 60), "REBUILD", "-", ("n", 1), ("why", "start"), ("from", C.srv_to_utc(a) - 120 * 86400),
                        ("to", C.srv_to_utc(a + 60)), ("minutes", 172800), ("ms", 812)))
         for b in C.ROBOT_BASES:
@@ -886,7 +908,7 @@ def md_journal(folder, variant=(), style="live"):
                                         ("why", "orphan"), ("rc", 10009), ("ok", 1)))
         add(srv("2021-11-24 15:00"), jl(U("2021-11-24 15:00"), "ORPHAN", "F1B", ("ticket", 70000198), ("why", "not_the_paper_trade"),
                                         ("magic", 20261205), ("at", "reconcile")))
-    if "restart" in variant:                                            # stopped Friday night, started again on Monday
+    if "restart" in variant or "restart_d2" in variant:                # stopped Friday night, started again on Monday
         add(srv("2021-11-19 23:30"), jl(U("2021-11-19 23:30"), "INIT", "-", ("deinit", 1), ("lines", 100), ("bars_fed", 9000), ("rebuilds", 1)))
         start("2021-11-22 08:00")
         add(srv("2021-11-22 08:02"), jl(U("2021-11-22 08:02"), "ADOPT", "D4H", ("oid", info["E"]), ("ticket", 70000102),
@@ -902,10 +924,11 @@ def md_journal(folder, variant=(), style="live"):
         if "p_in" in variant and pd >= srv("2021-11-21 00:00"):
             b += 500.0
         return round(b, 2)
-    stopped = {"2021-11-20", "2021-11-21"} if "restart" in variant else set()
+    restarted = "restart" in variant or "restart_d2" in variant
+    stopped = {"2021-11-20", "2021-11-21"} if restarted else set()
     for d in range(18, 26):
         day = f"2021-11-{d:02d}"
-        if day in stopped or (day == "2021-11-22" and "restart" in variant):
+        if day in stopped or (day == "2021-11-22" and restarted):
             continue                                                    # not running: no daily lines for these days
         prev_days = [srv(f"2021-11-{d - 1:02d} 00:00")]
         if style == "harness" and d in (20, 21):
@@ -3194,17 +3217,46 @@ def noisy_trades(seed, start, mult=1.0):
     return out
 
 
+def paris_wall(u):
+    """the Mac's wall clock (Paris) of a UTC instant, written here apart from the tools (the fixture must not lean on the code it checks):
+    European summer time from the last Sunday of March 01:00 UTC to the last Sunday of October 01:00 UTC"""
+    y = time.gmtime(u).tm_year
+
+    def last_sunday(m):
+        d = calendar.timegm((y, m, 31, 0, 0, 0))                      # March and October have 31 days
+        return d - ((time.gmtime(d).tm_wday + 1) % 7) * 86400
+    return u + (7200 if last_sunday(3) + 3600 <= u < last_sunday(10) + 3600 else 3600)
+
+
 def printed_files(folder, jdir, names=None, edit=None):
-    """MetaTrader's own Experts logs (MQL5/Logs/<yyyymmdd>.log, UTF-16) of a journal folder: one file per daily journal file, its live
-    lines after the Experts tab's prefix (review4b ADV5-4); edit(name, lines) may change them. Returns the paths"""
+    """MetaTrader's own Experts logs (MQL5/Logs/<yyyymmdd>.log, UTF-16) of a journal folder, as the Mac writes them (review5 FV4b-1): one file
+    per local date of the Mac (Paris: server - 1 h, - 2 h in the weeks when Paris and New York have not both changed clocks), not per server
+    day; each live line goes to the day it was written (the clock of the stamped lines before it: a decision stamped at its bar is written
+    later), after the Experts tab's prefix with that local time (review4b ADV5-4); edit(name, lines) may change a file's lines. Returns the
+    paths"""
+    import check_demo as D
     os.makedirs(folder, exist_ok=True)
-    out = []
+    by_day, now = {}, None
     for fn in sorted(names or os.listdir(jdir)):
-        lines = [ln for ln in lines_of(os.path.join(jdir, fn)) if ln.startswith("CR|") and "|rp=1" not in ln]
+        for ln in lines_of(os.path.join(jdir, fn)):
+            m = re.match(r"^CR\|(\d+)\|([A-Z]+)\|", ln)
+            if not m or "|rp=1" in ln:
+                continue
+            u = int(m.group(1))
+            if m.group(2) in D.NOW_STAMPED:
+                now = u if now is None else max(now, u)
+            loc = paris_wall(u if now is None else max(now, u))
+            by_day.setdefault(time.strftime("%Y%m%d", time.gmtime(loc)), []).append((loc, ln))
+    out = []
+    for day, items in sorted(by_day.items()):
+        lines = [ln for _, ln in items]
         if edit:
-            lines = edit(fn, lines)
-        p = os.path.join(folder, fn)
-        utf16_printed(p, lines, extra_other=False)
+            lines = edit(day + ".log", lines)
+        p = os.path.join(folder, day + ".log")
+        rows = [f"GH\t0\t{time.strftime('%H:%M:%S', time.gmtime(loc))}.{k % 1000:03d}\tClaudeRobot (XAUUSD.r,M1)\t{ln}"
+                for k, (loc, ln) in enumerate(items) if ln in lines]
+        with open(p, "wb") as f:
+            f.write(b"\xff\xfe" + ("\r\n".join(rows) + "\r\n").encode("utf-16-le"))
         out.append(p)
     return out
 
@@ -3523,6 +3575,1012 @@ def test_review4b_replay(lit):
     print(f"   (review4b replay tests {time.time() - t0:.0f} s)")
 
 
+# ---------------------------------------------------------------------------------------------- review5: the start's paste (check_start.py)
+START_U = C.srv_to_utc(srv("2026-11-15 11:02"))           # the user's start: Sunday 15 November 2026, 10:02 in Paris, 11:02 on the server
+
+
+def start_lines(u=START_U, ready=C.ROBOT_BASES, **kw):
+    """a start as the release robot writes it (OnInit: INIT, SELFTEST; MainWait: PLAN src=first_deal, then PLAN; MainRebuild: REBUILD;
+    CBarStore::Check: READY), with the user's settings unless kw changes the INIT line (init_line's arguments)"""
+    kw.setdefault("k1t", K1T_2026)
+    risk = kw.get("risk", S7)
+    t0 = u - 3 * 86400
+    out = [init_line(u, **kw), jl(u, "SELFTEST", "-", ("ok", 1), ("why", ""), ("golden", 366)),
+           jl(u + 4, "PLAN", "-", ("src", "first_deal"), ("T", C.utc_to_srv(t0))),
+           jl(u + 4, "PLAN", "-", ("T", C.utc_to_srv(t0)), ("state", "ok"), ("demo", kw.get("demo", 1)), ("B_T", 10000.0), ("risk", risk)),
+           jl(u + 6, "REBUILD", "-", ("n", 1), ("why", "start"), ("from", u - 200 * 86400), ("to", u + 6), ("minutes", 288000), ("ms", 4210))]
+    for b in ready:
+        out.append(jl(u + 40, "READY", b, ("bars", 180000), ("raw", 180000), ("first", u - 200 * 86400), ("last", u), ("masked", 0), ("holes", 0),
+                      ("depth_days", C.DEPTH_DAYS[b])))
+    return out
+
+
+def stop_line(u, reason):
+    return jl(u, "INIT", "-", ("deinit", reason), ("lines", 12), ("bars_fed", 0), ("rebuilds", 1), ("masked_XAUUSD", 0), ("masked_US100", 0),
+              ("masked_BTCUSD", 0), ("masked_ETHUSD", 0))
+
+
+def experts_paste(lines, style="copy", account=True):
+    """lines as the Experts tab copies them (right-click -> Copy): the time and the source before 'CR|' ('copy'), a line of MetaTrader's
+    own log file ('log': code, severity, time, source), or the columns turned into spaces by the chat ('spaces'); account=True plants the
+    account in the paste the way a careless copy would bring it (a Journal-tab line with the login and the server, the holder's name and
+    the user folder before a robot line)"""
+    out = []
+    if account:
+        out.append(f"QK\t0\t10:01:58.120\tNetwork\t'{FAKE_LOGIN}': authorized on {FAKE_SERVER} through Access Point EU 2")
+        out.append(f"MN\t0\t10:01:57.002\tTerminal\tFP Markets MT5 Terminal started for FP Markets ({FAKE_NAME})")
+    for k, ln in enumerate(lines):
+        t = f"10:02:{10 + k % 49:02d}.{(37 * k) % 1000:03d}"
+        if style == "log":
+            out.append(f"GH\t0\t{t}\tClaudeRobot (XAUUSD.r,M1)\t{ln}")
+        elif style == "spaces":
+            out.append(f"2026.11.15 {t}    ClaudeRobot (XAUUSD.r,M1)    {ln}")
+        else:
+            src = f"ClaudeRobot (XAUUSD.r,M1) C:\\users\\{FAKE_USER}\\AppData {FAKE_LOGIN}" if (account and k == 0) else "ClaudeRobot (XAUUSD.r,M1)"
+            out.append(f"2026.11.15 {t}\t{src}\t{ln}")
+    return "\n".join(out) + "\n"
+
+
+def test_review5_start(lit):
+    """review5 START: check_start.py on the lines the user pastes into the chat right after the start (the Experts tab copied with right-click
+    -> Copy), built with this file's journal lines (JrnAt's format) wrapped the way the tab copies them, account values planted in the paste.
+    check_start.py does not exist before review5: these tests fail there by construction"""
+    del lit
+    base_dir = os.path.join(SCRATCH, "rv5s")
+    os.makedirs(base_dir, exist_ok=True)
+
+    def go(name, content):
+        p = os.path.join(base_dir, name + ".txt")
+        with open(p, "wb") as f:
+            f.write(content if isinstance(content, bytes) else content.encode("utf-8"))
+        rc, so, se = run_tool("check_start.py", [p])
+        ok_lines = [ln for ln in so.splitlines() if ln.startswith("OK : ")]
+        diff = [ln for ln in so.splitlines() if ln.startswith("DIFFERENT : ")]
+        return {"rc": rc, "so": so, "se": se, "ok": ok_lines, "diff": diff, "leak": leak_free(so + se),
+                "verdict": next((ln for ln in so.splitlines() if ln.startswith("Verdict")), "")}
+    g = go("right", experts_paste(start_lines()))
+    chk("review5 START: the user's right settings (S7, InpK1T 2026, .r names, demo, build fd6aaf01e332) pasted from the Experts tab with "
+        "a Journal line and account values around them: every check OK, exit code 0, nothing of the account printed",
+        lambda: (g["rc"] == 0 and not g["diff"] and len(g["ok"]) >= 14 and "conforme" in g["verdict"] and not g["leak"]
+                 and "READY ETHUSD" in g["so"] and "417.23813245421888" in g["so"] and "Traceback" not in g["se"], (g["rc"], g["so"][-1500:], g["se"][-500:], g["leak"])))
+    g = go("init_only", experts_paste(start_lines()[:1], account=False))
+    chk("review5 START: the INIT line alone (what the guide asks for): OK, the lines written later said 'PAS ENCORE' or 'ABSENT', exit code 0",
+        lambda: (g["rc"] == 0 and not g["diff"] and "PAS ENCORE : READY XAUUSD" in g["so"] and "ABSENT : SELFTEST" in g["so"]
+                 and "PAS ENCORE : PLAN" in g["so"], g["so"][-1200:]))
+    g = go("d2", experts_paste(start_lines(risk=D2)))
+    chk("review5 START: InpRiskTable left at the default (D2): DIFFERENT naming D2, InpRiskTable and the S7 table to type, exit code 1",
+        lambda: (g["rc"] == 1 and any("D2" in x and "InpRiskTable" in x and S7 in x for x in g["diff"]), g["diff"]))
+    comma = [jl(START_U, "ERROR", "-", ("what", "InpRiskTable: '3000:3,5' is not a pair from:pct of plain numbers")), stop_line(START_U, 8)]
+    g = go("comma", experts_paste(comma))
+    chk("review5 START: a comma typed in the risk table (the robot refuses it: ERROR, no INIT, stop line deinit=8): the ERROR named as a typo "
+        "in InpRiskTable (a comma), INIT absent, the typed value never printed, exit code 1",
+        lambda: (g["rc"] == 1 and any("InpRiskTable" in x and "virgule" in x for x in g["diff"]) and "ABSENT : INIT" in g["so"]
+                 and "3000:3,5" not in g["so"] and "arret" in g["so"], g["so"][-1200:]))
+    g = go("k1t_empty", experts_paste(start_lines(k1t="")))
+    chk("review5 START: InpK1T left empty (K1 on, no threshold for 2026): DIFFERENT naming InpK1T and 2026:417.23813245421888, exit code 1",
+        lambda: (g["rc"] == 1 and any("InpK1T" in x and "2026:417.23813245421888" in x for x in g["diff"]), g["diff"]))
+    g = go("k1t_417", experts_paste(start_lines(k1t="2026:4.1700000000000000e+02")))
+    chk("review5 START: InpK1T typed 2026:417 (the robot writes back 4.1700000000000000e+02): DIFFERENT, a typo, exit code 1",
+        lambda: (g["rc"] == 1 and any("InpK1T" in x and "417" in x and "faute de frappe" in x for x in g["diff"]), g["diff"]))
+    g = go("k1t_e002", experts_paste(start_lines(k1t="2026:4.1723813245421888e+002"), "log"))
+    chk("review5 START control: k1t with a three-digit exponent (2026:4.1723813245421888e+002, as MetaTrader under Windows may print it) "
+        "and the log file's prefix: OK, exit code 0", lambda: (g["rc"] == 0 and not g["diff"], g["so"][-800:]))
+    g = go("no_r", experts_paste(start_lines(syms={"XAUUSD": "XAUUSD"}), "spaces"))
+    chk("review5 START: the robot took XAUUSD instead of XAUUSD.r (columns turned into spaces by the chat): DIFFERENT naming both names, exit 1",
+        lambda: (g["rc"] == 1 and any("XAUUSD.r" in x and "pris XAUUSD " in x for x in g["diff"]), g["diff"]))
+    g = go("demo0", experts_paste(start_lines(demo=0, observer=1, sw=("off", "off", "off"))))
+    chk("review5 START: a real account (demo=0): DIFFERENT 'compte reel' (remove the robot), exit code 1",
+        lambda: (g["rc"] == 1 and any("compte reel" in x for x in g["diff"]), g["diff"]))
+    old = next((b["build"] for b in C.known_builds() if b["kind"] == "release" and b["build"] != C.REQUIRED_BUILD), "1cf1d0cab64b")
+    g = go("old", experts_paste(start_lines(build=old)))
+    chk("review5 START: an older build of dist/'s history: DIFFERENT naming the build and the right file, exit code 1",
+        lambda: (g["rc"] == 1 and any(old in x and C.REQUIRED_BUILD in x for x in g["diff"]), (old, g["diff"])))
+    g = go("stop_only", experts_paste([stop_line(START_U, 1)]))
+    chk("review5 START: the robot's stop line only (INIT deinit=): named as the stop line, INIT absent, no setting said OK, exit code 1",
+        lambda: (g["rc"] == 1 and "ligne d'arret" in g["so"] and "ABSENT : INIT" in g["so"] and not g["ok"], g["so"][-800:]))
+    errs = [jl(START_U, "ERROR", "BKE", ("what", "InpK1T refused: '2026:417,23813245421888': T must be a number of bp (e.g. 465.1178140105435)")),
+            jl(START_U, "ERROR", "-", ("what", "rule BKE: Init refused its configuration"))]
+    g = go("errors_only", experts_paste(errs))
+    chk("review5 START: the two ERROR lines of an InpK1T typo only: one DIFFERENT saying a typo in InpK1T (the second line, same cause, as "
+        "information), INIT absent, exit code 1",
+        lambda: (g["rc"] == 1 and len(g["diff"]) == 1 and "InpK1T" in g["diff"][0] and "faute de frappe" in g["diff"][0]
+                 and "ABSENT : INIT" in g["so"] and "417,23" not in g["so"], g["so"][-1000:]))
+    two = start_lines(START_U - 900, risk=D2, ready=())[:2] + [stop_line(START_U - 60, 5)] + start_lines()
+    g = go("two_starts", experts_paste(two))
+    chk("review5 START: two starts in one paste (D2 first, stopped by the change of parameters, then S7): the last one decides (OK, exit 0), "
+        "the first is named with its D2",
+        lambda: (g["rc"] == 0 and not g["diff"] and any(ln.startswith("INFO : demarrage 1") and "D2" in ln for ln in g["so"].splitlines()),
+                 g["so"][-1500:]))
+    full = start_lines()
+    g = go("cut", experts_paste([full[0][:170]] + full[1:2], account=False))
+    chk("review5 START: an INIT line cut in the middle: 'ligne coupee : demander de la recopier', no setting checked from it, exit code 1",
+        lambda: (g["rc"] == 1 and any("ligne coupee : demander de la recopier" in x and "INIT" in x for x in g["diff"])
+                 and "OK : build" not in g["so"], g["so"][-800:]))
+    wr = full[0]
+    g = go("wrapped", f"2026.11.15 10:02:10.123\tClaudeRobot (XAUUSD.r,M1)\t{wr[:140]}\n{wr[140:250]}\n{wr[250:]}\n")
+    chk("review5 START: an INIT line the chat wrapped onto three lines is put back together (said as information) and checked: OK, exit 0",
+        lambda: (g["rc"] == 0 and "recollee" in g["so"] and any("seuil K1" in x for x in g["ok"]), g["so"][-800:]))
+    u16 = experts_paste(full, "log").replace("\n", "\r\n")
+    g = go("utf16", b"\xff\xfe" + u16.encode("utf-16-le"))
+    chk("review5 START: the paste saved as UTF-16 (byte-order mark, CRLF, MetaTrader's log prefix): read, OK, exit code 0, nothing of the "
+        "account printed", lambda: (g["rc"] == 0 and not g["diff"] and len(g["ok"]) >= 14 and not g["leak"], (g["so"][-800:], g["leak"])))
+    g = go("quotes_bom", b"\xef\xbb\xbf" + ('```\n"' + full[0] + '"\r\n```\r\n').encode("utf-8"))
+    chk("review5 START control: a UTF-8 byte-order mark, a code fence and quotes around the line: OK, exit code 0",
+        lambda: (g["rc"] == 0 and not g["diff"], g["so"][-600:]))
+    g = go("risk_spaces", experts_paste(start_lines(risk=" " + S7 + " ")))
+    chk("review5 START: InpRiskTable typed with a space before and after (the robot trims them, MainInitLine writes them back): the line is "
+        "read and the table is S7, exit code 0", lambda: (g["rc"] == 0 and not g["diff"], g["so"][-800:]))
+    clock = [jl(START_U, "CLOCK", "-", ("state", "wrong"), ("measured_s", 3600), ("rule_s", 7200))] + full
+    g = go("clock", experts_paste(clock))
+    chk("review5 START: CLOCK state=wrong written by OnInit (no CLOCK state=ok after it): DIFFERENT with the Mac's clock to fix, exit code 1",
+        lambda: (g["rc"] == 1 and any("CLOCK" in x and "heure du Mac" in x for x in g["diff"]), g["diff"]))
+    g = go("clock_ok", experts_paste(clock + [jl(START_U + 300, "CLOCK", "-", ("state", "ok"), ("measured_s", 7200), ("rule_s", 7200))]))
+    chk("review5 START control: CLOCK state=wrong followed by CLOCK state=ok: information only, exit code 0",
+        lambda: (g["rc"] == 0 and not g["diff"] and "CLOCK" in g["so"], g["so"][-800:]))
+    st0 = [full[0], jl(START_U, "SELFTEST", "-", ("ok", 0), ("why", "golden"), ("golden", 366))]
+    g = go("selftest0", experts_paste(st0))
+    chk("review5 START: SELFTEST ok=0: DIFFERENT (the robot will not trade), exit code 1",
+        lambda: (g["rc"] == 1 and any("SELFTEST ok=0" in x for x in g["diff"]), g["diff"]))
+    g = go("observer", experts_paste(start_lines(observer=1)))
+    chk("review5 START: an observer copy on the demo (InpTrade false): DIFFERENT naming InpTrade, exit code 1",
+        lambda: (g["rc"] == 1 and any("InpTrade" in x for x in g["diff"]), g["diff"]))
+    nr = start_lines(ready=("XAUUSD", "BTCUSD")) + [jl(START_U + 40, "NOTREADY", "US100", ("why", "sync"), ("bars", 100), ("raw", 100),
+                                                     ("first", START_U - 9 * 86400), ("last", START_U), ("masked", 0), ("holes", 0))]
+    g = go("not_ready_yet", experts_paste(nr + [jl(START_U + 50, "MISSED", "BKB", ("oid", (START_U - 600) * 100 + 3), ("stamp", START_U - 600),
+                                                  ("reason", "late"))]))
+    chk("review5 START control: two markets not READY yet (one NOTREADY sync) and a MISSED late at the start: 'PAS ENCORE' and information, "
+        "never an error, exit code 0",
+        lambda: (g["rc"] == 0 and "PAS ENCORE : READY US100" in g["so"] and "PAS ENCORE : READY ETHUSD" in g["so"] and "MISSED" in g["so"]
+                 and not g["diff"], g["so"][-1000:]))
+    # check_start and check_demo agree on the same start (start_settings, shared)
+    agree, seen = [], []
+    for name, kw in (("right", {}), ("d2", {"risk": D2}), ("k1t_empty", {"k1t": ""}), ("k1t_417", {"k1t": "2026:4.1700000000000000e+02"}),
+                     ("no_r", {"syms": {"US100": "US100"}}), ("sleeves", {"sleeves": "GFP"}), ("k1_off", {"sw": ("off", "on", "on")}),
+                     ("old", {"build": old})):
+        ls_ = start_lines(**kw) + [stop_line(START_U + 3600, 1)]
+        jd = os.path.join(base_dir, "agree_" + name, "ClaudeRobot")
+        os.makedirs(jd, exist_ok=True)
+        write(os.path.join(jd, time.strftime("%Y%m%d", time.gmtime(C.utc_to_srv(START_U))) + ".log"), "\n".join(ls_) + "\n")
+        out = os.path.join(base_dir, "agree_out_" + name)
+        rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(jd), "--out", out])
+        an = json.load(open(os.path.join(out, "report.json")))["anomalies"] if rc == 0 else ["(check_demo failed)"]
+        gs = go("agree_" + name, experts_paste(ls_[:-1]))
+        seen.append((name, bool(an), gs["rc"]))
+        if bool(an) != (gs["rc"] == 1):
+            agree.append((name, an[:2], gs["diff"][:2]))
+    chk("review5 START: check_start and check_demo agree on the same start lines (right settings, D2, InpK1T empty or 2026:417, no .r name, "
+        "InpSleeves, K1 off, an older build): both flag it or neither", lambda: (not agree and len(seen) == 8, (agree, seen)))
+
+
+def apple_double():
+    """an AppleDouble file as macOS writes it beside a file (magic 0x00051607, version 2, 'Mac OS X', an extended-attributes block)"""
+    return (b"\x00\x05\x16\x07\x00\x02\x00\x00Mac OS X        \x00\x02\x00\x00\x00\x09\x00\x00\x00\x32\x00\x00\x0e\xb0\x00\x00\x00\x02"
+            b"\x00\x00\x0e\xe2\x00\x00\x01\x1e" + b"\x00" * 32 + b"ATTR\x00\x00\x00\x00com.apple.quarantine\x000083;6553f1a2;Safari;"
+            + b"\x00" * 80)
+
+
+def finder_zip_tree(root, files, macosx=True, beside=False):
+    """a tree laid out exactly like a Finder zip ('Compresser') extracted elsewhere: the user's files as they are, then for each of them
+    an AppleDouble '._<name>' under __MACOSX/<same folders>/ (macosx), or beside it (beside: a copy made by tar or onto a FAT key), and
+    the folders' own '._<folder>' entries. files: {relative path: source path}. Returns the AppleDouble paths written"""
+    out = []
+    for rel, src in files.items():
+        dst = os.path.join(root, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy(src, dst)
+        d, n = os.path.split(rel)
+        for where in ([os.path.join(root, "__MACOSX", d)] if macosx else []) + ([os.path.join(root, d)] if beside else []):
+            os.makedirs(where, exist_ok=True)
+            p = os.path.join(where, "._" + n)
+            with open(p, "wb") as f:
+                f.write(apple_double())
+            out.append(p)
+    if macosx:
+        for top in {rel.split("/")[0] for rel in files if "/" in rel}:
+            with open(os.path.join(root, "__MACOSX", "._" + top), "wb") as f:
+                f.write(apple_double())
+    with open(os.path.join(root, ".DS_Store"), "wb") as f:
+        f.write(b"\x00\x00\x00\x01Bud1" + b"\x00" * 60)
+    return out
+
+
+def start_go(base_dir, name, content):
+    """check_start.py on one paste saved as text: rc, stdout, the OK and DIFFERENT lines, the verdict, the account words found"""
+    p = os.path.join(base_dir, name + ".txt")
+    with open(p, "wb") as f:
+        f.write(content if isinstance(content, bytes) else content.encode("utf-8"))
+    rc, so, se = run_tool("check_start.py", [p])
+    return {"rc": rc, "so": so, "se": se, "ok": [ln for ln in so.splitlines() if ln.startswith("OK : ")],
+            "diff": [ln for ln in so.splitlines() if ln.startswith("DIFFERENT : ")], "leak": leak_free(so + se),
+            "verdict": next((ln for ln in so.splitlines() if ln.startswith("Verdict")), "")}
+
+
+def test_review5b_start(lit):
+    """review5b (the fifth round's second pass), check_start.py: START-TRAILING-WORD (one chat word after the INIT line was glued onto ETHUSD.r),
+    START-GLUED-PREFIX (robot lines glued on one line with the Experts tab's prefix between them), RH5-5 (a refused last start: the robot left the
+    chart, F7 cannot reach it: relaunch with the two values)"""
+    del lit
+    base_dir = os.path.join(SCRATCH, "rv5bs")
+    os.makedirs(base_dir, exist_ok=True)
+    full = start_lines()
+    init = full[0]
+    bad = []
+    for word in ("merci", "OK", "9h30", "Voila"):
+        for style in ("copy", "bare"):
+            text = (experts_paste([init], account=False) if style == "copy" else init + "\n") + word + "\n"
+            g = start_go(base_dir, f"trail_{word}_{style}", text)
+            if g["rc"] != 0 or g["diff"] or "recollee" in g["so"] or "OK : marches XAUUSD.r, US100.r, BTCUSD.r, ETHUSD.r" not in g["so"]:
+                bad.append((word, style, g["rc"], g["diff"][:1]))
+    chk("review5b START-TRAILING-WORD: the right INIT line followed by one chat word ('merci', 'OK', '9h30', 'Voila'), with or without the "
+        "Experts prefix: the word is never glued onto ETHUSD.r, every check OK, exit code 0", lambda: (not bad, bad))
+    g = start_go(base_dir, "trail_after_all", experts_paste(full, account=False) + "merci\n")
+    chk("review5b control START-TRAILING-WORD: a word after the whole start (READY's last field is a number): OK, exit code 0",
+        lambda: (g["rc"] == 0 and not g["diff"], g["so"][-600:]))
+    g = start_go(base_dir, "glued_login", experts_paste([init + FAKE_LOGIN], account=False))
+    chk("review5b START-TRAILING-WORD: text glued onto the end of the INIT line (no line end, '.r' then digits): 'texte colle apres la ligne "
+        "INIT : demander de la recopier', never 'ce compte n'a pas ETHUSD.r', the glued text never printed, exit code 1",
+        lambda: (g["rc"] == 1 and any("texte colle" in x and "recopier" in x for x in g["diff"]) and "ce compte n'a pas" not in g["so"]
+                 and not g["leak"], (g["diff"], g["leak"])))
+    g = start_go(base_dir, "wrap_in_r", "2026.11.15 10:02:10.123\tClaudeRobot (XAUUSD.r,M1)\t" + init[:-2] + "\n" + init[-2:] + "\n")
+    g2 = start_go(base_dir, "wrap_in_r2", "2026.11.15 10:02:10.123\tClaudeRobot (XAUUSD.r,M1)\t" + init[:-1] + "\n" + init[-1:] + "\n")
+    chk("review5b control START-TRAILING-WORD: an INIT line the chat wrapped inside its last name ('ETHUSD' then '.r', or 'ETHUSD.' then "
+        "'r') is put back together: OK, exit code 0", lambda: (g["rc"] == 0 and g2["rc"] == 0 and not g["diff"] and not g2["diff"]
+                                                             and "recollee" in g["so"] and "recollee" in g2["so"], (g["so"][-500:], g2["so"][-500:])))
+    # START-GLUED-PREFIX: the copy lost its line ends, the tab's prefix of each line sits between the robot lines
+    res = {}
+    for name, style, sep in (("copy", "copy", ""), ("copy_space", "copy", " "), ("log", "log", ""), ("spaces", "spaces", " ")):
+        txt = experts_paste(full, style, account=False).rstrip("\n").replace("\n", sep) + "\n"
+        res[name] = start_go(base_dir, "glued_" + name, txt)
+    chk("review5b START-GLUED-PREFIX: the nine start lines glued on one line with the Experts tab's prefix between them (tab, log file or "
+        "spaces style; nothing or a space between the lines): every line read, every check OK, exit code 0",
+        lambda: (all(v["rc"] == 0 and not v["diff"] and "OK : READY ETHUSD" in v["so"] and "OK : SELFTEST ok=1" in v["so"] for v in res.values()),
+                 {k: (v["rc"], v["diff"][:2]) for k, v in res.items()}))
+    g = start_go(base_dir, "glued_copy_d2", experts_paste(start_lines(risk=D2), account=False).rstrip("\n").replace("\n", "") + "\n")
+    chk("review5b control START-GLUED-PREFIX: the same glued copy of a start with D2: the D2 found (DIFFERENT), exit code 1",
+        lambda: (g["rc"] == 1 and any("D2" in x for x in g["diff"]) and not any("ligne coupee" in x for x in g["diff"]), g["diff"][:3]))
+    # RH5-5: a refused last start (ERROR, then the stop line deinit=8): the robot left the chart, F7 cannot reach its inputs
+    comma = [jl(START_U, "ERROR", "-", ("what", "InpRiskTable: '3000:3,5' is not a pair from:pct of plain numbers")), stop_line(START_U, 8)]
+    k1e = [jl(START_U, "ERROR", "BKE", ("what", "InpK1T refused: '2026:417,23813245421888': T must be a number of bp (e.g. 465.1178140105435)")),
+           jl(START_U, "ERROR", "-", ("what", "rule BKE: Init refused its configuration")), stop_line(START_U, 8)]
+    out = {}
+    for name, ls_ in (("comma", comma), ("k1t", k1e)):
+        out[name] = start_go(base_dir, "refused_" + name, experts_paste(ls_, account=False))
+
+    def relaunch_ok(g, word):
+        d = [x for x in g["diff"] if word in x]
+        return (g["rc"] == 1 and len(d) == 1 and "relancer" in d[0] and "etape 6" in d[0] and S7 in d[0] and C.K1T_TEXT in d[0]
+                and "F7" not in d[0])
+    chk("review5b RH5-5: a refused last start (ERROR InpRiskTable with a comma, or the two InpK1T lines, then INIT deinit=8): the advice is to "
+        "relaunch the robot (step 6 of the guide) with the two values, never F7 (the robot left the chart), exit code 1",
+        lambda: (relaunch_ok(out["comma"], "InpRiskTable") and relaunch_ok(out["k1t"], "InpK1T"), (out["comma"]["diff"], out["k1t"]["diff"])))
+    g = start_go(base_dir, "refused_then_right", experts_paste(comma + full, account=False))
+    gd = start_go(base_dir, "running_d2", experts_paste(start_lines(risk=D2), account=False))
+    chk("review5b control RH5-5: a refused start followed by the right start: information only, exit code 0; a running start with D2 keeps the "
+        "F7 advice", lambda: (g["rc"] == 0 and not g["diff"] and "INFO : demarrage 1" in g["so"] and gd["rc"] == 1
+                              and any("F7" in x and "D2" in x for x in gd["diff"]), (g["so"][-700:], gd["diff"][:2])))
+
+
+STORY_OPENED = srv("2026-11-14 15:30")             # the user's demo account opened on Saturday 14 November 2026 (1 000 EUR)
+STORY_START = srv("2026-11-14 16:00")              # the start the guide asks for: Saturday, 15:00 in Paris, every market closed
+STORY_COPY = srv("2026-11-18 23:00")               # the Wednesday copy: 22:00 in Paris, the robot running
+ERR_COMMA = "InpRiskTable: '3000:3,5' is not a pair from:pct of plain numbers"
+ERR_K1T = ("InpK1T refused: '2026:417,23813245421888': T must be a number of bp (e.g. 465.1178140105435)",
+           "rule BKE: Init refused its configuration")
+
+
+def story_journal(folder, segs, trades=(), opened=STORY_OPENED, copy=STORY_COPY, balance0=1000.0):
+    """a demo journal as the release robot writes it on the user's Mac in November 2026 (review5b), one daily file per server date. segs: the
+    starts in time order, dicts with 'at' (server time of the INIT line), 'to' (server time of the stop line INIT deinit=, None: still running
+    when the files were copied at `copy`), 'deinit' (9), 'risk' (S7), 'k1t' (K1T_2026), 'observer' (0), 'refused' (ERROR texts: OnInit refused
+    the inputs, so only the ERROR lines and the stop line deinit=8 at 'at', no INIT build=; 'stop_line' False drops that stop line). Each start
+    that runs writes INIT, SELFTEST, PLAN src=first_deal and PLAN (InpPlanStart 0 on a demo: the plan starts at the account's first deal,
+    `opened`), REBUILD and the four READY. trades: dicts like mini_journal's (code, side, at, hold, ppx, stop, fill, quote, lots, ticket, xpx,
+    close) with optional 'refused_closes' (n, rc): n CLOSE ok=0 lines a minute apart from the paper's exit, the close done after them;
+    'open_at_copy' (no exit yet when the files were copied); 'booked' (server time, price): no CLOSE line, the balance books the close then
+    (the broker's stop while the robot was stopped). A trade whose entry falls while no start runs is the paper's only: the next start's
+    rebuild writes its lines rp=1 and its reconcile ends it MISSED late. A position still open at a stop is adopted by the next start (ADOPT).
+    The AGG, COST and DAY lines of the day before come at 00:00:30 of each server day a start runs (weekends included); the balance books
+    every close. Returns the file names."""
+    os.makedirs(folder, exist_ok=True)
+    L = []
+
+    def add(t_srv, line):
+        L.append((int(t_srv), len(L), line))
+
+    def running(t):
+        return next((k for k, s in enumerate(segs) if not s.get("refused") and s["at"] <= t and (s.get("to") is None or t < s["to"])), None)
+    for k, s in enumerate(segs):
+        a = s["at"]
+        u = C.srv_to_utc(a)
+        if s.get("refused"):
+            for w in s["refused"]:
+                add(a, jl(u, "ERROR", "BKE" if w.startswith("InpK1T") else "-", ("what", w)))
+            if s.get("stop_line", True):
+                add(a, jl(u, "INIT", "-", ("deinit", 8), ("lines", len(s["refused"])), ("bars_fed", 0), ("rebuilds", 0), ("masked_XAUUSD", 0),
+                          ("masked_US100", 0), ("masked_BTCUSD", 0), ("masked_ETHUSD", 0)))
+            continue
+        risk = s.get("risk", S7)
+        add(a, init_line(u, risk=risk, k1t=s.get("k1t", K1T_2026), observer=s.get("observer", 0)))
+        add(a, jl(u, "SELFTEST", "-", ("ok", 1), ("why", ""), ("golden", 366)))
+        if opened:                                                      # no deal yet on the account: T = 0, no 'src=first_deal' line
+            add(a + 120, jl(u + 120, "PLAN", "-", ("src", "first_deal"), ("T", opened)))
+        add(a + 120, jl(u + 120, "PLAN", "-", ("T", opened or 0), ("state", "ok"), ("demo", 1), ("B_T", 0.0 if opened else balance0),
+                        ("risk", risk)))
+        add(a + 120, jl(u + 120, "REBUILD", "-", ("n", 1), ("why", "start"), ("from", u - 120 * 86400), ("to", u + 120), ("minutes", 172860),
+                        ("ms", 0)))
+        for b in C.ROBOT_BASES:
+            add(a + 180, jl(u + 180, "READY", b, ("bars", 100000), ("raw", 100000), ("first", u - 120 * 86400), ("last", u), ("masked", 0),
+                            ("holes", 0), ("depth_days", C.DEPTH_DAYS[b])))
+        if s.get("to") is not None:
+            add(s["to"], jl(C.srv_to_utc(s["to"]), "INIT", "-", ("deinit", s.get("deinit", 9)), ("lines", 300), ("bars_fed", 5000),
+                            ("rebuilds", 1), ("masked_XAUUSD", 0), ("masked_US100", 0), ("masked_BTCUSD", 0), ("masked_ETHUSD", 0)))
+    closes = []                                                         # (server time, EUR) the balance books
+
+    def put_exit(x0, pex):
+        """the paper's exit line: live when a start runs then, else written rp=1 by the next start's rebuild (never live while stopped)"""
+        if running(x0) is not None:
+            add(x0, pex)
+            return
+        nxt = next((s for s in segs if not s.get("refused") and s["at"] > x0), None)
+        if nxt is not None:
+            add(nxt["at"] + 119, pex + "|rp=1")
+    for t in trades:
+        code, side, a = t["code"], t["side"], int(t["at"])
+        b = C.SYM_OF_CODE[code]
+        ua = C.srv_to_utc(a)
+        x0 = a + t["hold"]
+        ux = C.srv_to_utc(x0)
+        oid = ua * 100 + C.SLEEVE_ID[code]
+        h, kk = MINI_H[b], MINI_K[b]
+        sp = {"XAUUSD": 0.12, "US100": 1.0, "BTCUSD": 25.0, "ETHUSD": 3.0}[b]
+        k_in = running(a)
+        dec = dec_ord(ua, code, oid, side, 0, t["ppx"], t["stop"], ux)
+        pf = jl(ua, "PFILL", code, ("oid", oid), ("side", side), ("bar", ua), ("px", t["ppx"]), ("stop", t["stop"]), ("st0", t["stop"]),
+                ("x", ux), ("s_raw", 12), ("s_paper", 0.12))
+        pex = jl(ux, "PEXIT", code, ("oid", oid), ("side", side), ("bar", ux), ("px", t["xpx"]), ("stop", t["stop"]), ("st0", t["stop"]),
+                 ("x", ux), ("reason", "time"), ("s_raw", 12), ("s_paper", 0.12))
+        sz = [("oid", oid), ("side", side), ("et", 0), ("lots", t["lots"]), ("want", t["lots"]), ("skip", "none"), ("B", balance0), ("P_in", balance0),
+              ("rate", 7.0), ("m", 1.0), ("f", 1.0), ("unit", 70.0), ("w", 0.0), ("r", 10.0), ("budget", 70.0), ("late", 0), ("quote", t["quote"])]
+        if k_in is None:
+            # the robot was stopped at the paper's entry: the next start's rebuild writes the paper's lines rp=1, its reconcile ends the
+            # intent MISSED late (CR_Follower.mqh: sendable until stamp + 5 min)
+            nxt = next(s for s in segs if not s.get("refused") and s["at"] > a)
+            add(nxt["at"] + 119, dec + "|rp=1")
+            add(nxt["at"] + 119, pf + "|rp=1")
+            add(nxt["at"] + 119, jl(ua, "SIZE", code, *sz, ("rp", 1)))
+            add(nxt["at"] + 181, jl(C.srv_to_utc(nxt["at"] + 181), "MISSED", code, ("oid", oid), ("stamp", ua), ("reason", "late")))
+            put_exit(x0, pex)
+            continue
+        add(a, dec)
+        add(a, pf)
+        add(a, jl(ua, "SIZE", code, *sz))
+        q = t["quote"]
+        add(a + 1, jl(ua + 1, "SEND", code, ("oid", oid), ("side", side), ("lots", t["lots"]), ("want", t["lots"]), ("sl", t["stop"]),
+                      ("bid", q - (sp if side > 0 else 0.0)), ("ask", q + (0.0 if side > 0 else sp)), ("stamp", ua), ("dev", 24), ("cut", "-"),
+                      ("result", "filled"), ("rc", 10009), ("s_raw", 12), ("s_paper", 0.12)))
+        risk_ = (side * (t["fill"] - t["stop"]) + 2 * h) * kk * t["lots"]
+        add(a + 1, jl(ua + 1, "FILL", code, ("oid", oid), ("ticket", t["ticket"]), ("side", side), ("px", t["fill"]), ("lots", t["lots"]),
+                      ("sl", t["stop"]), ("listed", 1), ("risk", risk_), ("budget", 70.0), ("stamp", ua), ("s_raw", 12), ("s_paper", 0.12)))
+        # a stop while the position is open: the next start adopts it (ADOPT at its reconcile) when it starts before the exit
+        s_in = segs[k_in]
+        if s_in.get("to") is not None and s_in["to"] < x0:
+            nxt = next((s for s in segs if not s.get("refused") and s["at"] >= s_in["to"]), None)
+            if nxt is not None and nxt["at"] < x0:
+                add(nxt["at"] + 181, jl(C.srv_to_utc(nxt["at"] + 181), "ADOPT", code, ("oid", oid), ("ticket", t["ticket"]), ("open", ua + 1),
+                                        ("stamp", ua), ("why", "reconcile")))
+        if t.get("open_at_copy"):
+            continue
+        put_exit(x0, pex)
+        k_out = running(x0 + 2)
+        if t.get("booked"):
+            tb, pxb = t["booked"]
+            closes.append((tb, side * (pxb - t["fill"]) * t["lots"] * kk - 2 * h * t["lots"] * kk))
+            continue
+        if k_out is None:
+            continue
+        tc = x0 + 2
+        for j in range(t.get("refused_closes", (0, 0))[0]):
+            add(tc, jl(C.srv_to_utc(tc), "CLOSE", code, ("ticket", t["ticket"]), ("magic", 20261200 + C.SLEEVE_ID[code]), ("px", 0.0),
+                       ("why", "time"), ("rc", t["refused_closes"][1]), ("ok", 0)))
+            tc += 60
+        add(tc, jl(C.srv_to_utc(tc), "CLOSE", code, ("ticket", t["ticket"]), ("magic", 20261200 + C.SLEEVE_ID[code]), ("px", t["close"]),
+                   ("why", "time"), ("rc", 10009), ("ok", 1)))
+        closes.append((tc, side * (t["close"] - t["fill"]) * t["lots"] * kk - 2 * h * t["lots"] * kk))
+    first = min((s["at"] for s in segs if not s.get("refused")), default=None)
+    if first is not None:
+        for pd in range(first - first % 86400, copy - copy % 86400, 86400):
+            tw = pd + 86400 + 30
+            if running(tw) is None or tw > copy:
+                continue
+            bal = round(balance0 + sum(pl for tc, pl in closes if tc < pd + 86400), 2)
+            wk = C.dow(pd) in (0, 6)
+            uw = C.srv_to_utc(tw)
+            add(tw, jl(uw, "AGG", "-", ("day", pd), ("XAUUSD", 0 if wk else 1300), ("US100", 0 if wk else 800), ("BTCUSD", 0 if wk else 1440),
+                       ("ETHUSD", 0 if wk else 1440), ("dec", 10), ("pev", 3)))
+            if not wk:
+                add(tw, jl(uw, "COST", "XAUUSD", ("day", pd), ("raw_bp", 0.2), ("paper_bp", 0.53), ("model_bp", 0.47), ("comm_usd_oz", 0.06),
+                           ("comm_n", 2)))
+                for b_, m_ in (("US100", 0.37), ("BTCUSD", 2.96), ("ETHUSD", 13.0)):
+                    add(tw, jl(uw, "COST", b_, ("day", pd), ("raw_bp", m_), ("paper_bp", m_), ("model_bp", m_)))
+            add(tw, jl(uw, "DAY", "-", ("day", pd), ("balance", bal), ("equity", bal), ("bars_fed", 5000)))
+    L.sort(key=lambda x: (x[0], x[1]))
+    files = {}
+    for t, _, ln in L:
+        if t > copy:
+            continue                                                    # written after the copy: not in the files sent
+        files.setdefault(time.strftime("%Y%m%d", time.gmtime(t)) + ".log", []).append(ln)
+    for name, lines in files.items():
+        write(os.path.join(folder, name), "\n".join(lines) + "\n", crlf=True)
+    return sorted(files)
+
+
+def story_trade(code, at, ticket, hold=3600, side=1, **kw):
+    """one trade of story_journal at server time `at`: prices near the market's level, the fill and the close at the paper's prices
+    (gold: the paper's prices hold the commission h)"""
+    b = C.SYM_OF_CODE[code]
+    px = A5_PX[b]
+    h = MINI_H[b]
+    stop = px * (1 - side * 0.01)
+    xpx = px * (1 + side * 0.002)
+    t = {"code": code, "side": side, "at": at, "hold": hold, "ppx": px, "stop": stop, "fill": px - side * h, "quote": px - side * h,
+         "lots": A5_LOTS[b], "ticket": ticket, "xpx": xpx, "close": xpx + side * h}
+    t.update(kw)
+    return t
+
+
+STORY_END = srv("2026-11-18 22:30")                # a stop line before the copy (the journal ends complete: no end-of-journal remark)
+
+
+def story_trades():
+    """the clean week of the stories: four trades closed by the robot on Monday and Tuesday 16-17 November 2026"""
+    return [story_trade("ORX", srv("2026-11-16 10:00"), 70009001), story_trade("N30", srv("2026-11-16 17:00"), 70009002, side=-1),
+            story_trade("BKB", srv("2026-11-17 09:00"), 70009003), story_trade("BKE", srv("2026-11-17 14:00"), 70009004, side=-1)]
+
+
+def start_paste_of(jdir):
+    """the start lines the user would paste from the Experts tab: the live lines of the journal up to the last READY of its last start"""
+    ls_ = [ln for f in sorted(os.listdir(jdir)) for ln in lines_of(os.path.join(jdir, f)) if ln.startswith("CR|") and "|rp=1" not in ln]
+    last_init = max((k for k, ln in enumerate(ls_) if "|INIT|-|build=" in ln), default=None)
+    ready = [k for k, ln in enumerate(ls_) if "|READY|" in ln and (last_init is None or k > last_init)]
+    end = max(ready) + 1 if ready else len(ls_)
+    keep = [ln for ln in ls_[:end] if any(f"|{e}|" in ln for e in ("INIT", "SELFTEST", "PLAN", "REBUILD", "READY", "ERROR", "CLOCK"))]
+    return experts_paste(keep, account=False)
+
+
+def test_review5b_journal(lit):
+    """review5b (the fifth round's second pass), check_demo on journals of the user's November 2026 demo (story_journal): RH5-1 (a start OnInit
+    refused: ERROR then INIT deinit=8), RH5-2 (a start replaced by a later one: its settings are information, its real trades are named, the
+    settings in force said), OBSERVER-NORMAL, PRINTED-RESTART-UNCHECKED (a restart whose daily file is lost, its INIT in the Experts log)"""
+    del lit
+    base_dir = os.path.join(SCRATCH, "rv5bj")
+
+    def go(name, segs=None, trades=(), extra=(), prep=None, jdir=None, **kw):
+        jdir = jdir or os.path.join(base_dir, "j_" + name, "ClaudeRobot")
+        if not os.path.isdir(jdir) or not os.listdir(jdir):
+            story_journal(jdir, segs, trades, **kw)
+        if prep:
+            prep(jdir)
+        out = os.path.join(base_dir, "out_" + name)
+        rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(jdir), "--out", out] + list(extra))
+        rp = os.path.join(out, "report.json")
+        r = json.load(open(rp)) if rc == 0 and os.path.exists(rp) else {}
+        rt = os.path.join(out, "report_fr.txt")
+        return {"rc": rc, "so": so, "se": se, "r": r, "an": r.get("anomalies", []), "jdir": jdir, "out": out,
+                "rtxt": open(rt, encoding="utf-8").read() if rc == 0 and os.path.exists(rt) else "",
+                "txt": (outputs_text(out) if rc == 0 else "") + so + se}
+    S0, END = STORY_START, STORY_END
+    tr = story_trades()
+    # RH5-1: a start OnInit refused (the typo the guide plans for), then the relaunch with the right values
+    shapes = {"b1": [{"at": S0 - 240, "refused": [ERR_COMMA]}, {"at": S0, "to": END}],
+              "b2": [{"at": S0 - 240, "refused": list(ERR_K1T)}, {"at": S0, "to": END}],
+              "b3": [{"at": S0 - 600, "to": S0 - 65, "deinit": 5, "risk": D2, "k1t": ""}, {"at": S0 - 60, "refused": [ERR_COMMA]},
+                     {"at": S0 + 180, "to": END}],
+              "b5": [{"at": S0 - 240, "refused": [ERR_COMMA], "stop_line": False}, {"at": S0, "to": END}]}
+    res = {k: go("rh51_" + k, v, tr) for k, v in shapes.items()}
+    bad = {k: (g["rc"], g["an"][:3], g["so"].splitlines()[0][:120]) for k, g in res.items()
+           if g["rc"] != 0 or g["an"] or "build ?" in g["so"] or g["r"].get("journal", {}).get("restarts") != (1 if k == "b3" else 0)
+           or not ((g["r"].get("fills") or {}).get("money_estimate") or {}).get("complete")}
+    chk("review5b RH5-1: a start OnInit refused (a comma in InpRiskTable, the two InpK1T lines, a typo made with F7 after a D2 start, an ERROR "
+        "with its stop line lost), then the relaunch: nothing abnormal, no 'build ?', no lost INIT or journal start, the restart count and the "
+        "money estimate as without it", lambda: (not bad, bad))
+    inf = [ln for ln in res["b1"]["so"].splitlines() if ln.startswith("Information") and "refuse" in ln]
+    chk("review5b RH5-1: the refused start is said on stdout as information, with what the ERROR means (a comma typed in InpRiskTable) and "
+        "when the robot was relaunched (Paris time)", lambda: (len(inf) == 1 and "virgule" in inf[0] and "InpRiskTable" in inf[0]
+                                                              and "relance" in inf[0] and "heure de Paris" in inf[0], res["b1"]["so"][:900]))
+    g = go("rh51_b4", [{"at": S0, "refused": [ERR_COMMA]}], ())
+    chk("review5b RH5-1: a refused start alone (ERROR, then INIT deinit=8, nothing after): the first anomaly says the robot did not start, "
+        "what the ERROR means and to relaunch it (step 6 of the guide) with the two values; never 'envoyer aussi le fichier du jour'",
+        lambda: (g["rc"] == 0 and g["an"] and "n'a pas demarre" in g["an"][0] and "virgule" in g["an"][0] and "etape 6" in g["an"][0]
+                 and S7 in g["an"][0] and not any("envoyer aussi le fichier" in a for a in g["an"]), g["an"][:3]))
+    agree = []
+    for k, gk in list(res.items()) + [("b4", g)]:
+        gs = start_go(base_dir, "agree5b_" + k, start_paste_of(gk["jdir"]))
+        if (gs["rc"] == 0) != (gk["an"] == []):
+            agree.append((k, gs["rc"], gs["diff"][:2], gk["an"][:2]))
+    chk("review5b RH5-1: check_start and check_demo agree on these journals (the start lines pasted): both conforming after a refused start "
+        "and its relaunch, both flagging a refused start alone", lambda: (not agree, agree))
+    # RH5-2: a start replaced by a later one
+    gc = go("rh52_c", [{"at": S0 - 600, "to": S0 - 60, "deinit": 5, "risk": D2, "k1t": ""}, {"at": S0 - 55, "to": END}], tr)
+    info1 = [ln for ln in gc["so"].splitlines() if ln.startswith("Information") and "demarrage 1" in ln]
+    rv = next((ln for ln in gc["so"].splitlines() if ln.startswith("Reglages en vigueur")), "")
+    chk("review5b RH5-2: a start with D2 and InpK1T empty replaced 9 minutes later (F7) by the right one: no anomaly about the settings of the "
+        "replaced start, which is said as information (D2, remplace), and a stdout line says the settings in force are right",
+        lambda: (gc["rc"] == 0 and gc["an"] == [] and len(info1) == 1 and "D2" in info1[0] and "remplace" in info1[0]
+                 and "conformes" in rv and "heure de Paris" in rv, (gc["an"][:3], info1, rv)))
+    gs = start_go(base_dir, "agree5b_c", start_paste_of(gc["jdir"]))
+    chk("review5b RH5-2: check_start gives the same verdict as check_demo on that two-start journal (conforming)",
+        lambda: (gs["rc"] == 0 and gc["an"] == [], (gs["diff"][:2], gc["an"][:2])))
+    g1 = go("rh52_c_inforce", [{"at": S0 - 600, "to": S0 - 60, "deinit": 5}, {"at": S0 - 55, "to": END, "risk": D2}], tr)
+    chk("review5b control RH5-2: the right start replaced by a start with D2: the start in force is flagged (D2, InpRiskTable)",
+        lambda: (g1["rc"] == 0 and any("D2" in a and "demarrage 2" in a for a in g1["an"]), g1["an"][:3]))
+    op = srv("2026-11-11 10:00")
+    d_tr = [story_trade("BKB", srv("2026-11-11 18:30"), 70008001), story_trade("N30", srv("2026-11-12 16:40"), 70008002),
+            story_trade("OC4", srv("2026-11-12 18:55"), 70008003, hold=4 * 3600, booked=(srv("2026-11-13 18:10"), A5_PX["US100"] * 0.99)),
+            story_trade("ORX", srv("2026-11-12 10:00"), 70008004, hold=srv("2026-11-16 12:00") - srv("2026-11-12 10:00"))] + tr
+    gd = go("rh52_d", [{"at": srv("2026-11-11 18:00"), "to": srv("2026-11-12 19:59"), "deinit": 1, "risk": D2, "k1t": ""},
+                       {"at": S0, "to": END}], d_tr, opened=op)
+    an_d = " | ".join(gd["an"])
+    chk("review5b RH5-2: an earlier run with D2 (11-12 November, robot removed with a position open) before the S7 start: no anomaly about its "
+        "settings as such, but one naming the real trades made with D2 (4, with their result) and the position the next start took over "
+        "(ADOPT, ticket 70008004)", lambda: (gd["rc"] == 0 and "a taper dans InpRiskTable" not in an_d and "trade(s) reel(s)" in an_d
+                                             and "D2" in an_d and "70008004" in an_d and "4 trade(s)" in an_d, gd["an"][:4]))
+    chk("review5b RH5-2: the plan of the start in force begins before the earlier start (InpPlanStart 0: the account's first deal): said, the "
+        "plan and the money count that earlier run", lambda: (gd["rc"] == 0 and any("plan" in ln and "demarrage 1" in ln and "compte" in ln
+                                                                                   for ln in gd["so"].splitlines()), gd["so"][:1500]))
+    # OBSERVER-NORMAL: an observer copy during the demo
+    go_ = go("obs_demo", [{"at": S0, "to": END, "observer": 1}], ())
+    chk("review5b OBSERVER-NORMAL: a demo copy on the Mac left as an observer (observer=1) in the demo's first two weeks (the plan starts at the "
+        "account's first deal, just before): an anomaly naming InpTrade, never 'normal'",
+        lambda: (go_["rc"] == 0 and any("observatrice" in a and "InpTrade" in a for a in go_["an"]) and "normal)" not in go_["so"], go_["an"][:3]))
+    go0 = go("obs_t0", [{"at": S0, "to": END, "observer": 1}], (), opened=0)
+    chk("review5b OBSERVER-NORMAL: an observer copy whose account has no deal yet (no date for the demo): no anomaly (the VPS weeks also use one), "
+        "but stdout says it sent no order because InpTrade is false, never 'normal'",
+        lambda: (go0["rc"] == 0 and go0["an"] == [] and "InpTrade" in go0["so"] and "normal)" not in go0["so"], (go0["an"][:2], go0["so"][:600])))
+    # PRINTED-RESTART-UNCHECKED: the restart day's file lost, the restart made with D2, the Mac's Experts logs given
+    jsrc = os.path.join(base_dir, "j_pr_src", "ClaudeRobot")
+    md_journal(jsrc, ("restart_d2",))
+    logs = printed_files(os.path.join(base_dir, "logs_pr"), jsrc)
+    jl_ = os.path.join(base_dir, "j_pr_lost", "ClaudeRobot")
+    md_journal(jl_, ("restart_d2",))
+    os.remove(os.path.join(jl_, "20211122.log"))
+    gp = go("pr_lost", jdir=jl_, extra=[x for p in logs for x in ("--printed", p)])
+    ga = go("pr_lost_alone", jdir=jl_)
+    infp = [ln for ln in gp["so"].splitlines() if ln.startswith("Information") and "onglet Experts" in ln]
+    chk("review5b PRINTED-RESTART-UNCHECKED: a restart made with D2 whose daily file is lost, the Mac's Experts logs given: its INIT (in the "
+        "Experts log only) is checked: an anomaly naming D2 and the Experts log, and an information line says the restart was seen there, in "
+        "the missing file", lambda: (gp["rc"] == 0 and any("D2" in a and "onglet Experts" in a for a in gp["an"])
+                                     and any("redemarrage" in ln and "20211122.log" in ln and "DIFFERENTS" in ln for ln in infp), (gp["an"][:4], infp)))
+    chk("review5b control PRINTED-RESTART-UNCHECKED: without the Experts logs the restart's settings stay unknown (said with the missing file)",
+        lambda: (ga["rc"] == 0 and any("20211122.log" in a and "inconnus" in a for a in ga["an"]) and not any("D2" in a for a in ga["an"]),
+                 ga["an"][:3]))
+    segs_r = [{"at": S0, "to": srv("2026-11-17 15:00"), "deinit": 1}, {"at": srv("2026-11-17 15:12"), "to": END, "risk": D2}]
+    jr = os.path.join(base_dir, "j_pr_day_src", "ClaudeRobot")
+    story_journal(jr, segs_r, tr)
+    logs_r = printed_files(os.path.join(base_dir, "logs_pr_day"), jr)
+    gq = go("pr_day", segs_r, tr, prep=lambda j: os.remove(os.path.join(j, "20261117.log")),
+            extra=[x for p in logs_r for x in ("--printed", p)])
+    infq = [ln for ln in gq["so"].splitlines() if ln.startswith("Information") and "onglet Experts" in ln]
+    chk("review5b PRINTED-RESTART-UNCHECKED: a stop and a restart (with D2) inside a lost day, the Experts logs given: the restart's D2 flagged "
+        "naming the Experts log, and an information line names the stop and the restart the Experts tab shows in the missing file",
+        lambda: (gq["rc"] == 0 and any("D2" in a and "onglet Experts" in a for a in gq["an"])
+                 and any("20261117.log" in ln and "arret" in ln and "redemarrage" in ln for ln in infq), (gq["an"][:4], infq)))
+    chk("review5b: no account word in any output of these cases", lambda: (all(not leak_free(x["txt"]) for x in
+                                                                              list(res.values()) + [g, gc, gd, go_, go0, gp, gq]), None))
+
+
+def test_review5b_fills(lit):
+    """review5b, positions and outages on journals of the user's November 2026 demo: LOST-FILE-POSITIONS (a position whose close or stop moves
+    were in a lost daily file), RH5-3 (closes MetaTrader refused while Algo Trading was off), RH5-4 (the copy taken while the robot runs, --copie),
+    RH5-6 (a paper trade while MetaTrader was closed), RH5-7 (a position closed while the robot was stopped, the balance difference with unknown
+    exits), RH5-8 (the Mac asleep: the last line at a sure time), RH5-9 (positions still open at the copy), RH5-10 (Paris times on stdout)"""
+    del lit
+    base_dir = os.path.join(SCRATCH, "rv5bf")
+
+    def go(name, segs=None, trades=(), extra=(), prep=None, jdir=None, **kw):
+        jdir = jdir or os.path.join(base_dir, "j_" + name, "ClaudeRobot")
+        if not os.path.isdir(jdir) or not os.listdir(jdir):
+            story_journal(jdir, segs, trades, **kw)
+        if prep:
+            prep(jdir)
+        out = os.path.join(base_dir, "out_" + name)
+        rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(jdir), "--out", out] + list(extra))
+        rp = os.path.join(out, "report.json")
+        r = json.load(open(rp)) if rc == 0 and os.path.exists(rp) else {}
+        rt = os.path.join(out, "report_fr.txt")
+        return {"rc": rc, "so": so, "se": se, "r": r, "an": r.get("anomalies", []), "jdir": jdir,
+                "rtxt": open(rt, encoding="utf-8").read() if rc == 0 and os.path.exists(rt) else "",
+                "txt": (outputs_text(out) if rc == 0 else "") + so + se}
+    S0, END = STORY_START, STORY_END
+    tr = story_trades()
+    # LOST-FILE-POSITIONS: a gold position opened on Monday night; its close (Tuesday 10:00) is in the lost file of Tuesday; a reconnection on
+    # Wednesday rebuilds the history, so the paper's exit is known (rp=1)
+    lp = story_trade("ORX", srv("2026-11-16 22:00"), 70009101, hold=12 * 3600)
+
+    def lost_close(jdir):
+        p = os.path.join(jdir, "20261118.log")
+        ls_ = lines_of(p)
+        src = os.path.join(base_dir, "lp_pexit.txt")
+        pex = open(src).read().strip() if os.path.exists(src) else ""
+        u = C.srv_to_utc(srv("2026-11-18 09:00"))
+        k = next(i for i, ln in enumerate(ls_) if int(ln.split("|")[1]) >= u)
+        ls_[k:k] = [pex + "|rp=1", jl(u + 2, "REBUILD", "-", ("n", 2), ("why", "reconnect"), ("from", u - 120 * 86400), ("to", u), ("minutes", 172800),
+                                      ("ms", 900))]
+        write(p, "\n".join(ls_) + "\n", crlf=True)
+        os.remove(os.path.join(jdir, "20261117.log"))
+    jfull = os.path.join(base_dir, "j_lp_full", "ClaudeRobot")
+    story_journal(jfull, [{"at": S0, "to": END}], tr + [lp])
+    lp_oid = C.srv_to_utc(lp["at"]) * 100 + C.SLEEVE_ID["ORX"]
+    pex = next(ln for ln in lines_of(os.path.join(jfull, "20261117.log")) if "|PEXIT|ORX|" in ln and f"|oid={lp_oid}|" in ln)
+    write(os.path.join(base_dir, "lp_pexit.txt"), pex + "\n")
+    g = go("lp_close", [{"at": S0, "to": END}], tr + [lp], prep=lost_close)
+    chk("review5b LOST-FILE-POSITIONS: a position whose close was in a lost daily file (its paper exit known from a later rebuild): said as an "
+        "exit in that missing file (named), never 'non fermee par le robot' or 'stop du courtier touche avant'",
+        lambda: (g["rc"] == 0 and g["an"] and "20261117.log" in g["an"][0] and all("20261117.log" in a for a in g["an"])
+                 and not any("non fermee par le robot" in a or "touche avant" in a for a in g["an"]), g["an"][:4]))
+    # the same position stopped by the broker on Wednesday: its trailing stop moves were in the lost file; the releve's minutes cross the last
+    # stop, not the FILL's
+    ls_t = story_trade("ORX", srv("2026-11-16 22:00"), 70009102, hold=srv("2026-11-18 05:00") - srv("2026-11-16 22:00"))
+
+    def lost_stop(jdir):
+        p = os.path.join(jdir, "20261118.log")
+        out_ = []
+        for ln in lines_of(p):
+            if "|CLOSE|ORX|" in ln and "70009102" in ln:
+                continue                                                # the broker's stop: no CLOSE line
+            if "|PEXIT|ORX|" in ln and f"|oid={C.srv_to_utc(ls_t['at']) * 100 + C.SLEEVE_ID['ORX']}|" in ln:
+                ln = re.sub(r"\|px=[^|]*", "|px=1.8579000000000000e+03", ln)
+                ln = re.sub(r"\|stop=[^|]*", "|stop=1.8580000000000000e+03", ln).replace("|reason=time", "|reason=stop")
+            out_.append(ln)
+        write(p, "\n".join(out_) + "\n", crlf=True)
+        os.remove(os.path.join(jdir, "20261117.log"))
+    mdir = os.path.join(base_dir, "m1_lp")
+    os.makedirs(mdir, exist_ok=True)
+    m1_flat(os.path.join(mdir, "m1_XAUUSD.csv"), srv("2026-11-16 20:00"), srv("2026-11-18 12:00"), bid=1860.0, dip_at=srv("2026-11-18 04:58"),
+            dip_low=1857.5)
+    g2 = go("lp_stop", [{"at": S0, "to": END}], tr + [ls_t], prep=lost_stop, extra=("--bars", mdir, "--no-replay"))
+    chk("review5b LOST-FILE-POSITIONS: a position stopped by the broker whose stop moves were in the lost file (the minutes cross the paper's "
+        "last stop, not the FILL's): said with the missing file, never 'fermee autrement (a la main, stop-out ?)'",
+        lambda: (g2["rc"] == 0 and any("20261117.log" in a and "70009102" in a for a in g2["an"])
+                 and not any("a la main" in a for a in g2["an"]), g2["an"][:4]))
+    # RH5-3: the Algo Trading button red for an hour: MetaTrader refuses the robot's closes (rc 10027), they go through 47 and 30 min late
+    al = [story_trade("NQB", srv("2026-11-16 18:43"), 70009201, refused_closes=(47, 10027)),
+          story_trade("N30", srv("2026-11-16 19:00"), 70009202, refused_closes=(30, 10027))]
+    g = go("algo", [{"at": S0, "to": END}], tr + al)
+    an = " | ".join(g["an"])
+    chk("review5b RH5-3: closes refused by MetaTrader with rc=10027 (Algo Trading off), 47 and 30 times, then done: an anomaly with the code's "
+        "meaning, the count, the positions, how late after the paper they closed, Paris times and the advice (the button green)",
+        lambda: (g["rc"] == 0 and "10027" in an and "Algo Trading" in an and "x77" in an and "2 position(s)" in an and "47 min" in an
+                 and "heure de Paris" in an and "vert" in an, g["an"][:3]))
+    g0 = go("algo_once", [{"at": S0, "to": END}], tr + [story_trade("NQB", srv("2026-11-16 18:43"), 70009203, refused_closes=(1, 10004))])
+    chk("review5b control RH5-3: one close refused once (requote 10004) and done a minute later: no anomaly",
+        lambda: (g0["rc"] == 0 and g0["an"] == [], g0["an"][:3]))
+    # RH5-6: MetaTrader quit 18:25 server and reopened at 18:40: the N30 entry of 18:30 falls inside
+    seg6 = [{"at": S0, "to": srv("2026-11-17 18:25"), "deinit": 9}, {"at": srv("2026-11-17 18:40"), "to": END}]
+    g6 = go("stop_window", seg6, tr + [story_trade("N30", srv("2026-11-17 18:30"), 70009301)])
+    nf = [ln for ln in g6["so"].splitlines() if "non suivi" in ln]
+    chk("review5b RH5-6: a paper trade whose entry falls while MetaTrader was closed (stop line, then the next start) is said on stdout as not "
+        "followed during the stop, with its time in Paris, and not as a trade already open at a start",
+        lambda: (g6["rc"] == 0 and nf and "N30" in nf[0] and "arret" in nf[0] and "heure de Paris" in nf[0]
+                 and "deja ouverts a un demarrage" not in g6["rtxt"], (nf, g6["so"][-600:])))
+    # RH5-7: the earlier run of story d (robot removed with OC4 open, closed by its broker stop on Friday while the robot was stopped)
+    op = srv("2026-11-11 10:00")
+    d_tr = [story_trade("BKB", srv("2026-11-11 18:30"), 70008001), story_trade("N30", srv("2026-11-12 16:40"), 70008002),
+            story_trade("OC4", srv("2026-11-12 18:55"), 70008003, hold=4 * 3600, booked=(srv("2026-11-13 18:10"), A5_PX["US100"] * 0.99))] + tr
+    g7 = go("stopped_exit", [{"at": srv("2026-11-11 18:00"), "to": srv("2026-11-12 19:59"), "deinit": 1}, {"at": S0, "to": END}], d_tr, opened=op)
+    oc4 = [a for a in g7["an"] if "70008003" in a]
+    sl = next((ln for ln in g7["so"].splitlines() if ln.startswith("Solde")), "")
+    chk("review5b RH5-7: a position whose paper exit came while the robot was stopped and that the next start did not take over: 'le robot etait "
+        "arrete', closed meanwhile; never 'non fermee par le robot, ou stop du courtier touche avant'",
+        lambda: (g7["rc"] == 0 and oc4 and "arrete" in oc4[0] and "plus ouverte" in oc4[0] and "touche avant" not in oc4[0], oc4))
+    chk("review5b RH5-7: with exits unknown, the money line says an unexplained balance difference (with the positions without an exit price), "
+        "not costs", lambda: (g7["rc"] == 0 and "difference non expliquee" in sl and "sans prix de sortie" in sl and "cout de" not in sl, sl))
+    # RH5-4 and RH5-9: the Wednesday copy taken while the robot runs, a position still open
+    run_tr = tr + [story_trade("F1E", srv("2026-11-18 20:00"), 70009401, open_at_copy=True)]
+    g4 = go("running", [{"at": S0, "to": None}], run_tr)
+    g4c = go("running_copy", [{"at": S0, "to": None}], run_tr, extra=("--copie", "2026-11-18 22:00"))
+    g4l = go("running_late", [{"at": S0, "to": None}], run_tr, extra=("--copie", "2026-11-19 22:00"))
+    chk("review5b RH5-4: the copy taken while the robot runs, journals only: the end-of-journal remark says it is normal for the Wednesday or "
+        "Saturday copy and how to settle it (--copie), and the rest of the verdict is printed",
+        lambda: (g4["rc"] == 0 and len(g4["an"]) == 1 and "mercredi ou du samedi" in g4["an"][0] and "--copie" in g4["an"][0]
+                 and any(ln.startswith("Pour le reste") and "rien d'anormal" in ln for ln in g4["so"].splitlines()), (g4["an"], g4["so"][-500:])))
+    chk("review5b RH5-4: with --copie (the Paris time of the user's message) the journal reaching the copy's day is a robot still running: "
+        "no anomaly, the verdict line printed; a copy a day after the journal's end names the missing file",
+        lambda: (g4c["rc"] == 0 and g4c["an"] == [] and "Rien d'anormal" in g4c["so"] and g4l["rc"] == 0
+                 and any("20261119.log" in a for a in g4l["an"]), (g4c["an"], g4l["an"][:2])))
+    f1e = next((ln for ln in g4["rtxt"].splitlines() if ln.strip().startswith("F1E") and "position(s)" in ln), "")
+    chk("review5b RH5-9: a position still open when the files were copied is 'encore ouverte' in its sleeve's line, not an unknown exit",
+        lambda: (g4["rc"] == 0 and "encore ouverte" in f1e and "sortie(s) inconnue(s)" not in f1e, f1e))
+    # RH5-8 and RH5-10: the Mac asleep Monday night (the robot's process frozen: a catch-up at the wake, a MISSED late written hours after
+    # its time, the daily lines stamped at the server's midnight)
+    def asleep(jdir):
+        p = os.path.join(jdir, "20261117.log")
+        ls_ = lines_of(p)
+        u_w = C.srv_to_utc(srv("2026-11-17 08:12"))
+        st = C.srv_to_utc(srv("2026-11-17 03:00"))
+        oid = st * 100 + C.SLEEVE_ID["BKB"]
+        k = next(i for i, ln in enumerate(ls_) if int(ln.split("|")[1]) >= u_w)
+        ls_[k:k] = [dec_ord(st, "BKB", oid, 1, 0, 57000.0, 56430.0, st + 3600),
+                    jl(st, "PFILL", "BKB", ("oid", oid), ("side", 1), ("bar", st), ("px", 57000.0), ("stop", 56430.0), ("st0", 56430.0),
+                       ("x", st + 3600), ("s_raw", 12), ("s_paper", 0.12)),
+                    jl(u_w, "MISSED", "BKB", ("oid", oid), ("stamp", st), ("reason", "late")),
+                    jl(st + 3600, "PEXIT", "BKB", ("oid", oid), ("side", 1), ("bar", st + 3600), ("px", 57100.0), ("stop", 56430.0),
+                       ("st0", 56430.0), ("x", st + 3600), ("reason", "time"), ("s_raw", 12), ("s_paper", 0.12))]
+        write(p, "\n".join(ls_) + "\n", crlf=True)
+    g8 = go("asleep", [{"at": S0, "to": END}], tr, prep=asleep)
+    sl8 = [ln for ln in g8["rtxt"].splitlines() if "HORS LIGNE" in ln]
+    chk("review5b RH5-8: the Mac asleep: the report gives the last line at a sure time and says the DAY, AGG and COST lines are stamped at the "
+        "server's midnight (never 'aucune ligne du robot du ... au reveil')",
+        lambda: (g8["rc"] == 0 and sl8 and "heure sure" in sl8[0] and "minuit serveur" in sl8[0] and "aucune ligne du robot du" not in sl8[0], sl8))
+    utc_lines = [ln for x in (g6, g8, g4c) for ln in x["so"].splitlines() if " UTC" in ln and not ln.startswith("Fichiers")]
+    chk("review5b RH5-10: every stdout line with a UTC time also gives the Paris time the user reads (outages, trades not followed, the first "
+        "intention of the money line)", lambda: (utc_lines and all("heure de Paris" in ln for ln in utc_lines), [ln[:200] for ln in utc_lines
+                                                                                                             if "heure de Paris" not in ln][:4]))
+    chk("review5b: no account word in any output of these cases", lambda: (all(not leak_free(x["txt"]) for x in (g, g2, g0, g6, g7, g4, g4c, g4l, g8)),
+                                                                          None))
+
+
+def test_review5_journal(lit):
+    """review5, journal and files cases: FV4b-1 (the Mac's Experts logs cut by the Mac's local date with a lost daily file: a middle day, the
+    restart day, two days, the last file with and without --bars; across the weeks when Paris and New York change clocks on different dates),
+    FV4b-2 (two logs of the same name from two folders), FV4b-4 (the balance check's real thresholds), MAC-ZIP (the Finder zip's __MACOSX folder
+    and AppleDouble files in every input of both tools)"""
+    base_dir = os.path.join(SCRATCH, "rv5j")
+
+    def go(name, variant=(), extra=(), prep=None, mini=None, jdir=None):
+        jdir = jdir or os.path.join(base_dir, "j_" + name, "ClaudeRobot")
+        info = None
+        if not os.path.isdir(jdir) or not os.listdir(jdir):
+            info = mini_journal(jdir, **mini) if mini is not None else md_journal(jdir, variant)
+        if prep:
+            prep(jdir, info)
+        out = os.path.join(base_dir, "out_" + name)
+        rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(jdir), "--out", out] + list(extra))
+        rp = os.path.join(out, "report.json")
+        r = json.load(open(rp)) if rc == 0 and os.path.exists(rp) else {}
+        rt = os.path.join(out, "report_fr.txt")
+        return {"rc": rc, "so": so, "se": se, "r": r, "rtxt": open(rt, encoding="utf-8").read() if rc == 0 and os.path.exists(rt) else "",
+                "jdir": jdir, "an": r.get("anomalies", []), "pr": r.get("printed") or {}, "out": out,
+                "txt": (outputs_text(out) if rc == 0 else "") + so + se}
+
+    def drop(*names):
+        def prep(jdir, info):
+            for n in names:
+                os.remove(os.path.join(jdir, n))
+        return prep
+
+    def printed(paths):
+        return [x for p in paths for x in ("--printed", p)]
+
+    def lost_ok(g, expect, alone=None, names=()):
+        """the printed logs are the same copy, add no anomaly and no VPS note: the anomalies are the journal's own about the lost file, the
+        same as without --printed (alone): the missing file first, then only what the journal says because of it (a position whose exit
+        lines were in it names that file)"""
+        an = g["an"]
+        same_as_alone = alone is None or an == alone["an"]
+        return (g["rc"] == 0 and g["pr"].get("kind") == "meme copie" and g["pr"].get("same_copy_as_files") is True and "VPS" not in g["so"]
+                and an and expect in an[0] and same_as_alone and (alone is not None or len(an) == 1)
+                and all(any(n in a for n in names) for a in an[1:]),
+                (g["rc"], g["pr"].get("kind"), g["pr"].get("files_kind"), an[:4], (alone or {}).get("an", [])[:4], g["se"][-300:]))
+    # the Mac's clock (review5): Paris and New York change clocks on different dates
+    chk("review5 FV4b-1 (clocks): the Mac's local time is Paris time: server - 1 h in November 2026, server - 2 h between the US and the EU "
+        "changes (20 March and 28 October 2026), the EU changes at 01:00 UTC on the last Sundays of March and October",
+        lambda: (C.paris_of_utc(START_U) == C.utc_to_srv(START_U) - 3600
+                 and all(C.paris_of_utc(C.srv_to_utc(srv(x))) == srv(x) - 7200 for x in ("2026-03-20 12:00", "2026-10-28 12:00"))
+                 and C.paris_of_utc(calendar.timegm((2026, 3, 29, 0, 59, 0))) - calendar.timegm((2026, 3, 29, 0, 59, 0)) == 3600
+                 and C.paris_of_utc(calendar.timegm((2026, 3, 29, 1, 0, 0))) - calendar.timegm((2026, 3, 29, 1, 0, 0)) == 7200
+                 and C.paris_of_utc(calendar.timegm((2026, 10, 25, 0, 59, 0))) - calendar.timegm((2026, 10, 25, 0, 59, 0)) == 7200
+                 and C.paris_of_utc(calendar.timegm((2026, 10, 25, 1, 0, 0))) - calendar.timegm((2026, 10, 25, 1, 0, 0)) == 3600
+                 and all(C.paris_of_utc(u) == paris_wall(u) for u in range(calendar.timegm((2021, 1, 1, 0, 0, 0)),
+                                                                           calendar.timegm((2027, 1, 1, 0, 0, 0)), 7 * 3600 + 17)), None))
+    # FV4b-1: a daily journal file lost, the Mac's Experts logs (named by its local date) kept
+    src = go("fv1_src")
+    logs = printed_files(os.path.join(base_dir, "logs_fv1"), src["jdir"])
+    g = go("fv1_clean", extra=printed(logs), jdir=src["jdir"])
+    chk("review5 control FV4b-1: the whole journal and the Mac's Experts logs cut by its local date (a day's last hour in the next file): the "
+        "same copy, nothing abnormal", lambda: (g["rc"] == 0 and g["pr"].get("kind") == "meme copie" and g["an"] == [], (g["pr"].get("files_kind"), g["an"][:3])))
+    for case, names, expect in (("middle", ("20211123.log",), "fichier(s) du jour manquant(s) : 20211123.log"),
+                                ("two_days", ("20211123.log", "20211124.log"), "fichier(s) du jour manquant(s) : 20211123.log, 20211124.log"),
+                                ("last", ("20211125.log",), "fin du journal sans ligne d'arret")):
+        g = go("fv1_" + case, prep=drop(*names), extra=printed(logs))
+        ga = go("fv1_" + case + "_alone", prep=drop(*names))
+        chk(f"review5 FV4b-1: the journal file(s) {', '.join(names)} lost, the Mac's Experts logs of every day given: the same copy, no VPS note, "
+            "only the missing-file anomaly (the same anomalies as without --printed)", lambda: lost_ok(g, expect, ga, names))
+    g0 = go("fv1_restart_src", ("restart",))
+    logs_r = printed_files(os.path.join(base_dir, "logs_fv1_restart"), g0["jdir"])
+    g = go("fv1_restart", ("restart",), prep=drop("20211122.log"), extra=printed(logs_r))
+    ga = go("fv1_restart_alone", ("restart",), prep=drop("20211122.log"))
+    chk("review5 FV4b-1: the restart day's journal file lost (its INIT in the Mac's Experts log only): the same copy, no VPS note, the same "
+        "anomalies as without --printed: the missing file named (the restart was in it) and the position whose exit lines were in it",
+        lambda: lost_ok(g, "fichier(s) du jour manquant(s) : 20211122.log", ga, ("20211122.log",)))
+    chk("review5 FV4b-1: a lost restart day is named by the journal itself (the DAY line of that day sits in the next file, after a stop): one "
+        "missing-file anomaly that says the restart was in it, no 'ligne de demarrage perdue', no 'sans fichier manquant connu'",
+        lambda: (ga["rc"] == 0 and any("20211122.log" in a and "redemarrage" in a for a in ga["an"]) and not any("demarrage perdue" in a for a in ga["an"])
+                 and not any("sans fichier manquant connu" in a for a in ga["an"]) and all("20211122.log" in a for a in ga["an"]), ga["an"][:4]))
+    rdir = os.path.join(base_dir, "rel_fv1")
+    make_releve(rdir, lit, "good", m1_from="2021-11-15 00:00", m1_to="2021-11-26 12:00",
+                tweak=lambda fi: [f.__setitem__("tick_time", srv("2021-11-26 10:59")) for f, _ in fi.values()])
+    g = go("fv1_last_bars", prep=drop("20211125.log"), extra=printed(logs) + ["--bars", rdir, "--no-replay"])
+    chk("review5 FV4b-1: the last journal file lost, with ReleveFP's files run the day after (--bars): the same copy, no VPS note, only the "
+        "missing-file anomaly naming 20211125.log", lambda: lost_ok(g, "fichier du jour manquant probable : 20211125.log", None, ("20211125.log",)))
+    for name, a, z, lost in (("fv1_october", "2021-10-27 08:00", "2021-11-09 10:00", "20211102.log"),
+                             ("fv1_march", "2021-03-10 08:00", "2021-03-31 10:00", "20210316.log")):
+        gs = go(name + "_src", mini={"start": srv(a), "end": srv(z)})
+        lg = printed_files(os.path.join(base_dir, "logs_" + name), gs["jdir"])
+        gc = go(name + "_all", extra=printed(lg), jdir=gs["jdir"])
+        g = go(name, prep=drop(lost), extra=printed(lg), mini={"start": srv(a), "end": srv(z)})
+        chk(f"review5 FV4b-1 (clocks): {a[:10]} to {z[:10]}, across the weeks when Paris is server - 2 h: the Mac's logs are the same copy with "
+            f"nothing abnormal, and with {lost} lost only the missing-file anomaly",
+            lambda: (gc["rc"] == 0 and gc["an"] == [] and gc["pr"].get("kind") == "meme copie" and lost_ok(g, lost)[0],
+                     (gc["an"][:3], gc["pr"].get("files_kind"), lost_ok(g, lost)[1])))
+    # FV4b-2: two logs of the same name from two folders (the Mac's and a VPS's), and the terminal's Journal log named like an Experts log
+    mac = printed_files(os.path.join(base_dir, "fv2", "Logs"), src["jdir"])
+    day = "20211123.log"
+    mine = [ln for ln in lines_of_utf16(os.path.join(base_dir, "fv2", "Logs", day))]
+    vps_lines = [init_line(U("2021-11-23 01:00"), vps=1)] + [ln.replace("|f=1.0000000000000000e+00|", "|f=5.0000000000000000e-01|")
+                                                             for ln in mine if "|INIT|" not in ln]
+    os.makedirs(os.path.join(base_dir, "fv2", "vps"), exist_ok=True)
+    utf16_printed(os.path.join(base_dir, "fv2", "vps", day), vps_lines, vps=True)
+    # the terminal's Journal log under the Mac user's folder, the same name as an Experts log one level up too: named with the folders it
+    # takes to tell them apart, the user folder masked
+    jdir_u = os.path.join(base_dir, "fv2", "Users", FAKE_USER, "Logs")
+    os.makedirs(jdir_u, exist_ok=True)
+    jt = os.path.join(jdir_u, "20211124.log")
+    with open(jt, "wb") as f:
+        f.write(b"\xff\xfe" + ("\r\n".join([f"QK\t0\t09:59:58.120\tNetwork\t'{FAKE_LOGIN}': authorized on {FAKE_SERVER} through Access Point EU 2",
+                                            "PO\t0\t10:00:00.410\tTerminal\tFP Markets MT5 Terminal x64 build 4620 started"]) + "\r\n").encode("utf-16-le"))
+    g = go("fv2_two_folders", extra=printed(mac + [os.path.join(base_dir, "fv2", "vps", day), jt]), jdir=src["jdir"])
+    fk = g["pr"].get("files_kind") or {}
+    chk("review5 FV4b-2: the Mac's Logs/20211123.log and a VPS's vps/20211123.log are two files (named with their folder): the Mac's the same "
+        "copy, the VPS's another copy", lambda: (g["rc"] == 0 and fk.get("Logs/" + day) == "same" and fk.get("vps/" + day) == "other", fk))
+    chk("review5 FV4b-2: the terminal's Journal log Users/<user>/Logs/20211124.log (the same name as the Experts log of that day) is told "
+        "apart by its folders in the anomaly, the user folder masked; the account in it never printed",
+        lambda: (g["rc"] == 0 and any(f"{C.Scrubber.MASK}/Logs/20211124.log" in a and "aucune ligne du robot" in a for a in g["an"])
+                 and fk.get("fv2/Logs/20211124.log") == "same" and leak_free(g["txt"]) == [],
+                 ([a for a in g["an"] if "aucune" in a], sorted(fk)[:12], leak_free(g["txt"]))))
+    # FV4b-4: the balance check's 'en plus' figure is the real threshold (the costs already seen counted)
+    tr = [{"code": "GFP", "side": 1, "at": srv("2021-11-16 10:00"), "hold": 3600, "ppx": 1860.0, "stop": 1841.4, "fill": 1860.03,
+           "quote": 1860.03 / (1 + 0.3e-4), "lots": 0.05, "ticket": 70005001, "xpx": 1862.0, "close": 1861.97},
+          {"code": "ORX", "side": -1, "at": srv("2021-11-17 10:00"), "hold": 3600, "ppx": 1865.0, "stop": 1883.6, "fill": 1864.97,
+           "quote": 1864.97 / (1 - 0.3e-4), "lots": 0.05, "ticket": 70005002, "xpx": 1863.0, "close": 1863.03},
+          {"code": "N30", "side": 1, "at": srv("2021-11-18 16:00"), "hold": 3600, "ppx": 16300.0, "stop": 16200.0, "fill": 16300.3,
+           "quote": 16300.3 / (1 + 0.2e-4), "lots": 0.5, "ticket": 70005003, "xpx": 16320.0, "close": 16319.7}]
+    mini = {"start": srv("2021-11-15 08:00"), "end": srv("2021-11-24 10:00"), "trades": tr, "balance0": 600.0}
+    g = go("fv4_base", mini=mini)
+    m = re.search(r"ne se voit pas en dessous de ([0-9 ]+,\d\d) EUR en plus", g["rtxt"])
+    th = float(m.group(1).replace(" ", "").replace(",", ".")) if m else None
+    res = {}
+    for k, eps in (("under", -0.05), ("over", 0.05)):
+        gain = (th or 0.0) + eps
+        res[k] = go(f"fv4_{k}", mini=dict(mini, extra=lambda pd, gain=gain: gain if pd >= srv("2021-11-20 00:00") else 0.0))
+    chk("review5 FV4b-4: a hand gain 5 cents under the 'en plus' figure the report prints is not flagged, 5 cents over it is ('le solde a bouge')",
+        lambda: (th is not None and th > 2.0 and "le solde a bouge" not in " | ".join(res["under"]["an"])
+                 and "le solde a bouge" in " | ".join(res["over"]["an"]), (th, res["under"]["an"][:2], res["over"]["an"][:2])))
+    # MAC-ZIP: the Finder zip's metadata in every input of both tools
+    zfiles = {f"Files/ClaudeRobot/{n}": os.path.join(src["jdir"], n) for n in sorted(os.listdir(src["jdir"]))}
+    zfiles.update({f"Logs/{os.path.basename(p)}": p for p in logs})
+    zfiles.update({f"Files/claude/releve/{n}": os.path.join(rdir, n) for n in sorted(os.listdir(rdir))})
+    plain = os.path.join(base_dir, "zip_plain")
+    finder_zip_tree(plain, zfiles, macosx=False)
+    os.remove(os.path.join(plain, ".DS_Store"))
+    zroot = os.path.join(base_dir, "zip_finder")
+    ad = finder_zip_tree(zroot, zfiles, macosx=True)
+    beside = os.path.join(base_dir, "zip_beside")
+    finder_zip_tree(beside, zfiles, macosx=False, beside=True)
+
+    def run_tree(root, name, logs_as="files"):
+        lg_dir = os.path.join(root, "Logs")
+        if logs_as == "folder":
+            pr = ["--printed", lg_dir]
+        else:                                                           # what a find of every *.log gives, AppleDouble files included
+            pr = printed(sorted(os.path.join(d, f) for d, _, fs in os.walk(root) for f in fs if f.endswith(".log") and "Logs" in d))
+        out = os.path.join(base_dir, "out_zip_" + name)
+        rc, so, se = run_tool("check_demo.py", ["--journals", os.path.join(root, "Files"), "--bars", os.path.join(root, "Files", "claude", "releve"),
+                                                "--no-replay", "--out", out] + pr)
+        r = json.load(open(os.path.join(out, "report.json"))) if rc == 0 else {}
+        return {"rc": rc, "so": so, "se": se, "an": r.get("anomalies", []), "pr": r.get("printed") or {},
+                "leak": leak_free((outputs_text(out) if rc == 0 else "") + so + se)}
+    p0 = run_tree(plain, "plain")
+    p1 = run_tree(zroot, "finder")
+    p2 = run_tree(beside, "beside")
+    p3 = run_tree(zroot, "folder", logs_as="folder")
+    chk("review5 control MAC-ZIP: the tree of the zip without any macOS file: no information about macOS files",
+        lambda: (p0["rc"] == 0 and "macOS" not in p0["so"], (p0["rc"], p0["se"][-300:])))
+    chk("review5 MAC-ZIP: the Finder zip extracted with its __MACOSX folder, every .log of it given with --printed (AppleDouble '._*.log' "
+        "included): the same anomalies as without them (never 'journal du terminal ?'), one information line 'fichiers de macOS ignores'",
+        lambda: (len(ad) > 10 and p1["rc"] == 0 and p1["an"] == p0["an"] and p1["so"].count("de macOS ignore") == 1
+                 and "._" in p1["so"] and not any("._" in a for a in p1["an"]) and p1["leak"] == [] and p0["leak"] == [],
+                 (p1["an"][:3], p0["an"][:3], p1["so"][-600:], p1["leak"])))
+    chk("review5 MAC-ZIP: AppleDouble files beside the files (no __MACOSX: a copy by tar or onto a FAT key) in --journals, --bars and --printed: "
+        "the same anomalies as without them, one information line", lambda: (p2["rc"] == 0 and p2["an"] == p0["an"]
+                                                                            and p2["so"].count("de macOS ignore") == 1, (p2["an"][:3], p2["so"][-500:])))
+    chk("review5 MAC-ZIP: --printed given the Logs folder of the extracted zip: its .log files read, the AppleDouble ones left out, the same "
+        "result as the files one by one", lambda: (p3["rc"] == 0 and p3["an"] == p0["an"] and p3["pr"].get("kind") == p0["pr"].get("kind")
+                                                   and p3["pr"].get("lines") == p0["pr"].get("lines"), (p3["rc"], p3["se"][-300:], p3["an"][:3])))
+    t1 = {}
+    for name, root in (("plain", plain), ("finder", zroot), ("beside", beside)):
+        folder = os.path.join(root, "Files", "claude", "releve")
+        if name == "finder":                                            # the files of the releve folder zipped by the Finder: __MACOSX beside them
+            folder = os.path.join(base_dir, "zip_releve_files")
+            finder_zip_tree(folder, {n: os.path.join(rdir, n) for n in sorted(os.listdir(rdir))})
+        out = os.path.join(base_dir, "out_t1zip_" + name)
+        rc, so, se = run_tool("read_mac_files.py", [folder, "--out", out])
+        s = json.load(open(os.path.join(out, "summary.json"))) if rc == 0 else {}
+        t1[name] = {"rc": rc, "so": so, "checks": [(c["market"], c["item"], c["status"]) for c in s.get("checks", [])], "problems": s.get("problems"),
+                    "leak": leak_free((outputs_text(out) if rc == 0 else "") + so + se)}
+    chk("review5 MAC-ZIP (tool 1): ReleveFP's folder with a __MACOSX folder inside it, or AppleDouble files beside its files: the same checks and "
+        "reading problems as without them, one information line 'fichiers de macOS ignores'",
+        lambda: (all(t1[k]["rc"] == 0 for k in t1) and t1["finder"]["checks"] == t1["plain"]["checks"] == t1["beside"]["checks"]
+                 and t1["finder"]["problems"] == t1["plain"]["problems"] == t1["beside"]["problems"]
+                 and t1["finder"]["so"].count("de macOS ignore") == 1 and t1["beside"]["so"].count("de macOS ignore") == 1
+                 and "macOS" not in t1["plain"]["so"] and not any(v["leak"] for v in t1.values()),
+                 {k: (v["rc"], v["so"][-300:], v["leak"]) for k, v in t1.items()}))
+
+
+def lines_of_utf16(path):
+    """the robot lines of a MetaTrader log (UTF-16): the text from 'CR|' on"""
+    out = []
+    for ln in open(path, "rb").read().decode("utf-16").splitlines():
+        k = ln.find("CR|")
+        if k >= 0:
+            out.append(ln[k:])
+    return out
+
+
+def shift_lines(lines, delta):
+    """robot lines moved in time by delta seconds (their own stamp only: the rest is the robot's text)"""
+    return [re.sub(r"^CR\|(\d+)\|", lambda m: f"CR|{int(m.group(1)) + delta}|", ln) for ln in lines]
+
+
+def test_review5_replay(lit):
+    """review5 with the robot built in the harness: START on the release file's own start lines (the user's two values typed: S7 and
+    InpK1T = 2026:417.23813245421888; k1t as DoubleToString(-16) writes it), moved to the user's start; FV4b-3 (a US100 row of the releve
+    dropped for its price: the later differences of the sleeves reading US100 marked)"""
+    t0 = time.time()
+    jd, _, _ = harness_live("live5_start", HIST4, {"MOCK_INPUT_InpTrade": "true", "MOCK_INPUT_InpK1T": "2026:417.23813245421888",
+                                                    "MOCK_BALANCE": "10000"}, frm=GO4, to=GO4 + 4 * 3600)
+    cr = os.path.join(jd, "ClaudeRobot")
+    live = [ln for fn in sorted(os.listdir(cr)) for ln in lines_of(os.path.join(cr, fn)) if ln.startswith("CR|") and "|rp=1" not in ln]
+    k_init = next((k for k, ln in enumerate(live) if "|INIT|-|build=" in ln), None)
+    ready = [k for k, ln in enumerate(live) if "|READY|" in ln]
+    real = live[k_init:max(ready) + 1] if k_init is not None and len(ready) >= 4 else []
+    delta = START_U - int(real[0].split("|")[1]) if real else 0
+    p = os.path.join(SCRATCH, "rv5_real_start.txt")
+    with open(p, "w", encoding="utf-8") as f:
+        f.write(experts_paste(shift_lines(real, delta)))
+    rc, so, se = run_tool("check_start.py", [p])
+    chk("review5 START (harness): the release file's own start lines (INIT with k1t as the robot writes InpK1T = 2026:417.23813245421888, "
+        "SELFTEST, PLAN, REBUILD, the four READY), moved to 15 November 2026 and pasted from the Experts tab: every check OK, exit code 0",
+        lambda: (bool(real) and rc == 0 and "DIFFERENT" not in so and "OK : seuil K1 de 2026" in so and "OK : READY US100" in so
+                 and leak_free(so) == [], (len(real), real[:1], so[-1500:], se[-400:])))
+    # FV4b-3: a US100 row of the terminal's bars with a negative low (dropped: the replay has no bar there): every later difference of the
+    # sleeves reading US100 (N30, OC4, NQB) is marked, and the replay anomaly says it
+    clean = os.path.join(SCRATCH, "live4_clean", "files")
+    if not os.path.isdir(clean):
+        clean, _, _ = harness_live("live4_clean", HIST4, {"MOCK_INPUT_InpTrade": "true", "MOCK_INPUT_InpPlanStart": str(GO4),
+                                                          "MOCK_BALANCE": "1000"}, frm=GO4, to=END4)
+    rel = releve_replay("rel5_us100", lit, RUN4)
+    p = os.path.join(rel, "r1_US100.csv")
+    ls_ = lines_of(p)
+    bad_t = srv("2021-10-27 15:31")
+    k = next(i for i, ln in enumerate(ls_) if ln.startswith(f"{bad_t},"))
+    f = ls_[k].split(",")
+    f[3] = "-" + f[3]
+    ls_[k] = ",".join(f)
+    write(p, "\n".join(ls_) + "\n")
+    out = os.path.join(SCRATCH, "out5_us100")
+    rc, so, se = run_tool("check_demo.py", ["--journals", clean, "--bars", rel, "--out", out])
+    r = json.load(open(os.path.join(out, "report.json"))) if rc == 0 else {}
+    dif = (r.get("replay") or {}).get("comparison", {}).get("differences", [])
+    us = [d for d in dif if "US100" in C.READS_OF_CODE.get(d["code"], []) and (d.get("t_utc") or 0) >= C.srv_to_utc(bad_t)]
+    late = [d for d in us if d["code"] == "NQB" and d["t_utc"] > C.srv_to_utc(bad_t) + 2 * 3600]
+    an = " | ".join(r.get("anomalies", []))
+    chk("review5 FV4b-3: a US100 row with a negative low dropped from the replay: every difference of N30, OC4 and NQB from that bar on carries "
+        "the hint (NQB ones hours later too) and the replay anomaly names the file",
+        lambda: (rc == 0 and late and all(d.get("near_bad_bar") for d in us) and "r1_US100.csv" in an and "lisent un marche" in an,
+                 (rc, len(dif), len(us), len(late), [(d["code"], d["when"], bool(d.get("near_bad_bar"))) for d in us[:6]], an[:600], se[-300:])))
+    print(f"   (review5 replay tests {time.time() - t0:.0f} s)")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
@@ -3547,18 +4605,27 @@ def main(argv=None):
     test_review4_journal(lit)
     test_review4b_tool1(lit)
     test_review4b_journal(lit)
+    test_review5_start(lit)
+    test_review5_journal(lit)
+    test_review5b_start(lit)
+    test_review5b_journal(lit)
+    test_review5b_fills(lit)
     if not a.quick:
         test_tool2_replay(lit)
         test_review4_replay(lit)
         test_review4b_replay(lit)
+        test_review5_replay(lit)
     n_fail = sum(1 for r in RESULTS if not r["pass"])
     r2 = [r for r in RESULTS if r["test"].startswith("review2")]
     r3 = [r for r in RESULTS if r["test"].startswith("review3")]
     r4 = [r for r in RESULTS if r["test"].startswith("review4 ")]
     r4b = [r for r in RESULTS if r["test"].startswith("review4b ")]
+    r5 = [r for r in RESULTS if r["test"].startswith("review5 ")]
+    r5b = [r for r in RESULTS if r["test"].startswith("review5b ")]
     print(f"\n{len(RESULTS) - n_fail}/{len(RESULTS)} checks passed in {time.time() - t0:.0f} s "
           f"(review2: {sum(r['pass'] for r in r2)}/{len(r2)}, review3: {sum(r['pass'] for r in r3)}/{len(r3)}, "
-          f"review4: {sum(r['pass'] for r in r4)}/{len(r4)}, review4b: {sum(r['pass'] for r in r4b)}/{len(r4b)})")
+          f"review4: {sum(r['pass'] for r in r4)}/{len(r4)}, review4b: {sum(r['pass'] for r in r4b)}/{len(r4b)}, "
+          f"review5: {sum(r['pass'] for r in r5)}/{len(r5)}, review5b: {sum(r['pass'] for r in r5b)}/{len(r5b)})")
     with open(RESULTS_FILE, "w") as f:
         json.dump(RESULTS, f, indent=1, default=str)
     if not a.keep:

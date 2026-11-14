@@ -1,4 +1,4 @@
-"""Shared helpers of the demo tools (read_mac_files.py, check_demo.py, test_demo_tools.py).
+"""Shared helpers of the demo tools (read_mac_files.py, check_demo.py, check_start.py, test_demo_tools.py).
 
 What lives here:
   * the output folder rule: every output goes to --out, which defaults to the session scratchpad and may never lie
@@ -12,7 +12,14 @@ What lives here:
     own (SCHEMA: numbers for numeric keys, fixed vocabularies for text keys, the fields the robot always writes,
     printable ASCII): a line that fails is counted and located, never fatal, and its text is never kept; every line,
     the robot's included, is scanned for account values before anything is kept;
-  * French number formatting for the summaries the user reads.
+  * French number formatting for the summaries the user reads;
+  * the Mac's own clock (Paris: European summer time, review5): MetaTrader's logs (MQL5/Logs) are named by the Mac's local date; the
+    times the lead relays to the user are given in Paris too (paris_when, paris_span, utc_paris, with_paris; review5b RH5-10);
+  * an ERROR line keeps one flag of its echoed input, never the text: whether it holds a comma (_free_comma: the typo the guide warns
+    about, review5b RH5-1);
+  * the files macOS adds to what the user sends (review5 MAC-ZIP): the Finder's 'Compresser' puts a __MACOSX folder and AppleDouble
+    '._<name>' files (and .DS_Store) beside the user's files; every input of both tools skips them (is_macos_meta): never parsed,
+    never counted as missing, foreign or second-copy files, named once as information ('fichiers de macOS ignores').
 Nothing here reads market data by itself. Nothing writes inside the repository except check_demo.py's cache of the
 harness build, lab/robot/build/demo_check_release (ignored by git): the compiled robot and the hashes of its source files,
 no Mac data (review3 P7).
@@ -283,6 +290,60 @@ def clean_json(o):
 
 
 # ---------------------------------------------------------------------------------------------- reading files
+MACOS_INFO = ("fichier(s) de macOS ignore(s) (dossier __MACOSX, fichiers ._* et .DS_Store que 'Compresser' du Finder ajoute) : "
+              "jamais lus")
+
+
+def is_macos_meta(path):
+    """a file macOS adds beside the user's files (review5 MAC-ZIP): anything under a __MACOSX folder (the Finder's 'Compresser'
+    puts there the AppleDouble copy of each file's resource fork and extended attributes), an AppleDouble '._<name>' file (a zip
+    or a copy made otherwise keeps it beside <name>) and .DS_Store. Never a file of the robot, of MetaTrader or of ReleveFP."""
+    parts = [x for x in str(path).replace("\\", "/").split("/") if x]
+    base = parts[-1] if parts else ""
+    return "__MACOSX" in parts or base.startswith("._") or base == ".DS_Store"
+
+
+def macos_meta_files(top, depth=4):
+    """the macOS files (is_macos_meta) found in a folder given to a tool and a few levels below it (the Finder's zip puts its
+    __MACOSX folder beside the folders it holds): their paths relative to `top`, sorted; [] for a file or a missing folder. The
+    folder itself under __MACOSX: every file in it."""
+    out = []
+    if not top or not os.path.isdir(top):
+        return out
+    top_meta = is_macos_meta(os.path.abspath(top))
+    base_depth = os.path.abspath(top).rstrip(os.sep).count(os.sep)
+    for d, dirs, files in os.walk(top):
+        dirs.sort()
+        if os.path.abspath(d).count(os.sep) - base_depth >= depth:
+            dirs[:] = []
+        for f in sorted(files):
+            p = os.path.join(d, f)
+            if top_meta or is_macos_meta(os.path.relpath(p, top)):
+                out.append(os.path.relpath(p, top).replace(os.sep, "/"))
+    return out
+
+
+def macos_info(names):
+    """the one line naming the macOS files a tool left aside (review5 MAC-ZIP), None when there are none"""
+    names = sorted(set(names or []))
+    if not names:
+        return None
+    return f"{len(names)} {MACOS_INFO} (par ex. {', '.join(names[:3])})"
+
+
+def short_names(paths):
+    """a name for each path, unique among them (review5 FV4b-2): the file name, with as many parent folders as it takes to tell two
+    files apart (the Mac's Logs/20211114.log and a VPS's vps/20211114.log); the same file given twice keeps one name"""
+    norm = {p: [x for x in os.path.normpath(os.path.abspath(p)).split(os.sep) if x] for p in paths}
+    out = {}
+    for p, parts in norm.items():
+        k = 1
+        while k < len(parts) and any(q != parts and q[-k:] == parts[-k:] for q in norm.values()):
+            k += 1
+        out[p] = "/".join(parts[-k:])
+    return out
+
+
 def read_text(path):
     """a file the terminal wrote: UTF-16 with a byte-order mark (MetaTrader's own logs) or single-byte ANSI text
     (FILE_ANSI: the Windows code page; cp1252 under Wine on a Mac)"""
@@ -386,6 +447,88 @@ def us_dst(utc):
         return nth_sunday(3, 2) + 7 * 3600 <= utc < nth_sunday(11, 1) + 6 * 3600
     except (OverflowError, OSError, ValueError):
         return False
+
+
+def eu_dst(utc):
+    """European summer time at a UTC instant (the Mac on Paris time, review5): last Sunday of March 01:00 UTC to last Sunday of
+    October 01:00 UTC. Paris and New York change clocks on different dates: from the 2nd Sunday of March to the last Sunday of
+    March, and from the last Sunday of October to the 1st Sunday of November, Paris = server - 2 h; the rest of the year
+    Paris = server - 1 h. False for a time outside 2015-2100."""
+    try:
+        utc = int(utc)
+        if not TIME_MIN <= utc < TIME_MAX:
+            return False
+        y = time.gmtime(utc).tm_year
+    except (OverflowError, OSError, ValueError, TypeError):
+        return False
+
+    def last_sunday(m):
+        last = calendar.timegm((y + (m == 12), m % 12 + 1, 1, 0, 0, 0)) - 86400
+        return last - ((time.gmtime(last).tm_wday + 1) % 7) * 86400
+    return last_sunday(3) + 3600 <= utc < last_sunday(10) + 3600
+
+
+def paris_of_utc(u):
+    """the Mac's wall clock (Paris) of a UTC instant, seconds"""
+    return int(u) + (7200 if eu_dst(u) else 3600)
+
+
+def paris_when(u):
+    """a time as the user sees it on the Mac (Paris), with the server's time (review5 START, review5b RH5-10): 'le 15/11/2026 a 10:02
+    (heure de Paris ; 11:02 serveur)'"""
+    try:
+        p, s = paris_of_utc(u), utc_to_srv(u)
+        return f"le {time.strftime('%d/%m/%Y a %H:%M', time.gmtime(p))} (heure de Paris ; {time.strftime('%H:%M', time.gmtime(s))} serveur)"
+    except (OverflowError, OSError, ValueError, TypeError):
+        return "le ?"
+
+
+def paris_hm(u):
+    """the Paris time of a UTC instant, to put in parentheses after a UTC time on the lines the lead relays (review5b RH5-10): 'heure de
+    Paris : 17/11 a 07:13'"""
+    try:
+        return f"heure de Paris : {time.strftime('%d/%m a %H:%M', time.gmtime(paris_of_utc(u)))}"
+    except (OverflowError, OSError, ValueError, TypeError):
+        return "heure de Paris : ?"
+
+
+def paris_span(a, z=None):
+    """a span of time as the user reads it on the Mac: 'du 14/11/2026 a 14:50 au 14/11/2026 a 14:59 (heure de Paris)' (from a only when z is
+    None)"""
+    try:
+        fa = time.strftime("%d/%m/%Y a %H:%M", time.gmtime(paris_of_utc(a)))
+        if z is None:
+            return f"depuis le {fa} (heure de Paris)"
+        return f"du {fa} au {time.strftime('%d/%m/%Y a %H:%M', time.gmtime(paris_of_utc(z)))} (heure de Paris)"
+    except (OverflowError, OSError, ValueError, TypeError):
+        return "?"
+
+
+def paris_to_utc(local):
+    """the UTC instant of a Paris wall-clock time (seconds of 'YYYY-MM-DD HH:MM' read as UTC); in the hour the clocks go back, the first"""
+    for off in (7200, 3600):
+        if paris_of_utc(int(local) - off) == int(local):
+            return int(local) - off
+    return int(local) - 3600
+
+
+_UTC_TXT = re.compile(r"(\d{4}-\d\d-\d\d \d\d:\d\d) UTC(?! \(heure de Paris)")
+
+
+def with_paris(text):
+    """every 'YYYY-MM-DD HH:MM UTC' of a text followed by the Mac's time in Paris (review5b RH5-10: the lines the lead relays to the user)"""
+    def rep(m):
+        try:
+            u = calendar.timegm(time.strptime(m.group(1), "%Y-%m-%d %H:%M"))
+        except (ValueError, OverflowError):
+            return m.group(0)
+        return f"{m.group(1)} UTC ({paris_hm(u)})"
+    return _UTC_TXT.sub(rep, text)
+
+
+def utc_paris(u):
+    """'2026-11-17 06:13 UTC (heure de Paris : 17/11 a 07:13)': the UTC time of the reports, with the Mac's time the user reads"""
+    return f"{utc_txt(u)} ({paris_hm(u)})"
 
 
 def srv_to_utc(s):
@@ -554,7 +697,9 @@ ADOPT_WHY = _W("reconcile", "reconcile_waiting", "listed_late", "history", "open
                "position", "prev_open")                                 # FolAdopt callers, BrkIntentCheck
 _CODE_NUM = re.compile(r"^code-?\d+$")
 _REFUSED_RC = re.compile(r"^refused_\d+$")
-_RISK = re.compile(r"^[0-9.:;]{0,200}$")
+# InpRiskTable as typed (MainInitLine writes it back as is): the robot trims the spaces around each number (CR_Sizing.mqh SizNumber),
+# so a space typed or pasted with the value is no error and the line stays readable (review5 START)
+_RISK = re.compile(r"^[0-9.:; ]{0,200}$")
 _K1T = re.compile(r"^[0-9.:;eE+\-]{0,400}$")
 # INIT symbol names: BrkResolve (CR_Broker.mqh) picks base.r, base, an alias (alias.r, alias), else the first symbol of the
 # server's list that starts with the base, so a name always starts with the base or an alias (review3 P3)
@@ -612,6 +757,16 @@ def error_shown(v):
             out = out[:a] + FREE_SHOWN + out[z:]
         return out
     return None
+
+
+def error_free_comma(v):
+    """whether the free parts of an ERROR text (the input echoed back) hold a comma: the typo the guide warns about (a comma instead of a
+    dot in InpRiskTable or InpK1T, review5b RH5-1). Only this flag is kept, never the text"""
+    for rx in ERROR_WHAT:
+        m = rx.match(v)
+        if m:
+            return any("," in (m.group(g) or "") for g in rx.groupindex)
+    return False
 
 
 # time fields (integers the robot writes with KT/JT, seconds): a value outside 2015-2100 cannot be the robot's (two glued
@@ -805,6 +960,8 @@ def parse_robot_line(text):
             if not _text_ok(t, v):
                 return None, f"{ev} : {k} hors du vocabulaire du robot"
             if t == ("error",):
+                if error_free_comma(v):
+                    d["_free_comma"] = True                     # a comma typed in the echoed input (the text is never kept)
                 v = error_shown(v)
             elif isinstance(t, tuple) and len(t) == 2 and t[0] == "sym":
                 v = sym_shown(t[1], v)                          # an unusual suffix is never kept (review4 A14)
@@ -825,12 +982,14 @@ def parse_cr(text):
 
 
 def journal_paths(path):
-    """the robot's daily files: a folder holding them (or MQL5/Files, or MQL5/Files/ClaudeRobot), or one file"""
+    """the robot's daily files: a folder holding them (or MQL5/Files, or MQL5/Files/ClaudeRobot), or one file. The files macOS adds
+    (is_macos_meta: __MACOSX, '._<name>', review5 MAC-ZIP) are left out of a folder; one given by name is passed on (the reader
+    names it and skips it)"""
     if os.path.isfile(path):
         return [path]
     out = []
     for sub in ("ClaudeRobot", ""):
-        out = sorted(glob.glob(os.path.join(path, sub, "*.log")))
+        out = sorted(p for p in glob.glob(os.path.join(path, sub, "*.log")) if not is_macos_meta(os.path.relpath(p, path)))
         if out:
             break
     return out
@@ -890,12 +1049,22 @@ def read_journal_files(paths, scrub=None, printed=False, any_name=False):
     review4b ADV5-7), not the terminal's Journal tab.
     Each row gets _f (file), _n (line number), _seq (its rank in file order) and _raw (the checked line, rebuilt from the
     robot's own keys). info['repeated_lines'] counts live robot lines whose exact text is already in the journal (the
-    robot stamps every line to the second: a repeat is a file read twice)."""
+    robot stamps every line to the second: a repeat is a file read twice).
+    A file macOS added (is_macos_meta: under __MACOSX, '._<name>', .DS_Store; review5 MAC-ZIP) is never read: it is named in
+    info['macos_files'] only. With printed=True a file is named by short_names (review5 FV4b-2): two logs of the same name from
+    two folders (the Mac's and a VPS's 20211114.log) are two files, named with their parent folder; the paths are scanned like the
+    lines, so that a user folder in them (/Users/<name>/) is masked too."""
     rows, bad, foreign, skipped, no_robot, per_file, program_only = [], [], [], [], [], {}, []
     other, unknown_keys = 0, 0
     seen_txt, repeated, repeated_first = set(), 0, []
+    macos = [os.path.basename(p) for p in paths if is_macos_meta(p)]
+    paths = [p for p in paths if not is_macos_meta(p)]
+    shown = short_names(paths) if printed else {p: os.path.basename(p) for p in paths}
+    if scrub is not None:
+        for p in paths:
+            scrub.scan_log_line(os.path.abspath(p))
     for p in paths:
-        name = os.path.basename(p)
+        name = shown[p]
         try:
             text = read_text(p)
         except OSError as e:
@@ -976,13 +1145,13 @@ def read_journal_files(paths, scrub=None, printed=False, any_name=False):
             no_robot.append(name)
             if n_prog and not n_sub:
                 program_only.append(name)
-    used = [os.path.basename(p) for p in paths if os.path.basename(p) not in {s["file"] for s in skipped}]
+    used = [shown[p] for p in paths if shown[p] not in {s["file"] for s in skipped}]
     return rows, {"files": used, "lines": len(rows), "unparsable": len(bad),
                   "unparsable_first": [{"file": b["file"], "line": b["line"], "why": b["why"]} for b in bad[:10]],
                   "unparsable_all": [{"file": b["file"], "line": b["line"], "ev": b.get("ev"), "why": b["why"]} for b in bad],
                   "other_lines_ignored": other, "foreign_lines": len(foreign), "foreign_first": foreign[:10],
                   "skipped_files": skipped, "files_without_robot_lines": no_robot, "robot_lines_per_file": per_file,
-                  "files_other_programs_only": program_only,
+                  "files_other_programs_only": program_only, "macos_files": macos,
                   "unknown_keys_dropped": unknown_keys, "repeated_lines": repeated, "repeated_first": repeated_first}
 
 

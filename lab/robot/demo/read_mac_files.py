@@ -75,7 +75,8 @@ points for a true 6), the measured one otherwise. A robot market whose fiches.cs
 gets its commission and spread checks from sonde.csv and its m1 file. The gold digits check says that the robot's
 paper commission is 6 points x 0.5 x point (CR_Registry.mqh RegSetPoint): another number of digits makes it wrong.
 Every check says OK, DIFFERENT or UNKNOWN with both values (INFO for a difference without effect on the robot, such as
-crypto quoted at weekends). Output in --out (default: DEMO_OUT, else the session scratchpad; a folder inside the
+crypto quoted at weekends). The files macOS adds to a Finder zip (a __MACOSX folder, AppleDouble '._<name>' files, .DS_Store) are
+never read: named once as information ('fichiers de macOS ignores'; the folder itself inside __MACOSX is said, review5 MAC-ZIP). Output in --out (default: DEMO_OUT, else the session scratchpad; a folder inside the
 repository is refused): summary.json, summary_fr.txt; a short French summary on stdout (notes with codes and file names
 in summary_fr.txt only).
 """
@@ -1339,6 +1340,7 @@ def account_checks(rep, fini, sonde_rows, sonde_meta, m1, present=None, releve_f
 def run(folder, out_dir):
     scrub = C.Scrubber()
     out = C.safe_out(out_dir)
+    macos = C.macos_meta_files(folder)                                  # what the Finder's zip adds (review5 MAC-ZIP): never read, named once
     present = {n: os.path.exists(os.path.join(folder, n)) for n in ("fiches.csv", "tous.csv", "fini.txt", "sonde.csv")}
     m1_files = sorted(f for f in os.listdir(folder) if f.startswith("m1_") and f.endswith(".csv"))
     r1_files = sorted(f for f in os.listdir(folder) if f.startswith("r1_") and f.endswith(".csv"))
@@ -1401,7 +1403,8 @@ def run(folder, out_dir):
     session_checks(rep, fiches, m1)
     counts = {s: sum(1 for c in rep.checks if c["status"] == s) for s in ("OK", "DIFFERENT", "UNKNOWN", "INFO")}
     summary = {"tool": "read_mac_files", "version": 2, "releve_version": fini.get("version") if fini else None,
-               "files_read": {**present, "m1": m1_files, "r1": r1_files},
+               "files_read": {**present, "m1": m1_files, "r1": r1_files}, "macos_files_ignored": macos,
+               "macos_folder": C.is_macos_meta(os.path.abspath(folder)),
                "problems": problems, "account": {k: v for k, v in fini.items() if k != "markets"} if fini else {},
                "releve_markets": fini.get("markets", {}) if fini else {}, "sonde_meta": sonde_meta,
                "fiches": fiches, "sonde": sonde_rows, "m1": m1, "checks": rep.checks, "counts": counts,
@@ -1419,6 +1422,10 @@ def french(summary, checks, counts, problems):
     head = [f"Lecture des fichiers du Mac : {', '.join(lus) if lus else 'aucun fichier reconnu'}.",
             f"{counts['OK']} points conformes, {counts['DIFFERENT']} differents, {counts['UNKNOWN']} inconnus"
             + (f", {counts['INFO']} pour information." if counts.get("INFO") else ".")]
+    mi = C.macos_info(summary.get("macos_files_ignored"))
+    if mi:
+        head.append(f"Information : {mi}" + (" ; ce dossier est dans __MACOSX : donner le dossier claude/releve d'a cote, hors de __MACOSX."
+                                              if summary.get("macos_folder") else "."))
     full = list(head) + [""]
     for c in checks:
         tag = {"OK": "OK       ", "DIFFERENT": "DIFFERENT", "UNKNOWN": "INCONNU  ", "INFO": "INFO     "}[c["status"]]
