@@ -969,3 +969,135 @@ return was computed; 7 configurations logged in `trials.jsonl`; frames read with
   +0.04 bp. Addendum K's pre-run figure (+0.8 bp for the two hours after the reopen) mostly lies in that first quarter
   hour. An earlier entry would be a new idea needing its own declaration, with real reopen spreads first.
 - The account stays the ten rules.
+
+## Addendum L (2026-11-14; written BEFORE any run): round 6 — night mean reversion on FX crosses (MQL5 survey, idea 2)
+The user asked to go on with the tests ("continue les tests pour améliorer"). This round tests the second idea of the
+survey (`results/r2/mql5_survey.json`): the "night scalpers" that fade small stretches after the 17:00 New York
+rollover. Best evidence: signal 'Scalp IC Markets ECN' (https://www.mql5.com/en/signals/683917), a real account public
+since July 2020: PF 1.79, 70.5 % winners, average win 3.43 against average loss 4.56 EUR, average hold 2 h, rules not
+published. A review of about twenty public sources (open code, articles, vendor manuals, live signals, one independent
+Dukascopy test; notes committed with this text as `results/r2/round6/night_fade/sources.md`) found no published rule,
+only shared elements. The rule below is their common core written as one computable rule with one parameter set for
+every cross; where the sources disagree, the alternatives are the neighbours. It replaces the survey's placeholder
+(M15 bars, 18:30–23:45, six crosses), which was never declared. Of the new price files only header lines and one first
+row (eurcad-m1-bid-2013, to check the time unit) were opened, and before the download the lead printed two rows of a
+one-week test download (EURCAD bid, March 2021) to check the tool's format; nothing was computed on any price. Every reading of a
+detail left open goes into `declared.json`, with its sha256, before any return is computed.
+
+**Frozen rule `night_fade` (the main configuration).**
+- **Basket**: all twelve crosses fixed in `dl_round6.py` before the research: EURCAD, GBPCAD, EURAUD, AUDCAD, EURGBP,
+  EURCHF, GBPCHF, AUDNZD, NZDCAD, CADCHF, GBPAUD, EURNZD. None chosen on results; no major pair (the idea and its
+  evidence are about crosses; one data source and one cost model). A cross leaves only by the coverage pre-check
+  below.
+- **Data**: Dukascopy M1 bid and ask (`data/raw_r6`, the 216 files of 2013–2021, all on disk), merged exactly as
+  `prep_round3._merge` with the weekday rule of `prep_round3.fx`; frames asserted to end before 2022-01-01 and read
+  with the filter ts < 2022-01-01 (`data/r6/<cross>_m1.parquet`). One pip = 0.0001 for all twelve.
+- **Evenings** (New York wall clock, `America/New_York`): E = a date from Monday to Thursday; it opens trading day
+  E+1. Skipped: E from 24 December to 1 January; E or E+1 an NYSE full holiday (`idxus_lib.us_holidays` minus
+  `SPECIAL_CLOSURES`; half days are normal). That leaves 1,753 evenings, 2013-01-02 to 2021-12-22 (194–196 a year).
+  For each cross an evening is tradable once 480 completed H1 bars exist at 17:15 (warm-up: about the first four weeks
+  of 2013).
+- **Band**: M5 bars = `goldlab.data.bars(base frame, "5min")` (clock grid; a bucket with no M1 bar has no bar), mid
+  closes. For bar j: μ = mean of the closes of bar j and the 19 existing bars before it, σ = their population standard
+  deviation, bands μ ± 2.0 σ; usable only if bar j−19 starts at most 120 minutes before bar j ends.
+- **Signal**: decision times = the ends of the 5-minute buckets 17:15, 17:20, …, 19:55 of E (33 a night); the signal
+  bar is the bar of the bucket that ends then (none, or band not usable: no signal). Close below the lower band: buy;
+  above the upper band: sell (strict). D = |close − μ|.
+- **Cost filter** (the scale-free form of the maximum-spread filter almost every source uses, measured against the
+  trade's own target; BG Robonight and Night Hunter Pro similarly require a minimum channel width): the signal counts
+  only if D ≥ 2.0 × C, C = ask close − bid close of the signal bucket's last M1 bar (base frame: Dukascopy spread plus
+  commission).
+- **Entry**: at market at the open of the first M1 bar starting at or after the decision time; dropped if that bar
+  starts more than 5 minutes late, or if its open has already reached the target (buy: ask open ≥ μ; sell: bid
+  open ≤ μ; a trade server refuses such a take-profit). A dropped order does not block later signals. A buy fills at
+  the ask open + 0.1 bp, a sell at the bid open − 0.1 bp.
+- **Exits** (`goldlab.sim.simulate` on M1 bid/ask highs and lows; stop first when both are touched in one bar).
+  *Target* = μ of the signal bar, frozen, a resting limit with no slippage (a long exits when a bar's bid high reaches
+  it, a short when a bar's ask low does; possible on the entry bar). *Stop* = 2.0 × the mean (mid high − mid low) of
+  the 480 most recent completed H1 bars at the decision time (`bars(base frame, "1h")`;
+  completed = start + 60 min ≤ decision time), set from the fill and fixed, 0.3 bp of slippage, the worse open on a
+  gap. *Time* = at market at the open of the first M1 bar at or after 21:00 New York (`exit_index`, 30-minute gap
+  rule), 0.1 bp. No trade crosses 17:00 New York, so the swap is 0 (asserted).
+- **Positions**: one per cross (`no_overlap=True`: an order whose entry bar is at or before the open trade's exit bar
+  is ignored); later signals of the evening may trade, on either side; no cap across crosses or per currency
+  (reported). R = side × (exit fill − entry fill) / |entry fill − stop|.
+
+**Costs.**
+- **Base**: Dukascopy's own minute bid and ask, unclipped (each night's real widening, rollover tails included), plus
+  FP Markets Raw commission, 6 USD per 100,000 units of base round trip, folded into the quotes (bid − h and ask + h
+  on all four prices, h = ½ × c × the M1 bar's mid close) at fixed low-end USD values of the base (EUR 1.05, GBP 1.20,
+  AUD 0.65, NZD 0.60, CAD 0.70; general knowledge, not measured, so the commission is if anything overstated):
+  c = 0.5714 bp for the five EUR crosses, 0.5000 bp for the three GBP crosses, 0.9231 bp for AUDCAD and AUDNZD,
+  1.0000 bp for NZDCAD and 0.8571 bp for CADCHF. Slippage 0.1 bp on market fills, 0.3 bp on stops, none on targets.
+  Why not an FP spread model: FP's cross spreads are not verified, and its intraday shape clipped at 6 × the daily
+  median would understate the minutes after 17:00. Known bias: Dukascopy's cross spreads were wider in 2013–2015 than
+  ECN spreads are today.
+- **Costs × 1.5** (base spread × 1.5 around the mid with `apply_spread_mult`, slippage × 1.5), two readings that must
+  both pass: (a) orders rebuilt on the widened quotes (the lab's stress; the filter then sees 1.5 C); (b) the base
+  orders replayed unchanged. **Gross** (information): the base orders on mid quotes, no slippage.
+
+**Neighbours (each changes one thing; all logged; 7 configurations with the main).** (1) `first_hour`: decisions
+17:15–17:55 (the hour the only independent test calls the core). (2) `moving_mid`: the same orders without a resting
+target; exit at market at the open of the first M1 bar at or after the end of the first usable M5 bar that ends after
+the entry bar starts and whose mid close is ≥ (long) / ≤ (short) its own middle band; stop and 21:00 exit unchanged.
+(3) `width_2.5`: bands ± 2.5 σ. (4) `m15`: M15 bars (span limit 360 minutes), decisions at the ends of the 15-minute
+buckets 17:15–19:45. (5) `stop_3.0`: stop 3.0 × the mean H1 range. (6) `one_per_night`: only the first order of each
+cross and evening.
+
+**In sample only (2013–2021), frames cut while read. The verdict is read on the main only; pass = all twelve bars:**
+n ≥ 250; pooled PF ≥ 1.12; t on daily sums of R ≥ 2.5 (trading day of entry, days with a trade); at least 6 of the 9
+calendar years positive (entry year; a year with no trade is not positive); pooled PF ≥ 1.04 at costs × 1.5 in both
+readings; at least 8 of the 12 crosses with a positive expectancy (no trade = not positive); no cross above 25 % of
+the pooled net R (a pooled total ≤ 0 fails); median pooled PF of the six neighbours ≥ 1.06; every-signal
+expectancy > 0 (every order of the main, overlaps allowed); max hold ≤ 5 trading days; null ≥ 97.5th percentile;
+|weekly correlation with the sum of the ten| ≤ 0.30.
+- **Before the run (no return computed)**: a pre-check (frames, evenings, warm-up, signals and drops per
+  configuration, spreads and all-in costs by cross and year at 17:15–21:00 and 16:55–17:30, the clock in UTC in both
+  daylight-saving regimes); a cross with an M1 bar in [17:15, 21:00) on fewer than 90 % of the 1,753 evenings is
+  dropped (the cross bars then apply to the crosses kept, 65 % rounded up); a synthetic test; a truncation test (μ, σ,
+  side, D, C and the stop distance of at least 50 decisions per cross, recomputed on frames cut at the decision time,
+  must be equal); a hand check from the raw quotes of the first main trade of 2013, 2015, 2017, 2019 and 2021.
+- **Null** (section 4: same clock time, random day, same instrument): 200 replays, numpy `default_rng(0)`. Each main
+  trade is re-entered on its cross, on an evening drawn uniformly with replacement among the cross's tradable
+  evenings, at the open of the first M1 bar at or after the New York clock time of its entry bar (another evening if
+  that bar is more than 5 minutes late; after 20 draws dropped and counted); same side; stop and target distances as
+  fractions of its entry fill, scaled by the replay bar's mid open; resting target; time exit at 21:00 New York of
+  that evening; base costs; every replay simulated (`no_overlap=False`). Statistic: the pooled mean R;
+  percentile = share of the 200 means strictly below the main's.
+- **Correlation**: Addendum K's convention (the ten's official trades read with entry_time < 2022-01-01, exits in 2022
+  dropped; weekly R by exit week, W-SUN UTC, every week from 2014-01-01 to 2021-12-31 (418), an empty week = 0;
+  Pearson).
+- **Reported, not judged**: for every configuration, pooled and per cross: n, PF, t on daily sums and on trades,
+  expectancy, R by year, long and short, win rate, average win and loss in R and their ratio (683917: 70.5 % winners,
+  0.75), exits by reason, hold, net, gross and cost bp, target and stop distances in pips, all also at costs × 1.5
+  (both readings) and gross. For the main: entries by New York hour, weekday and daylight-saving regime; first against
+  later trades of the evening; drops by filter; evenings skipped by reason and cross; entries, stops and targets
+  between 16:55 and 17:30; stop and target in one M1 bar; × 1.5 fills already past the target; expectancy by D / C
+  (2–3, 3–4, ≥ 4); the AUD and NZD crosses against the other six; winning days, weeks and months; worst evening and
+  week; maximum drawdown in R; crosses open at once and the most trades open on one currency and side; the account
+  check at 7 % of 1,000 EUR (0.01 lot, 1:500); the break-even extra cost per round trip; the evenings of 2016-10-06
+  (pound flash crash, about 19:07) and 2019-01-02 (yen and Australian-dollar flash crash, about 17:30–17:45), the week
+  of 2021-11-22 and EURCHF before 2015-01-15, all of which stay in the test.
+- **Bookkeeping**: `results/r2/round6/night_fade/trials.jsonl`, one line per configuration and cross plus one pooled
+  line per configuration (91), whatever the result; the run refuses to run twice; `results/val_access.log` unchanged.
+- **After the run**: a fail is final (another window, band, stop, filter, bar size or cross list is a new idea with
+  its own declaration). A pass is attacked by an independent re-implementation (own frames, calendar, bands, H1 ranges
+  and simulator; trade for trade; execution on the 1,000 EUR account). A confirmed pass gets ONE look at 2022–2025,
+  declared separately; the crosses' 2022–2025 files are downloaded only after that declaration. Before any real use:
+  FP's night quotes on the twelve crosses are read with `ReleveFP` v1.10 (InpSymbols = the twelve crosses,
+  InpDays = 45: at least 20 Monday–Thursday evenings, a second run a month later if fewer) and the commission from a
+  demo round trip; a cross whose FP median all-in cost over 17:15–21:00 New York exceeds 1.5 × the base frame's median
+  at the same minutes over 2019–2021 is not traded; with fewer than 8 crosses left the rule is not used; then the demo
+  account first. The 2026 holdout stays untouched.
+
+**Said before the run.** The vendors' records are better than this test can be: they rest limit orders at the band (no
+spread paid to enter), tune per pair, use low-spread ECN brokers and are survivors (22 of the 26 signal links on their
+pages are gone); the lab enters at market after the bar closes and crosses the spread. Arithmetic: under the filter a
+target win nets D − C/2 ≥ 0.75 D, with a stop several times D, so of the order of +0.1 to +0.4 R against losses up to
+−1 R; PF 1.12 needs a net mean of about 5.7 % of the mean |R|. The lab's FX record: no FX rule among the ten;
+round 3's FX edges were 1–2 bp gross at best; round 4's FX weekend fade had no gross edge (−0.19 bp per trade before
+costs). Expected: a few thousand to about 15,000 trades, 60–75 % winners, a gross PF above 1 and, if it fails, failing
+on PF, costs × 1.5 and years; the null can pass even then (it tests timing, not costs). Prior of an in-sample pass
+about 8 %, of a later 2022–2025 pass about 3 %; |ρ| with the ten below 0.1. If it passed: a small sleeve on a clock
+and a market the ten never touch, not a multiplier; at 7 % per trade a per-evening risk budget would be declared
+before any real use.
