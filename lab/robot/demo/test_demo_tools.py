@@ -8,8 +8,15 @@ SondeFP.mq5 themselves; numbers with DoubleToString's decimals; days newest firs
 "\\n" and "\\r\\n"), runs each tool on them and checks the outputs.
 
 Data: in-sample bars only, the 2021 bar files already exported under lab/robot/check/out/bars/ (read-only; weeks of
-October-December 2021). The fake account's server name and login are planted in the inputs and must never appear in
-any output. Every output goes to the session scratchpad; scratch is deleted at the end unless --keep.
+June-December 2021). The fake account's server name, login, holder's name and user folder are planted in the inputs
+(MetaTrader's own logs, a terminal line glued in a robot file) and must never appear in any output. Every output goes
+to the session scratchpad; scratch is deleted at the end unless --keep.
+The cases of the adversarial review are the tests named 'review ...': hand-made multi-day journals (a lost daily file,
+a second ticket for one paper trade, a missing or refused CLOSE, the CLOSE px=0 race, MetaTrader's logs beside the
+robot's files, the plan started at the go-live time), ReleveFP files (a weekend run after an early holiday close,
+holiday windows for InpExtraClosures, the probe's cents, a cut fiche line, 3-digit gold) and replays (a lost file,
+the coverage of 30 days of minutes, a market whose minutes start late, a day whose spread differs, a clean trading
+run without a false alarm).
 --quick: tool 1 and the journal-only checks of tool 2 (no harness build or replay).
 """
 import argparse
@@ -498,6 +505,393 @@ def test_tool2_journal(lit):
         check(f"tool2 journal {variant}: no account data in the outputs", FAKE_SERVER not in txt and FAKE_LOGIN not in txt)
 
 
+# ---------------------------------------------------------------------------------------------- tool 2: the review's cases
+def U(s):
+    """UTC seconds of a server time 'YYYY-mm-dd HH:MM' (November 2021: server = UTC + 2 h)"""
+    return C.srv_to_utc(srv(s))
+
+
+def md_journal(folder, variant=(), style="live"):
+    """eight server days of a trading demo (Wed 2021-11-17 to Thu 2021-11-25), one daily file per server date as JrnAt
+    writes them. style 'live': MetaTrader runs at weekends, so Saturday and Sunday have their files (AGG, COST, DAY of
+    the day before at 00:00:30); 'harness': the mock jumps over the weekend, so Monday's file holds the DAY lines of
+    Friday, Saturday and Sunday. Five positions: ORX (A) closed by the EA, D4H short (E) open over the weekend and closed
+    on Monday, BKB (C), GFP (B), N30 (D). variant: 'no_close' (A's CLOSE line gone), 'close_refused' (A's close refused,
+    rc 10018, never retried), 'race' (C's CLOSE px=0 rc=0 ok=1), 'dup' (a second ticket for D's oid, no DUP line),
+    'restart' (stopped Friday night, started again Monday with an ADOPT of E), 'observe_late' (a MISSED observe stamped
+    after the plan start), 'plan_unset', 'glued' (a terminal line glued inside a robot file). The plan starts at the
+    go-live time (SPEC 1 step 3), so the paper trade already open at the start ends MISSED observe (normal)."""
+    os.makedirs(folder, exist_ok=True)
+    L = []                                                              # (server write time, line)
+
+    def add(t_srv, line):
+        L.append((int(t_srv), line))
+    T = srv("2021-11-17 08:00")
+    k_gold, k_usd = 86.0, 0.86
+
+    def start(at):
+        a = srv(at)
+        add(a, init_line(C.srv_to_utc(a)))
+        add(a, jl(C.srv_to_utc(a), "SELFTEST", "-", ("ok", 1), ("why", ""), ("golden", 366)))
+        add(a + 60, jl(C.srv_to_utc(a + 60), "PLAN", "-", ("T", T), ("state", "unset" if "plan_unset" in variant else "ok"), ("demo", 1),
+                       ("B_T", 10000.0), ("risk", "0:10;3000:5;10000:2;20000:1")))
+        add(a + 60, jl(C.srv_to_utc(a + 60), "REBUILD", "-", ("n", 1), ("why", "start"), ("from", C.srv_to_utc(a) - 120 * 86400),
+                       ("to", C.srv_to_utc(a + 60)), ("minutes", 172800), ("ms", 812)))
+        for b in C.ROBOT_BASES:
+            add(a + 62, jl(C.srv_to_utc(a + 62), "READY", b, ("bars", 100000), ("raw", 100000), ("first", C.srv_to_utc(a) - 120 * 86400),
+                           ("last", C.srv_to_utc(a)), ("masked", 0), ("holes", 0), ("depth_days", C.DEPTH_DAYS[b])))
+    start("2021-11-17 08:00")
+    # the paper trade already open at the start (stamped before the plan start): MISSED observe, a normal first start
+    oid0 = U("2021-11-17 07:50") * 100 + 3
+    add(srv("2021-11-17 08:01"), jl(U("2021-11-17 07:50"), "PFILL", "BKB", ("oid", oid0), ("side", 1), ("bar", U("2021-11-17 07:50")),
+                                    ("px", 60000.0), ("stop", 59000.0), ("st0", 59000.0), ("x", U("2021-11-17 20:00")), ("s_raw", 2600),
+                                    ("s_paper", 26.0), ("rp", 1)))
+    add(srv("2021-11-17 08:02"), jl(U("2021-11-17 08:02"), "MISSED", "BKB", ("oid", oid0), ("stamp", U("2021-11-17 07:50")), ("reason", "observe")))
+    add(srv("2021-11-17 20:00"), jl(U("2021-11-17 20:00"), "PEXIT", "BKB", ("oid", oid0), ("side", 1), ("bar", U("2021-11-17 20:00")),
+                                    ("px", 60100.0), ("stop", 59000.0), ("st0", 59000.0), ("x", U("2021-11-17 20:00")), ("reason", "time"),
+                                    ("s_raw", 2600), ("s_paper", 26.0)))
+    if "observe_late" in variant:
+        add(srv("2021-11-18 12:02"), jl(U("2021-11-18 12:02"), "MISSED", "NQB", ("oid", U("2021-11-18 12:00") * 100 + 7),
+                                        ("stamp", U("2021-11-18 12:00")), ("reason", "observe")))
+
+    def trade(code, sym_k, h, oid_at, side, ppx, stop, x_at, fill_px, sl, lots, ticket, exit_px, close_px, reason="time",
+              close=("ok",), extra_fill=None):
+        oid = U(oid_at) * 100 + C.SLEEVE_ID[code]
+        f0 = srv(oid_at)
+        add(f0, jl(C.srv_to_utc(f0), "PFILL", code, ("oid", oid), ("side", side), ("bar", C.srv_to_utc(f0)), ("px", ppx), ("stop", stop),
+                   ("st0", stop), ("x", U(x_at)), ("s_raw", 12), ("s_paper", 0.18)))
+        add(f0, jl(C.srv_to_utc(f0), "SIZE", code, ("oid", oid), ("side", side), ("et", 1), ("lots", lots), ("want", lots), ("skip", "none"),
+                   ("B", 10000.0), ("P_in", 10000.0), ("rate", 10.0), ("m", 1.0), ("f", 1.0), ("unit", 1000.0), ("w", 0.0), ("r", 10.0),
+                   ("budget", 1000.0), ("late", 0), ("quote", fill_px)))
+        add(f0 + 60, jl(C.srv_to_utc(f0 + 60), "SEND", code, ("oid", oid), ("side", side), ("lots", lots), ("want", lots), ("sl", sl),
+                        ("bid", fill_px - (0.12 if side > 0 else 0.0)), ("ask", fill_px + (0.0 if side > 0 else 0.12)),
+                        ("stamp", C.srv_to_utc(f0)), ("dev", 24), ("cut", "-"), ("result", "filled"), ("rc", 10009), ("s_raw", 12),
+                        ("s_paper", 0.18)))
+        risk = (side * (fill_px - sl) + 2 * h) * sym_k * lots
+        add(f0 + 60, jl(C.srv_to_utc(f0 + 60), "FILL", code, ("oid", oid), ("ticket", ticket), ("side", side), ("px", fill_px), ("lots", lots),
+                        ("sl", sl), ("listed", 1), ("risk", risk), ("budget", 1000.0), ("stamp", C.srv_to_utc(f0)), ("s_raw", 12),
+                        ("s_paper", 0.18)))
+        if extra_fill:
+            add(f0 + 120, jl(C.srv_to_utc(f0 + 120), "FILL", code, ("oid", oid), ("ticket", extra_fill), ("side", side), ("px", fill_px),
+                             ("lots", lots), ("sl", sl), ("listed", 1), ("risk", risk), ("budget", 1000.0), ("stamp", C.srv_to_utc(f0)),
+                             ("s_raw", 12), ("s_paper", 0.18)))
+        x0 = srv(x_at)
+        add(x0, jl(C.srv_to_utc(x0), "PEXIT", code, ("oid", oid), ("side", side), ("bar", C.srv_to_utc(x0)), ("px", exit_px), ("stop", stop),
+                   ("st0", stop), ("x", C.srv_to_utc(x0)), ("reason", reason), ("s_raw", 12), ("s_paper", 0.18)))
+        for kind in close:
+            if kind == "ok":
+                add(x0 + 5, jl(C.srv_to_utc(x0) + 5, "CLOSE", code, ("ticket", ticket), ("magic", 20261200 + C.SLEEVE_ID[code]),
+                               ("px", close_px), ("why", reason), ("rc", 10009), ("ok", 1)))
+            elif kind == "refused":
+                add(x0 + 5, jl(C.srv_to_utc(x0) + 5, "CLOSE", code, ("ticket", ticket), ("magic", 20261200 + C.SLEEVE_ID[code]),
+                               ("px", 0.0), ("why", reason), ("rc", 10018), ("ok", 0)))
+            elif kind == "race":
+                add(x0 + 5, jl(C.srv_to_utc(x0) + 5, "CLOSE", code, ("ticket", ticket), ("magic", 20261200 + C.SLEEVE_ID[code]),
+                               ("px", 0.0), ("why", reason), ("rc", 0), ("ok", 1)))
+        if extra_fill:
+            add(x0 + 6, jl(C.srv_to_utc(x0) + 6, "CLOSE", code, ("ticket", extra_fill), ("magic", 20261200 + C.SLEEVE_ID[code]),
+                           ("px", close_px), ("why", reason), ("rc", 10009), ("ok", 1)))
+        return oid
+    close_a = () if "no_close" in variant else (("refused",) if "close_refused" in variant else ("ok",))
+    info = {"A": trade("ORX", k_gold, 0.03, "2021-11-18 10:00", 1, 1860.50, 1850.0, "2021-11-19 16:00", 1860.40, 1850.0, 0.1, 70000101,
+                       1865.0, 1865.07, close=close_a)}
+    info["E"] = trade("D4H", k_gold, 0.03, "2021-11-19 18:00", -1, 1862.0, 1872.0, "2021-11-22 12:00", 1861.90, 1872.03, 0.1, 70000102,
+                      1855.0, 1855.10)
+    info["C"] = trade("BKB", k_usd, 0.0, "2021-11-23 09:00", 1, 57000.0, 56000.0, "2021-11-23 15:00", 57010.0, 56000.0, 0.05, 70000104,
+                      57500.0, 57490.0, close=("race",) if "race" in variant else ("ok",))
+    info["B"] = trade("GFP", k_gold, 0.03, "2021-11-23 20:30", 1, 1858.0, 1850.0, "2021-11-23 23:00", 1858.10, 1850.03, 0.2, 70000103,
+                      1859.0, 1859.02)
+    info["D"] = trade("N30", k_usd, 0.0, "2021-11-24 16:31", 1, 16300.0, 16200.0, "2021-11-24 22:00", 16301.0, 16200.0, 1.0, 70000105,
+                      16350.0, 16349.0, extra_fill=70000106 if "dup" in variant else None)
+    if "restart" in variant:                                            # stopped Friday night, started again on Monday
+        add(srv("2021-11-19 23:30"), jl(U("2021-11-19 23:30"), "INIT", "-", ("deinit", 1), ("lines", 100), ("bars_fed", 9000), ("rebuilds", 1)))
+        start("2021-11-22 08:00")
+        add(srv("2021-11-22 08:02"), jl(U("2021-11-22 08:02"), "ADOPT", "D4H", ("oid", info["E"]), ("ticket", 70000102),
+                                        ("open", U("2021-11-19 18:01")), ("stamp", U("2021-11-19 18:00")), ("why", "open")))
+    # the daily lines of the day before, at 00:00:30 of each server day the robot runs
+    bal = 10000.0
+    stopped = {"2021-11-20", "2021-11-21"} if "restart" in variant else set()
+    for d in range(18, 26):
+        day = f"2021-11-{d:02d}"
+        if day in stopped or (day == "2021-11-22" and "restart" in variant):
+            continue                                                    # not running: no daily lines for these days
+        prev_days = [srv(f"2021-11-{d - 1:02d} 00:00")]
+        if style == "harness" and d in (20, 21):
+            continue
+        if style == "harness" and d == 22:
+            prev_days = [srv("2021-11-19 00:00"), srv("2021-11-20 00:00"), srv("2021-11-21 00:00")]
+        t = srv(f"{day} 00:00") + 30
+        for pd in prev_days:
+            wk = C.dow(pd) in (0, 6)
+            add(t, jl(C.srv_to_utc(t), "AGG", "-", ("day", pd), ("XAUUSD", 0 if wk else 1300), ("US100", 0 if wk else 800),
+                      ("BTCUSD", 0 if wk else 1440), ("ETHUSD", 0 if wk else 1440), ("dec", 10), ("pev", 3)))
+            if not wk:
+                add(t, jl(C.srv_to_utc(t), "COST", "XAUUSD", ("day", pd), ("raw_bp", 0.2), ("paper_bp", 0.53), ("model_bp", 0.47),
+                          ("comm_usd_oz", 0.06), ("comm_n", 2)))
+            add(t, jl(C.srv_to_utc(t), "DAY", "-", ("day", pd), ("balance", bal), ("equity", bal), ("bars_fed", 5000)))
+    add(srv("2021-11-25 10:00"), jl(U("2021-11-25 10:00"), "INIT", "-", ("deinit", 9), ("lines", 300), ("bars_fed", 50000), ("rebuilds", 1)))
+    L.sort(key=lambda x: x[0])
+    files = {}
+    for t, ln in L:
+        files.setdefault(time.strftime("%Y%m%d", time.gmtime(t)) + ".log", []).append(ln)
+    if "glued" in variant:                                              # a terminal line inside a robot file
+        files["20211118.log"].insert(3, f"KR\t0\t09:58:01.112\tNetwork\t'{FAKE_LOGIN}': authorized on {FAKE_SERVER} through Access Point EU 2")
+    for name, lines in files.items():
+        write(os.path.join(folder, name), "\n".join(lines) + "\n", crlf=True)
+    info["files"] = sorted(files)
+    return info
+
+
+def terminal_log(path, robot_lines=()):
+    """MetaTrader's own log (MQL5/Logs or Logs/<yyyymmdd>.log): UTF-16 LE with a byte-order mark; the terminal's lines
+    name the login, the server, the account holder and the Windows user folder; ReleveFP prints fini.txt there"""
+    out = [f"KR\t0\t09:58:01.112\tNetwork\t'{FAKE_LOGIN}': authorized on {FAKE_SERVER} through Access Point EU 2 (ping: 21.33 ms, build 5120)",
+           f"QJ\t0\t09:58:01.300\tNetwork\t'{FAKE_LOGIN}': terminal synchronized with First Prudential Markets Pty Ltd: 0 positions, 0 orders",
+           f"GP\t0\t09:58:01.301\tTerminal\tMetaTrader 5 x64 build 5120 started for First Prudential Markets ({FAKE_NAME})",
+           f"DE\t0\t09:58:02.000\tTerminal\tC:\\users\\{FAKE_USER}\\AppData\\Roaming\\MetaQuotes\\Terminal\\D0E8209F77C8CF37AD8BF550E51FF075",
+           f"HN\t0\t09:59:00.000\tReleveFP (XAUUSD.r,M1)\tserver={FAKE_SERVER}"]
+    for i, ln in enumerate(robot_lines):
+        out.append(f"CS\t0\t10:{(i // 60) % 60:02d}:{i % 60:02d}.000\tClaudeRobot (XAUUSD.r,M1)\t{ln}")
+    with open(path, "wb") as f:
+        f.write(b"\xff\xfe" + ("\r\n".join(out) + "\r\n").encode("utf-16-le"))
+
+
+def m1_flat(path, srv_from, srv_to, bid=1860.0, dip_at=None, dip_low=None):
+    """a gold m1 file as ReleveFP writes it, a quiet market around `bid`; dip_at: one minute whose bid low goes to dip_low"""
+    lines = ["time,bo,bh,bl,bc,ao,ah,al,ac,n,sp_mean,sp_max"]
+    t = srv_from
+    while t < srv_to:
+        lo = dip_low if (dip_at is not None and t == dip_at) else bid - 0.30
+        b = (bid, bid + 0.30, lo, bid + 0.10)
+        a = tuple(x + 0.12 for x in b)
+        lines.append(f"{t}," + ",".join(f"{x:.2f}" for x in b + a) + ",4,0.1200,0.12")
+        t += 60
+    write(path, "\n".join(lines) + "\n", crlf=True)
+
+
+def leak_free(text):
+    return [w for w in ACCOUNT_WORDS if w in text]
+
+
+def test_review_journal(lit):
+    """the review's journal cases (B1-B4, M1, M2, m2, m3), on hand-made multi-day journals"""
+    base_dir = os.path.join(SCRATCH, "rv")
+
+    def go(name, variant=(), style="live", extra=(), prep=None):
+        jdir = os.path.join(base_dir, "j_" + name, "ClaudeRobot")
+        info = md_journal(jdir, variant, style)
+        if prep:
+            prep(jdir, info)
+        out = os.path.join(base_dir, "out_" + name)
+        rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(jdir), "--out", out] + list(extra))
+        r = json.load(open(os.path.join(out, "report.json"))) if rc == 0 else {}
+        txt = (outputs_text(out) if rc == 0 else "") + so + se
+        return rc, so, se, r, txt, info
+    # the clean demo: a normal first start (MISSED observe before the plan start), weekend files: nothing abnormal
+    rc, so, se, r, txt, info = go("base")
+    if check("review base: runs", rc == 0, se[-1500:]):
+        check("review M2: MISSED observe stamped before the plan start is not an anomaly, nothing abnormal",
+              r["anomalies"] == [] and "Rien d'anormal" in so and len(r["journal"].get("missed_before_plan", [])) == 1, r["anomalies"])
+        kinds = {p["ticket"]: p["exit_kind"] for p in r["fills"]["positions"]}
+        check("review base: the five positions closed by the EA", kinds == {t: "ea_close" for t in (70000101, 70000102, 70000103, 70000104,
+                                                                                                    70000105)}, kinds)
+        trades = next((ln for ln in so.splitlines() if ln.startswith("Trades :")), "")
+        tot = r["fills"]["per_sleeve"]["TOTAL"]
+        check("review M1: the summary gives the total in bp and EUR, never points averaged across markets",
+              "pb" in trades and "EUR" in trades and "pts" not in trades, trades)
+        check("review M1: TOTAL has no point averages; points are per sleeve and per market",
+              not any(k.endswith("pts_mean") and tot.get(k) is not None for k in tot) and tot.get("entry_diff_bp_mean") is not None
+              and r["fills"].get("per_symbol", {}).get("XAUUSD", {}).get("entry_diff_pts_mean") is not None,
+              {k: v for k, v in tot.items() if "pts" in k})
+        rtxt = open(os.path.join(base_dir, "out_base", "report_fr.txt")).read()
+        tline = next((ln for ln in rtxt.splitlines() if ln.strip().startswith("TOTAL")), "")
+        check("review M1: report_fr.txt's TOTAL row has no points", tline and "pts" not in tline, tline)
+        check("review B2: no missing day on a clean journal with weekend files", r["journal"].get("missing_files") == []
+              and r["journal"].get("day_gaps") == [], r["journal"].get("day_gaps"))
+    # the harness's weekend (Friday to Sunday DAY lines all in Monday's file, no weekend file): no false alarm
+    rc, so, se, r, txt, info = go("harness_weekend", style="harness")
+    check("review B2: harness-style weekend (no weekend files) is not a missing day", rc == 0 and not r.get("journal", {}).get("missing_files")
+          and not any("manquant" in a for a in r.get("anomalies", [])), r.get("anomalies"))
+    # stopped on Friday night and started again on Monday: no DAY lines for Friday to Sunday, explained, ADOPT of the same ticket
+    rc, so, se, r, txt, info = go("restart", ("restart",))
+    check("review B2/B3: a stop over the weekend (no DAY line Friday to Sunday) and an ADOPT of the same ticket are not anomalies",
+          rc == 0 and r["anomalies"] == [] and r["journal"]["restarts"] == 1 and r["journal"].get("day_gaps") == [], r.get("anomalies"))
+    # B2: Monday's file lost: named, the position whose exit was in it is flagged, the money estimate is incomplete
+    def drop_monday(jdir, info):
+        os.remove(os.path.join(jdir, "20211122.log"))
+    rc, so, se, r, txt, info = go("drop_day", prep=drop_monday)
+    if check("review B2 drop_day: runs", rc == 0, se[-1500:]):
+        an = " | ".join(r["anomalies"])
+        check("review B2: the missing daily file is named as an anomaly", "20211122.log" in an and "manquant" in an
+              and "Rien d'anormal" not in so, an[:500])
+        pe = {p["ticket"]: p for p in r["fills"]["positions"]}.get(70000102, {})
+        check("review B2: the position whose exit lines were in the missing file is flagged (not 'open at the end')",
+              pe.get("exit_kind") == "missing_exit" and "sans aucune sortie" in an, (pe.get("exit_kind"), pe.get("close_why")))
+        m = r["fills"]["money_estimate"]
+        check("review B2: the money estimate is marked incomplete", m is not None and m.get("complete") is False and m.get("missing_days", 0) >= 1, m)
+    # B3: a second real position for an existing paper trade (same oid, new ticket, no DUP line)
+    rc, so, se, r, txt, info = go("dup", ("dup",))
+    check("review B3: an oid with two real tickets is an anomaly", rc == 0 and any("deux positions reelles" in a for a in r["anomalies"])
+          and r["fills"].get("duplicates") and r["fills"]["duplicates"][0]["tickets"] == [70000105, 70000106], r.get("anomalies"))
+    # B4: the EA's CLOSE line gone while the paper exited by time: flagged, kept out of the euros
+    rc, so, se, r, txt, info = go("no_close", ("no_close",))
+    if check("review B4 no_close: runs", rc == 0, se[-1500:]):
+        pa = {p["ticket"]: p for p in r["fills"]["positions"]}[70000101]
+        check("review B4: no CLOSE after a time exit is an anomaly, exit unknown (no price invented at the stop)",
+              pa["exit_kind"] == "no_close_unknown" and pa.get("exit_real") is None and pa.get("gross_eur") is None
+              and any("sans ligne CLOSE" in a for a in r["anomalies"]) and "Rien d'anormal" not in so, (pa["exit_kind"], pa.get("exit_real")))
+        ok_total = r["fills"]["money_estimate"]["positions"] == 4
+        check("review B4: the unknown exit is left out of the money totals", ok_total, r["fills"]["money_estimate"])
+    # B4 with the releve's minutes: quotes never touched the stop -> not closed by the robot; a dip through the stop ->
+    # the broker's stop (estimated at the stop, no anomaly)
+    mdir = os.path.join(base_dir, "m1_quiet")
+    os.makedirs(mdir, exist_ok=True)
+    m1_flat(os.path.join(mdir, "m1_XAUUSD.csv"), srv("2021-11-18 09:00"), srv("2021-11-19 17:00"))
+    rc, so, se, r, txt, info = go("no_close_quiet", ("no_close",), extra=("--bars", mdir, "--no-replay"))
+    pa = {p["ticket"]: p for p in r.get("fills", {}).get("positions", [])}.get(70000101, {})
+    check("review B4: with minutes that never touch its stop, the position is 'non fermee par le robot'",
+          rc == 0 and pa.get("exit_kind") == "not_closed" and any("non fermee" in a for a in r["anomalies"]), (pa.get("exit_kind"), se[-500:]))
+    mdir2 = os.path.join(base_dir, "m1_dip")
+    os.makedirs(mdir2, exist_ok=True)
+    m1_flat(os.path.join(mdir2, "m1_XAUUSD.csv"), srv("2021-11-18 09:00"), srv("2021-11-19 17:00"), dip_at=srv("2021-11-19 03:00"),
+            dip_low=1849.95)
+    rc, so, se, r, txt, info = go("no_close_dip", ("no_close",), extra=("--bars", mdir2, "--no-replay"))
+    pa = {p["ticket"]: p for p in r.get("fills", {}).get("positions", [])}.get(70000101, {})
+    check("review B4: with minutes whose bid low crosses the stop, the broker's stop is seen (no anomaly, exit at the stop)",
+          rc == 0 and pa.get("exit_kind") == "broker_stop_seen" and abs((pa.get("exit_real") or 0) - 1850.0) < 1e-9
+          and r["anomalies"] == [], (pa.get("exit_kind"), r.get("anomalies")))
+    # B4: a refused close (rc 10018, ok=0) never followed by a success
+    rc, so, se, r, txt, info = go("close_refused", ("close_refused",))
+    pa = {p["ticket"]: p for p in r.get("fills", {}).get("positions", [])}.get(70000101, {})
+    check("review B4: a CLOSE refused and never retried is an anomaly naming the retcode, exit unknown",
+          rc == 0 and pa.get("exit_kind") == "close_refused" and pa.get("exit_real") is None
+          and any("refusee" in a and "10018" in a for a in r["anomalies"]), (pa.get("exit_kind"), r.get("anomalies")))
+    # m3: CLOSE px=0 rc=0 ok=1 (the broker's stop just before the robot's request): a broker stop, not an exit at price 0
+    rc, so, se, r, txt, info = go("race", ("race",))
+    pc = {p["ticket"]: p for p in r.get("fills", {}).get("positions", [])}.get(70000104, {})
+    check("review m3: CLOSE px=0 rc=0 ok=1 is a broker stop estimated at the stop, not an EA close at 0",
+          rc == 0 and pc.get("exit_kind") == "broker_stop_race" and abs((pc.get("exit_real") or 0) - 56000.0) < 1e-9
+          and r["anomalies"] == [], (pc.get("exit_kind"), pc.get("exit_real"), r.get("anomalies")))
+    # M2 control: an observe after the plan start is an anomaly; an unset plan is an anomaly
+    rc, so, se, r, txt, info = go("observe_late", ("observe_late",))
+    check("review M2: a MISSED observe stamped after the plan start is still an anomaly", rc == 0
+          and any("observe" in a for a in r["anomalies"]), r.get("anomalies"))
+    rc, so, se, r, txt, info = go("plan_unset", ("plan_unset",))
+    check("review: a PLAN state 'unset' is an anomaly", rc == 0 and any("plan non regle" in a for a in r["anomalies"]), r.get("anomalies"))
+    # B1: MetaTrader's own logs beside the robot's files (same <yyyymmdd>.log names): skipped and named, never copied
+    def experts_beside(jdir, info):
+        robot = open(os.path.join(jdir, "20211118.log"), encoding="cp1252").read().splitlines()[:20]
+        terminal_log(os.path.join(jdir, "experts_20211126.log"), robot)
+    rc, so, se, r, txt, info = go("leak_beside", prep=experts_beside)
+    check("review B1: an Experts log in the journals folder is skipped, named, and no account data reaches any output",
+          rc == 0 and leak_free(txt) == [] and any(s_["file"] == "experts_20211126.log" for s_ in r["inputs"].get("skipped_files", []))
+          and any("experts_20211126.log" in a for a in r["anomalies"]), (leak_free(txt), r.get("inputs", {}).get("skipped_files"), se[-300:]))
+
+    def journal_instead(jdir, info):
+        terminal_log(os.path.join(jdir, "20211118.log"))
+    tl = os.path.join(base_dir, "terminal_20211118.log")
+    terminal_log(tl)
+    rc, so, se, r, txt, info = go("leak_instead", prep=journal_instead, extra=("--printed", tl))
+    check("review B1: the terminal's Journal log instead of a robot file (and as --printed): no account data in any output",
+          rc == 0 and leak_free(txt) == [], (leak_free(txt), se[-300:]))
+    check("review B1: that file is named 'pas un journal du robot' and its day is reported missing",
+          rc == 0 and any("20211118.log" in s_["file"] and "pas un journal du robot" in s_["why"] for s_ in r["inputs"].get("skipped_files", []))
+          and "20211118.log" in " ".join(r["journal"].get("missing_files", [])), (r.get("inputs", {}).get("skipped_files"),
+                                                                                  r.get("journal", {}).get("missing_files")))
+    check("review m2: a --printed file without any robot line is an anomaly naming it", rc == 0
+          and any("terminal_20211118.log" in a and "aucune ligne du robot" in a for a in r["anomalies"]), r.get("anomalies"))
+    rc, so, se, r, txt, info = go("leak_glued", ("glued",))
+    check("review B1: a terminal line inside a robot file is counted by file and line only, never copied",
+          rc == 0 and leak_free(txt) == [] and r["inputs"].get("foreign_lines") == 1 and "text" not in (r["inputs"].get("foreign_first") or [{"text": 1}])[0],
+          (leak_free(txt), r.get("inputs", {}).get("foreign_first")))
+
+
+# ---------------------------------------------------------------------------------------------- tool 1: the review's cases
+def test_review_tool1(lit):
+    """read_mac_files.py: M5 (a holiday session complete when ReleveFP ran after it), m4 (InpExtraClosures windows that
+    ClkInit takes), m5 (the probe's cents in the gold all-in spread), m6 (a cut fiche line), m7 (gold digits)"""
+    import re as _re
+    base_dir = os.path.join(SCRATCH, "rv1")
+
+    def go(name, **kw):
+        folder = os.path.join(base_dir, "in_" + name)
+        out = os.path.join(base_dir, "out_" + name)
+        make_releve(folder, lit, "good", **kw)
+        rc, so, se = run_tool("read_mac_files.py", [folder, "--out", out])
+        s = json.load(open(os.path.join(out, "summary.json"))) if rc == 0 else {"checks": []}
+        return rc, so, se, {(c["market"], c["item"]): c for c in s["checks"]}
+    rx = _re.compile(r"'(XAU \d{4}\.\d{2}\.\d{2} \d{2}:\d{2}-\d{4}\.\d{2}\.\d{2} \d{2}:\d{2})'")
+
+    def valid_window(note):
+        """the suggested window parses as ClkInit's 'XAU yyyy.mm.dd hh:mm-yyyy.mm.dd hh:mm', ends after it starts, <= 7 days"""
+        m = rx.search(note or "")
+        if not m:
+            return False
+        a, z = m.group(1)[4:].split("-")
+        try:
+            ta, tz = time.strptime(a, "%Y.%m.%d %H:%M"), time.strptime(z, "%Y.%m.%d %H:%M")
+        except ValueError:
+            return False
+        d = calendar.timegm(tz) - calendar.timegm(ta)
+        return 0 < d <= 7 * 86400
+
+    # M5: FP closes gold at 13:00 New York on the Friday after Thanksgiving; ReleveFP ran on Saturday (no later bar)
+    def early_friday(base, rec):
+        if base != "XAUUSD":
+            return rec
+        t = rec["t"]
+        return rec[~((t >= srv("2021-11-26 20:00")) & (t < srv("2021-11-27 00:00")))]
+    rc, so, se, chk = go("early_sat", m1_to="2021-11-27 00:00", srv_now=srv("2021-11-27 10:41"), mutate=early_friday)
+    c = chk.get(("XAUUSD", "holiday_2021-11-26"), {})
+    check("review M5: the Friday after Thanksgiving is judged when ReleveFP ran on Saturday (not UNKNOWN), with the exact window",
+          rc == 0 and c.get("status") == "DIFFERENT" and "'XAU 2021.11.26 13:00-2021.11.26 18:00'" in c.get("note", ""), (c, se[-300:]))
+
+    # m4: the last gold bar of the Thanksgiving session the evening before (23:00 New York); the whole session closed
+    def eve(base, rec):
+        if base != "XAUUSD":
+            return rec
+        t = rec["t"]
+        return rec[~((t >= srv("2021-11-25 06:00")) & (t < srv("2021-11-26 01:00")))]
+    rc, so, se, chk = go("hol_eve", mutate=eve)
+    c = chk.get(("XAUUSD", "holiday_2021-11-25"), {})
+    check("review m4: a session ending the evening before gets a window ClkInit takes ('XAU 2021.11.24 23:00-2021.11.25 18:00')",
+          rc == 0 and c.get("status") == "DIFFERENT" and valid_window(c.get("note")) and "2021.11.24 23:00-2021.11.25 18:00" in c.get("note", ""),
+          c.get("note"))
+
+    def whole(base, rec):
+        if base != "XAUUSD":
+            return rec
+        t = rec["t"]
+        return rec[~((t >= srv("2021-11-25 01:00")) & (t < srv("2021-11-26 01:00")))]
+    rc, so, se, chk = go("hol_whole", mutate=whole)
+    c = chk.get(("XAUUSD", "holiday_2021-11-25"), {})
+    check("review m4: a session closed all day gets the exact window, not '(et la veille)'",
+          rc == 0 and c.get("status") == "DIFFERENT" and valid_window(c.get("note")) and "et la veille" not in c.get("note", "")
+          and "2021.11.24 17:00-2021.11.25 18:00" in c.get("note", ""), c.get("note"))
+    # m5: the probe's gold commission (0.06 EUR on 0.01 lot, cents rounded) agrees with the model: the all-in spread adds
+    # the model's 0.06 USD per oz, not the rounded 6.98 points
+    rc, so, se, chk = go("cents")
+    c = chk.get(("XAUUSD", "spread"), {})
+    check("review m5: the gold all-in spread adds the model's commission when the probe agrees within its rounding",
+          rc == 0 and "du modele" in str(c.get("broker")) and chk.get(("XAUUSD", "commission"), {}).get("status") == "OK", c.get("broker"))
+    # m6: the gold line of fiches.csv cut short: the probe and the minutes still give the commission and spread checks
+    rc, so, se, chk = go("cut", cut_fiche="XAUUSD")
+    check("review m6: a cut gold fiche line keeps the commission and spread checks (sonde.csv, m1 file)",
+          rc == 0 and chk.get(("XAUUSD", "commission"), {}).get("status") == "OK" and ("XAUUSD", "spread") in chk,
+          [k for k in chk if k[0] == "XAUUSD"])
+
+    # m7: gold with 3 digits: the digits note says the paper commission would be 10 times too small
+    def three_digits(fi):
+        g, _ = fi["XAUUSD"]
+        g = dict(g, point=0.001, tick_size=0.001, tick_value=0.001 * 100 * 0.86)
+        fi["XAUUSD"] = (g, 3)
+    rc, so, se, chk = go("digits3", tweak=three_digits)
+    c = chk.get(("XAUUSD", "digits"), {})
+    check("review m7: 3-digit gold: the digits note says the robot's paper commission would be 10 times too small",
+          rc == 0 and c.get("status") == "DIFFERENT" and "commission" in c.get("note", "") and "10 fois trop petite" in c.get("note", ""),
+          c.get("note"))
+
+
 # ---------------------------------------------------------------------------------------------- tool 2: replay end to end
 SPAN = (srv("2021-06-01 00:00"), srv("2021-12-01 00:00"))
 PLAN0 = srv("2021-05-01 00:00")
@@ -663,6 +1057,15 @@ def test_tool2_replay(lit):
     check("tool2 replay 30 days: compared where the warm-up allows, no difference",
           rc == 0 and not c3.get("differences") and eq3 > 50 and c3["excluded"].get("echauffement du rejeu (pas assez d'historique avant)", 0) > 0,
           (eq3, c3.get("excluded"), (c3.get("differences") or [])[:2]))
+    # M3: the coverage of each sleeve is said, in report_fr.txt and on stdout, with the InpDays to ask for
+    cov3 = r3.get("replay", {}).get("coverage", {})
+    txt3 = open(os.path.join(out3, "report_fr.txt")).read() if rc == 0 else ""
+    check("review M3: with 30 days of minutes, each sleeve's coverage is printed ('jamais' for F1B, F1E, OC4, GFP, D4H) and "
+          "InpDays is asked for, on stdout too",
+          rc == 0 and all(cov3.get(c, {}).get("never") for c in ("F1B", "F1E", "OC4", "GFP", "D4H"))
+          and not cov3.get("BKB", {}).get("never", True) and "couverture par sleeve" in txt3 and "F1B  jamais compare" in txt3
+          and "InpDays=" in txt3 and "InpDays=" in so3 and "jamais comparees" in so3,
+          ({c: (v.get("never"), v.get("from")) for c, v in cov3.items()}, so3[-600:]))
     # a bar of the ReleveFP minutes differs from the broker's: differences appear
     def bump(base, rec):
         if base == "BTCUSD":
@@ -691,6 +1094,46 @@ def test_tool2_replay(lit):
           and cal8["min_consistent"]["inside"] == cal8["min_consistent"]["n"] > 100 and "attention" in txt8
           and d8 and any("MqlRates.spread" in (d.get("hint") or "") for d in d8),
           (cal8.get("paper_lines"), cal8.get("min_consistent"), len(d8)))
+    # B2 with the replay: a daily file lost in the middle (a Wednesday): named, and its hours are not blamed on the robot
+    lost = os.path.join(SCRATCH, "live_observer_lost_day", "ClaudeRobot")
+    shutil.copytree(os.path.join(obs, "ClaudeRobot"), lost)
+    os.remove(os.path.join(lost, "20211117.log"))
+    out9 = os.path.join(SCRATCH, "out_lost_day")
+    rc, so9, se = run_tool("check_demo.py", ["--journals", os.path.dirname(lost), "--bars", full, "--out", out9])
+    r9 = json.load(open(os.path.join(out9, "report.json"))) if rc == 0 else {}
+    c9 = r9.get("replay", {}).get("comparison", {})
+    check("review B2 with the replay: the lost file is named, its hours left out, no difference blamed on the robot",
+          rc == 0 and any("20211117.log" in a for a in r9.get("anomalies", [])) and not c9.get("differences")
+          and c9.get("excluded", {}).get("journal du robot manquant a ce moment (fichier du jour absent)", 0) > 0,
+          (r9.get("anomalies"), c9.get("excluded"), (c9.get("differences") or [])[:2], se[-300:]))
+    # M4: BTC's minutes start 25 days before the end (a short tick history at the broker), the others 6 months: BTC's
+    # sleeves start their warm-up at BTC's first minute, the short file is named, nothing is blamed on the robot
+    def btc_short(base, rec):
+        if base == "BTCUSD":
+            rec = rec[rec["t"] >= SPAN[1] - 25 * 86400]
+        return rec
+    sh = csv_dir("csv_btc_short", SPAN, lit, btc_short)
+    out10 = os.path.join(SCRATCH, "out_btc_short")
+    rc, so10, se = run_tool("check_demo.py", ["--journals", obs, "--bars", sh, "--out", out10])
+    r10 = json.load(open(os.path.join(out10, "report.json"))) if rc == 0 else {}
+    rp10 = r10.get("replay", {})
+    check("review M4: a market whose minutes start late delays only its own sleeves: no difference, the short file named",
+          rc == 0 and not rp10.get("comparison", {}).get("differences") and any("m1_BTCUSD.csv commence" in p for p in rp10.get("problems", []))
+          and rp10.get("coverage", {}).get("NQB", {}).get("never") and not rp10.get("coverage", {}).get("N30", {}).get("never", True),
+          ((rp10.get("comparison", {}).get("differences") or [])[:2], rp10.get("problems"), se[-300:]))
+    # m1: the releve's spread of one gold day differs from the broker's bars: the daily COST medians differ -> anomaly
+    def wide_day(base, rec):
+        if base == "XAUUSD":
+            rec = rec.copy()
+            sel = (rec["t"] >= srv("2021-11-16 00:00")) & (rec["t"] < srv("2021-11-17 00:00"))
+            rec["s"][sel] += 5
+        return rec
+    wd = csv_dir("csv_wide_day", SPAN, lit, wide_day)
+    out11 = os.path.join(SCRATCH, "out_wide_day")
+    rc, so11, se = run_tool("check_demo.py", ["--journals", obs, "--bars", wd, "--out", out11])
+    r11 = json.load(open(os.path.join(out11, "report.json"))) if rc == 0 else {}
+    check("review m1: a day whose median spread differs between the robot and the replay (COST) is an anomaly",
+          rc == 0 and any("COST" in a and "XAUUSD" in a for a in r11.get("anomalies", [])), (r11.get("anomalies"), se[-300:]))
     # the trading copy: fills against the mock's deals (the truth), and the replay as an observer against it
     trd, wall, _ = harness_live("live_trading", SPAN, {"MOCK_INPUT_InpTrade": "true", "MOCK_INPUT_InpPlanStart": str(PLAN0)})
     out5 = os.path.join(SCRATCH, "out_trading")
@@ -710,9 +1153,15 @@ def test_tool2_replay(lit):
     ea = [t for t in outs.index if t in pos and int(outs.loc[t, "reason"]) == 3]
     sl_ = [t for t in outs.index if t in pos and int(outs.loc[t, "reason"]) == 4]
     ea_ok = all(pos[t]["exit_kind"] == "ea_close" and abs(pos[t]["exit_real"] - outs.loc[t, "price"]) < 1e-9 for t in ea)
-    sl_ok = all(pos[t]["exit_kind"] in ("broker_stop_estimated", "closed_without_line") for t in sl_)
+    sl_ok = all(pos[t]["exit_kind"] in ("broker_stop_estimated", "broker_stop_race", "broker_stop_seen") for t in sl_)
     check("tool2 trading: EA closes read from CLOSE lines, broker stops (no line) estimated", ea_ok and sl_ok and len(ea) > 5,
-          {"ea": len(ea), "sl": len(sl_), "bad_ea": [t for t in ea if pos[t]["exit_kind"] != "ea_close"][:3]})
+          {"ea": len(ea), "sl": len(sl_), "bad_ea": [t for t in ea if pos[t]["exit_kind"] != "ea_close"][:3],
+           "bad_sl": [(t, pos[t]["exit_kind"]) for t in sl_ if pos[t]["exit_kind"] not in ("broker_stop_estimated", "broker_stop_race",
+                                                                                          "broker_stop_seen")][:3]})
+    bad_kinds = [(p["ticket"], p["exit_kind"]) for p in pos.values() if p["exit_kind"] not in
+                 ("ea_close", "broker_stop_estimated", "broker_stop_race", "broker_stop_seen", "open_or_unknown")]
+    check("review B4: a clean trading run has no position flagged as not closed or exit unknown (no false alarm)",
+          not bad_kinds and not [a for a in r5["anomalies"] if "CLOSE" in a or "fermee" in a or "sortie" in a], (bad_kinds[:5], r5["anomalies"]))
     units = {"XAUUSD": 100 * 0.89, "US100": 0.89, "BTCUSD": 0.89, "ETHUSD": 0.89}
     k_ok = all(abs(p["eur_per_price_per_lot"] / units[p["symbol"]] - 1) < 1e-6 for p in pos.values() if p.get("eur_per_price_per_lot"))
     check("tool2 trading: EUR per point from the FILL risk = the mock's tick value (units x 0.89)", k_ok,
@@ -739,7 +1188,9 @@ def main(argv=None):
     lit = literal_lines()
     t0 = time.time()
     test_tool1(lit)
+    test_review_tool1(lit)
     test_tool2_journal(lit)
+    test_review_journal(lit)
     if not a.quick:
         test_tool2_replay(lit)
     n_fail = sum(1 for r in RESULTS if not r["pass"])

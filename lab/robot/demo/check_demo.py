@@ -12,10 +12,12 @@
             or no line starting with 'CR|') is skipped and named. The text of a line that is not a robot line is never
             kept or written (it may hold the login, the server, the holder's name or the user folder): only its file
             and line number; it is scanned so that any account value it holds is masked everywhere.
-            Missing daily files: the robot writes a DAY line for every server day it runs (weekends included, written
-            at the first minute of the next day, CR_Main.mqh MainDaily); a gap in the DAY days with no start, stop or
-            rebuild (INIT, REBUILD) between the two lines means lines are missing: the absent files are named, and
-            their hours are left out of the replay comparison.
+            Missing daily files: the robot writes a DAY line for every server day it runs live (weekends included,
+            written at the first minute of a later day into that day's file, CR_Main.mqh MainDaily); after a REBUILD
+            the next DAY line is the rebuild day's (the replay writes none but leaves the day counter there); a start
+            or a stop (INIT) breaks the chain until the next REBUILD. Any other jump in the DAY days means lost lines:
+            the absent files are named, the positions whose exit lines were in them are flagged, the money estimate
+            is marked incomplete, and their hours are left out of the replay comparison.
 --printed   the Experts tab's lines (copied text, or MetaTrader's own MQL5/Logs/<yyyymmdd>.log, UTF-16 accepted):
             the same CR| lines after a terminal prefix, live lines only (rp=1 is never printed, SPEC 2.6). Other lines
             are never kept; they are only scanned for an account login or server name, which is then masked.
@@ -196,39 +198,44 @@ def paper_inputs(init):
 
 
 def day_gaps(rows, files):
-    """the server days with no DAY line between two DAY lines (CR_Main.mqh MainDaily writes one per server day the
-    robot runs, weekends included, at the first minute of a later day; a rebuild's replay writes none). A gap with an
-    INIT or REBUILD line between the two DAY lines is explained (the robot was stopped, or replayed the history after a
-    long disconnection); any other gap means lost lines: DAY(x) goes to the file of day x + 1, so the files of days
-    first_missing + 1 ... last_missing + 1 that are absent are named. Returns (gaps, ranges): ranges = UTC intervals
-    whose lines are missing (left out of the replay comparison)."""
+    """server days whose DAY line is missing. CR_Main.mqh MainDaily writes one DAY line per server day the robot runs live
+    (weekends included), at the first minute of a later day, into that day's file; a rebuild's replay writes none but
+    leaves the day counter on the rebuild's day, so after a REBUILD line at server day R the next DAY line is DAY(R). A
+    start or a stop (INIT) breaks the chain until the next REBUILD. Any other jump in the DAY days means lost lines:
+    DAY(x) goes to the file of day x + 1, so the absent files among those days are named. Returns (gaps, ranges):
+    ranges = UTC intervals whose lines are missing (left out of the replay comparison)."""
     lv = C.live(rows)
-    marks = sorted(r["utc"] for r in lv if r["ev"] in ("INIT", "REBUILD"))
     present = {C.day_of_file(f) for f in (files or [])} - {None}
-    seen, prev, gaps, ranges = set(), None, [], []
+    prev, gaps, ranges = None, [], []
     for r in lv:
-        if r["ev"] != "DAY" or not isinstance(r.get("day"), int):
+        ev, u = r["ev"], int(r["utc"])
+        if ev == "INIT":
+            prev = None                                     # a start or a stop: the next REBUILD sets the chain again
             continue
-        d, u = int(r["day"]), int(r["utc"])
-        if d in seen:
+        if ev == "REBUILD":
+            s_day = C.utc_to_srv(u)
+            prev = (s_day - s_day % 86400 - 86400, u)       # as if DAY(R - 1) had just been written
             continue
-        seen.add(d)
+        if ev != "DAY" or not isinstance(r.get("day"), int):
+            continue
+        d = int(r["day"])
         if prev is not None and d - prev[0] > 86400:
-            explained = any(prev[1] < m <= u for m in marks)
             cand = list(range(prev[0] + 2 * 86400, d + 1, 86400))
             missing = [x for x in cand if x not in present]
-            g = {"first_day": C.ymd(prev[0] + 86400), "last_day": C.ymd(d - 86400), "days": (d - prev[0]) // 86400 - 1,
-                 "explained": explained, "missing_files": [C.file_of_day(x) for x in missing]}
-            gaps.append(g)
-            if not explained:
-                if missing:
-                    for x in missing:
-                        ranges.append((C.srv_to_utc(x) - 600, C.srv_to_utc(x + 86400) + 600))
-                else:
-                    ranges.append((prev[1], u))
+            gaps.append({"first_day": C.ymd(prev[0] + 86400), "last_day": C.ymd(d - 86400), "days": (d - prev[0]) // 86400 - 1,
+                         "explained": False, "missing_files": [C.file_of_day(x) for x in missing]})
+            if missing:
+                for x in missing:
+                    ranges.append((C.srv_to_utc(x) - 600, C.srv_to_utc(x + 86400) + 600))
+            else:
+                ranges.append((prev[1], u))
         if prev is None or d > prev[0]:
             prev = (d, u)
     return gaps, ranges
+
+
+def days_txt(g):
+    return f"le {g['first_day']}" if g["first_day"] == g["last_day"] else f"du {g['first_day']} au {g['last_day']}"
 
 
 def analyse_journal(rows, builds, files=None):
@@ -400,12 +407,11 @@ def analyse_journal(rows, builds, files=None):
         if g["explained"]:
             continue
         if g["missing_files"]:
-            anomalies.append(f"fichier(s) du jour manquant(s) : {', '.join(g['missing_files'])} (aucune ligne DAY du {g['first_day']} au "
-                             f"{g['last_day']} sans arret ni redemarrage du robot entre les deux) : les lignes de ces jours manquent "
-                             "(positions, montants, comparaison)")
+            anomalies.append(f"fichier(s) du jour manquant(s) : {', '.join(g['missing_files'])} (aucune ligne DAY {days_txt(g)} sans arret "
+                             "ni redemarrage du robot) : les lignes de ces jours manquent (positions, montants, comparaison)")
         else:
-            anomalies.append(f"lignes du robot manquantes : aucune ligne DAY du {g['first_day']} au {g['last_day']} alors que les "
-                             "fichiers de ces jours sont la (fichier coupe ?)")
+            anomalies.append(f"lignes du robot manquantes : aucune ligne DAY {days_txt(g)} alors que les fichiers de ces jours sont la "
+                             "(fichier coupe ?)")
     return res, anomalies, starts
 
 
@@ -1362,11 +1368,8 @@ def french_report(rep):
         L.append(f"  {rep['inputs']['foreign_lines']} ligne(s) etrangere(s) au robot dans ses fichiers (texte jamais recopie ; "
                  "fichier et numero de ligne dans report.json)")
     for g in a.get("day_gaps", []):
-        if g["explained"]:
-            L.append(f"  pas de ligne DAY du {g['first_day']} au {g['last_day']} : robot arrete ou historique rejoue entre les deux (normal)")
-        else:
-            L.append(f"  JOURS MANQUANTS du {g['first_day']} au {g['last_day']} : "
-                     + (f"fichier(s) absent(s) {', '.join(g['missing_files'])}" if g["missing_files"] else "lignes DAY absentes (fichier coupe ?)"))
+        L.append(f"  JOURS MANQUANTS ({days_txt(g)}) : "
+                 + (f"fichier(s) absent(s) {', '.join(g['missing_files'])}" if g["missing_files"] else "lignes DAY absentes (fichier coupe ?)"))
     if a.get("first_utc"):
         L.append(f"Periode en direct : du {C.utc_txt(a['first_utc'])} au {C.utc_txt(a['last_utc'])}.")
     L.append(f"Demarrages : {len(a['starts'])} (redemarrages : {a['restarts']}).")
@@ -1662,7 +1665,7 @@ def run(args):
             if sb["cost_n"] and sb["cost_same"] < sb["cost_n"]:
                 bad = [e for e in sb["cost"] if not e["same"]]
                 anomalies.append(f"rejeu : ecart median du jour (COST) different {len(bad)} fois sur {sb['cost_n']}, par ex. {bad[0]['symbol']} "
-                                 f"le {bad[0]['day']} : {C.fr(bad[0]['raw_bp'][0], 4)} pb en direct, {C.fr(bad[0]['raw_bp'][1], 4)} au rejeu "
+                                 f"le {bad[0]['day']} : {C.fr(bad[0]['raw_bp'][0], 8)} pb en direct, {C.fr(bad[0]['raw_bp'][1], 8)} au rejeu "
                                  "(l'ecart des minutes du releve n'est pas exactement celui des barres du courtier)")
         else:
             anomalies.append(f"rejeu impossible : {r.get('status')} ({str(r.get('why', ''))[:200]})")

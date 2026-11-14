@@ -38,6 +38,14 @@ another mode), margin (effective leverage from margin_1lot against fp_costs.json
 none on the others), swaps (annual % of the price against fp_costs.json), spreads (m1 files against fp_costs.json),
 sessions (SPEC 10.5: the Friday gold session to 23:46 server, crypto at weekends, holiday sessions against the
 robot's built-in closures of SPEC 2.1) and the server clock (SPEC 10.4: New York + 7 h).
+A holiday session counts as complete when the m1 file covers its start and either holds a later bar or ReleveFP ran
+after the session's end (fini.txt server_time: the ticks up to then are in the file), so a weekend run judges the
+Friday after Thanksgiving. A suggested InpExtraClosures window is written in absolute New York dates and times, as
+ClkInit takes it ('XAU 2021.11.24 23:00-2021.11.25 18:00'). The gold all-in spread adds the model's 0.06 USD per oz
+when SondeFP's commission agrees with it within the probe's cent rounding (at 0.01 lot the cents alone count 6.98
+points for a true 6), the measured one otherwise. A robot market whose fiches.csv line is missing or cut short still
+gets its commission and spread checks from sonde.csv and its m1 file. The gold digits check says that the robot's
+paper commission is 6 points x 0.5 x point (CR_Registry.mqh RegSetPoint): another number of digits makes it wrong.
 Every check says OK, DIFFERENT or UNKNOWN with both values. Output in --out (default: the session scratchpad; a
 folder inside the repository is refused): summary.json, summary_fr.txt; a short French summary on stdout.
 """
