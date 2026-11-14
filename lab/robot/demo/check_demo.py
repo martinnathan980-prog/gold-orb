@@ -281,12 +281,182 @@ def days_txt(g):
     return f"le {g['first_day']}" if g["first_day"] == g["last_day"] else f"du {g['first_day']} au {g['last_day']}"
 
 
-def analyse_journal(rows, builds, files=None):
+INF_T = 1 << 62
+MARK_MAGIC = 20261290                           # the guard's mark trade (CR_Types.mqh CR_MAGIC_MARK)
+# CLOSE reasons that may close a position the robot does not follow (no FILL or ADOPT for its ticket in this run):
+# ORPHAN, DUP, the guard's mark, NOT_READY exits by LatestExit, a missed Friday close, the guards' closes, SLFIX of an
+# unfollowed position (CR_Follower.mqh FolMapPositions, FolRecSleeve, FolNotReadyExits, FolSlfix; CR_Guards.mqh)
+UNFOLLOWED_CLOSE = {"orphan", "dup", "mark", "latest_exit", "friday_missed", "stop", "guard", "lock", "friday", "clock", "slfix"}
+MISSING_FR = {"DEC": "DEC (ordre)", "PFILL": "PFILL", "FILL": "FILL", "SEND": "SEND", "FILL/ADOPT": "FILL ou ADOPT", "PEXIT": "PEXIT"}
+
+
+def overlaps(a, z, ranges):
+    return any(x0 <= z and a <= x1 for x0, x1 in ranges)
+
+
+def fed_evidence(lv):
+    """for each market, the latest bar a live paper line names and the server days whose AGG line fed bars of it: the
+    journal goes on past a time when it holds such a line"""
+    last_bar = defaultdict(int)
+    agg_days = defaultdict(list)
+    for r in lv:
+        if r["ev"] in PAPER_EV and isinstance(r.get("bar"), int) and C.SYM_OF_CODE.get(r["code"]):
+            b = C.SYM_OF_CODE[r["code"]]
+            last_bar[b] = max(last_bar[b], r["bar"])
+        elif r["ev"] == "AGG" and isinstance(r.get("day"), int):
+            for b in C.ROBOT_BASES:
+                if isinstance(r.get(b), int) and r[b] > 0:
+                    agg_days[b].append(r["day"])
+
+    def fed_after(b, t):
+        if last_bar[b] > t:
+            return True
+        d = C.utc_to_srv(int(t))
+        return any(x > d - d % 86400 for x in agg_days[b])
+    return fed_after
+
+
+def journal_breaks(rows, ranges):
+    """lines the robot always writes in pairs, one of which is absent (review2 N1), read from the journal alone:
+      - every live PFILL and SIZE has the DEC what=ord line of its order (oid; live or rp=1: a rebuild writes them again);
+      - every live PEXIT, PREVISE, PSTOP and HOLD has the PFILL of its trade (live or rp=1);
+      - every SEND result=filled has its FILL and every FILL its SEND (CR_Broker.mqh BrkOpen writes both in one call);
+      - every CLOSE and SLMOD names a ticket of a FILL or an ADOPT (or of a DUP, ORPHAN, SLFIX, WATCH or REFUSED line),
+        except a close that may target an unfollowed position (UNFOLLOWED_CLOSE) or the guard's mark;
+      - every paper trade ends (PEXIT, PREVISE or PVOID) before the next PFILL of its sleeve (one trade at a time per
+        sleeve, CR_Paper.mqh), or once its scheduled exit (or HOLD's) has passed while the journal goes on for its market.
+        A rebuild's replay (rp=1 lines) starts the chain again from scratch.
+    A break whose missing line could lie in a known hole (ranges: a missing daily file, the time before the first file
+    when it has no INIT line, the days after a missing last file) is not reported (that hole is, once)."""
+    lv = C.live(rows)
+    dec = {(r["code"], r.get("oid")) for r in rows if r["ev"] == "DEC" and r.get("what") == "ord"}
+    pfill = {(r["code"], r.get("oid")) for r in rows if r["ev"] == "PFILL"}
+    fill = {(r["code"], r.get("oid")) for r in lv if r["ev"] == "FILL"}
+    send_filled = {(r["code"], r.get("oid")) for r in lv if r["ev"] == "SEND" and r.get("result") == "filled"}
+    tickets = {r.get("ticket") for r in lv if r["ev"] in ("FILL", "ADOPT", "DUP", "ORPHAN", "SLFIX", "WATCH", "REFUSED")
+               and r.get("ticket")}
+    out = []
+
+    def add(r, missing, a, z, what):
+        if overlaps(a, z, ranges):
+            return
+        out.append({"missing": missing, "event": r["ev"], "code": r["code"], "oid": r.get("oid"), "ticket": r.get("ticket"),
+                    "utc": r["utc"], "when": C.utc_txt(r["utc"]), "file": r.get("_f"), "line": r.get("_n"), "text_fr": what})
+
+    def dec_t(r):
+        o = r.get("oid")
+        return int(o) // 100 if isinstance(o, int) and o > 0 else r["utc"]
+    last_pfill = {}                                               # sleeve -> decision time of its latest PFILL (file order)
+    for r in rows:
+        ev, code = r["ev"], r["code"]
+        if ev == "PFILL":
+            last_pfill[code] = dec_t(r)
+        if r.get("rp") == 1:
+            continue
+        k = (code, r.get("oid"))
+        if ev in ("PFILL", "SIZE") and k not in dec:
+            add(r, "DEC", dec_t(r) - 60, r["utc"] + 600, f"{ev} {code} oid {r.get('oid')} ({C.utc_txt(r['utc'])}) sans la ligne DEC de son ordre")
+        if ev in ("PEXIT", "PREVISE", "PSTOP", "HOLD") and k not in pfill:
+            add(r, "PFILL", dec_t(r) - 60, r["utc"] + 600, f"{ev} {code} oid {r.get('oid')} ({C.utc_txt(r['utc'])}) sans le PFILL de son trade")
+        if ev == "SEND" and r.get("result") == "filled" and k not in fill:
+            add(r, "FILL", r["utc"] - 60, r["utc"] + 600, f"SEND rempli {code} oid {r.get('oid')} ({C.utc_txt(r['utc'])}) sans sa ligne FILL")
+        if ev == "FILL" and k not in send_filled:
+            add(r, "SEND", r["utc"] - 600, r["utc"] + 60, f"FILL {code} ticket {r.get('ticket')} ({C.utc_txt(r['utc'])}) sans sa ligne SEND")
+        if ev in ("CLOSE", "SLMOD") and r.get("ticket") not in tickets:
+            if ev == "CLOSE" and (code == "MARK" or r.get("magic") == MARK_MAGIC or r.get("why") in UNFOLLOWED_CLOSE):
+                continue
+            add(r, "FILL/ADOPT", last_pfill.get(code, -INF_T) - 600, r["utc"] + 60,
+                f"{ev} {code} ticket {r.get('ticket')} ({C.utc_txt(r['utc'])}) sans FILL ni ADOPT de ce ticket")
+    # every paper trade ends before the next one of its sleeve, or once its time exit has passed
+    fed_after = fed_evidence(lv)
+    hold_x = defaultdict(int)
+    for r in rows:
+        if r["ev"] == "HOLD" and isinstance(r.get("x"), int):
+            hold_x[(r["code"], r.get("oid"))] = max(hold_x[(r["code"], r.get("oid"))], r["x"])
+    open_, prev_rp = {}, False
+    for r in rows:
+        is_rp = r.get("rp") == 1
+        if is_rp and not prev_rp:
+            open_.clear()                                         # a rebuild's replay: the chain starts again
+        prev_rp = is_rp
+        ev, code = r["ev"], r["code"]
+        if ev == "PFILL":
+            o = open_.get(code)
+            if o is not None and o.get("oid") != r.get("oid"):
+                add(o, "PEXIT", o["utc"], r["utc"], f"PFILL {code} oid {o.get('oid')} ({C.utc_txt(o['utc'])}) sans sortie du papier avant le "
+                                                     f"trade suivant ({C.utc_txt(r['utc'])})")
+            open_[code] = r
+        elif ev in ("PEXIT", "PREVISE", "PVOID"):
+            o = open_.get(code)
+            if o is not None and o.get("oid") == r.get("oid"):
+                del open_[code]
+    for code, o in open_.items():
+        b = C.SYM_OF_CODE.get(code)
+        x = max(o.get("x") if isinstance(o.get("x"), int) else 0, hold_x.get((code, o.get("oid")), 0))
+        if b and x > 0 and fed_after(b, x + 3600):
+            add(o, "PEXIT", o["utc"], x + 86400, f"PFILL {code} oid {o.get('oid')} ({C.utc_txt(o['utc'])}) sans sortie du papier alors que sa "
+                                                 f"sortie prevue ({C.utc_txt(x)}) est passee et que le journal continue")
+    out.sort(key=lambda b: (b["utc"], b["missing"]))
+    return out
+
+
+def journal_end(rows, files, releve_end):
+    """the end of the journal (review2 N5). The DAY chain cannot see a lost last file, so: a journal whose last live line
+    is the robot's stop (INIT deinit) is complete; otherwise the robot was still running when the files were copied, or
+    the last file is missing. ReleveFP's run (fini.txt server_time, fiches.csv tick times, the end of its minutes:
+    releve_end, UTC) settles it when given: the robot writes a file every day it runs (weekends included), so the days
+    from the newest file to the releve's day without a file are named."""
+    lv = C.live(rows)
+    if not lv:
+        return {}
+    last = lv[-1]
+    days = sorted(d for d in (C.day_of_file(f) for f in files or []) if d is not None)
+    res = {"last_line_utc": last["utc"], "last_line_when": C.utc_txt(last["utc"]), "stop_line_last": last["ev"] == "INIT" and "deinit" in last,
+           "newest_file": C.file_of_day(days[-1]) if days else None, "releve_end_utc": releve_end,
+           "releve_end_when": C.utc_txt(releve_end) if releve_end else None, "missing_files": [], "ranges": []}
+    if res["stop_line_last"]:
+        res["kind"] = "stopped"
+        return res
+    if releve_end is None or not days:
+        res["kind"] = "no_stop_unknown"
+        res["anomaly"] = ("fin du journal sans ligne d'arret du robot (INIT deinit) : robot encore en marche quand les fichiers ont ete "
+                          "copies, ou dernier fichier manquant (donner aussi fini.txt de ReleveFP, ou --bars, pour le savoir)")
+        return res
+    s = C.utc_to_srv(int(releve_end)) - 3600                      # the robot's first lines of a day come at 00:00:30
+    ref_day = s - s % 86400
+    miss = [C.file_of_day(d) for d in range(days[-1] + 86400, ref_day + 1, 86400)]
+    if miss:
+        res["kind"] = "missing_tail"
+        res["missing_files"] = miss
+        res["ranges"] = [(C.srv_to_utc(days[-1] + 86400) - 600, INF_T)]
+        res["anomaly"] = (f"fin du journal le {res['last_line_when']} sans ligne d'arret alors que le releve de ReleveFP va jusqu'au "
+                          f"{res['releve_end_when']} : fichier(s) du jour manquant(s) probable(s) : {', '.join(miss)} (dernier fichier "
+                          "manquant, ou robot arrete sans ligne d'arret : terminal ferme d'un coup, Mac eteint ; envoyer ces fichiers s'ils existent)")
+    else:
+        res["kind"] = "running"
+        res["note"] = ("robot encore en marche quand les fichiers ont ete copies (pas de ligne d'arret a la fin ; le journal va jusqu'au "
+                       "jour du releve de ReleveFP) : normal")
+    return res
+
+
+def live_period(rows):
+    """the live period: from the first start (INIT) or rebuild (REBUILD) to the last live line (review2 N8 a); a journal
+    with neither starts at its first line stamped when written (NOW_STAMPED), never at a decision stamped earlier"""
+    lv = C.live(rows)
+    if not lv:
+        return None, None
+    first = next((r["utc"] for r in lv if (r["ev"] == "INIT" and "build" in r) or r["ev"] == "REBUILD"), None)
+    if first is None:
+        first = next((r["utc"] for r in lv if r["ev"] in NOW_STAMPED), min(r["utc"] for r in lv))
+    return first, max(r["utc"] for r in lv)
+
+
+def analyse_journal(rows, builds, files=None, releve_end=None):
     lv = C.live(rows)
     starts = starts_of(rows)
     res = {"lines": len(rows), "live_lines": len(lv), "replayed_lines": len(rows) - len(lv)}
     if rows:
-        res["first_utc"], res["last_utc"] = min(r["utc"] for r in lv) if lv else None, max(r["utc"] for r in lv) if lv else None
+        res["first_utc"], res["last_utc"] = live_period(rows)
     st_out, anomalies = [], []
     for k, s in enumerate(starts):
         i = s["init"] or {}
@@ -419,8 +589,10 @@ def analyse_journal(rows, builds, files=None):
     for r in [x for x in lv if x["ev"] == "COST"]:
         e = {"day": C.ymd(r.get("day", 0)), "symbol": r["code"], "raw_bp": r.get("raw_bp"), "paper_bp": r.get("paper_bp"),
              "model_bp": r.get("model_bp"), "comm_usd_oz": r.get("comm_usd_oz"), "comm_n": r.get("comm_n")}
-        e["over_model"] = bool(e["paper_bp"] and e["model_bp"] and e["paper_bp"] > 1.5 * e["model_bp"])
-        e["comm_off"] = bool(e["comm_usd_oz"] is not None and e["comm_n"] and abs(e["comm_usd_oz"] - 0.06) > 0.01)
+        isnum = lambda x: isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)   # noqa: E731
+        # every field was type-checked when read; a value that is still not a finite number never raises (review2 N7)
+        e["over_model"] = bool(isnum(e["paper_bp"]) and isnum(e["model_bp"]) and e["model_bp"] > 0 and e["paper_bp"] > 1.5 * e["model_bp"])
+        e["comm_off"] = bool(isnum(e["comm_usd_oz"]) and isinstance(e["comm_n"], int) and e["comm_n"] > 0 and abs(e["comm_usd_oz"] - 0.06) > 0.01)
         cost.append(e)
     res["cost"] = cost
     over = [c for c in cost if c["over_model"]]
@@ -455,6 +627,23 @@ def analyse_journal(rows, builds, files=None):
         else:
             anomalies.append(f"lignes du robot manquantes : aucune ligne DAY {days_txt(g)} alors que les fichiers de ces jours sont la "
                              "(fichier coupe ?)")
+    # the end of the journal (review2 N5): a stop line, a robot still running, or a lost last file
+    end = journal_end(rows, files, releve_end)
+    res["end"] = {k: v for k, v in end.items() if k != "ranges"}
+    if end.get("anomaly"):
+        anomalies.append(end["anomaly"])
+    res["missing_files"] = sorted(set(res["missing_files"]) | set(end.get("missing_files", [])))
+    # lines whose partner is absent (review2 N1), outside the holes already named
+    holes = list(ranges) + list(end.get("ranges", []))
+    if starts and starts[0].get("no_init") and lv:
+        holes.append((-INF_T, (res.get("first_utc") or lv[0]["utc"]) + 600))      # before the first file: unknown
+    res["holes_utc"] = holes
+    brk = journal_breaks(rows, holes)
+    res["breaks"] = brk
+    if brk:
+        n = Counter(b["missing"] for b in brk)
+        anomalies.append(f"{len(brk)} ligne(s) du journal manquante(s) (sans fichier manquant connu a ce moment : fichier coupe ou modifie ?) : "
+                         + ", ".join(f"{v} {MISSING_FR.get(k, k)}" for k, v in sorted(n.items())) + f" ; par ex. {brk[0]['text_fr']}")
     return res, anomalies, starts
 
 
@@ -482,6 +671,10 @@ def point_sizes(rows, fiches):
 EA_CLOSE_RC = (10009, 10010)                    # TRADE_RETCODE_DONE, TRADE_RETCODE_DONE_PARTIAL
 STOP_REASONS = ("stop", "trail", "gap")         # paper exits that the broker's own stop makes (no CLOSE line)
 KNOWN_EXITS = ("ea_close", "broker_stop_estimated", "broker_stop_race", "broker_stop_seen")
+# exits at the broker's stop: the journal holds no line of them, so their price is unknown (review2 N2): they stay out of
+# the exit averages, the euros and the headline, and are shown apart with an estimate at stop x (1 -/+ the lab's stop
+# slippage), which is what the paper books for its own stop exit (so the estimate shows no difference by construction)
+ESTIMATED_EXITS = ("broker_stop_estimated", "broker_stop_race", "broker_stop_seen")
 REASON_FR = {"time": "par le temps", "target": "a l'objectif", "rule": "par sa regle", "eod": "en fin de seance",
              "void": "annule (void)", "refused": "refuse", "nofill": "sans remplissage", "skip": "saute"}
 
@@ -490,7 +683,9 @@ def stop_crossed(tables, b, side, segs, t_from, t_to):
     """did the real quotes cross a position's broker stop between its fill and the paper's exit? ReleveFP's minutes
     hold the extremes of the ticks: a long position's stop is hit by the bid low (bl), a short's by the ask high (ah).
     segs = [(from_utc, level)] in time order (the FILL's sl, then each successful SLMOD). Returns (True, utc of the
-    first minute that crossed), (False, None), or (None, None) when the minutes do not cover that time."""
+    first minute that crossed), (False, None), or (None, None) when the minutes do not cover that time. With only the
+    terminal's bars (r1, ah_exact False) the ask high is the bar's high + its spread, which may be the minute's smallest:
+    a short's stop not crossed by it is unknown, not 'never crossed'."""
     tb = (tables or {}).get(b)
     segs = [(u, lv) for u, lv in segs if u is not None and isinstance(lv, (int, float)) and lv > 0]
     if tb is None or not segs or not side or t_from is None or t_to is None:
@@ -510,11 +705,14 @@ def stop_crossed(tables, b, side, segs, t_from, t_to):
         hit = (tb["bl"][i0:i1] <= level + eps) if side > 0 else (tb["ah"][i0:i1] >= level - eps)
         if hit.any():
             return True, C.srv_to_utc(int(t[i0 + int(np.argmax(hit))]))
+    if side < 0 and not tb.get("ah_exact", True):
+        return None, None
     return False, None
 
 
 def fills_report(rows, res_a, starts, points, fiches, tables=None):
-    """each real position against its paper trade; tables = the releve's minutes (--bars) or None"""
+    """each real position against its paper trade; tables = the releve's minutes (--bars: m1, else the terminal's bars
+    r1, per market) or None"""
     lv = C.live(rows)
     comm_pts = next((s["init"].get("comm_pts") for s in starts if s["init"] and s["init"].get("comm_pts") is not None), 6)
     h = {b: (comm_pts * 0.5 * points[b] if b == "XAUUSD" else 0.0) for b in C.ROBOT_BASES}
@@ -554,6 +752,10 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None):
         d = C.utc_to_srv(int(t))
         return any(x > d - d % 86400 for x in agg_days[b])
     send = {(r["code"], r["oid"]): r for r in lv if r["ev"] == "SEND" and r.get("result") == "filled"}
+    # entries late by design (review2 N8 e): a stop, limit or OCO order is sent one bar after the paper's fill (SIZE late=1,
+    # CR_Sizing.mqh SizRisk); else the order's type (DEC et != 0)
+    late_of = {(r["code"], r.get("oid")): r.get("late") == 1 for r in lv if r["ev"] == "SIZE"}
+    et_of = {(r["code"], r.get("oid")): r.get("et") for r in rows if r["ev"] == "DEC" and r.get("what") == "ord"}
     closes = defaultdict(list)
     for r in lv:
         if r["ev"] == "CLOSE":
@@ -628,11 +830,23 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None):
         reason = x.get("reason") if x is not None else ("void" if voided_row else None)
         if good:
             e.update(exit_real=good[0]["px"], exit_utc=good[0]["utc"], exit_kind="ea_close", close_why=good[0].get("why"))
-        elif race:
-            e.update(exit_real=last_sl, exit_utc=race[0]["utc"], exit_kind="broker_stop_race",
-                     close_why="stop courtier juste avant la fermeture du robot (CLOSE sans prix, rc=0) : prix estime au stop")
-        elif x is not None and reason in STOP_REASONS:
-            e.update(exit_real=last_sl, exit_utc=x["utc"], exit_kind="broker_stop_estimated", close_why="stop courtier (prix estime au stop)")
+        elif race or (x is not None and reason in STOP_REASONS):
+            # the broker's stop (no line), or the race where it closed the position just before the robot's request: with
+            # the releve's minutes the stop must have been reached (review2 N10)
+            t_chk = (race[0]["utc"] + 60) if race else x["utc"]
+            seen, when = stop_crossed(tables, b, side, segs, p.get("entry_utc"), t_chk)
+            if seen is False:
+                e.update(exit_real=None, exit_utc=None, exit_kind="stop_not_reached",
+                         close_why=("CLOSE sans prix (rc=0) comme si le stop courtier venait de fermer la position" if race else
+                                    f"le papier est sorti par son stop le {C.utc_txt(x['utc'])} sans ligne CLOSE")
+                                   + ", mais les minutes du releve ne touchent jamais son stop : position fermee autrement (a la main, "
+                                     "stop-out ?)")
+            elif race:
+                e.update(exit_real=last_sl, exit_utc=race[0]["utc"], exit_kind="broker_stop_race", stop_seen_utc=when,
+                         close_why="stop courtier juste avant la fermeture du robot (CLOSE sans prix, rc=0) : prix inconnu")
+            else:
+                e.update(exit_real=last_sl, exit_utc=x["utc"], exit_kind="broker_stop_estimated", stop_seen_utc=when,
+                         close_why="stop courtier (aucune ligne : prix inconnu)")
         elif failed:
             e.update(exit_real=None, exit_utc=None, exit_kind="close_refused",
                      close_why=f"fermeture refusee (rc={','.join(e['close_refused_rc'])}) et jamais reussie dans le journal")
@@ -647,8 +861,8 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None):
             seen, when = stop_crossed(tables, b, side, segs, p.get("entry_utc"), t_end)
             rfr = REASON_FR.get(reason, reason)
             if seen:
-                e.update(exit_real=last_sl, exit_utc=when, exit_kind="broker_stop_seen",
-                         close_why="stop courtier touche avant la sortie du papier (vu dans les minutes du releve) : prix estime au stop")
+                e.update(exit_real=last_sl, exit_utc=when, exit_kind="broker_stop_seen", stop_seen_utc=when,
+                         close_why="stop courtier touche avant la sortie du papier (vu dans les minutes du releve) : prix inconnu")
             elif seen is False:
                 e.update(exit_real=None, exit_utc=None, exit_kind="not_closed",
                          close_why=f"position non fermee par le robot : pas de ligne CLOSE alors que le papier est sorti {rfr} le "
@@ -683,14 +897,27 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None):
             e["exit_diff_net_pts"] = (d + comm_side[b]) / pt
             e["exit_diff_net_bp"] = (d + comm_side[b]) / e["paper_exit"] * 1e4
             e["exit_diff_eur"] = d * e["lots"] * k if (k and e.get("lots")) else None
+        if e["exit_kind"] in ESTIMATED_EXITS and side and last_sl:
+            # exit_real is the stop's level, not a price; the estimate adds the lab's stop slippage (fp_costs.json)
+            e["exit_estimated"] = True
+            e["exit_est"] = last_sl * (1 - side * C.SLIP_BPS[b][1] / 1e4)
+            e["exit_est_slip_bp"] = C.SLIP_BPS[b][1]
+            if e.get("paper_exit") is not None:
+                d = side * (e["paper_exit"] - e["exit_est"])
+                e["exit_diff_est_pts"] = d / pt
+                e["exit_diff_est_bp"] = d / e["paper_exit"] * 1e4
+                e["exit_diff_est_eur"] = d * e["lots"] * k if (k and e.get("lots")) else None
         if side and e.get("exit_real") is not None and e.get("entry_real") is not None and e.get("lots") and k:
             e["gross_eur"] = side * (e["exit_real"] - e["entry_real"]) * e["lots"] * k
             e["model_commission_eur"] = 2 * h[b] * e["lots"] * k
-        e["late_by_design"] = p["code"] in ("GFP", "D4H", "ORX")
+        key = (p["code"], p["oid"])
+        e["late_by_design"] = bool(late_of[key]) if key in late_of else (et_of.get(key) not in (None, 0))
         out.append(e)
     out.sort(key=lambda e: (e.get("entry_utc") or 0))
     for kind, label in (("close_refused", "fermeture(s) refusee(s) et jamais reussie(s) dans le journal"),
                         ("not_closed", "position(s) non fermee(s) par le robot (sortie du papier passee, stop jamais touche)"),
+                        ("stop_not_reached", "position(s) donnee(s) fermee(s) par le stop courtier dont les minutes du releve ne "
+                                             "touchent jamais le stop"),
                         ("no_close_unknown", "position(s) sans ligne CLOSE alors que le papier est sorti sans stop (non fermee par "
                                              "le robot, ou stop courtier avant : a verifier)"),
                         ("missing_exit", "position(s) sans aucune sortie au milieu du journal (lignes manquantes ?)")):
@@ -714,19 +941,38 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None):
         q = {"paper_trades_live": pfill_live, "intents": len(size_live), "sized_to_send": skips.get("none", 0), "real_trades": fills_n,
              "share_intents_to_trades": (fills_n / len(size_live)) if size_live else None, "size_skips": dict(skips),
              "missed": dict(missed), "positions": len(ps)}
-        keys = ["entry_diff_bp", "exit_diff_bp", "fill_vs_quote_bp", "entry_diff_net_bp", "exit_diff_net_bp"]
+        # exits: the robot's closes only (a broker stop has no price in the journal, review2 N2); entries: in TOTAL the ones
+        # on time only, the entries late by design apart (review2 N8 e); per sleeve and per market all (each is one kind)
+        known = [e for e in ps if e["exit_kind"] == "ea_close"]
+        est = [e for e in ps if e["exit_kind"] in ESTIMATED_EXITS]
+        late = [e for e in ps if e.get("late_by_design")]
+        src = {"entry": ps if key_ is not None else [e for e in ps if not e.get("late_by_design")], "exit": known, "fill": ps}
+        keys = [("entry_diff_bp", "entry"), ("exit_diff_bp", "exit"), ("fill_vs_quote_bp", "fill"), ("entry_diff_net_bp", "entry"),
+                ("exit_diff_net_bp", "exit")]
         if key_ is not None:
-            keys += ["entry_diff_pts", "entry_diff_net_pts", "exit_diff_pts", "exit_diff_net_pts", "fill_vs_quote_pts"]
-        for kk in keys:
-            v = [e[kk] for e in ps if e.get(kk) is not None]
+            keys += [("entry_diff_pts", "entry"), ("entry_diff_net_pts", "entry"), ("exit_diff_pts", "exit"), ("exit_diff_net_pts", "exit"),
+                     ("fill_vs_quote_pts", "fill")]
+        for kk, which in keys:
+            v = [e[kk] for e in src[which] if e.get(kk) is not None]
             q[kk + "_mean"] = C.mean(v)
             q[kk + "_median"] = C.median(v)
-        for kk in ("entry_diff_eur", "exit_diff_eur", "gross_eur", "model_commission_eur"):
-            v = [e[kk] for e in ps if e.get(kk) is not None]
+        for kk, which in (("entry_diff_eur", ps), ("exit_diff_eur", known), ("gross_eur", ps), ("model_commission_eur", ps)):
+            v = [e[kk] for e in which if e.get(kk) is not None]
             q[kk + "_sum"] = sum(v) if v else None
+        lv_ = [e["entry_diff_bp"] for e in late if e.get("entry_diff_bp") is not None]
+        q["entries_late"] = len(lv_)
+        q["entry_diff_late_bp_mean"] = C.mean(lv_)
+        le = [e["entry_diff_eur"] for e in late if e.get("entry_diff_eur") is not None]
+        q["entry_diff_late_eur_sum"] = sum(le) if le else None
+        q["estimated_exits"] = len(est)
+        q["exit_diff_est_bp_mean"] = C.mean([e["exit_diff_est_bp"] for e in est if e.get("exit_diff_est_bp") is not None])
+        if key_ is not None:
+            q["exit_diff_est_pts_mean"] = C.mean([e["exit_diff_est_pts"] for e in est if e.get("exit_diff_est_pts") is not None])
+        ee = [e["exit_diff_est_eur"] for e in est if e.get("exit_diff_est_eur") is not None]
+        q["exit_diff_est_eur_sum"] = sum(ee) if ee else None
         q["exits"] = dict(Counter(e["exit_kind"] for e in ps))
         q["stop_exits_paper"] = sum(1 for e in ps if e.get("paper_reason") in STOP_REASONS)
-        q["broker_stops_estimated"] = sum(1 for e in ps if e["exit_kind"] in ("broker_stop_estimated", "broker_stop_race", "broker_stop_seen"))
+        q["broker_stops_estimated"] = sum(1 for e in ps if e["exit_kind"] in ESTIMATED_EXITS)
         q["exit_unknown"] = sum(1 for e in ps if e["exit_kind"] not in KNOWN_EXITS)
         (per_sym if key_ == "symbol" else per)[g] = q
     # money: DAY balances against the gross results of the positions closed between the first and the last DAY line;
@@ -739,14 +985,17 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None):
         unknown = [e for e in out if e["exit_kind"] not in KNOWN_EXITS and e["exit_kind"] != "open_or_unknown"
                    and (e.get("entry_utc") or 0) < t1]
         holes = [g for g in res_a.get("day_gaps", []) if not g["explained"]]
-        db = (days[-1]["balance"] or 0) - (days[0]["balance"] or 0)
+        brk = res_a.get("breaks") or []
+        isnum = lambda x: isinstance(x, (int, float)) and math.isfinite(x)   # noqa: E731
+        db = (days[-1]["balance"] if isnum(days[-1]["balance"]) else 0) - (days[0]["balance"] if isnum(days[0]["balance"]) else 0)
         gross = sum(e["gross_eur"] for e in closed)
         money = {"from": days[0]["day"], "to": days[-1]["day"], "balance_change_eur": db, "gross_from_prices_eur": gross,
                  "costs_not_in_prices_eur": db - gross, "model_commission_eur": sum(e.get("model_commission_eur") or 0 for e in closed),
                  "positions": len(closed), "with_estimated_stop_prices": sum(1 for e in closed if e["exit_kind"] != "ea_close"),
-                 "positions_exit_unknown": len(unknown), "missing_days": sum(g["days"] for g in holes),
-                 "complete": not unknown and not holes,
-                 "note": "estimation : commission + swap + glissement des stops courtier + autres operations du compte"}
+                 "positions_exit_unknown": len(unknown), "missing_days": sum(g["days"] for g in holes), "journal_breaks": len(brk),
+                 "complete": not unknown and not holes and not brk,
+                 "note": ("estimation : commission + swap + glissement des stops courtier (leur sortie est comptee au niveau du stop, "
+                          "sans glissement) + autres operations du compte")}
     return {"positions": out, "per_sleeve": per, "per_symbol": per_sym, "money_estimate": money, "points": points, "h_price": h,
             "commission_per_side_price": comm_side, "commission_source": comm_src, "duplicates": doubles, "anomalies": anomalies,
             "minutes_used_for_stops": bool(tables),
@@ -754,18 +1003,37 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None):
 
 
 # ---------------------------------------------------------------------------------------------- (c) replay
+M1_COLS = ["time", "bo", "bh", "bl", "bc", "ao", "ah", "al", "ac", "n", "sp_mean", "sp_max"]   # ReleveFP 1.00; 1.10 adds sp_min
+R1_COLS = ["time", "open", "high", "low", "close", "spread"]          # of r1_<BASE>.csv (ReleveFP 1.10 Rates/RateRow)
+
+
 def read_m1(path):
+    """ReleveFP's m1 file (columns read by name; sp_min when the file has it, ReleveFP 1.10)"""
     df = pd.read_csv(path, encoding="cp1252")
-    need = ["time", "bo", "bh", "bl", "bc", "ao", "ah", "al", "ac", "n", "sp_mean", "sp_max"]
-    miss = [c for c in need if c not in df.columns]
+    miss = [c for c in M1_COLS if c not in df.columns]
     if miss:
         raise ValueError(f"{os.path.basename(path)} : colonnes absentes {miss}")
-    df = df[need].dropna()
+    df = df[M1_COLS + (["sp_min"] if "sp_min" in df.columns else [])].dropna()
     df["time"] = df["time"].astype(np.int64)
     return df.drop_duplicates("time").sort_values("time").reset_index(drop=True)
 
 
+def read_r1(path):
+    """ReleveFP 1.10's r1 file: the terminal's own M1 bars (MqlRates, the bars the robot reads with CopyRates): time
+    (server seconds), bid open/high/low/close with the symbol's digits, tick_volume, spread (points), real_volume;
+    days newest first (sorted here)"""
+    df = pd.read_csv(path, encoding="cp1252")
+    miss = [c for c in R1_COLS if c not in df.columns]
+    if miss:
+        raise ValueError(f"{os.path.basename(path)} : colonnes absentes {miss}")
+    df = df[R1_COLS].dropna()
+    df["time"] = df["time"].astype(np.int64)
+    df["spread"] = df["spread"].astype(np.int64)
+    return df.drop_duplicates("time").sort_values("time").reset_index(drop=True)
+
+
 def m1_digits(path):
+    """decimals of the first price of a ReleveFP file (prices are written with the symbol's digits)"""
     with open(path, "rb") as h:
         h.readline()
         first = h.readline().decode("cp1252", errors="replace").strip()
@@ -783,6 +1051,8 @@ def spread_points(df, digits):
     mx = np.rint(df.sp_max.to_numpy() * sc)
     n = df.n.to_numpy().astype(float)
     conv = {"open": o, "close": c, "mean": np.floor(mean_ + 0.5), "max": mx, "min2": np.minimum(o, c)}
+    if "sp_min" in df.columns:                                     # ReleveFP 1.10: the smallest spread of the minute's ticks
+        conv["min"] = np.rint(df.sp_min.to_numpy() * sc)
     lo = np.maximum(0.0, n * mean_ - (n - 1) * mx) - 0.5
     hi = np.minimum(np.minimum(o, c), mean_ + 0.5)
     return {k: v.astype(np.int64) for k, v in conv.items()}, lo, hi
@@ -811,7 +1081,9 @@ def mask_kept(t_srv, fam):
 
 def calibrate(live_rows, tables):
     """which ReleveFP column gives the bar spread the robot saw: (1) every live paper line carries its bar (UTC) and that
-    bar's s_raw; (2) every COST line carries the day's median raw spread in bp of the mid over the kept bars"""
+    bar's s_raw; (2) every COST line carries the day's median raw spread in bp of the mid over the kept bars. 'min' (the
+    sp_min column) exists only in ReleveFP 1.10 files. usable is False when the paper lines show that no column gives the
+    bar spread (best share below CONV_MATCH): the replay of those markets cannot be used (review2 N4)"""
     per = {k: {"n": 0, "match": 0} for k in SPREAD_CONV}
     min_ok = {"n": 0, "inside": 0}
     for r in live_rows:
@@ -825,8 +1097,9 @@ def calibrate(live_rows, tables):
         if i is None:
             continue
         for k in SPREAD_CONV:
-            per[k]["n"] += 1
-            per[k]["match"] += int(tb["conv"][k][i] == r["s_raw"])
+            if k in tb["conv"]:
+                per[k]["n"] += 1
+                per[k]["match"] += int(tb["conv"][k][i] == r["s_raw"])
         min_ok["n"] += 1
         min_ok["inside"] += int(tb["lo"][i] <= r["s_raw"] <= tb["hi"][i])
     cost = {k: [] for k in SPREAD_CONV}
@@ -839,21 +1112,26 @@ def calibrate(live_rows, tables):
         if sel.sum() < 10:
             continue
         for k in SPREAD_CONV:
+            if k not in tb["conv"]:
+                continue
             s = tb["conv"][k][sel] * tb["point"]
             mid = tb["bid_o"][sel] + s / 2
             med = float(np.median(s / mid * 1e4))
             cost[k].append(abs(med - r["raw_bp"]) / max(r["raw_bp"], 1e-12))
     out = {"paper_lines": per, "min_consistent": min_ok,
            "cost_days": {k: {"days": len(v), "mean_rel_err": (sum(v) / len(v)) if v else None} for k, v in cost.items()}}
-    choice, why = "open", "defaut (export_frames.py prend l'ecart de l'ouverture)"
+    choice, why, usable, share = "open", "defaut (export_frames.py prend l'ecart de l'ouverture)", True, None
     n = per["open"]["n"]
     if n >= 10:
-        best = max(SPREAD_CONV, key=lambda k: (per[k]["match"], k == "open"))
-        choice, why = best, f"{per[best]['match']} barres sur {n} egales a s_raw des lignes du papier"
+        best = max((k for k in SPREAD_CONV if per[k]["n"]), key=lambda k: (per[k]["match"] / per[k]["n"], k == "open"))
+        share = per[best]["match"] / per[best]["n"]
+        choice, why = best, f"{per[best]['match']} barres sur {per[best]['n']} egales a s_raw des lignes du papier"
+        usable = share >= CONV_MATCH
     elif any(v for v in cost.values()):
         best = min((k for k in SPREAD_CONV if cost[k]), key=lambda k: sum(cost[k]) / len(cost[k]))
         choice, why = best, f"ecart median du jour le plus proche des lignes COST ({len(cost[best])} jours)"
-    out["choice"], out["why"] = choice, why
+    out["choice"], out["why"], out["usable"], out["share"] = choice, why, usable, share
+    out["conventions"] = [k for k in SPREAD_CONV if per[k]["n"] or cost[k]]
     return out
 
 
@@ -995,16 +1273,19 @@ def first_flat(t_min, iv_a, iv_b):
 OUT_WARMUP = "echauffement du rejeu (pas assez d'historique avant)"
 OUT_SPAN = "hors de la periode des minutes du releve"
 OUT_GAP = "journal du robot manquant a ce moment (fichier du jour absent)"
+OUT_UNUSABLE = "ecart des barres inconnu pour ce marche (aucune colonne du releve ne redonne MqlRates.spread)"
 
 
 class Windows:
     """where a live line can be compared: inside its sleeve's own span (the markets it reads all have minutes) after
     the sleeve's warm-up and once both paper chains have been flat together, while the live copy ran live with the
-    same paper inputs, outside the hours of a missing daily file"""
+    same paper inputs, outside the hours of a missing daily file; never for a sleeve reading a market whose bar spread
+    is unknown (unusable: an m1 file where no column gives MqlRates.spread, review2 N4)"""
 
-    def __init__(self, starts, spans, inputs, flat=None, no_bars=(), gaps=()):
+    def __init__(self, starts, spans, inputs, flat=None, no_bars=(), gaps=(), unusable=()):
         self.flat = flat or {}
         self.no_bars = set(no_bars)
+        self.unusable = set(unusable)
         self.spans = spans                          # {code: (first UTC, last UTC compared)}
         self.gaps = list(gaps)
         self.cover = []
@@ -1019,6 +1300,8 @@ class Windows:
         """t = the line's own time, t_dec = its order's decision (oid // 100), so that every line of one paper trade is
         in or out together"""
         td = t if t_dec is None else min(t, t_dec)
+        if code in self.unusable:
+            return OUT_UNUSABLE
         if code in self.no_bars or code not in self.spans:
             return "pas de minutes du releve pour ce marche"
         r0, r1 = self.spans[code]
@@ -1117,9 +1400,11 @@ def compare_lines(live_rows, rep_rows, win, mode, dist, replay_ready):
             "compared_per_sleeve": dict(compared), "compared_span_per_sleeve": span_seen}
 
 
-def side_by_side(live_rows, rep_rows, first_day_srv=None):
+def side_by_side(live_rows, rep_rows, first_day_srv=None, cover=None):
     """AGG (kept bars fed per server day and symbol) and COST (median spreads) of both sides; the replay's first server
-    day is left out of AGG (CR_Main.mqh MainDaily starts its counters at the first barrier of a run)"""
+    day is left out of AGG (CR_Main.mqh MainDaily starts its counters at the first barrier of a run). cover = {market:
+    (first, last minute of its bars, server)}: a market's count is compared only on the days its bars cover whole, after
+    its own first day (a market whose minutes start late, review2 N8 c)"""
     agg_l = {r.get("day"): r for r in live_rows if r["ev"] == "AGG"}
     agg_r = {r.get("day"): r for r in rep_rows if r["ev"] == "AGG"}
     agg = []
@@ -1127,9 +1412,14 @@ def side_by_side(live_rows, rep_rows, first_day_srv=None):
         if first_day_srv is not None and d <= first_day_srv:
             continue
         e = {"day": C.ymd(d)}
-        for b in C.ROBOT_BASES:
+        bs = [b for b in C.ROBOT_BASES if cover is None or (b in cover and cover[b][0] - cover[b][0] % 86400 < d
+                                                             and d + 86400 <= cover[b][1] + 2 * 3600)]
+        if not bs:
+            continue
+        for b in bs:
             e[b] = (agg_l[d].get(b), agg_r[d].get(b))
-        e["same"] = all(x[0] == x[1] for x in (e[b] for b in C.ROBOT_BASES))
+        e["markets"] = bs
+        e["same"] = all(e[b][0] == e[b][1] for b in bs)
         agg.append(e)
     cost_l = {(r["code"], r.get("day")): r for r in live_rows if r["ev"] == "COST"}
     cost_r = {(r["code"], r.get("day")): r for r in rep_rows if r["ev"] == "COST"}
@@ -1144,31 +1434,52 @@ def side_by_side(live_rows, rep_rows, first_day_srv=None):
 
 
 def load_minutes(bars_dir, fiches):
-    """ReleveFP's m1_<BASE>.csv files of --bars as tables (the replay's bars and the broker-stop check of the fills).
-    Returns (tables, files used, problems)."""
-    tables, files_used, problems = {}, {}, []
+    """ReleveFP's files of --bars as tables: m1_<BASE>.csv (the minutes built from ticks) and, from ReleveFP 1.10,
+    r1_<BASE>.csv (the terminal's own M1 bars, what the robot reads). Returns {"m1": {market: table}, "r1": {...},
+    "stop": the tables of the broker-stop checks (m1, else r1), "files": {market: [names]}, "problems": [...]}."""
+    m1t, r1t, files, problems = {}, {}, defaultdict(list), []
     for b in C.ROBOT_BASES:
+        dg_f = (fiches.get(b) or {}).get("digits") if fiches and (fiches.get(b) or {}).get("found") else None
         p = os.path.join(bars_dir, f"m1_{b}.csv")
-        if not os.path.exists(p):
-            problems.append(f"m1_{b}.csv absent : les regles de {b} ne sont pas rejouees")
-            continue
-        try:
-            df = read_m1(p)
-        except Exception as e:
-            problems.append(f"m1_{b}.csv illisible : {str(e)[:100]}")
-            continue
-        if not len(df):
-            problems.append(f"m1_{b}.csv vide")
-            continue
-        dg = (fiches.get(b) or {}).get("digits") if fiches and (fiches.get(b) or {}).get("found") else None
-        dg = int(dg) if dg is not None else m1_digits(p)
-        conv, lo, hi = spread_points(df, dg)
-        t = df.time.to_numpy()
-        tables[b] = {"df": df, "digits": dg, "point": 10.0 ** -dg, "conv": conv, "lo": lo, "hi": hi, "t": t,
-                     "index": {int(x): i for i, x in enumerate(t)}, "bid_o": df.bo.to_numpy(), "kept": mask_kept(t, C.FAMILY[b]),
-                     "bl": df.bl.to_numpy().astype(float), "ah": df.ah.to_numpy().astype(float)}
-        files_used[b] = os.path.basename(p)
-    return tables, files_used, problems
+        if os.path.exists(p):
+            try:
+                df = read_m1(p)
+                if not len(df):
+                    problems.append(f"m1_{b}.csv vide")
+                else:
+                    dg = int(dg_f) if dg_f is not None else m1_digits(p)
+                    conv, lo, hi = spread_points(df, dg)
+                    t = df.time.to_numpy()
+                    m1t[b] = {"src": "m1", "df": df, "digits": dg, "point": 10.0 ** -dg, "conv": conv, "lo": lo, "hi": hi, "t": t,
+                              "index": {int(x): i for i, x in enumerate(t)}, "bid_o": df.bo.to_numpy(), "kept": mask_kept(t, C.FAMILY[b]),
+                              "bl": df.bl.to_numpy().astype(float), "ah": df.ah.to_numpy().astype(float), "ah_exact": True}
+                    files[b].append(os.path.basename(p))
+            except Exception as e:                               # noqa: BLE001 (any unreadable file is reported, never fatal)
+                problems.append(f"m1_{b}.csv illisible : {str(e)[:100]}")
+        p = os.path.join(bars_dir, f"r1_{b}.csv")
+        if os.path.exists(p):
+            try:
+                df = read_r1(p)
+                if not len(df):
+                    problems.append(f"r1_{b}.csv vide")
+                else:
+                    dg = int(dg_f) if dg_f is not None else m1_digits(p)
+                    sc, pt = 10.0 ** dg, 10.0 ** -dg
+                    t = df.time.to_numpy()
+                    o, h, l_, c = (np.rint(df[k].to_numpy() * sc).astype(np.int64) for k in ("open", "high", "low", "close"))
+                    sp = df.spread.to_numpy().astype(np.int64)
+                    r1t[b] = {"src": "r1", "digits": dg, "point": pt, "t": t, "o": o, "h": h, "l": l_, "c": c, "s": sp,
+                              "bl": df.low.to_numpy().astype(float), "ah": df.high.to_numpy().astype(float) + sp * pt, "ah_exact": False}
+                    files[b].append(os.path.basename(p))
+            except Exception as e:                               # noqa: BLE001
+                problems.append(f"r1_{b}.csv illisible : {str(e)[:100]}")
+        if b not in m1t and b not in r1t:
+            problems.append(f"ni m1_{b}.csv ni r1_{b}.csv lisible : les regles de {b} ne sont pas rejouees")
+    stop = {b: (m1t.get(b) or r1t.get(b)) for b in C.ROBOT_BASES if b in m1t or b in r1t}
+    return {"m1": m1t, "r1": r1t, "stop": stop, "files": dict(files), "problems": problems}
+
+
+NO_MINUTES = {"m1": {}, "r1": {}, "stop": {}, "files": {}, "problems": []}
 
 
 def inp_days_needed(live0, last_minute):
@@ -1181,8 +1492,7 @@ def inp_days_needed(live0, last_minute):
 def replay_check(rows, starts, minutes, out, fiches, spread_opt, inputs_extra, rebuild, scrub, gaps=()):
     lv = C.live(rows)
     rep = {"status": "not run"}
-    tables, files_used, problems = minutes
-    problems = list(problems)
+    problems = list(minutes["problems"])
     # the inputs: the start with the longest live time
     best = None
     for s in starts:
@@ -1194,46 +1504,69 @@ def replay_check(rows, starts, minutes, out, fiches, spread_opt, inputs_extra, r
     init = best[1]["init"] if best else {}
     plan = best[1]["plan"] if best else None
     names = {b: (init.get(b) if init and init.get(b) else ((fiches.get(b) or {}).get("name") or b + ".r")) for b in C.ROBOT_BASES}
-    if not tables:
-        rep.update(status="impossible", why="aucun fichier m1_<marche>.csv lisible dans --bars", problems=problems)
+    # the bars of each market: the terminal's own (r1_<BASE>.csv, ReleveFP 1.10: MqlRates as the robot reads them, exact)
+    # when present, else the minutes built from ticks (m1_<BASE>.csv) with the spread convention measured on the journal
+    m1t, r1t = minutes["m1"], minutes["r1"]
+    src = {b: ("r1" if b in r1t else "m1") for b in C.ROBOT_BASES if b in r1t or b in m1t}
+    rep["bar_source"] = src
+    if not src:
+        rep.update(status="impossible", why="aucun fichier m1_<marche>.csv ni r1_<marche>.csv lisible dans --bars", problems=problems)
         return rep
-    cal = calibrate(lv, tables)
-    conv = cal["choice"] if spread_opt == "auto" else spread_opt
-    rep["spread"] = {"calibration": cal, "used": conv, "asked": spread_opt}
+    m1_used = {b: m1t[b] for b in src if src[b] == "m1"}
+    cal = calibrate(lv, m1_used) if m1_used else None
+    conv = (cal["choice"] if spread_opt == "auto" else spread_opt) if cal else None
+    rep["spread"] = {"calibration": cal, "used": conv, "asked": spread_opt, "markets_from_m1": sorted(m1_used)}
+    # no column gives the bar spread (review2 N4): the sleeves of those markets cannot be compared; with no r1 file at
+    # all the replay cannot be used, and is not run (hundreds of differences would hide any real one)
+    unusable = sorted(m1_used) if (cal is not None and spread_opt == "auto" and not cal["usable"]) else []
+    rep["unusable_markets"] = unusable
+    if unusable and len(unusable) == len(src):
+        best = max((cal["paper_lines"][k]["match"] for k in SPREAD_CONV), default=0)
+        rep.update(status="unusable", problems=problems,
+                   why=(f"aucune colonne des fichiers m1 ne redonne l'ecart des barres du robot (MqlRates.spread) : au mieux {best} barres "
+                        f"sur {cal['paper_lines']['open']['n']} ; minimum compatible {cal['min_consistent']['inside']}/{cal['min_consistent']['n']}"
+                        " ; relancer ReleveFP 1.10 (colonne sp_min et fichiers r1_<marche>.csv des barres du terminal)"))
+        return rep
     work = os.path.join(out, "replay")
     bars_out = os.path.join(work, "bars")
     if os.path.isdir(work):
         shutil.rmtree(work)
     os.makedirs(bars_out)
     syms = {}
-    first, last = {}, {}
+    first, last, cover_srv = {}, {}, {}
     for b in C.ROBOT_BASES:
         path = os.path.join(bars_out, f"{names[b]}.bin")
-        if b in tables:
-            tb = tables[b]
+        if src.get(b) == "r1":
+            tb = r1t[b]
+            write_bin(path, tb["digits"], tb["t"], tb["o"], tb["h"], tb["l"], tb["c"], tb["s"])
+        elif src.get(b) == "m1":
+            tb = m1t[b]
             sc = 10.0 ** tb["digits"]
             o, h, l_, c = (np.rint(tb["df"][k].to_numpy() * sc).astype(np.int64) for k in ("bo", "bh", "bl", "bc"))
-            write_bin(path, tb["digits"], tb["t"], o, h, l_, c, tb["conv"][conv])
-            first[b], last[b] = C.srv_to_utc(int(tb["t"][0])), C.srv_to_utc(int(tb["t"][-1]))
+            write_bin(path, tb["digits"], tb["t"], o, h, l_, c, tb["conv"].get(conv, tb["conv"]["open"]))
         else:
             dg = int((fiches.get(b) or {}).get("digits") or 2) if fiches else 2
             write_bin(path, dg, np.zeros(0, np.int64), *(np.zeros(0, np.int64) for _ in range(5)))
+        if b in src:
+            first[b], last[b] = C.srv_to_utc(int(tb["t"][0])), C.srv_to_utc(int(tb["t"][-1]))
+            cover_srv[b] = (int(tb["t"][0]), int(tb["t"][-1]))
         syms[names[b]] = path
     span = [min(first.values()), max(last.values())]
-    # each sleeve's own span: the markets it reads must all have minutes (M4: a market whose history at the broker is
+    # each sleeve's own span: the markets it reads must all have bars (M4: a market whose history at the broker is
     # short delays its own sleeves only, and is named)
     spans = {}
     for c in C.CODES:
         rd = C.READS_OF_CODE[c]
-        if all(b in tables for b in rd):
+        if all(b in src for b in rd):
             spans[c] = (max(first[b] for b in rd), min(last[b] for b in rd) - 3600)
-    for b in sorted(tables):
+    for b in sorted(src):
         codes = ", ".join(c for c in C.CODES if b in C.READS_OF_CODE[c])
+        fname = f"{src[b]}_{b}.csv"
         if first[b] > span[0] + 86400:
-            problems.append(f"m1_{b}.csv commence le {C.utc_txt(first[b])}, plus tard que les autres marches ({C.utc_txt(span[0])}) : "
+            problems.append(f"{fname} commence le {C.utc_txt(first[b])}, plus tard que les autres marches ({C.utc_txt(span[0])}) : "
                             f"historique du courtier plus court ; {codes} compare(s) a partir de cette date et de leur echauffement")
         if last[b] < span[1] - 86400:
-            problems.append(f"m1_{b}.csv finit le {C.utc_txt(last[b])}, plus tot que les autres ({C.utc_txt(span[1])}) : {codes} "
+            problems.append(f"{fname} finit le {C.utc_txt(last[b])}, plus tot que les autres ({C.utc_txt(span[1])}) : {codes} "
                             "compare(s) jusqu'a cette date")
     # the replay's inputs (INIT and PLAN lines, --input), observer
     env = {"MOCK_QUIET": "1", "MOCK_INPUT_InpTrade": "false", "MOCK_INPUT_InpPush": "false",
@@ -1300,7 +1633,8 @@ def replay_check(rows, starts, minutes, out, fiches, spread_opt, inputs_extra, r
     flat = {c: (first_flat(spans[c][0] + WARMUP_DAYS[c] * 86400, chain_intervals(rows, c), chain_intervals(rrows, c))
                 if c in spans else INF) for c in C.CODES}
     no_bars = [c for c in C.CODES if c not in spans]
-    win = Windows(starts, spans, paper_inputs(init), flat, no_bars, gaps)
+    unusable_codes = [c for c in C.CODES if any(b in unusable for b in C.READS_OF_CODE[c])]
+    win = Windows(starts, spans, paper_inputs(init), flat, no_bars, gaps, unusable_codes)
     rep["span"] = {"from": C.utc_txt(span[0]), "to": C.utc_txt(span[1]), "compared_to": C.utc_txt(span_to),
                    "warmup_days": WARMUP_DAYS,
                    "per_sleeve": {c: [C.utc_txt(a), C.utc_txt(z)] for c, (a, z) in spans.items()},
@@ -1311,34 +1645,47 @@ def replay_check(rows, starts, minutes, out, fiches, spread_opt, inputs_extra, r
     live0 = min(a for a, _ in cover) if cover else span[0]
     live1 = max(z for _, z in cover) if cover else span[1]
     cmpd = rep["comparison"]["compared_per_sleeve"]
-    cov, short = {}, []
+    cov, short, late_start = {}, [], False
     for c in C.CODES:
+        if c in unusable_codes:
+            cov[c] = {"from": None, "to": None, "lines": 0, "never": True, "partial": True,
+                      "why": "ecart des barres inconnu pour " + ", ".join(b for b in C.READS_OF_CODE[c] if b in unusable)}
+            continue
         if c not in spans:
             cov[c] = {"from": None, "to": None, "lines": 0, "never": True, "partial": True,
-                      "why": "pas de minutes du releve pour " + ", ".join(b for b in C.READS_OF_CODE[c] if b not in tables)}
+                      "why": "pas de minutes du releve pour " + ", ".join(b for b in C.READS_OF_CODE[c] if b not in src)}
             continue
         lo = max(spans[c][0] + WARMUP_DAYS[c] * 86400, flat[c])
         a, z = max(lo, live0), min(spans[c][1], live1)
         if a >= z:
             why = (f"echauffement de {WARMUP_DAYS[c]} jours : minutes du releve depuis le {C.utc_txt(spans[c][0])}, comparable a partir "
-                   f"du {C.utc_txt(lo) if lo < INF else '?'}")
+                   f"du {C.utc_txt(lo) if lo < INF else '?'}" if spans[c][1] > live0 else
+                   f"minutes du releve finies le {C.utc_txt(spans[c][1])}, avant la demo")
             cov[c] = {"from": None, "to": None, "lines": cmpd.get(c, 0), "never": True, "partial": True, "why": why}
             short.append(c)
+            late_start |= spans[c][1] > live0
         else:
             part = a > live0 + 86400 or z < live1 - 86400
             cov[c] = {"from": C.utc_txt(a), "to": C.utc_txt(z), "lines": cmpd.get(c, 0), "never": False, "partial": part,
                       "why": ("debut de la demo hors des minutes du releve (echauffement)" if a > live0 + 86400 else "")}
             if part:
                 short.append(c)
+                late_start |= a > live0 + 86400
     rep["coverage"] = cov
     rep["coverage_short"] = short
-    if short:
-        rep["coverage_advice"] = (f"pour comparer toutes les sleeves sur toute la demo, relancer ReleveFP avec InpDays="
-                                  f"{inp_days_needed(live0, span[1])} (les echauffements vont jusqu'a {max(WARMUP_DAYS.values())} jours)")
-    first_srv = min(int(tb["t"][0]) for tb in tables.values())
-    rep["side_by_side"] = side_by_side(lv, rlive, first_srv - first_srv % 86400)
+    advice = []
+    if span[1] < live1 - 86400:                                    # minutes taken before the end of the demo (review2 N8 d)
+        advice.append(f"relancer ReleveFP apres la demo : ses minutes finissent le {C.utc_txt(span[1])}, le journal le {C.utc_txt(live1)}")
+    if late_start:
+        days = inp_days_needed(live0, max(span[1], live1))
+        advice.append(f"pour comparer toutes les sleeves sur toute la demo, relancer ReleveFP 1.10 (barres r1 : InpRateDays={max(days, 200)}) "
+                      f"ou avec InpDays={days} (les echauffements vont jusqu'a {max(WARMUP_DAYS.values())} jours)")
+    if advice:
+        rep["coverage_advice"] = " ; ".join(advice)
+    first_srv = min(v[0] for v in cover_srv.values())
+    rep["side_by_side"] = side_by_side(lv, rlive, first_srv - first_srv % 86400, cover_srv)
     rep["names"] = names
-    rep["files"] = files_used
+    rep["files"] = minutes["files"]
     rep["problems"] = problems
     rep["status"] = "done"
     return rep
@@ -1360,11 +1707,15 @@ def printed_check(rows, prows, starts, scrub):
     if same_copy or not p_init:
         p_raw = Counter(r["_raw"] for r in prows)
         missing_in_files = [x for x in p_raw if lv_raw.get(x, 0) == 0]
-        if prows:
-            t0, t1 = min(r["utc"] for r in prows), max(r["utc"] for r in prows)
-            span_live = [r["_raw"] for r in rows if r.get("rp") != 1 and t0 <= r["utc"] <= t1]
-        else:
-            span_live = []
+        # the window is bounded by write order, not by stamps (review2 N3): some lines are written days after their stamp
+        # (a Friday-close DEC on Monday), so the lines required are the files' live lines between the first and the last
+        # printed one, in file order
+        seq = [r["_raw"] for r in rows if r.get("rp") != 1]
+        pos = defaultdict(list)
+        for i, x in enumerate(seq):
+            pos[x].append(i)
+        idx = [i for x in p_raw for i in pos.get(x, [])]
+        span_live = seq[min(idx):max(idx) + 1] if idx else []
         not_printed = [x for x in span_live if p_raw.get(x, 0) == 0]
         res.update(kind="meme copie", printed_not_in_files=missing_in_files[:50], n_printed_not_in_files=len(missing_in_files),
                    live_not_printed=not_printed[:50], n_live_not_printed=len(not_printed),
@@ -1390,6 +1741,33 @@ def printed_check(rows, prows, starts, scrub):
 
 
 # ---------------------------------------------------------------------------------------------- report
+def releve_end_utc(dirs, fiches, minutes, scrub):
+    """when ReleveFP ran, UTC (review2 N5): fini.txt's server_time (beside the m1 files or fiches.csv), the latest tick
+    time of fiches.csv, the end of its minutes or bars; None when none is there. fini.txt names the account's server:
+    it is masked at once and nothing else of the file is kept"""
+    cands = []
+    for d in dirs:
+        p = os.path.join(d, "fini.txt") if d else None
+        if not p or not os.path.exists(p):
+            continue
+        try:
+            for ln in C.read_text(p).splitlines():
+                k, _, v = ln.partition("=")
+                if k.strip() == "server":
+                    scrub.add(v.strip())
+                elif k.strip() == "server_time" and C.fnum(v) and isinstance(C.fnum(v), int):
+                    cands.append(C.srv_to_utc(C.fnum(v)))
+        except OSError:
+            continue
+    for f in (fiches or {}).values():
+        if f.get("found") and isinstance(f.get("tick_time"), int) and f["tick_time"] > 0:
+            cands.append(C.srv_to_utc(f["tick_time"]))
+    for tb in list(minutes["m1"].values()) + list(minutes["r1"].values()):
+        if len(tb["t"]):
+            cands.append(C.srv_to_utc(int(tb["t"][-1])) + 60)
+    return max(cands) if cands else None
+
+
 def read_fiches_near(paths):
     for p in paths:
         if p and os.path.exists(p):
@@ -1410,9 +1788,21 @@ def french_report(rep):
     if rep["inputs"].get("foreign_lines"):
         L.append(f"  {rep['inputs']['foreign_lines']} ligne(s) etrangere(s) au robot dans ses fichiers (texte jamais recopie ; "
                  "fichier et numero de ligne dans report.json)")
+    for u in rep["inputs"].get("unparsable_first", [])[:10]:
+        L.append(f"  ligne illisible : {u['file']} ligne {u['line']} ({u.get('why')}) : texte jamais recopie")
     for g in a.get("day_gaps", []):
         L.append(f"  JOURS MANQUANTS ({days_txt(g)}) : "
                  + (f"fichier(s) absent(s) {', '.join(g['missing_files'])}" if g["missing_files"] else "lignes DAY absentes (fichier coupe ?)"))
+    end = a.get("end") or {}
+    if end.get("kind") == "missing_tail":
+        L.append(f"  FIN DU JOURNAL : fichier(s) probablement manquant(s) {', '.join(end['missing_files'])} (releve jusqu'au "
+                 f"{end.get('releve_end_when')})")
+    elif end.get("kind") == "no_stop_unknown":
+        L.append("  fin du journal : pas de ligne d'arret (robot encore en marche, ou dernier fichier manquant)")
+    elif end.get("kind") == "running":
+        L.append(f"  fin du journal : {end.get('note')}")
+    for k in a.get("breaks", [])[:10]:
+        L.append(f"  LIGNE MANQUANTE ({MISSING_FR.get(k['missing'], k['missing'])}) : {k['text_fr']} ({k['file']} ligne {k['line']})")
     if a.get("first_utc"):
         L.append(f"Periode en direct : du {C.utc_txt(a['first_utc'])} au {C.utc_txt(a['last_utc'])}.")
     L.append(f"Demarrages : {len(a['starts'])} (redemarrages : {a['restarts']}).")
@@ -1501,14 +1891,24 @@ def french_report(rep):
                    f"{C.frs(q.get('exit_diff_net_pts_mean'), 2, 'pts')} ; le papier de l'or met la commission dans ses prix]")
         ent = (f"{C.frs(q.get('entry_diff_pts_mean'), 2, 'pts')} ({C.frs(q['entry_diff_bp_mean'], 2, 'pb')})" if pts
                else C.frs(q["entry_diff_bp_mean"], 2, "pb"))
+        if pts and q.get("entries_late"):
+            ent += f" dont {q['entries_late']} en retard d'une barre par construction"
+        elif not pts and q.get("entries_late"):
+            ent += (f" pour les entrees a l'heure ; {q['entries_late']} entree(s) en retard par construction (ordres stop envoyes une "
+                    f"barre apres le papier) : {C.frs(q.get('entry_diff_late_bp_mean'), 2, 'pb')}")
         sor = (f"{C.frs(q.get('exit_diff_pts_mean'), 2, 'pts')} ({C.frs(q['exit_diff_bp_mean'], 2, 'pb')})" if pts
                else C.frs(q["exit_diff_bp_mean"], 2, "pb"))
         fil = (f"{C.frs(q.get('fill_vs_quote_pts_mean'), 2, 'pts')} ({C.frs(q['fill_vs_quote_bp_mean'], 2, 'pb')})" if pts
                else C.frs(q["fill_vs_quote_bp_mean"], 2, "pb"))
         unk = f", {q['exit_unknown']} sortie(s) inconnue(s) (hors des euros)" if q.get("exit_unknown") else ""
-        return (f"  {name:6s} {q['positions']} position(s) : entree {ent} en moyenne, sortie {sor}, soit "
+        est = ""
+        if q.get("estimated_exits"):
+            est = (f" ; {q['estimated_exits']} sortie(s) par stop courtier : prix et glissement inconnus (aucune ligne), hors des moyennes et "
+                   f"des euros, seulement dans la difference du solde ; estimation au stop x (1 - glissement du labo) : "
+                   f"{C.frs(q.get('exit_diff_est_bp_mean'), 2, 'pb')}, {C.frs(q.get('exit_diff_est_eur_sum'), 2, 'EUR')}")
+        return (f"  {name:6s} {q['positions']} position(s) : entree {ent} en moyenne, sortie {sor} (fermetures du robot), soit "
                 f"{C.frs((q['entry_diff_eur_sum'] or 0) + (q['exit_diff_eur_sum'] or 0), 2, 'EUR')} ; stops : {q['stop_exits_paper']} au papier, "
-                f"{q['broker_stops_estimated']} chez le courtier (prix estime){unk} ; remplissage contre le prix de l'envoi {fil}" + net)
+                f"{q['broker_stops_estimated']} chez le courtier{unk} ; remplissage contre le prix de l'envoi {fil}" + est + net)
     for c in C.CODES:
         if b["per_sleeve"][c]["positions"]:
             L.append(pos_line(c, b["per_sleeve"][c], True))
@@ -1522,9 +1922,10 @@ def french_report(rep):
         ex = Counter()
         for e in b["positions"]:
             ex[e["exit_kind"]] += 1
-        kinds_fr = {"ea_close": "fermees par le robot", "broker_stop_estimated": "stop courtier (prix estime)",
+        kinds_fr = {"ea_close": "fermees par le robot", "broker_stop_estimated": "stop courtier (prix inconnu)",
                     "broker_stop_race": "stop courtier juste avant la fermeture du robot", "broker_stop_seen":
                     "stop courtier vu dans les minutes du releve", "close_refused": "FERMETURE REFUSEE", "not_closed": "NON FERMEES",
+                    "stop_not_reached": "STOP JAMAIS TOUCHE DANS LES MINUTES",
                     "no_close_unknown": "SANS LIGNE CLOSE (a verifier)", "missing_exit": "SANS SORTIE (lignes manquantes ?)",
                     "open_or_unknown": "encore ouvertes a la fin du journal"}
         L.append("  sorties : " + ", ".join(f"{kinds_fr.get(k, k)} {n}" for k, n in ex.most_common()))
@@ -1539,23 +1940,21 @@ def french_report(rep):
                  f"(commission + swap + glissement des stops, estimation ; commission du modele {C.fr(m['model_commission_eur'], 2, 'EUR')})")
         if not m.get("complete", True):
             L.append(f"  attention : estimation incomplete ({m['positions_exit_unknown']} position(s) sans prix de sortie connu, "
-                     f"{m['missing_days']} jour(s) de journal manquant(s)) : la difference n'est pas que des frais")
+                     f"{m['missing_days']} jour(s) de journal manquant(s), {m.get('journal_breaks', 0)} ligne(s) manquante(s)) : la "
+                     "difference n'est pas que des frais")
     L.append("")
     if r is None:
         L.append("Rejeu : non demande (--bars absent).")
+    elif r.get("status") == "unusable":
+        L.append(f"Rejeu inutilisable : {r.get('why')}")
+        L += spread_lines(r)
     elif r.get("status") != "done":
         L.append(f"Rejeu : {r.get('status')} ({str(r.get('why', ''))[:300]})")
     else:
-        cal = r["spread"]["calibration"]
-        L.append(f"Rejeu des minutes du releve ({r['span']['from']} - {r['span']['to']}) avec le banc d'essai (observateur) :")
-        pl = cal["paper_lines"]
-        L.append("  ecart de la barre (MqlRates.spread) : " + ", ".join(f"{k} {pl[k]['match']}/{pl[k]['n']}" for k in SPREAD_CONV)
-                 + f" ; minimum compatible {cal['min_consistent']['inside']}/{cal['min_consistent']['n']} ; retenu : {r['spread']['used']} ({cal['why']})")
-        best = max(pl[k]["match"] for k in SPREAD_CONV)
-        if pl["open"]["n"] and best < 0.99 * pl["open"]["n"]:
-            L.append(f"  attention : aucune colonne du releve ne redonne l'ecart de toutes les barres ({best}/{pl['open']['n']} au mieux) ; "
-                     f"si le minimum est compatible ({cal['min_consistent']['inside']}/{cal['min_consistent']['n']}), MT5 garde l'ecart minimum de "
-                     f"la minute, que ReleveFP n'ecrit pas : les differences de s_raw et des prix acheteur en viennent")
+        L.append(f"Rejeu des barres du releve ({r['span']['from']} - {r['span']['to']}) avec le banc d'essai (observateur) :")
+        L.append("  barres : " + ", ".join(f"{b} {'r1_' + b + '.csv (barres du terminal, exactes)' if v == 'r1' else 'm1_' + b + '.csv (minutes des ticks)'}"
+                                           for b, v in r.get("bar_source", {}).items()))
+        L += spread_lines(r)
         sb = r["side_by_side"]
         L.append(f"  barres par jour identiques (AGG) : {sb['agg_days_same']}/{sb['agg_days']} jours ; ecart du jour identique (COST) : "
                  f"{sb['cost_same']}/{sb['cost_n']}")
@@ -1615,8 +2014,51 @@ def french_report(rep):
         L.append("A REGARDER :")
         L += [f"  - {x}" for x in rep["anomalies"]]
     else:
-        L.append("Verdict : rien d'anormal.")
+        L.append("Verdict : " + verdict(rep)[0].lower() + verdict(rep)[1:])
     return L
+
+
+def spread_lines(r):
+    """the French lines about the bar spread convention (m1 files only; r1 files hold MqlRates.spread itself)"""
+    cal = (r.get("spread") or {}).get("calibration")
+    if not cal:
+        return ["  ecart de la barre : MqlRates.spread lu dans les fichiers r1 (aucune calibration)"]
+    pl = cal["paper_lines"]
+    ks = [k for k in SPREAD_CONV if pl[k]["n"]]
+    out = [f"  ecart de la barre (MqlRates.spread) sur {', '.join(r['spread'].get('markets_from_m1', []))} : "
+           + ", ".join(f"{k} {pl[k]['match']}/{pl[k]['n']}" for k in ks)
+           + f" ; minimum compatible {cal['min_consistent']['inside']}/{cal['min_consistent']['n']} ; retenu : {r['spread']['used']} ({cal['why']})"]
+    best = max((pl[k]["match"] for k in ks), default=0)
+    if pl["open"]["n"] and best < CONV_MATCH * pl["open"]["n"]:
+        out.append(f"  attention : aucune colonne du releve ne redonne l'ecart de toutes les barres ({best}/{pl['open']['n']} au mieux) ; "
+                   f"si le minimum est compatible ({cal['min_consistent']['inside']}/{cal['min_consistent']['n']}), MT5 garde l'ecart minimum de "
+                   "la minute : ReleveFP 1.10 l'ecrit (sp_min) et donne les barres du terminal (r1)")
+    if r.get("unusable_markets") and r.get("status") == "done":
+        out.append(f"  rejeu inutilisable pour {', '.join(r['unusable_markets'])} (ecart des barres inconnu) : leurs sleeves ne sont pas comparees")
+    return out
+
+
+def verdict(rep):
+    """the last line when nothing is abnormal: plain only when the replay compared every sleeve over the whole demo,
+    else it says what could not be compared (review2 N1)"""
+    r = rep.get("replay")
+    if r is None:
+        return f"Rien d'anormal sur ce qui a pu etre compare ({len(C.CODES)} sleeves non comparees : pas de rejeu sans --bars)."
+    if r.get("status") == "unusable":
+        return f"Rien d'anormal sur ce qui a pu etre compare ({len(C.CODES)} sleeves non comparees : rejeu inutilisable, ecart des barres inconnu)."
+    if r.get("status") != "done":
+        return f"Rien d'anormal sur ce qui a pu etre compare ({len(C.CODES)} sleeves non comparees : rejeu {r.get('status')})."
+    cov = r.get("coverage", {})
+    never = [c for c in C.CODES if cov.get(c, {}).get("never")]
+    part = [c for c in C.CODES if cov.get(c, {}).get("partial") and not cov.get(c, {}).get("never")]
+    if not never and not part:
+        return "Rien d'anormal."
+    txt = []
+    if never:
+        txt.append(f"{len(never)} sleeve{'s' if len(never) > 1 else ''} non comparee{'s' if len(never) > 1 else ''} : {', '.join(never)}")
+    if part:
+        txt.append(f"en partie seulement : {', '.join(part)}")
+    return "Rien d'anormal sur ce qui a pu etre compare (" + " ; ".join(txt) + ")."
 
 
 def short_summary(rep):
@@ -1625,9 +2067,22 @@ def short_summary(rep):
          f"{', '.join(sorted({str(s['build']) for s in a['starts']})) or '?'}."]
     tot = b["per_sleeve"]["TOTAL"]
     if tot["positions"]:
+        # the headline holds known prices only: entries on time (the late-by-design ones apart, review2 N8 e) and the robot's
+        # own closes (a broker stop has no price in the journal, review2 N2)
+        if tot["entry_diff_bp_mean"] is not None or not tot.get("entries_late"):
+            ent = C.frs(tot["entry_diff_bp_mean"], 2, "pb")
+            if tot.get("entries_late"):
+                ent += (f" (hors {tot['entries_late']} entree(s) en retard par construction : "
+                        f"{C.frs(tot.get('entry_diff_late_bp_mean'), 2, 'pb')})")
+        else:
+            ent = (f"{tot['entries_late']} entree(s), toutes en retard par construction : "
+                   f"{C.frs(tot.get('entry_diff_late_bp_mean'), 2, 'pb')}")
+        sor = C.frs(tot["exit_diff_bp_mean"], 2, "pb")
+        if tot.get("estimated_exits"):
+            sor += f" (hors {tot['estimated_exits']} sortie(s) par stop courtier, prix inconnu)"
         S.append(f"Trades : {tot['intents']} intentions, {tot['real_trades']} trades reels, {tot['positions']} positions suivies ; "
-                 f"ecart moyen avec le papier : entree {C.frs(tot['entry_diff_bp_mean'], 2, 'pb')}, sortie "
-                 f"{C.frs(tot['exit_diff_bp_mean'], 2, 'pb')}, en tout {C.frs((tot['entry_diff_eur_sum'] or 0) + (tot['exit_diff_eur_sum'] or 0), 2, 'EUR')}"
+                 f"ecart moyen avec le papier : entree {ent}, sortie {sor}, en tout "
+                 f"{C.frs((tot['entry_diff_eur_sum'] or 0) + (tot['exit_diff_eur_sum'] or 0), 2, 'EUR')} sur les prix connus"
                  f" (points par marche dans report_fr.txt).")
     else:
         S.append(f"Trades : {tot['intents']} intentions, aucun trade reel"
@@ -1635,14 +2090,22 @@ def short_summary(rep):
     if r is not None and r.get("status") == "done":
         n = len(r["comparison"]["differences"])
         ncmp = sum(r["comparison"].get("compared_per_sleeve", {}).values())
-        S.append(f"Rejeu : {n} difference(s) sur {ncmp} lignes comparees ; ecart de barre retenu : {r['spread']['used']}.")
+        srcs = sorted(set(r.get("bar_source", {}).values()))
+        how = ("barres du terminal (r1)" if srcs == ["r1"] else
+               (f"minutes des ticks (m1), ecart de barre retenu : {r['spread']['used']}" if srcs == ["m1"] else
+                f"barres r1 et minutes m1 (ecart de barre retenu : {r['spread']['used']})"))
+        S.append(f"Rejeu : {n} difference(s) sur {ncmp} lignes comparees ; {how}.")
+        if r.get("unusable_markets"):
+            S.append(f"  rejeu inutilisable pour {', '.join(r['unusable_markets'])} : aucune colonne du releve ne redonne l'ecart des barres")
         cov = r.get("coverage", {})
         never = [c for c, v in cov.items() if v["never"]]
         part = [c for c, v in cov.items() if v["partial"] and not v["never"]]
-        if never or part:
+        if never or part or r.get("coverage_advice"):
             S.append("  couverture : " + (f"jamais comparees : {', '.join(never)}" if never else "")
                      + (" ; " if never and part else "") + (f"en partie seulement : {', '.join(part)}" if part else "")
-                     + (f" ; {r['coverage_advice']}" if r.get("coverage_advice") else ""))
+                     + (" ; " if (never or part) and r.get("coverage_advice") else "") + (r.get("coverage_advice") or ""))
+    elif r is not None and r.get("status") == "unusable":
+        S.append(f"Rejeu inutilisable : {r.get('why')}.")
     elif r is not None:
         S.append(f"Rejeu : {r.get('status')}.")
     if rep["anomalies"]:
@@ -1651,7 +2114,7 @@ def short_summary(rep):
         if len(rep["anomalies"]) > 20:
             S.append(f"  ... et {len(rep['anomalies']) - 20} autres (report_fr.txt)")
     else:
-        S.append("Rien d'anormal.")
+        S.append(verdict(rep))
     return S
 
 
@@ -1668,10 +2131,11 @@ def run(args):
                                     "MQL5/Files/ClaudeRobot/<aaaammjj>.log du robot"))
     fiches = read_fiches_near([args.fiches, os.path.join(args.bars, "fiches.csv") if args.bars else None])
     builds = C.known_builds()
-    res_a, anomalies, starts = analyse_journal(rows, builds, info["files"])
-    minutes = load_minutes(args.bars, fiches) if args.bars else ({}, {}, [])
+    minutes = load_minutes(args.bars, fiches) if args.bars else NO_MINUTES
+    rel_end = releve_end_utc([args.bars, os.path.dirname(os.path.abspath(args.fiches)) if args.fiches else None], fiches, minutes, scrub)
+    res_a, anomalies, starts = analyse_journal(rows, builds, info["files"], rel_end)
     points, how = point_sizes(rows, fiches)
-    res_b = fills_report(rows, res_a, starts, points, fiches, minutes[0])
+    res_b = fills_report(rows, res_a, starts, points, fiches, minutes["stop"])
     res_b["points_source"] = how
     rep = {"tool": "check_demo", "version": 2,
            "inputs": {"journal_files": info["files"], "unparsable": info["unparsable"], "unparsable_first": info["unparsable_first"],
@@ -1682,7 +2146,9 @@ def run(args):
         anomalies.append(f"{len(info['skipped_files'])} fichier(s) ignore(s) dans --journals : "
                          + "; ".join(f"{s_['file']} ({s_['why']})" for s_ in info["skipped_files"][:4]))
     if info["unparsable"]:
-        anomalies.append(f"{info['unparsable']} ligne(s) illisible(s) dans le journal (fichier coupe ?)")
+        u0 = info["unparsable_first"][0]
+        anomalies.append(f"{info['unparsable']} ligne(s) illisible(s) dans le journal (fichier coupe ou modifie ? texte jamais recopie), "
+                         f"la premiere : {u0['file']} ligne {u0['line']} ({u0['why']})")
     if info["foreign_lines"]:
         anomalies.append(f"{info['foreign_lines']} ligne(s) qui ne sont pas du robot dans ses fichiers (premiere : "
                          f"{info['foreign_first'][0]['file']} ligne {info['foreign_first'][0]['line']})")
@@ -1710,10 +2176,12 @@ def run(args):
                 anomalies.append(f"rejeu : ecart median du jour (COST) different {len(bad)} fois sur {sb['cost_n']}, par ex. {bad[0]['symbol']} "
                                  f"le {bad[0]['day']} : {C.fr(bad[0]['raw_bp'][0], 8)} pb en direct, {C.fr(bad[0]['raw_bp'][1], 8)} au rejeu "
                                  "(l'ecart des minutes du releve n'est pas exactement celui des barres du courtier)")
+        elif r.get("status") == "unusable":
+            anomalies.append(f"rejeu inutilisable : {r.get('why')}")
         else:
             anomalies.append(f"rejeu impossible : {r.get('status')} ({str(r.get('why', ''))[:200]})")
     elif args.bars:
-        rep["replay"] = {"status": "skipped (--no-replay)", "problems": minutes[2]}
+        rep["replay"] = {"status": "skipped (--no-replay)", "problems": minutes["problems"]}
     if args.printed:
         prows, pinfo = C.read_journal_files(args.printed, scrub, printed=True)
         p = printed_check(rows, prows, starts, scrub)

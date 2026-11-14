@@ -712,7 +712,7 @@ def md_journal(folder, variant=(), style="live"):
         add(srv("2021-11-19 23:30"), jl(U("2021-11-19 23:30"), "INIT", "-", ("deinit", 1), ("lines", 100), ("bars_fed", 9000), ("rebuilds", 1)))
         start("2021-11-22 08:00")
         add(srv("2021-11-22 08:02"), jl(U("2021-11-22 08:02"), "ADOPT", "D4H", ("oid", info["E"]), ("ticket", 70000102),
-                                        ("open", U("2021-11-19 18:01")), ("stamp", U("2021-11-19 18:00")), ("why", "open")))
+                                        ("open", U("2021-11-19 18:01")), ("stamp", U("2021-11-19 18:00")), ("why", "reconcile")))
     # the daily lines of the day before, at 00:00:30 of each server day the robot runs
     bal = 10000.0
     stopped = {"2021-11-20", "2021-11-21"} if "restart" in variant else set()

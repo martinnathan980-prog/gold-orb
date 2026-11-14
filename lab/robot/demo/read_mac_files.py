@@ -52,6 +52,7 @@ folder inside the repository is refused): summary.json, summary_fr.txt; a short 
 import argparse
 import datetime as dt
 import os
+import re
 import sys
 
 sys.dont_write_bytecode = True
@@ -72,7 +73,8 @@ TOUS_COLS = ["name", "path", "description", "digits", "contract_size", "vol_min"
 SONDE_COLS = ["base", "name", "status", "volume", "bid_before", "ask_before", "buy_price", "bid_at_close", "ask_at_close",
               "sell_price", "deals", "commission", "fee", "profit", "swap", "tick_size", "tick_value", "contract_size",
               "position"]
-M1_COLS = ["time", "bo", "bh", "bl", "bc", "ao", "ah", "al", "ac", "n", "sp_mean", "sp_max"]
+M1_COLS = ["time", "bo", "bh", "bl", "bc", "ao", "ah", "al", "ac", "n", "sp_mean", "sp_max"]   # ReleveFP 1.00; 1.10 adds sp_min
+R1_COLS = ["time", "open", "high", "low", "close", "tick_volume", "spread", "real_volume"]       # ReleveFP 1.10 r1_<BASE>.csv
 FINI_KEYS = {"version", "server", "company", "currency", "leverage", "demo", "server_time", "server_minus_gmt_sec",
              "all_symbols", "stopped", "seconds"}
 TEXT_FIELDS = {"base", "name", "path", "description", "ccy_base", "ccy_profit", "ccy_margin", "sessions", "status"}
@@ -166,11 +168,11 @@ def read_fini(path, scrub):
         parts = v.split(" ", 1)
         m = {"found": True, "name": parts[0], "info": parts[1] if len(parts) > 1 else ""}
         info = m["info"]
-        for key in ("jours", "minutes", "ticks", "derniere_erreur", "jours_incomplets"):
-            j = info.find(key + "=")
-            if j >= 0:
-                val = info[j + len(key) + 1:].split(" ", 1)[0]
-                m[key] = C.fnum(val)
+        # ReleveFP 1.10 adds barres, jours_barres and erreur_barres at the end of the line (1.00 files have none)
+        for key in ("jours", "minutes", "ticks", "derniere_erreur", "jours_incomplets", "barres", "jours_barres", "erreur_barres"):
+            mm = re.search(r"(?:^|\s)" + key + r"=(\S*)", info)
+            if mm:
+                m[key] = C.fnum(mm.group(1))
         for key in ("du", "au"):
             j = info.find(key + "=")
             if j >= 0:
@@ -232,14 +234,35 @@ def m1_digits(path):
 
 
 def read_m1(path):
+    """an m1 file, columns read by name (sp_min kept when there, ReleveFP 1.10)"""
     df = pd.read_csv(path, encoding="cp1252")
     missing = [c for c in M1_COLS if c not in df.columns]
     if missing:
         raise ValueError(f"{os.path.basename(path)} : colonnes absentes {missing}")
-    df = df[M1_COLS].dropna()
+    df = df[M1_COLS + (["sp_min"] if "sp_min" in df.columns else [])].dropna()
     df["time"] = df["time"].astype(np.int64)
     df = df.drop_duplicates("time").sort_values("time").reset_index(drop=True)
     return df
+
+
+def read_r1(path):
+    """ReleveFP 1.10's r1 file: the terminal's own M1 bars (MqlRates as CopyRates gives them, what the robot reads),
+    days newest first: time (server seconds), bid open/high/low/close, tick_volume, spread (points), real_volume"""
+    df = pd.read_csv(path, encoding="cp1252")
+    need = ["time", "open", "high", "low", "close", "spread"]
+    missing = [c for c in need if c not in df.columns]
+    if missing:
+        raise ValueError(f"{os.path.basename(path)} : colonnes absentes {missing}")
+    df = df[need].dropna()
+    df["time"] = df["time"].astype(np.int64)
+    df["spread"] = df["spread"].astype(np.int64)
+    return df.drop_duplicates("time").sort_values("time").reset_index(drop=True)
+
+
+def data_rows(path):
+    """lines of data of a ReleveFP file (the header aside): each line is one minute (m1) or one bar (r1)"""
+    with open(path, "rb") as h:
+        return max(sum(1 for ln in h if ln.strip()) - 1, 0)
 
 
 # ---------------------------------------------------------------------------------------------- helpers
@@ -625,8 +648,15 @@ def market_checks(rep, base, fiche, tous, costs, sonde, m1, fini_m, is_robot, us
                 "", src_lab)
     # 9. spread
     spread_check(rep, base, fiche, m1.get(base), lab, comm_price, is_robot, comm_ok)
-    # 10. ReleveFP's own read of the minutes
-    if fini_m and fini_m.get("found"):
+
+
+def releve_checks(rep, base, fini_m, m1_path, r1_path, m1_df, r1_df, digits):
+    """ReleveFP's own read of one market's history, whatever its fiche line (a cut or missing fiche keeps these):
+    the tick history (fini.txt), the m1 file's rows against minutes= (ReleveFP writes the newest day first, so a file
+    cut short loses its oldest days, review2 N9 b), the terminal's bars (r1_<BASE>.csv, ReleveFP 1.10) against
+    barres= and the days they cover, and SPEC 10.3 from the minutes present in both (information only)"""
+    found = bool(fini_m and fini_m.get("found"))
+    if found:
         inc = fini_m.get("jours_incomplets")
         err = fini_m.get("derniere_erreur")
         st = "OK" if (inc == 0 and err in (0, None) and (fini_m.get("minutes") or 0) > 0) else "DIFFERENT"
@@ -637,6 +667,76 @@ def market_checks(rep, base, fiche, tous, costs, sonde, m1, fini_m, is_robot, us
         rep.add(base, "releve_days", "historique de ticks lu", st,
                 f"{fini_m.get('jours')} jours, {fini_m.get('minutes')} minutes, du {fini_m.get('du')} au {fini_m.get('au')}",
                 "jours complets, derniere erreur 0", note, "ReleveFP.mq5")
+    if m1_path is not None:
+        rows = data_rows(m1_path)
+        mins = fini_m.get("minutes") if found else None
+        if isinstance(mins, int) and mins > 0:
+            st = "OK" if rows == mins else "DIFFERENT"
+            note = "" if st == "OK" else (
+                f"fichier coupe : {mins - rows} minute(s) manquent ; ReleveFP ecrit le jour le plus recent d'abord, ce sont donc les jours "
+                "les plus anciens : recopier le fichier" if rows < mins else "plus de lignes que fini.txt n'en compte : fichier d'un autre releve ?")
+            rep.add(base, "m1_rows", "minutes du fichier m1", st, f"{rows} lignes dans m1_{base}.csv", f"minutes={mins} (fini.txt)", note,
+                    "ReleveFP.mq5 Minutes")
+        else:
+            rep.add(base, "m1_rows", "minutes du fichier m1", "UNKNOWN", f"{rows} lignes dans m1_{base}.csv", "fini.txt absent ou sans minutes=",
+                    "", "ReleveFP.mq5 Minutes")
+    bars_f = fini_m.get("barres") if found else None
+    if r1_path is not None:
+        rows = data_rows(r1_path)
+        if r1_df is not None and len(r1_df):
+            t = r1_df.time.to_numpy()
+            days = int(len(np.unique(t // 86400)))
+            broker = f"{rows} barres sur {days} jours, du {C.ymd(t[0])} au {C.ymd(t[-1])}"
+        else:
+            days, broker = 0, f"{rows} barres"
+        notes = []
+        if isinstance(bars_f, int) and bars_f >= 0:
+            st = "OK" if rows == bars_f else "DIFFERENT"
+            if rows < bars_f:
+                notes.append(f"fichier coupe : {bars_f - rows} barre(s) manquent (les jours les plus anciens) : recopier le fichier")
+            elif rows > bars_f:
+                notes.append("plus de lignes que fini.txt n'en compte : fichier d'un autre releve ?")
+            err = fini_m.get("erreur_barres")
+            if isinstance(err, int) and err > 0:
+                st = "DIFFERENT"
+                notes.append(f"{err} jour(s) de barres illisibles (erreur_barres) : relancer ReleveFP")
+            assumed = f"barres={bars_f} (fini.txt)"
+        else:
+            st, assumed = "UNKNOWN", "fini.txt absent ou sans barres= (ReleveFP 1.00 ?)"
+        if days and days < 150:
+            notes.append(f"{days} jours : moins que les 150 qu'il faut pour comparer D4H (120 jours d'echauffement) sur toute la demo")
+        rep.add(base, "r1_rows", "barres M1 du terminal (r1)", st, broker, assumed, " ; ".join(notes), "ReleveFP.mq5 Rates")
+    elif isinstance(bars_f, int) and bars_f > 0:
+        rep.add(base, "r1_rows", "barres M1 du terminal (r1)", "DIFFERENT", f"r1_{base}.csv absent", f"barres={bars_f} (fini.txt)",
+                "copier aussi les fichiers r1_<marche>.csv de ReleveFP", "ReleveFP.mq5 Rates")
+    if m1_df is not None and r1_df is not None and digits is not None:
+        bar_spread_check(rep, base, m1_df, r1_df, digits)
+
+
+def bar_spread_check(rep, base, m1_df, r1_df, digits):
+    """SPEC 10.3 (information only, never a difference): on the minutes in both the m1 file (built from ticks) and the r1
+    file (the terminal's bars), how often MqlRates.spread equals the smallest spread of the minute's ticks (sp_min,
+    ReleveFP 1.10), the first tick's (open), the last tick's (close) and the rounded mean"""
+    j = m1_df.merge(r1_df[["time", "spread"]], on="time", how="inner")
+    if not len(j):
+        rep.add(base, "bar_spread", "ecart des barres du terminal (SPEC 10.3)", "UNKNOWN", "aucune minute commune aux fichiers m1 et r1",
+                "ask = bid + MqlRates.spread (le robot)", "information", "SPEC 10.3")
+        return
+    sc = 10 ** int(digits)
+    sp = j["spread"].to_numpy()
+
+    def share(x):
+        return 100.0 * float(np.mean(sp == x))
+    o = np.rint(j.ao.to_numpy() * sc) - np.rint(j.bo.to_numpy() * sc)
+    c = np.rint(j.ac.to_numpy() * sc) - np.rint(j.bc.to_numpy() * sc)
+    mean_ = np.floor(j.sp_mean.to_numpy() * sc + 0.5)
+    parts = [f"minimum {fmtv(share(np.rint(j.sp_min.to_numpy() * sc)), 1)} %" if "sp_min" in j.columns else
+             "minimum ? (m1 sans sp_min : ReleveFP 1.00)",
+             f"ouverture {fmtv(share(o), 1)} %", f"fermeture {fmtv(share(c), 1)} %", f"moyenne arrondie {fmtv(share(mean_), 1)} %"]
+    rep.add(base, "bar_spread", "ecart des barres du terminal (SPEC 10.3)", "OK",
+            "MqlRates.spread egal a l'ecart des ticks de la minute : " + ", ".join(parts) + f" ({len(j)} minutes communes)",
+            "ask = bid + MqlRates.spread (le robot)", "information : l'ecart que MT5 garde dans ses barres M1 ; check_demo rejoue les "
+            "barres r1 telles quelles", "SPEC 10.3")
 
 
 def commission_check(rep, base, fiche, s, is_robot, usd_rate):
@@ -770,6 +870,10 @@ def closure_window(kind, d, start_rel_min, end_rel_min=18 * 60):
 def session_checks(rep, fiches, m1):
     # gold: the Friday session must hold 20:30 server and run to 23:46 server (SPEC 10.5, CR_Rule_GoldFri.mqh)
     f = fiches.get("XAUUSD")
+    if not (f and f.get("found")):                                     # no usable gold fiche: the key check stays (review2 N9 a)
+        rep.add("XAUUSD", "friday_session", "seance or du vendredi", "UNKNOWN",
+                "pas de fiche de l'or (ligne absente, coupee ou introuvable dans fiches.csv)", "13:30-16:46 New York = 20:30-23:46 serveur",
+                "relancer ReleveFP et recopier fiches.csv en entier", "SPEC 10.5")
     if f and f.get("found"):
         ss = sessions_parse(f.get("sessions"))
         ok, end = gold_friday(ss)
@@ -925,6 +1029,7 @@ def run(folder, out_dir):
     out = C.safe_out(out_dir)
     present = {n: os.path.exists(os.path.join(folder, n)) for n in ("fiches.csv", "tous.csv", "fini.txt", "sonde.csv")}
     m1_files = sorted(f for f in os.listdir(folder) if f.startswith("m1_") and f.endswith(".csv"))
+    r1_files = sorted(f for f in os.listdir(folder) if f.startswith("r1_") and f.endswith(".csv"))
     problems = []
     fini = read_fini(os.path.join(folder, "fini.txt"), scrub) if present["fini.txt"] else {}
     fiches, p = read_fiches(os.path.join(folder, "fiches.csv")) if present["fiches.csv"] else ({}, [])
@@ -934,7 +1039,7 @@ def run(folder, out_dir):
     sonde_rows, sonde_meta, p = read_sonde(os.path.join(folder, "sonde.csv"), scrub) if present["sonde.csv"] else ({}, {}, [])
     problems += p
     costs = C.load_fp_costs()
-    m1 = {}
+    m1, m1_df, r1_df, digits_of = {}, {}, {}, {}
     for fn in m1_files:
         base = fn[3:-4]
         try:
@@ -945,21 +1050,37 @@ def run(folder, out_dir):
                 rs = fini.get("server_time") if fini and isinstance(fini.get("server_time"), int) else None
                 m1[base] = m1_stats(df, base, int(dg or 0), rs)
                 m1[base]["digits"] = int(dg or 0)
+                m1_df[base] = df
+                digits_of[base] = int(dg or 0)
         except Exception as e:                                          # one bad file never stops the others
+            problems.append(f"{fn} illisible : {str(e)[:120]}")
+    for fn in r1_files:                                                 # ReleveFP 1.10: the terminal's own M1 bars
+        base = fn[3:-4]
+        try:
+            df = read_r1(os.path.join(folder, fn))
+            r1_df[base] = df
+            if base not in digits_of:
+                dg = fiches.get(base, {}).get("digits") if fiches.get(base, {}).get("found") else None
+                digits_of[base] = int(dg) if dg is not None else m1_digits(os.path.join(folder, fn))
+        except Exception as e:                                          # noqa: BLE001
             problems.append(f"{fn} illisible : {str(e)[:120]}")
     rep = Report()
     account_checks(rep, fini, sonde_rows, sonde_meta, m1)
-    bases = list(C.ROBOT_BASES) + sorted((set(fiches) | set(sonde_rows) | set(m1)) - set(C.ROBOT_BASES))
+    bases = list(C.ROBOT_BASES) + sorted((set(fiches) | set(sonde_rows) | set(m1) | set(r1_df)) - set(C.ROBOT_BASES))
     usd_rate = next((eur_per_usd(f) for f in fiches.values() if f.get("found") and f.get("ccy_profit") == "USD"
                      and eur_per_usd(f)), None)
     for b in bases:
         if b == "":
             continue
-        market_checks(rep, b, fiches.get(b) if fiches else None, tous, costs, sonde_rows, m1, fini.get("markets", {}).get(b) if fini else None,
-                      b in C.ROBOT_BASES, usd_rate)
+        fini_m = fini.get("markets", {}).get(b) if fini else None
+        market_checks(rep, b, fiches.get(b) if fiches else None, tous, costs, sonde_rows, m1, fini_m, b in C.ROBOT_BASES, usd_rate)
+        releve_checks(rep, b, fini_m, os.path.join(folder, f"m1_{b}.csv") if f"m1_{b}.csv" in m1_files else None,
+                      os.path.join(folder, f"r1_{b}.csv") if f"r1_{b}.csv" in r1_files else None, m1_df.get(b), r1_df.get(b),
+                      digits_of.get(b))
     session_checks(rep, fiches, m1)
     counts = {s: sum(1 for c in rep.checks if c["status"] == s) for s in ("OK", "DIFFERENT", "UNKNOWN")}
-    summary = {"tool": "read_mac_files", "version": 1, "files_read": {**present, "m1": m1_files},
+    summary = {"tool": "read_mac_files", "version": 2, "releve_version": fini.get("version") if fini else None,
+               "files_read": {**present, "m1": m1_files, "r1": r1_files},
                "problems": problems, "account": {k: v for k, v in fini.items() if k != "markets"} if fini else {},
                "releve_markets": fini.get("markets", {}) if fini else {}, "sonde_meta": sonde_meta,
                "fiches": fiches, "sonde": sonde_rows, "m1": m1, "checks": rep.checks, "counts": counts,
@@ -973,7 +1094,7 @@ def run(folder, out_dir):
 
 def french(summary, checks, counts, problems):
     files = summary["files_read"]
-    lus = [n for n in ("fiches.csv", "tous.csv", "fini.txt", "sonde.csv") if files.get(n)] + files.get("m1", [])
+    lus = [n for n in ("fiches.csv", "tous.csv", "fini.txt", "sonde.csv") if files.get(n)] + files.get("m1", []) + files.get("r1", [])
     head = [f"Lecture des fichiers du Mac : {', '.join(lus) if lus else 'aucun fichier reconnu'}.",
             f"{counts['OK']} points conformes, {counts['DIFFERENT']} differents, {counts['UNKNOWN']} inconnus."]
     full = list(head) + [""]
