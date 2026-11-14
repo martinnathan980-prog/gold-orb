@@ -228,7 +228,7 @@ struct CrOrder
    int      refuse;                    // CR_REF_*
    bool     void_le;                   // void when the exit bar does not follow the entry bar (brk72 wrapper)
    datetime dec;                       // decision time (UTC)
-   int      group;                     // multi-leg group number (0 = none)
+   int      grp;                       // multi-leg group number (0 = none)
   };
 
 // an exit asked by a rule: the open trade of order oid exits at the first kept bar inside [t_from, t_to]
@@ -296,7 +296,7 @@ struct CrTrade
    bool     x_gap;
    bool     x_pending;                 // a gap exit waits for its barrier (the trade has not ended)
    datetime dec;
-   int      group;
+   int      grp;
   };
 
 // an order of the account (follower -> sizing -> broker), SPEC 4.1-4.3, 5

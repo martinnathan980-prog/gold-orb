@@ -1,4 +1,4 @@
-#define CR_BUILD "1cf1d0cab64b"
+#define CR_BUILD "fd6aaf01e332"
 // ==== begin src/ClaudeRobot.mq5
 //+------------------------------------------------------------------+
 //|                                               ClaudeRobot.mq5    |
@@ -271,7 +271,7 @@ struct CrOrder
    int      refuse;                    // CR_REF_*
    bool     void_le;                   // void when the exit bar does not follow the entry bar (brk72 wrapper)
    datetime dec;                       // decision time (UTC)
-   int      group;                     // multi-leg group number (0 = none)
+   int      grp;                       // multi-leg group number (0 = none)
   };
 
 // an exit asked by a rule: the open trade of order oid exits at the first kept bar inside [t_from, t_to]
@@ -339,7 +339,7 @@ struct CrTrade
    bool     x_gap;
    bool     x_pending;                 // a gap exit waits for its barrier (the trade has not ended)
    datetime dec;
-   int      group;
+   int      grp;
   };
 
 // an order of the account (follower -> sizing -> broker), SPEC 4.1-4.3, 5
@@ -1589,7 +1589,7 @@ void JrnOrder(const CrOrder &o, const datetime when, const bool rp)
                + KD("lv2", o.level2) + KT("tf", o.t_from) + KT("tt", o.t_to) + KI("ax", o.after_exit_of)
                + KT("exp", o.expiry_excl) + KD("st", o.stop) + KD("sd", o.stop_dist) + KD("tr", o.trail) + KD("be", o.be)
                + KD("tg", o.target) + KD("td", o.target_dist) + KT("x", o.x_sched) + KB("xg", o.x_gap) + KT("xh", o.xh)
-               + KD("xr", o.xh_r) + KI("ref", o.refuse) + KB("vle", o.void_le) + KI("grp", o.group) + KT("at", when);
+               + KD("xr", o.xh_r) + KI("ref", o.refuse) + KB("vle", o.void_le) + KI("grp", o.grp) + KT("at", when);
    JrnAt(o.dec != 0 ? o.dec : when, CR_EV_DEC, JrnCode(o.sleeve), kv + JrnRp(rp));
   }
 
@@ -4701,7 +4701,7 @@ public:
          o.refuse = (int)StringToInteger(f[20]);
          o.void_le = StringToInteger(f[21]) != 0;
          o.dec = (datetime)StringToInteger(f[22]);
-         o.group = (int)StringToInteger(f[23]);
+         o.grp = (int)StringToInteger(f[23]);
          ArrayResize(m_ord, m_n + 1, 1024);
          ArrayResize(m_emit, m_n + 1, 1024);
          m_ord[m_n] = o;
@@ -7013,7 +7013,7 @@ bool PapTrade(const int sl, CrTrade &t)
    t.x_gap = g_pap_t[sl].xg;
    t.x_pending = (g_pap_t[sl].x > 0 && g_pap_M >= g_pap_t[sl].x);
    t.dec = g_pap_t[sl].o.dec;
-   t.group = g_pap_t[sl].o.group;
+   t.grp = g_pap_t[sl].o.grp;
    return true;
   }
 

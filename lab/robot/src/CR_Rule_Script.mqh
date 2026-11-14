@@ -83,7 +83,7 @@ public:
          o.refuse = (int)StringToInteger(f[20]);
          o.void_le = StringToInteger(f[21]) != 0;
          o.dec = (datetime)StringToInteger(f[22]);
-         o.group = (int)StringToInteger(f[23]);
+         o.grp = (int)StringToInteger(f[23]);
          ArrayResize(m_ord, m_n + 1, 1024);
          ArrayResize(m_emit, m_n + 1, 1024);
          m_ord[m_n] = o;

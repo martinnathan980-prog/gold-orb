@@ -958,7 +958,7 @@ bool PapTrade(const int sl, CrTrade &t)
    t.x_gap = g_pap_t[sl].xg;
    t.x_pending = (g_pap_t[sl].x > 0 && g_pap_M >= g_pap_t[sl].x);
    t.dec = g_pap_t[sl].o.dec;
-   t.group = g_pap_t[sl].o.group;
+   t.grp = g_pap_t[sl].o.grp;
    return true;
   }
 

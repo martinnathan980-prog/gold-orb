@@ -42,6 +42,7 @@ In sample only: every frame is read with ts < 2022-01-01 inside the read call.
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -1180,7 +1181,10 @@ def s0_tree():
         r = subprocess.run(["git", "-C", ROBOT, "show", f"{S0_COMMIT}:./src/{n}"], capture_output=True)
         if r.returncode:
             return None
-        open(os.path.join(d, n), "wb").write(r.stdout)
+        # the struct member 'group' was renamed 'grp' after the fixes' recheck (R4: 'group' is also MQL5's 'input group'
+        # word); this step's CR_Paper.mqh uses the new name, so S0's copies get the same rename (declarations and uses)
+        s = re.sub(rb"\.group\b", rb".grp", re.sub(rb"\bint(\s+)group;", rb"int\1grp;", r.stdout))
+        open(os.path.join(d, n), "wb").write(s)
     shutil.copy(os.path.join(ROBOT, "src", "CR_Paper.mqh"), os.path.join(d, "CR_Paper.mqh"))
     return d
 

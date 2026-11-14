@@ -115,7 +115,7 @@ static CrOrder row_order(const Row &r)
    o.refuse = (int)r.refuse;
    o.void_le = r.void_le != 0;
    o.dec = r.dec;
-   o.group = (int)r.group;
+   o.grp = (int)r.group;
    return o;
   }
 
