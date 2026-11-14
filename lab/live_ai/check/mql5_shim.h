@@ -30,7 +30,8 @@ extern const int _Digits;
 enum ENUM_TIMEFRAMES { PERIOD_CURRENT = 0, PERIOD_M1 = 1, PERIOD_M5 = 5 };
 enum ENUM_ORDER_TYPE_TIME { ORDER_TIME_GTC, ORDER_TIME_DAY, ORDER_TIME_SPECIFIED, ORDER_TIME_SPECIFIED_DAY };
 enum ENUM_TRADE_TRANSACTION_TYPE { TRADE_TRANSACTION_ORDER_ADD, TRADE_TRANSACTION_DEAL_ADD = 6 };
-enum ENUM_SERIES_INFO_INTEGER { SERIES_BARS_COUNT, SERIES_SYNCHRONIZED = 5 };
+enum ENUM_SERIES_INFO_INTEGER { SERIES_BARS_COUNT, SERIES_FIRSTDATE, SERIES_LASTBAR_DATE, SERIES_SERVER_FIRSTDATE, SERIES_TERMINAL_FIRSTDATE,
+                                SERIES_SYNCHRONIZED = 5 };
 enum ENUM_TERMINAL_INFO_INTEGER { TERMINAL_CONNECTED, TERMINAL_TRADE_ALLOWED, TERMINAL_MAXBARS };
 enum ENUM_MQL_INFO_INTEGER { MQL_TESTER, MQL_TRADE_ALLOWED };
 enum ENUM_ACCOUNT_INFO_INTEGER { ACCOUNT_LOGIN, ACCOUNT_TRADE_MODE };
@@ -281,3 +282,9 @@ const uint TRADE_RETCODE_MARKET_CLOSED = 10018;
 // docs/math/mathmax   : double MathMax(double value1, double value2)                                  (declared above)
 // docs/trading/historyselect, historydealgetticket, historydealgetdouble : signatures as declared above; HistorySelect "creates a
 //   list of orders and a list of trades in a mql5-program"; nothing is promised about the order of that list.
+
+// --- added for ReleveFP.mq5 1.10's terminal bars (docs.mql5.com signatures)
+// docs/series/bars : int Bars(string symbol_name, ENUM_TIMEFRAMES timeframe); int Bars(string symbol_name, ENUM_TIMEFRAMES
+//   timeframe, datetime start_time, datetime stop_time)
+int Bars(const string symbol_name, ENUM_TIMEFRAMES timeframe);
+int Bars(const string symbol_name, ENUM_TIMEFRAMES timeframe, datetime start_time, datetime stop_time);

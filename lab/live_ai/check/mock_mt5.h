@@ -145,6 +145,86 @@ int CopyTicksRange(const string name, MqlArray<MqlTick> &t, uint flags, ulong fr
    return (int)t.v.size();
   }
 
+
+// ---- ReleveFP 1.10 (lab/robot/demo/releve_mock/mock_mt5.h has the same bars with scenarios)
+static long g_slept_ms = 0;
+static std::map<string, long> g_first_ask;
+static const long MOCK_R1_START = (MOCK_NOW - 40 * 86400) - (MOCK_NOW - 40 * 86400) % 86400;
+long StringToInteger(const string value) { return atol(value.c_str()); }
+int TerminalInfoInteger(ENUM_TERMINAL_INFO_INTEGER p) { return p == TERMINAL_MAXBARS ? 500000 : 1; }
+// ---- the terminal's M1 bars: one bar every weekday minute from MOCK_R1_START to the run, prices of the minute
+static long mock_last_bar() { long m = MOCK_NOW - MOCK_NOW % 60 - 60; while((((m / 86400) + 4) % 7) % 6 == 0) m -= 60; return m; }
+static bool mock_bar(long m, MqlRates &b)
+  {
+   long dow = ((m / 86400) + 4) % 7;
+   if(dow == 0 || dow == 6 || m < MOCK_R1_START || m > mock_last_bar()) return false;
+   b = MqlRates();
+   b.time = m;
+   b.open = 100.0 + (double)((m / 60) % 97) / 100.0;
+   b.high = b.open + 0.05;
+   b.low = b.open - 0.04;
+   b.close = b.open + 0.01;
+   b.tick_volume = 3 + (m / 60) % 7;
+   b.spread = 10 + (int)((m / 60) % 3);
+   b.real_volume = 0;
+   return true;
+  }
+static bool mock_loading(const string &name)
+  {
+   if(!g_first_ask.count(name)) g_first_ask[name] = g_slept_ms;
+   return g_slept_ms - g_first_ask[name] < 0;
+  }
+static int mock_count(long from, long to)
+  {
+   int n = 0;
+   MqlRates b;
+   for(long m = from - from % 60; m <= to; m += 60)
+      if(m >= from && mock_bar(m, b)) n++;
+   return n;
+  }
+int Bars(const string name, ENUM_TIMEFRAMES tf) { return Bars(name, tf, MOCK_R1_START, MOCK_NOW); }
+int Bars(const string name, ENUM_TIMEFRAMES tf, datetime from, datetime to)
+  {
+   if(!mock_known(name) || tf != PERIOD_M1 || mock_loading(name)) return 0;
+   return mock_count((long)from, (long)to);
+  }
+long SeriesInfoInteger(const string name, ENUM_TIMEFRAMES tf, ENUM_SERIES_INFO_INTEGER p)
+  {
+   if(!mock_known(name) || tf != PERIOD_M1) return 0;
+   bool loading = mock_loading(name);
+   if(p == SERIES_SYNCHRONIZED) return loading ? 0 : 1;
+   if(p == SERIES_FIRSTDATE || p == SERIES_SERVER_FIRSTDATE || p == SERIES_TERMINAL_FIRSTDATE) return loading ? 0 : MOCK_R1_START;
+   if(p == SERIES_LASTBAR_DATE) return loading ? 0 : mock_last_bar();
+   if(p == SERIES_BARS_COUNT) return loading ? 0 : mock_count(MOCK_R1_START, MOCK_NOW);
+   return 0;
+  }
+bool SeriesInfoInteger(const string name, ENUM_TIMEFRAMES tf, ENUM_SERIES_INFO_INTEGER p, long &v) { v = SeriesInfoInteger(name, tf, p); return true; }
+static std::map<string, std::map<long, int>> g_rates_day_calls;
+int CopyRates(const string name, ENUM_TIMEFRAMES tf, datetime from, datetime to, MqlArray<MqlRates> &r)
+  {
+   r.v.clear();
+   if(!mock_known(name) || tf != PERIOD_M1) { g_last_error = 4301; return -1; }
+   if(mock_loading(name)) return 0;                         // still loading: what is ready at the timeout (nothing)
+   long day = (long)from - (long)from % 86400;
+   int k = g_rates_day_calls[name][day]++;
+   if(0 && (long)from > mock_last_bar()) { g_last_error = 4401; return -1; }
+   long last = (long)to;
+   if(0)
+     {
+      if(k > 0) { g_last_error = 4401; return -1; }        // every call after the first fails
+      last = day + 43200 - 1;                               // the first gives the first half of the day only
+     }
+   for(long m = (long)from - (long)from % 60; m <= last; m += 60)
+     {
+      MqlRates b;
+      if(m >= (long)from && mock_bar(m, b)) r.v.push_back(b);
+     }
+   return (int)r.v.size();
+  }
+int CopyRates(const string name, ENUM_TIMEFRAMES tf, datetime from, int count, MqlArray<MqlRates> &r) { r.v.clear(); return -1; }
+int CopyRates(const string name, ENUM_TIMEFRAMES tf, int pos, int count, MqlArray<MqlRates> &r) { r.v.clear(); return -1; }
+
+
 // ---- files (no parent folder is created by FileOpen: the script's own FolderCreate calls must be enough)
 bool FolderCreate(const string name, int) { return mkdir(mock_path(name).c_str(), 0755) == 0 || true; }
 bool FileDelete(const string name, int) { return remove(mock_path(name).c_str()) == 0; }
