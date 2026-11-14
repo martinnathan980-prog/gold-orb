@@ -922,3 +922,26 @@ Reading for the user, not a choice made by the lab: from 7 % to 10 % the speed t
 risk of a 50 % fall and the loss in the weak cases grow; 5 % halves the risk of 7 % for about one month more. The
 pictures are `results/r2/stake/images/15_gain_pour_le_risque.png`, `16_mois_pour_10000.png`, `17_compte_7_contre_10.png`
 (independent review: 150 drawn numbers checked, 0 wrong; the worst cases were added).
+
+## Addendum K (2026-11-14; written BEFORE any run): round 5 — one idea taken from the survey of public MQL5 robots
+The user asked whether anything can be taken from the public MQL5 robots. The fact-checked survey
+(`results/r2/mql5_survey.json`) found nothing credible near the user's demand and two ideas not covered by the ten
+rules. The first is tested here; the second (night mean reversion on FX crosses) needs new data and is not tested now.
+**Gold daily-reopen drift** (source: MQL5 Code Base 77060 'SessionReopenEA', backtest and research only, no live
+signal), frozen now:
+- Market XAUUSD, the lab's FP frames (M1 bid/ask), FP Raw costs (`r2/fp_costs.json`), stress at costs × 1.5.
+- Sessions: the daily reopens of Monday to Thursday evenings, New York time (trading days Tuesday to Friday). Skip the
+  Sunday weekly reopen, US holiday closures and early closes, and any evening with no gold quote between 18:00 and 18:15.
+- Entry: buy at market on the first M1 bar at or after 18:15 New York. Stop: entry minus 2.0 × the mean (high − low) of
+  the last 480 completed H1 bars (plain range, not ATR). No target. Exit at market on the first M1 bar at or after entry
+  + 120 minutes. One trade per session, one position at a time, results in R.
+- Neighbours (the budget, all logged): entry 18:10 and 18:30; hold 96 and 144 minutes; stop 1.6 and 2.4 — 7
+  configurations with the main one.
+- **In sample only (2013–2021), frames cut while read.** Pass = PROTOCOL_V2 section 4 bars on the main configuration:
+  n ≥ 250, PF ≥ 1.12, t ≥ 2.5, ≥ 60 % of years positive, PF ≥ 1.04 at costs × 1.5, neighbours' median PF ≥ 1.06,
+  every-signal expectancy > 0, random-time null ≥ 97.5th percentile; plus a weekly correlation with the sum of the ten
+  of at most 0.30. A pass is attacked by an independent re-implementation before anything else; a kept rule gets ONE
+  look at 2022–2025, declared separately. The 2026 holdout stays untouched.
+- **Said before the run:** our own 2013–2021 hour table shows about +0.8 bp gross for the two hours after the reopen
+  (all evenings), against about +2.5 bp needed for t ≥ 2.5 after costs; the prior of a pass is low. If it passes it adds
+  a small independent sleeve, not a multiplier of gains.
