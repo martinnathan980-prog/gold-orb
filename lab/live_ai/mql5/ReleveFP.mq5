@@ -20,6 +20,21 @@
 //|      d'historique avant d'etre pret, plus la demo) ; les minutes  |
 //|      de tous les marches sont ecrites avant                       |
 //|                                  -> claude\releve\r1_<marche>.csv |
+//|   5. (1.11) les positions ouvertes du compte au moment du releve  |
+//|      (ticket, identifiant, heure, marche, sens, magic, lots, prix |
+//|      d'ouverture, stop, objectif, prix courant, swap, resultat)   |
+//|                                  -> claude\releve\positions.csv   |
+//|   6. (1.11) tout l'historique des transactions du compte (deals), |
+//|      de la plus ancienne a la plus recente : heure, ticket,       |
+//|      ordre, position, marche, type, entree, raison, magic, lots,  |
+//|      prix, stop, objectif, commission, swap, frais, resultat      |
+//|                                  -> claude\releve\deals.csv       |
+//|      Ni commentaire, ni identifiant externe, ni numero de compte, |
+//|      ni nom, ni serveur : aucun texte sauf le nom du marche.      |
+//|      Chaque ligne de ces deux fichiers finit par CR LF ("\r\n") : |
+//|      FileWriteString ajoute un CR devant un LF seul dans un       |
+//|      fichier texte et compte les octets ecrits ; avec le CR deja  |
+//|      la, rien n'est ajoute et le compte vaut la longueur.         |
 //|  A la fin : claude\releve\fini.txt (resume) et une alerte. Pour   |
 //|  chaque marche : jours, minutes, ticks, du, au, derniere_erreur,  |
 //|  jours_incomplets (les minutes), puis pour les barres : barres,   |
@@ -28,16 +43,24 @@
 //|  erreur_r1 (derniere erreur), jours_r1 (jours demandes), debut_r1 |
 //|  et fin_r1 (premiere et derniere barre du terminal), synchro_r1   |
 //|  et attente_r1 (secondes d'attente du chargement) ; max_barres :  |
-//|  le reglage "Max bars in chart" (il faut 500000, SPEC 1).         |
+//|  le reglage "Max bars in chart" (il faut 500000, SPEC 1) ; puis   |
+//|  positions (lignes de positions.csv, -1 = fichier impossible),    |
+//|  positions_heure (heure serveur de la photo des positions),       |
+//|  deals (lignes de deals.csv, -1 = fichier ou historique           |
+//|  impossible), deals_du et deals_au (heure de la transaction la    |
+//|  plus ancienne et de la plus recente, 0 = aucune), erreur_deals   |
+//|  (code de GetLastError d'un echec de l'historique ou d'une        |
+//|  ecriture, remis a zero juste avant chaque ecriture, -1           |
+//|  sans code, 0 = aucun echec). Le nom du serveur n'est plus ecrit. |
 //|  Il peut rester plusieurs minutes sur un marche pendant que le    |
 //|  terminal telecharge l'historique : c'est normal.                 |
 //|  Les heures ecrites sont celles du serveur (secondes).            |
-//|  La commission n'est pas dans les fiches : elle se lit sur un     |
-//|  aller-retour en demo (voir releve.py).                           |
+//|  La commission et le swap de chaque transaction sont dans         |
+//|  deals.csv (ceux des trades du robot pendant la demo).            |
 //+------------------------------------------------------------------+
 #property copyright "gold-orb lab"
-#property version   "1.10"
-#property description "Releve des vrais frais du courtier : fiches des marches, prix acheteur / vendeur minute par minute, barres M1 du terminal (r1). Ne passe aucun ordre."
+#property version   "1.11"
+#property description "Releve des vrais frais du courtier : fiches des marches, prix acheteur / vendeur minute par minute, barres M1 du terminal (r1), historique des transactions du compte (deals) et positions ouvertes. Ne passe aucun ordre."
 #property script_show_inputs
 
 input string InpSymbols  = "BTCUSD,ETHUSD,US100,XAUUSD,USDJPY,JP225,EURUSD,US500,GER40"; // Marches (noms de base, du plus important au moins important)
@@ -451,6 +474,236 @@ long Rates(const string base, const string nm, const int days_asked, const int p
   }
 
 //+------------------------------------------------------------------+
+//| 5 et 6. Positions ouvertes et historique des transactions (1.11)  |
+//+------------------------------------------------------------------+
+// the error code of a call that failed (GetLastError), -1 when MetaTrader gave none (a failure is never written as 0)
+int FailCode()
+  {
+   int e = GetLastError();
+   if(e == 0) return -1;
+   return e;
+  }
+
+// one line written whole (review8 RELEVE111-CRLF). FileWriteString (docs): "When writing to a CSV or TXT file: if there is a symbol in the
+// string '\n' (LF) without previous character '\r' (CR), then before '\n' the missing '\r' is added"; "If successful the function returns
+// the number of bytes written" (FILE_ANSI: one per character). Every row of deals.csv and positions.csv ends in "\r\n" itself, so nothing
+// is added and the count equals StringLen; a count at least StringLen is a whole write (whatever the terminal adds), a short or zero one a
+// failure. The error is reset just before the write, so a failure reports its own code (or -1 without one), never one an earlier call left
+// (SymbolInfoInteger 4301/4302, EnumToString 4003, PositionSelectByTicket 4753: review8 LASTERR-STALE)
+bool WriteRow(const int h, const string s)
+  {
+   ResetLastError();
+   uint n = FileWriteString(h, s);
+   return n >= (uint)StringLen(s);
+  }
+
+// decimals of a symbol's prices (SYMBOL_DIGITS); 8 when the symbol is empty (a balance deal) or unknown to the terminal, so that
+// nothing is rounded away
+int PriceDigits(const string sym)
+  {
+   long dg = 0;
+   if(sym == "") return 8;
+   if(!SymbolInfoInteger(sym, SYMBOL_DIGITS, dg)) return 8;
+   if(dg < 0 || dg > 8) return 8;
+   return (int)dg;
+  }
+
+// decimals of a symbol's volume step (SYMBOL_VOLUME_STEP 0.01 -> 2, 0.1 -> 1, 1 -> 0); 8 when the symbol is empty or unknown
+int VolumeDigits(const string sym)
+  {
+   double st = 0.0;
+   if(sym == "") return 8;
+   if(!SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP, st)) return 8;
+   if(!(st > 0.0)) return 8;
+   int d = 0;
+   while(d < 8 && MathAbs(st - MathRound(st)) > 0.0000001)
+     {
+      st = st * 10.0;
+      d++;
+     }
+   return d;
+  }
+
+// decimals of money: the account currency's (ACCOUNT_CURRENCY_DIGITS, "required for an accurate display of trading results"),
+// 2 at least
+int MoneyDigits()
+  {
+   long cd = AccountInfoInteger(ACCOUNT_CURRENCY_DIGITS);
+   if(cd < 2) return 2;
+   if(cd > 8) return 8;
+   return (int)cd;
+  }
+
+// tickets in the order of their keys (time in milliseconds, then ticket): an insertion sort (the terminal's lists promise no order;
+// when a list is already in time order, one pass)
+void SortByKey(ulong &tk[], long &key[], const int n)
+  {
+   for(int i = 1; i < n; i++)
+     {
+      ulong t = tk[i];
+      long k = key[i];
+      int j = i - 1;
+      while(j >= 0)
+        {
+         if(key[j] < k) break;
+         if(key[j] == k && tk[j] <= t) break;
+         tk[j + 1] = tk[j];
+         key[j + 1] = key[j];
+         j--;
+        }
+      tk[j + 1] = t;
+      key[j + 1] = k;
+     }
+  }
+
+// 5. every position open at the run, oldest first (positions.csv); returns the rows written, -1 when the file could not be opened
+// (err = its error). Every line ends in "\r\n" (WriteRow). A position closed between the list and its line (the robot runs) is left
+// out. Never POSITION_COMMENT nor POSITION_EXTERNAL_ID: no text but the symbol
+int Positions(int &err)
+  {
+   ResetLastError();
+   int h = FileOpen(DIR + "positions.csv", FILE_WRITE | FILE_TXT | FILE_ANSI);
+   if(h == INVALID_HANDLE)
+     {
+      err = FailCode();
+      return -1;
+     }
+   if(!WriteRow(h, "ticket,identifier,time,time_msc,symbol,type,magic,volume,price_open,sl,tp,price_current,swap,profit\r\n"))
+     {
+      err = FailCode();
+      FileClose(h);
+      return -1;
+     }
+   int n = PositionsTotal();
+   if(n < 0) n = 0;
+   ulong tk[];
+   long key[];
+   ArrayResize(tk, n);
+   ArrayResize(key, n);
+   int m = 0;
+   for(int i = 0; i < n; i++)
+     {
+      ulong t = PositionGetTicket(i);                  // selects the position
+      if(t == 0) continue;
+      long ms = PositionGetInteger(POSITION_TIME_MSC);
+      if(ms <= 0) ms = PositionGetInteger(POSITION_TIME) * 1000;
+      tk[m] = t;
+      key[m] = ms;
+      m++;
+     }
+   SortByKey(tk, key, m);
+   int md = MoneyDigits();
+   int rows = 0;
+   for(int k = 0; k < m && !IsStopped(); k++)
+     {
+      if(!PositionSelectByTicket(tk[k])) continue;     // closed meanwhile
+      string sym = Clean(PositionGetString(POSITION_SYMBOL));
+      int pd = PriceDigits(sym);
+      int vd = VolumeDigits(sym);
+      ENUM_POSITION_TYPE ptype = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+      string s = IntegerToString((long)tk[k]) + "," + IntegerToString(PositionGetInteger(POSITION_IDENTIFIER)) + ",";
+      s += IntegerToString(PositionGetInteger(POSITION_TIME)) + "," + IntegerToString(PositionGetInteger(POSITION_TIME_MSC)) + ",";
+      s += sym + "," + EnumToString(ptype) + "," + IntegerToString(PositionGetInteger(POSITION_MAGIC)) + ",";
+      s += DoubleToString(PositionGetDouble(POSITION_VOLUME), vd) + "," + DoubleToString(PositionGetDouble(POSITION_PRICE_OPEN), pd) + ",";
+      s += DoubleToString(PositionGetDouble(POSITION_SL), pd) + "," + DoubleToString(PositionGetDouble(POSITION_TP), pd) + ",";
+      s += DoubleToString(PositionGetDouble(POSITION_PRICE_CURRENT), pd) + "," + DoubleToString(PositionGetDouble(POSITION_SWAP), md) + ",";
+      s += DoubleToString(PositionGetDouble(POSITION_PROFIT), md) + "\r\n";
+      if(!WriteRow(h, s))
+        {
+         err = FailCode();
+         break;
+        }
+      rows++;
+     }
+   FileClose(h);
+   ArrayFree(tk);
+   ArrayFree(key);
+   return rows;
+  }
+
+// 6. every deal of the account's whole history (HistorySelect from 0 to the server time + a day), oldest first (deals.csv); returns
+// the rows written, -1 when the file could not be opened or the history not read (err = its error). first, last: the earliest and the
+// latest DEAL_TIME written (server seconds; 0 without any). Every line ends in "\r\n" (WriteRow). Types, entries and reasons by name
+// (EnumToString), prices with the symbol's digits, volumes with its volume step's, money with the account currency's (2 at least).
+// Never DEAL_COMMENT nor DEAL_EXTERNAL_ID: no text but the symbol (empty for a balance deal)
+int Deals(int &err, long &first, long &last)
+  {
+   first = 0;
+   last = 0;
+   ResetLastError();
+   int h = FileOpen(DIR + "deals.csv", FILE_WRITE | FILE_TXT | FILE_ANSI);
+   if(h == INVALID_HANDLE)
+     {
+      err = FailCode();
+      return -1;
+     }
+   if(!WriteRow(h, "time,time_msc,ticket,order,position,symbol,type,entry,reason,magic,volume,price,sl,tp,commission,swap,fee,profit\r\n"))
+     {
+      err = FailCode();
+      FileClose(h);
+      return -1;
+     }
+   ResetLastError();
+   if(!HistorySelect(0, TimeTradeServer() + 86400))
+     {
+      err = FailCode();
+      FileClose(h);
+      return -1;
+     }
+   int n = HistoryDealsTotal();
+   if(n < 0) n = 0;
+   ulong tk[];
+   long key[];
+   ArrayResize(tk, n);
+   ArrayResize(key, n);
+   int m = 0;
+   for(int i = 0; i < n; i++)
+     {
+      ulong t = HistoryDealGetTicket(i);
+      if(t == 0) continue;
+      long ms = HistoryDealGetInteger(t, DEAL_TIME_MSC);
+      if(ms <= 0) ms = HistoryDealGetInteger(t, DEAL_TIME) * 1000;
+      tk[m] = t;
+      key[m] = ms;
+      m++;
+     }
+   SortByKey(tk, key, m);
+   int md = MoneyDigits();
+   int rows = 0;
+   for(int k = 0; k < m && !IsStopped(); k++)
+     {
+      ulong t = tk[k];
+      string sym = Clean(HistoryDealGetString(t, DEAL_SYMBOL));
+      int pd = PriceDigits(sym);
+      int vd = VolumeDigits(sym);
+      long tm = HistoryDealGetInteger(t, DEAL_TIME);
+      ENUM_DEAL_TYPE dtype = (ENUM_DEAL_TYPE)HistoryDealGetInteger(t, DEAL_TYPE);
+      ENUM_DEAL_ENTRY dentry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(t, DEAL_ENTRY);
+      ENUM_DEAL_REASON dreason = (ENUM_DEAL_REASON)HistoryDealGetInteger(t, DEAL_REASON);
+      string s = IntegerToString(tm) + "," + IntegerToString(HistoryDealGetInteger(t, DEAL_TIME_MSC)) + "," + IntegerToString((long)t) + ",";
+      s += IntegerToString(HistoryDealGetInteger(t, DEAL_ORDER)) + "," + IntegerToString(HistoryDealGetInteger(t, DEAL_POSITION_ID)) + ",";
+      s += sym + "," + EnumToString(dtype) + "," + EnumToString(dentry) + "," + EnumToString(dreason) + ",";
+      s += IntegerToString(HistoryDealGetInteger(t, DEAL_MAGIC)) + ",";
+      s += DoubleToString(HistoryDealGetDouble(t, DEAL_VOLUME), vd) + "," + DoubleToString(HistoryDealGetDouble(t, DEAL_PRICE), pd) + ",";
+      s += DoubleToString(HistoryDealGetDouble(t, DEAL_SL), pd) + "," + DoubleToString(HistoryDealGetDouble(t, DEAL_TP), pd) + ",";
+      s += DoubleToString(HistoryDealGetDouble(t, DEAL_COMMISSION), md) + "," + DoubleToString(HistoryDealGetDouble(t, DEAL_SWAP), md) + ",";
+      s += DoubleToString(HistoryDealGetDouble(t, DEAL_FEE), md) + "," + DoubleToString(HistoryDealGetDouble(t, DEAL_PROFIT), md) + "\r\n";
+      if(!WriteRow(h, s))
+        {
+         err = FailCode();
+         break;
+        }
+      if(rows == 0 || tm < first) first = tm;          // the earliest and the latest DEAL_TIME written (review8: never the file's order)
+      if(rows == 0 || tm > last) last = tm;
+      rows++;
+     }
+   FileClose(h);
+   ArrayFree(tk);
+   ArrayFree(key);
+   return rows;
+  }
+
+//+------------------------------------------------------------------+
 void OnStart()
   {
    FolderCreate("claude");
@@ -486,8 +739,7 @@ void OnStart()
 
    // 2. minutes
    datetime srv = TimeTradeServer(), gmt = TimeGMT();
-   string res = "version=1.10\n";
-   res += "server=" + AccountInfoString(ACCOUNT_SERVER) + "\n";
+   string res = "version=1.11\n";                     // 1.11: the server's name is no longer written (it names the account)
    res += "currency=" + AccountInfoString(ACCOUNT_CURRENCY) + "\n";
    res += "leverage=" + IntegerToString(AccountInfoInteger(ACCOUNT_LEVERAGE)) + "\n";
    res += "demo=" + IntegerToString(AccountInfoInteger(ACCOUNT_TRADE_MODE) == ACCOUNT_TRADE_MODE_DEMO ? 1 : 0) + "\n";
@@ -531,6 +783,19 @@ void OnStart()
         }
       res += base[i] + "=" + name[i] + " " + info_m[i] + (info_r[i] != "" ? " " + info_r[i] : "") + "\n";
      }
+   // 5 and 6 (1.11): at the end of the run, the positions open now, then the whole history of the account's deals
+   Comment("Releve FP Markets en cours (aucun ordre n'est passe)\n", "positions ouvertes et historique des transactions du compte");
+   int err_p = 0, err_d = 0;
+   long d_first = 0, d_last = 0;
+   long t_pos = (long)TimeTradeServer();
+   int n_pos = Positions(err_p);
+   int n_deals = Deals(err_d, d_first, d_last);
+   res += "positions=" + IntegerToString(n_pos) + "\n";
+   res += "positions_heure=" + IntegerToString(t_pos) + "\n";
+   res += "deals=" + IntegerToString(n_deals) + "\n";
+   res += "deals_du=" + IntegerToString(d_first) + "\n";
+   res += "deals_au=" + IntegerToString(d_last) + "\n";
+   res += "erreur_deals=" + IntegerToString(err_d != 0 ? err_d : err_p) + "\n";
    res += "stopped=" + IntegerToString(IsStopped() ? 1 : 0) + "\n";
    res += "seconds=" + IntegerToString((long)((GetTickCount() - t0) / 1000)) + "\n";
    h = FileOpen(DIR + "fini.txt", FILE_WRITE | FILE_TXT | FILE_ANSI);

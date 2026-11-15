@@ -17,9 +17,17 @@ What lives here:
     times the lead relays to the user are given in Paris too (paris_when, paris_span, utc_paris, with_paris; review5b RH5-10);
   * an ERROR line keeps one flag of its echoed input, never the text: whether it holds a comma (_free_comma: the typo the guide warns
     about, review5b RH5-1);
+  * a risk table is shown only when the robot accepts it (risk_table_ok mirrors SizParseTable and SizNumber; review6): OnInit refuses any
+    other, so an INIT or PLAN line holding one is not the robot's text (an edited line, a login typed after the line) and its value is never
+    printed (risk_shown);
   * the files macOS adds to what the user sends (review5 MAC-ZIP): the Finder's 'Compresser' puts a __MACOSX folder and AppleDouble
     '._<name>' files (and .DS_Store) beside the user's files; every input of both tools skips them (is_macos_meta): never parsed,
     never counted as missing, foreign or second-copy files, named once as information ('fichiers de macOS ignores').
+  * the account's history (review7, ReleveFP 1.11): read_account_csv reads deals.csv and positions.csv (ReleveFP's own header only, every field
+    checked, a bad row counted and located with its text never kept, a cut last line and a ticket seen twice said); deal_positions groups the
+    trade deals by DEAL_POSITION_ID as the robot's ledger does (a broker stop deal with magic 0 belongs to the robot's position) and tells the
+    robot's sleeves (20261201-20261210), the guard's mark (20261290), trades by hand (magic 0) and other programs apart; deal_money is profit +
+    commission + swap + fee (a credit deal moves no balance); swap_nights and lab_swap_eur give the lab's swap (fp_costs.json, its triple day).
 Nothing here reads market data by itself. Nothing writes inside the repository except check_demo.py's cache of the
 harness build, lab/robot/build/demo_check_release (ignored by git): the compiled robot and the hashes of its source files,
 no Mac data (review3 P7).
@@ -141,6 +149,46 @@ def risk_preset(text):
     """the preset name of a risk table (S7, D2 ...), None when it is none of them"""
     p = risk_pairs(text)
     return next((k for k, v in RISK_PRESETS.items() if p is not None and risk_pairs(v) == p), None)
+
+
+_PLAIN_DIGITS = frozenset("0123456789")
+
+
+def risk_table_ok(text):
+    """whether a risk table is one the robot accepts (dist/ClaudeRobot.mq5 SizParseTable and SizNumber): trimmed, 1 to 16 pairs 'from:pct' split
+    by ';' (one ';' may end the list), each number plain (digits and at most one '.', 24 characters at most, spaces around it trimmed), the first
+    'from' 0, the 'from' values increasing, each rate above 0 and at most 10 %. OnInit refuses any other table, so an INIT or PLAN line holding
+    one is not the robot's own text (an edited line, or text glued after it): its value is never printed (review6, risk_shown)"""
+    t = str(text if text is not None else "").strip()
+    if not t:
+        return False
+    parts = t.split(";")
+    if not parts[-1].strip():
+        parts = parts[:-1]
+    if not parts or len(parts) > 16:
+        return False
+    prev = None
+    for k, p in enumerate(parts):
+        kv = p.split(":")
+        if len(kv) != 2:
+            return False
+        vals = []
+        for x in kv:
+            x = x.strip()
+            if not x or len(x) > 24 or x.count(".") > 1 or any(c not in _PLAIN_DIGITS and c != "." for c in x) or not any(c in _PLAIN_DIGITS for c in x):
+                return False
+            vals.append(float(x))
+        f, pct = vals
+        if (k == 0 and f != 0.0) or (k > 0 and not f > prev) or not 0.0 < pct <= 10.0:
+            return False
+        prev = f
+    return True
+
+
+def risk_shown(text):
+    """a risk table as the outputs may show it: itself when the robot accepts it (risk_table_ok), else only that it is not one (review6: a login
+    edited into the table, or typed right after a PLAN line, is never printed)"""
+    return str(text) if risk_table_ok(text) else "<pas une table que le robot accepte : ligne modifiee ou texte colle ?>"
 
 
 # INIT symbol names shown in the outputs (review4 A14): the base or one of BrkResolve's aliases, then a suffix brokers use; any
@@ -697,6 +745,11 @@ ADOPT_WHY = _W("reconcile", "reconcile_waiting", "listed_late", "history", "open
                "position", "prev_open")                                 # FolAdopt callers, BrkIntentCheck
 _CODE_NUM = re.compile(r"^code-?\d+$")
 _REFUSED_RC = re.compile(r"^refused_\d+$")
+# the trade server return codes of MetaTrader 5 (MQL5 documentation, Constants > Codes of Errors and Warnings > Trade Server Return Codes:
+# TRADE_RETCODE_REQUOTE 10004 ... TRADE_RETCODE_HEDGE_PROHIBITED 10046; 10005 and 10037 are not listed). The robot's 'refused_<rc>' (MISSED,
+# FolIntentStep) carries one of them (CTrade.ResultRetcode of a broker refusal); any other number there is not the robot's (review6b
+# FV6-START-MISSED-GLUED-DIGITS: digits typed right after the line)
+TRADE_RETCODES = frozenset([10004] + list(range(10006, 10037)) + list(range(10038, 10047)))
 # InpRiskTable as typed (MainInitLine writes it back as is): the robot trims the spaces around each number (CR_Sizing.mqh SizNumber),
 # so a space typed or pasted with the value is no error and the line stays readable (review5 START)
 _RISK = re.compile(r"^[0-9.:; ]{0,200}$")
@@ -1245,3 +1298,236 @@ def build_status(build, builds):
     if REQUIRED_BUILD in order and order.index(build) > order.index(REQUIRED_BUILD):
         return "OK"
     return "OLDER"
+
+
+# ---------------------------------------------------------------------------------------------- the account's deals (ReleveFP 1.11)
+# ReleveFP.mq5 1.11 writes, at the end of its run, claude/releve/positions.csv (PositionsTotal / PositionGetTicket: the positions open at
+# that moment) and claude/releve/deals.csv (HistorySelect(0, server time + a day): every deal of the account, oldest first). Enumerations
+# by name (EnumToString; a value outside the list reads 'ENUM_DEAL_TYPE::17'), prices with the symbol's digits (8 for a symbol the terminal
+# does not know, and for a balance deal, whose symbol is empty), volumes with the volume step's digits, money with the account currency's
+# (2 at least). No comment, no external id: the only text is the symbol. Times are the server's seconds (srv_to_utc gives the lab's UTC).
+DEALS_FILE, POSITIONS_FILE = "deals.csv", "positions.csv"
+DEALS_HEADER = "time,time_msc,ticket,order,position,symbol,type,entry,reason,magic,volume,price,sl,tp,commission,swap,fee,profit"
+POSITIONS_HEADER = "ticket,identifier,time,time_msc,symbol,type,magic,volume,price_open,sl,tp,price_current,swap,profit"
+# docs.mql5.com constants/tradingconstants/dealproperties and positionproperties, in the pages' order
+DEAL_TYPES = ("DEAL_TYPE_BUY", "DEAL_TYPE_SELL", "DEAL_TYPE_BALANCE", "DEAL_TYPE_CREDIT", "DEAL_TYPE_CHARGE", "DEAL_TYPE_CORRECTION",
+              "DEAL_TYPE_BONUS", "DEAL_TYPE_COMMISSION", "DEAL_TYPE_COMMISSION_DAILY", "DEAL_TYPE_COMMISSION_MONTHLY",
+              "DEAL_TYPE_COMMISSION_AGENT_DAILY", "DEAL_TYPE_COMMISSION_AGENT_MONTHLY", "DEAL_TYPE_INTEREST", "DEAL_TYPE_BUY_CANCELED",
+              "DEAL_TYPE_SELL_CANCELED", "DEAL_DIVIDEND", "DEAL_DIVIDEND_FRANKED", "DEAL_TAX")
+DEAL_ENTRIES = ("DEAL_ENTRY_IN", "DEAL_ENTRY_OUT", "DEAL_ENTRY_INOUT", "DEAL_ENTRY_OUT_BY")
+DEAL_REASONS = ("DEAL_REASON_CLIENT", "DEAL_REASON_MOBILE", "DEAL_REASON_WEB", "DEAL_REASON_EXPERT", "DEAL_REASON_SL", "DEAL_REASON_TP",
+                "DEAL_REASON_SO", "DEAL_REASON_ROLLOVER", "DEAL_REASON_VMARGIN", "DEAL_REASON_SPLIT", "DEAL_REASON_CORPORATE_ACTION")
+POSITION_TYPES = ("POSITION_TYPE_BUY", "POSITION_TYPE_SELL")
+TRADE_TYPES = ("DEAL_TYPE_BUY", "DEAL_TYPE_SELL")
+MARK_MAGIC = 20261290                           # the guard's mark trade (CR_Types.mqh CR_MAGIC_MARK)
+HAND_REASONS = ("DEAL_REASON_CLIENT", "DEAL_REASON_MOBILE", "DEAL_REASON_WEB")
+DEAL_TYPE_FR = {"DEAL_TYPE_BALANCE": "versement", "DEAL_TYPE_CREDIT": "credit", "DEAL_TYPE_CHARGE": "frais supplementaires",
+                "DEAL_TYPE_CORRECTION": "correction", "DEAL_TYPE_BONUS": "bonus", "DEAL_TYPE_COMMISSION": "commission du courtier",
+                "DEAL_TYPE_COMMISSION_DAILY": "commission du jour", "DEAL_TYPE_COMMISSION_MONTHLY": "commission du mois",
+                "DEAL_TYPE_COMMISSION_AGENT_DAILY": "commission d'agent du jour", "DEAL_TYPE_COMMISSION_AGENT_MONTHLY": "commission d'agent du mois",
+                "DEAL_TYPE_INTEREST": "interets", "DEAL_TYPE_BUY_CANCELED": "achat annule", "DEAL_TYPE_SELL_CANCELED": "vente annulee",
+                "DEAL_DIVIDEND": "dividende", "DEAL_DIVIDEND_FRANKED": "dividende", "DEAL_TAX": "taxe"}
+DEAL_REASON_FR = {"DEAL_REASON_CLIENT": "a la main (terminal)", "DEAL_REASON_MOBILE": "a la main (telephone)", "DEAL_REASON_WEB": "a la main (web)",
+                  "DEAL_REASON_EXPERT": "par un programme", "DEAL_REASON_SL": "stop courtier", "DEAL_REASON_TP": "objectif courtier",
+                  "DEAL_REASON_SO": "stop out (marge insuffisante)", "DEAL_REASON_ROLLOVER": "rollover", "DEAL_REASON_VMARGIN": "marge variable",
+                  "DEAL_REASON_SPLIT": "division du titre", "DEAL_REASON_CORPORATE_ACTION": "operation sur titre"}
+_DEAL_NUM = re.compile(r"^-?\d{1,16}(\.\d{1,8})?$")            # DoubleToString with 0 to 8 decimals
+_DEAL_SYMBOL = re.compile(r"^[A-Za-z0-9._#+\-]{1,40}$")
+_SYMBOL_SHOWN = re.compile(r"^[A-Z]{3,8}[0-9]{0,4}([._#+\-][A-Za-z0-9]{1,6})?$")
+_DEAL_COLS = {"time": "time", "time_msc": "int+", "ticket": "id", "order": "int+", "position": "int+", "symbol": "symbol_or_empty",
+              "type": DEAL_TYPES, "entry": DEAL_ENTRIES, "reason": DEAL_REASONS, "magic": "int", "volume": "num+", "price": "num+",
+              "sl": "num+", "tp": "num+", "commission": "num", "swap": "num", "fee": "num", "profit": "num"}
+_POS_COLS = {"ticket": "id", "identifier": "int+", "time": "time", "time_msc": "int+", "symbol": "symbol", "type": POSITION_TYPES,
+             "magic": "int", "volume": "num+", "price_open": "num+", "sl": "num+", "tp": "num+", "price_current": "num+", "swap": "num",
+             "profit": "num"}
+_ENUM_NAME = {DEAL_TYPES: "ENUM_DEAL_TYPE", DEAL_ENTRIES: "ENUM_DEAL_ENTRY", DEAL_REASONS: "ENUM_DEAL_REASON", POSITION_TYPES: "ENUM_POSITION_TYPE"}
+
+
+def _account_field(rule, v):
+    """one field of deals.csv or positions.csv against what ReleveFP 1.11 writes; the value, or raises ValueError"""
+    if isinstance(rule, tuple):
+        if v in rule or re.match(r"^" + _ENUM_NAME[rule] + r"::-?\d{1,10}$", v):
+            return v
+        raise ValueError(rule)
+    if rule in ("time", "int+", "id", "int"):
+        if not _INT.match(v):
+            raise ValueError(rule)
+        x = int(v)
+        if rule == "time" and not (TIME_MIN <= x < TIME_MAX):
+            raise ValueError(rule)
+        if (rule == "int+" and x < 0) or (rule == "id" and x <= 0):
+            raise ValueError(rule)
+        return x
+    if rule in ("num", "num+"):
+        if not _DEAL_NUM.match(v):
+            raise ValueError(rule)
+        x = float(v)
+        if rule == "num+" and x < 0:
+            raise ValueError(rule)
+        return x
+    if rule == "symbol_or_empty" and v == "":
+        return v
+    if rule in ("symbol", "symbol_or_empty") and _DEAL_SYMBOL.match(v):
+        return v
+    raise ValueError(rule)
+
+
+def read_account_csv(path, kind, scrub=None):
+    """deals.csv (kind 'deals') or positions.csv (kind 'positions') as ReleveFP 1.11 writes them: the header must be ReleveFP's own
+    (else no row is read: an edited or foreign file), every row exactly its fields, each checked (integers, times in 2015-2100, numbers
+    as DoubleToString writes them, a symbol name or nothing, the enumerations' names). A row that fails is counted and located (its line
+    number), its text never kept; a last line without its line end was cut while the file was copied (dropped, said); a ticket seen twice
+    counts once (the second is counted). Every line is scanned for account values first (scrub). Returns (rows, info)"""
+    cols = _DEAL_COLS if kind == "deals" else _POS_COLS
+    header = DEALS_HEADER if kind == "deals" else POSITIONS_HEADER
+    info = {"file": os.path.basename(path), "header_ok": False, "rows": 0, "bad_rows": 0, "bad_lines": [], "cut_last": False, "duplicates": 0}
+    text = read_text(path)
+    lines = text.splitlines()
+    for ln in lines:
+        if scrub is not None:
+            scrub.scan_log_line(ln)
+    if not lines:
+        info["empty"] = True
+        return [], info
+    if lines[0].strip() != header:
+        return [], info
+    info["header_ok"] = True
+    body = list(enumerate(lines[1:], start=2))
+    if text and not text.endswith(("\n", "\r")) and len(body) >= 1:
+        info["cut_last"] = True
+        body = body[:-1]
+    rows, seen = [], set()
+    names = list(cols)
+    for no, ln in body:
+        if not ln.strip():
+            continue
+        parts = ln.split(",")
+        try:
+            if len(parts) != len(names) or not _ASCII.match(ln):
+                raise ValueError("fields")
+            r = {k: _account_field(cols[k], p.strip()) for k, p in zip(names, parts)}
+            px = parts[names.index("price" if kind == "deals" else "price_open")].strip()
+            r["price_decimals"] = len(px.split(".")[1]) if "." in px else 0        # the symbol's digits as ReleveFP wrote them
+        except ValueError:
+            info["bad_rows"] += 1
+            if len(info["bad_lines"]) < 10:
+                info["bad_lines"].append(no)
+            continue
+        if r["ticket"] in seen:
+            info["duplicates"] += 1
+            continue
+        seen.add(r["ticket"])
+        r["line"] = no
+        rows.append(r)
+    info["rows"] = len(rows)
+    return rows, info
+
+
+def deal_key(d):
+    """the time order of deals: DEAL_TIME_MSC (DEAL_TIME when it is 0), then the ticket"""
+    return (d["time_msc"] if d.get("time_msc") else d["time"] * 1000, d["ticket"])
+
+
+def deal_money(d):
+    """what a deal does to the balance: profit + commission + swap + fee (a credit deal moves the credit, not the balance: ClaudeMains.mq5
+    Capital() and SPEC 4.6's ledger leave it out)"""
+    if d["type"] == "DEAL_TYPE_CREDIT":
+        return 0.0
+    return d["profit"] + d["commission"] + d["swap"] + d["fee"]
+
+
+def robot_base(sym):
+    """the robot's market a broker symbol names (the base or BrkResolve's alias, then a usual suffix), else None"""
+    s = str(sym or "")
+    for b in ROBOT_BASES:
+        for a in sorted([b] + SYM_ALIASES.get(b, []), key=len, reverse=True):
+            if s.startswith(a) and s[len(a):] in SYM_SUFFIX_SHOWN:
+                return b
+    return None
+
+
+def deal_symbol_shown(sym):
+    """a deal's symbol as the outputs may show it: a robot market's name with its usual suffix, another plain market name (capitals,
+    digits, a short suffix), else 'un autre marche' (an edited field may hold anything: its text is never written)"""
+    b = robot_base(sym)
+    if b:
+        return sym_shown(b, sym)
+    if sym and _SYMBOL_SHOWN.match(sym):
+        return sym
+    return "un autre marche" if sym else "-"
+
+
+def deal_positions(deals):
+    """the trade deals (buy, sell) by position (DEAL_POSITION_ID: every deal of a position carries it, so a broker stop deal with magic 0
+    belongs to the robot's position, as the robot's own ledger reads it, CR_Ledger.mqh). Per position: its deals, the opening and the
+    closing ones (DEAL_ENTRY_IN; OUT, OUT_BY and INOUT close), the opening deal's magic and side, the volume-weighted prices, the money
+    (profit + commission + swap + fee) and kind: 'robot' (a sleeve's magic 20261201-20261210, its code), 'mark' (the guard's mark,
+    20261290), 'hand' (magic 0 on every deal: a trade placed by hand), 'other' (another program's magic)"""
+    out = {}
+    for d in sorted(deals, key=deal_key):
+        if d["type"] not in TRADE_TYPES or d["position"] <= 0:
+            continue
+        g = out.setdefault(d["position"], {"position": d["position"], "symbol": d["symbol"], "deals": [], "in": [], "out": []})
+        g["deals"].append(d)
+        (g["in"] if d["entry"] == "DEAL_ENTRY_IN" else g["out"]).append(d)
+    for g in out.values():
+        first = g["in"][0] if g["in"] else g["deals"][0]
+        magics = [d["magic"] for d in g["deals"]]
+        robot = [m for m in magics if m in CODE_OF_MAGIC or m == MARK_MAGIC]
+        g["magic"] = first["magic"] if (first["magic"] in CODE_OF_MAGIC or first["magic"] == MARK_MAGIC or not robot) else robot[0]
+        if g["magic"] in CODE_OF_MAGIC:
+            g["kind"], g["code"] = "robot", CODE_OF_MAGIC[g["magic"]]
+        elif g["magic"] == MARK_MAGIC:
+            g["kind"], g["code"] = "mark", None
+        elif all(m == 0 for m in magics):
+            g["kind"], g["code"] = "hand", None
+        else:
+            g["kind"], g["code"] = "other", None
+        g["side"] = (1 if first["type"] == "DEAL_TYPE_BUY" else -1) if g["in"] else ((-1 if first["type"] == "DEAL_TYPE_BUY" else 1))
+        for k, part in (("in", g["in"]), ("out", g["out"])):
+            v = sum(d["volume"] for d in part)
+            g["vol_" + k] = v
+            g["price_" + k] = (sum(d["price"] * d["volume"] for d in part) / v) if v > 0 else None
+            g["time_" + k] = (part[0]["time"] if k == "in" else part[-1]["time"]) if part else None
+        g["open"] = g["vol_in"] - g["vol_out"] > 1e-9 or not g["out"]
+        g["reason_out"] = g["out"][-1]["reason"] if g["out"] else None
+        g["magic_out"] = g["out"][-1]["magic"] if g["out"] else None
+        g["sl_out"] = g["out"][-1]["sl"] if g["out"] else None
+        for f in ("profit", "commission", "swap", "fee"):
+            g[f] = sum(d[f] for d in g["deals"])
+        g["money"] = sum(deal_money(d) for d in g["deals"])
+        g["base"] = robot_base(g["symbol"])
+    return out
+
+
+def deal_operations(deals):
+    """the deals that are not trades (a deposit or a withdrawal, a charge, a correction, a credit, interest ...), oldest first"""
+    return [d for d in sorted(deals, key=deal_key) if d["type"] not in TRADE_TYPES]
+
+
+# the lab's other programs that may have traded on the account (their magic numbers: SondeFP.mq5 and ClaudeMains.mq5 InpMagic)
+LAB_PROGRAM_MAGIC = {20261112: "SondeFP", 20261110: "ClaudeMains"}
+
+
+def swap_nights(entry_utc, exit_utc, triple):
+    """rollovers a position pays between its entry and exit: one per server weekday that ends while it is open, three on the
+    lab's triple day (fp_costs.json swap_triple)"""
+    if not entry_utc or not exit_utc or exit_utc <= entry_utc or exit_utc - entry_utc > 400 * 86400:
+        return 0
+    a, z = utc_to_srv(int(entry_utc)), utc_to_srv(int(exit_utc))
+    n = 0
+    for d in range(a - a % 86400 + 86400, z + 1, 86400):
+        dw = dow(d - 86400)
+        if 1 <= dw <= 5:
+            n += 3 if DOW_EN3[dw] == triple else 1
+    return n
+
+
+def lab_swap_eur(base, side, price, lots, eur_per_price_lot, nights, costs=None):
+    """the lab's swap for a position (fp_costs.json: an annual fraction of the notional, 360-day basis, a cost > 0, credits ignored),
+    in EUR, over `nights` rollovers (swap_nights counts the triple day)"""
+    lab = (costs if costs is not None else load_fp_costs()).get(LAB_SYM.get(base, ""), {})
+    rate = lab.get("swap_long" if side > 0 else "swap_short") or 0.0
+    if not (rate > 0 and price and lots and eur_per_price_lot and nights):
+        return 0.0
+    return rate * price * lots * eur_per_price_lot / 360.0 * nights

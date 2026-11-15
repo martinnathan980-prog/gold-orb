@@ -3,7 +3,7 @@
     python3 -I lab/robot/demo/check_demo.py --journals DIR [--bars DIR] [--printed FILE|DIR ...] [--out DIR]
                                             [--fiches FILE] [--spread auto|open|close|mean|max|min2|min]
                                             [--input InpName=value ...] [--no-replay] [--rebuild]
-                                            [--copie 'AAAA-MM-JJ HH:MM']
+                                            [--copie 'AAAA-MM-JJ HH:MM'] [--deals FILE]
 
 --journals  the robot's daily files MQL5/Files/ClaudeRobot/<yyyymmdd>.log (CR_Journal.mqh JrnAt: one line
             CR|<utc>|<EVENT>|<code>|k=v|... per event, utc = the event's lab time, doubles DoubleToString(x, -16);
@@ -45,15 +45,20 @@
             end was cut while the robot wrote (that line is unreadable); time fields outside 2015-2100 make a line
             unreadable; a live line repeated word for word is a file read twice. A journal without INIT whose oldest file is
             30 days older than its newest lost its first files to the robot's own purge (CR_JRN_KEEP_DAYS).
---copie     the Paris time the user copied the files (his message), for the copies sent while the robot runs (Wednesday,
-            Saturday): a journal that reaches the copy's server day without a stop line is a robot still running (no anomaly);
-            one that stops earlier names the daily files missing up to it (review5b RH5-4).
+--copie     the Paris time the user copied the files, for the copies sent while the robot runs (Wednesday, Saturday): the time
+            of the zip when known, else of his message: a journal that reaches the copy's server day without a stop line is a robot
+            still running (no anomaly); one that stops earlier names the daily files missing up to it (review5b RH5-4). The message may
+            come a while after the zip: within the hour after the server's midnight (23:00 in Paris in November), a journal that reaches
+            the day before is no anomaly, said as information ('si les fichiers ont ete zippes avant 23:00 (heure de Paris), rien ne
+            manque ; sinon le fichier <jour>.log manque', review6 FV5-COPIE-MIDNIGHT).
 --printed   the Experts tab's lines (copied text, or MetaTrader's own MQL5/Logs/<yyyymmdd>.log, UTF-16 accepted):
             the same CR| lines after a terminal prefix, live lines only (rp=1 is never printed, SPEC 2.6). Other lines
             are never kept; they are only scanned for an account login or server name, which is then masked. Files
             one by one (several after one --printed) or a folder (its .log files). MetaTrader names its logs by the
             Mac's local date (Paris), not by the server day of the robot's files; two files of the same name from
             two folders are two files, named with their folder (review5 FV4b-2).
+--deals     ReleveFP 1.11's claude/releve/deals.csv (default: the deals.csv beside --bars, when there is one), with positions.csv beside it:
+            the account's whole history and the positions open at ReleveFP's run (see Review7 below). Without it nothing changes.
 The files macOS adds to a Finder zip (a __MACOSX folder, AppleDouble '._<name>' files, .DS_Store) are skipped in every
 input (--journals, --printed, --bars, --fiches): never read, never counted as missing, foreign or second-copy files, named once
 as information ('fichiers de macOS ignores', review5 MAC-ZIP).
@@ -83,7 +88,8 @@ What it does:
      then each SLMOD) for every such exit (bid low for a long, ask high for a short), else it is an anomaly ('stop
      jamais touche') and the exit is unknown. Exits at the broker's stop stay out of the exit averages, the euros and
      the headline; they are counted apart with an estimate at stop x (1 -/+ the lab's stop slippage), what the paper
-     books for its own stop exit, and their real slippage is in the balance difference only. A position whose paper
+     books for its own stop exit, and their real slippage is in the balance difference only (with ReleveFP 1.11's deals.csv
+     their real price is known: Review7 below). A position whose paper
      trade ended otherwise (time, target, rule, eod ...) and has no successful CLOSE was either not closed by the robot
      or stopped by the broker before the paper's exit: with --bars, the releve's minutes say which; else, or when they
      did not cross, it is an anomaly. Its exit is then unknown and it is left out of the money totals; so is a CLOSE
@@ -241,6 +247,67 @@ What it does:
      the files were copied are 'encore ouvertes', not unknown exits; with unknown exits the balance difference is 'non expliquee', not costs.
      Every UTC time on stdout is followed by the Mac's time in Paris. The end of a journal copied while the robot runs is said as normal for
      the Wednesday and Saturday copies (settled by --copie), and the rest of the verdict is printed.
+ Review6: the starts the reader sees are numbered among the starts that ran (start_nums: 1, 2 ... as the headline counts them; a start OnInit
+     refused has no number, it is 'demarrage refuse par le robot' with its time); a start the Experts tab shows in a lost daily file counts in
+     the headline and in the restarts when it is one more start, and its INIT line gives the build of a start whose INIT line the files lost
+     (start_counts); the restarts are the starts that ran after the first, INIT line lost or not. Consecutive starts whose INIT lines differ
+     the same way from the user's settings are one run (start_runs: MetaTrader closed and opened again keeps the inputs): a restart with the
+     same settings is no 'remplace', no plan note and no separate anomaly for its trades, the start in force says the settings ('demarrage 2
+     (memes reglages depuis le demarrage 1) : plan de mise D2 ...'); a run is 'remplace' (information, its real trades an anomaly) only when
+     the next start's settings are known and different; when the next start's INIT line is lost, the run's differences stay an anomaly
+     ('reglages du redemarrage inconnus ... a verifier'), settled by the Experts tab's INIT line when --printed gives it. A money estimate that
+     is not complete (positions without an exit price, days of journal lost, the journal's start or end missing ...) is said as a difference
+     between the balance and the trades with its reasons, never as costs ('frais hors des prix', 'cout de'). A risk table the robot would
+     refuse (demo_common.risk_table_ok) is not its text: never printed.
+ Review6b: 'reglages du redemarrage inconnus' asks for the INIT line of the robot that runs only when the start whose INIT line is lost is the
+     start in force; when a later start is in force (its INIT line says nothing of that restart), it asks for the Mac's Experts logs of that day
+     (MQL5/Logs, --printed), and the Experts tab's INIT line now settles it for any restart whose INIT line the files lost (printed_starts_report
+     fills it, the journal's first start apart: the runs are judged again, the same settings make one run, other settings replace the run
+     before), not only for the start in force. When a later start's known settings differ from such a run's, the run was replaced by then at the latest: its real trades are named
+     (replaced_trades, without 'remplace') and the plan's note counts it. A second copy MetaTrader refused while a copy runs (ERROR 'another
+     copy', then its stop line deinit=8 with rebuilds=0; GrdLockTake refuses only a lock another copy refreshed less than 10 s before) is seen in
+     the Experts logs only (the copy that runs holds the daily file): set apart (printed_second_copies, check_start's rule), said as
+     information, never 'lignes imprimees differentes' nor a stop of the robot in a lost day. error_meaning's 'another copy' (shared with
+     check_start.py) says that a copy runs and to remove nothing, asking for its INIT line.
+Review7 (ReleveFP 1.11's deals.csv and positions.csv, read by demo_common.read_account_csv): every robot position of the journal (its FILL or ADOPT
+     ticket, the opening order's ticket on a hedging account, is the deals' DEAL_POSITION_ID) is matched with its deals; the magic of its opening deal
+     must be its sleeve's. (a) The FILL price and lots and an EA close's CLOSE price must equal the deals' (half a point: deals.csv has the symbol's
+     digits); a disagreement, a close the history shows by another reason, or a position the journal closed but the history keeps open is an anomaly.
+     An adopted position gets its entry from the history. (b) An exit the journal could not price (the broker's stop, a CLOSE race, a lost or
+     unreadable CLOSE line, a close in a lost file or while the robot was stopped ...) takes the closing deal's price and reason (broker_stop_deal,
+     ea_close_deal, stop_out_deal, tp_deal, hand_close_deal, other_close_deal; deal_apply): the broker's stops are measured against the stop level
+     (DEAL_SL of the closing deal, else the journal's stop) in points, bp and EUR, and, when the paper also left by its stop, against the paper's
+     own stop exit, which books the lab's stop slippage: per market, judge() against 1.5 x the lab's (beyond the paper by half the lab's, Student
+     99.9 %, 3 stops at least, never against 0); those exits enter the euros and the headline. Exits the journal lacked or doubted are one anomaly
+     with what the journal said and what the history says (a broker stop the journal already expected is no anomaly). (c) Commission + fee per
+     market against the model (gold 3 points a side at the trade's EUR per point, none on US100, BTC, ETH: beyond 1.5 x the model plus the cents
+     the deals were rounded to) and swaps against fp_costs.json's (its triple day; per market and per trade, beyond 1.5 x). (d) Each DAY line's
+     balance against the sum of every deal before its stamp (a deal of the first minute after it may be in or out: both tried; the cents of each
+     rounded field allowed): when they agree the money estimate is complete and exact (the history holds every trade, payment and charge, whatever
+     the journal lost), the balance is split into the robot's trades (price, commission, swap, fee), trades by hand, other programs, payments and
+     other operations, and the P_in payment guess and the balance-based cost judgement give way to the deals' own checks; when they do not, it is an
+     anomaly. When the journal goes on after the releve, the old estimate stays. (e) Trades by hand (magic 0), other programs' trades and the
+     operations on the balance after the first start (deposits, withdrawals, charges ...) are anomalies with their times; the opening deposit is
+     information. (f) positions.csv (at fini.txt's positions_heure) against the journal: a robot position open there that the journal does not know,
+     one the journal closed before, one the journal and the history keep open but positions.csv lacks, or another opening price, is an anomaly.
+     (g) Robot positions of the history inside the journal's span that the journal does not know, journal positions without any deal (not after the
+     releve), deals.csv rows that cannot be read, a cut last line, erreur_deals != 0 in fini.txt, and a history without any robot deal while the
+     journal has FILL lines, are anomalies. report.json gets 'deals' (and fills.deals); report_fr.txt a section 'historique du compte'.
+Review8 (the verifiers' ids of the deals stage's second pass): fini.txt says whether ReleveFP wrote deals.csv and positions.csv whole (load_deals):
+     deals=-1, fewer rows than deals=, a cut last line or erreur_deals != 0 make one anomaly that says so (never 'historique d'un autre compte' for
+     what the cut lost); without any row the history is not used at all; with rows it is used up to its last deal: positions entered after it
+     are not 'sans transaction', closes after it are not 'encore ouverte dans l'historique', and the money is checked up to it. positions.csv
+     incomplete (positions=-1, fewer rows, erreur_deals) is not compared. fini.txt of 1.11 without deals.csv beside it is an anomaly (ReleveFP
+     could not open the file, or the folder was not copied whole). A robot position of the history that a DUP, ORPHAN, CLOSE, SLMOD, SLFIX or
+     WATCH line names is known to the journal; one whose entry or exit falls inside a missing daily file's hours is listed with that file
+     ('leurs lignes etaient dedans'), never 'que le journal ne connait pas'. The money (deals_money) is checked from one DAY line to the next,
+     within 0.011 EUR + 0.005 EUR per money field of the deals between them (each rounded to the cent once; a real account's gap is 0): an
+     edited deal of 0.20 EUR shows; the largest gap seen is said ('au centime pres' only when it is), the tolerance in report_fr.txt. When the
+     journal goes on after the releve (files zipped later), the DAY lines up to the releve are explained by the history and the rest is
+     estimated from the balance on its own window, said ('historique du compte jusqu'au releve ... ; apres le releve ... (estimation)'),
+     judged against the lab's allowance when it can be. The period is the earliest and the latest deal, whatever the file's order. The
+     execution cost line names what it judges (the market orders' fills) and gives the broker's stops' verdict beside it. The scrubber learns
+     the account's server name from SondeFP's sonde.csv and MetaTrader's own logs (--printed): ReleveFP 1.11 no longer writes it.
 Output in --out (default: the session scratchpad; a folder inside the repository is refused): report.json,
 report_fr.txt, the converted bars and the replay's journal under replay/; a French summary on stdout. When nothing
 is abnormal the verdict is "Rien d'anormal." only if the replay compared every sleeve over the whole demo; otherwise
@@ -521,6 +588,7 @@ def days_txt(g):
 
 
 INF_T = 1 << 62
+COPY_MARGIN_S = 3600              # --copie: the user's message may come up to an hour after the zip (review6 FV5-COPIE-MIDNIGHT)
 MARK_MAGIC = 20261290                           # the guard's mark trade (CR_Types.mqh CR_MAGIC_MARK)
 # CLOSE reasons that may close a position the robot does not follow (no FILL or ADOPT for its ticket in this run):
 # ORPHAN, DUP, the guard's mark, NOT_READY exits by LatestExit, a missed Friday close, the guards' closes, SLFIX of an
@@ -851,13 +919,25 @@ def journal_end(rows, files, releve_end, copy_utc=None):
         return res
     if copy_utc is not None:
         # the copy's server day: the robot writes its first lines of a day at 00:00:30, so a copy in the first two minutes may show the day before
-        s = C.utc_to_srv(int(copy_utc)) - 120
+        s0 = C.utc_to_srv(int(copy_utc))
+        s = s0 - 120
         ref_day = s - s % 86400
         miss = [C.file_of_day(d) for d in range(days[-1] + 86400, ref_day + 1, 86400)]
         if not miss:
             res["kind"] = "running"
             res["note"] = (f"robot encore en marche quand les fichiers ont ete copies (pas de ligne d'arret a la fin ; le journal va jusqu'au jour "
                            f"de l'envoi, {C.utc_txt(copy_utc)}) : normal")
+            return res
+        if len(miss) == 1 and ref_day == days[-1] + 86400 and s0 - ref_day < COPY_MARGIN_S:
+            # --copie is often the time of the user's message, which can come a while after the zip (review6 FV5-COPIE-MIDNIGHT): in the hour after
+            # the server's midnight a journal that reaches the day before is no anomaly; said, with what settles it
+            mid = time.strftime("%H:%M", time.gmtime(C.paris_of_utc(C.srv_to_utc(ref_day))))
+            res["kind"] = "running"
+            res["copy_margin"] = True
+            res["note"] = (f"robot encore en marche quand les fichiers ont ete copies (pas de ligne d'arret a la fin ; le journal va jusqu'au "
+                           f"{time.strftime('%Y-%m-%d', time.gmtime(days[-1]))} serveur) ; l'heure donnee par --copie ({C.utc_txt(copy_utc)}) est juste "
+                           f"apres minuit serveur ({mid} a Paris) : si les fichiers ont ete zippes avant {mid} (heure de Paris), rien ne manque ; sinon "
+                           f"le fichier {miss[0]} manque : le demander")
             return res
         res["kind"] = "missing_tail"
         res["missing_files"] = miss[:40]
@@ -946,7 +1026,11 @@ def error_meaning(r, raw_text="", relaunch=False):
         return (f"marche {m.group(1)} introuvable : MetaTrader doit etre connecte au compte demo FP Markets (en bas a droite) ; attendre "
                 "une minute et relancer le robot (etape 6 du guide, avec les 2 valeurs) ; si cela revient : capture de l'Observation du marche")
     if "another copy" in w:
-        return "le robot tourne aussi sur un autre graphique : l'enlever de l'autre graphique (une seule copie)"
+        # GrdLockTake refuses only a lock another copy refreshed less than 10 s before (CR_GRD_LOCK_STALE_MS): a copy runs on this terminal and
+        # account; OnInit returned INIT_FAILED and MetaTrader unloaded the new copy (MQL5 documentation, OnInit). Removing the other one would
+        # stop the robot that runs (review6b FV6-START-LONE-SECOND-COPY)
+        return ("une copie du robot tourne deja sur un autre graphique de ce MetaTrader : MetaTrader a retire la nouvelle copie de son graphique ; "
+                "ne rien enlever ni relancer ; demander la ligne INIT (avec build=) de la copie qui tourne, pour verifier ses reglages")
     fix = None
     if w.startswith("InpSleeves"):
         fix = ("InpSleeves mal tape", "InpSleeves = ALL")
@@ -1005,11 +1089,18 @@ def start_settings(i, n=1, when="", years=(), builds=None):
         "demo FP Markets")
     preset = C.risk_preset(i.get("risk"))
     what = {"D2": "D2, le reglage par defaut du robot : InpRiskTable n'a pas ete tape"}.get(preset, preset or "aucun reglage connu")
-    add("risk", "risk", preset == C.RISK_EXPECTED, f"mise S7 ({s7})",
-        f"demarrage {n} : plan de mise {i.get('risk')} ({what}) au lieu de S7 = {s7} (le choix de l'utilisateur, SPEC 1 "
-        "etape 3 : a taper dans InpRiskTable)",
-        (f"mise D2 ({C.RISK_PRESETS['D2']}), le reglage par defaut : InpRiskTable n'a pas ete tape" if preset == "D2" else
-         f"mise {i.get('risk') or '(vide)'} au lieu de S7") + f" ; {GUIDE_F7}, InpRiskTable = {s7}, OK")
+    if i.get("risk") is not None and not C.risk_table_ok(i.get("risk")):
+        # OnInit refuses such a table (SizParseTable): the line is not the robot's own text (edited, or badly copied); its value may hold
+        # anything (a login) and is never printed (review6)
+        add("risk", "risk", False, "", f"demarrage {n} : plan de mise illisible ({C.risk_shown(i.get('risk'))}) : ligne INIT modifiee ?",
+            f"mise illisible ({C.risk_shown(i.get('risk'))}) : ligne INIT modifiee ou mal copiee : demander de la recopier (clic droit sur la "
+            "ligne dans l'onglet Experts, Copier, puis la coller seule)")
+    else:
+        add("risk", "risk", preset == C.RISK_EXPECTED, f"mise S7 ({s7})",
+            f"demarrage {n} : plan de mise {i.get('risk')} ({what}) au lieu de S7 = {s7} (le choix de l'utilisateur, SPEC 1 "
+            "etape 3 : a taper dans InpRiskTable)",
+            (f"mise D2 ({C.RISK_PRESETS['D2']}), le reglage par defaut : InpRiskTable n'a pas ete tape" if preset == "D2" else
+             f"mise {i.get('risk') or '(vide)'} au lieu de S7") + f" ; {GUIDE_F7}, InpRiskTable = {s7}, OK")
     add("sleeves", "sleeves", str(i.get("sleeves")).strip() in ("ALL", "all"), "toutes les sleeves (InpSleeves = ALL)",
         f"demarrage {n} : sleeves {i.get('sleeves') or '(vide)'} au lieu de ALL (InpSleeves) : les autres sleeves restent sur "
         "le papier, sans trade reel",
@@ -1066,6 +1157,71 @@ def in_force(starts):
     return next((k for k in range(len(starts) - 1, -1, -1) if not starts[k].get("refused")), None)
 
 
+def start_nums(starts):
+    """the start numbers the reader sees (review6 FV5-START-NUMBERING): the starts that ran, numbered 1, 2 ... in time order, the same
+    numbers as the headline's count; a start OnInit refused gets none (it is said apart, 'demarrage refuse par le robot', with its time).
+    Returns {index in starts: number}"""
+    out, n = {}, 0
+    for k, s in enumerate(starts):
+        if not s.get("refused"):
+            n += 1
+            out[k] = n
+    return out
+
+
+def who_txt(nums):
+    """starts by their numbers: 'demarrage 2', 'demarrages 1 et 2', 'demarrages 1 a 3'"""
+    ns = sorted(nums)
+    if len(ns) == 1:
+        return f"demarrage {ns[0]}"
+    return f"demarrages {ns[0]} et {ns[1]}" if len(ns) == 2 else f"demarrages {ns[0]} a {ns[-1]}"
+
+
+def start_diffs(s, n, lv, builds, init=None):
+    """how one start's INIT line differs from the user's settings, in a few words (the start_settings items check_demo judges, and an observer
+    copy of the demo phase): [] when they are the user's, None when its INIT line is lost (settings unknown). init = the INIT line the Experts
+    tab gives for a start whose INIT line the files lost (review6b FV6-DEMO-UNKNOWN-RESTART-ADVICE)"""
+    if init is not None and not s.get("init"):
+        s = dict(s, init=init)
+    i = s.get("init")
+    if not i:
+        return None
+    d = [settings_short(it) for it in start_settings(i, n, C.utc_txt(s["utc"]), start_years(s, lv), builds) if not it["ok"] and it["in_check_demo"]]
+    if demo_observer(s):
+        d.append("copie observatrice (InpTrade = false)")
+    return d
+
+
+def start_runs(starts, lv, builds, filled=None):
+    """the starts that ran, in runs of the same settings (review6 FV5-RH5-2-SAME-SETTINGS-RESTART): consecutive starts whose INIT lines differ
+    the same way from the user's settings are one run (MetaTrader closed and opened again keeps the inputs); a start whose INIT line is lost
+    is a run of its own, its settings unknown, unless filled ({index: INIT row}) gives it from the Experts tab (review6b). Returns
+    [{"ks": [index ...], "diffs": [...] or None}] in time order"""
+    nums = start_nums(starts)
+    out = []
+    for k, s in enumerate(starts):
+        if s.get("refused"):
+            continue
+        d = start_diffs(s, nums[k], lv, builds, init=(filled or {}).get(k))
+        if out and d is not None and out[-1]["diffs"] == d:
+            out[-1]["ks"].append(k)
+        else:
+            out.append({"ks": [k], "diffs": d})
+    return out
+
+
+def in_force_label(starts, k_force, lv, builds):
+    """the number of the start in force as its anomalies name it (review6 FV5-RH5-2-SAME-SETTINGS-RESTART): with 'memes reglages depuis le
+    demarrage N' when earlier starts of its run had the same settings, so that the reader knows they ran that way too"""
+    nums = start_nums(starts)
+    if k_force is None:
+        return None
+    run = next((r for r in start_runs(starts, lv, builds) if k_force in r["ks"]), None)
+    if run and len(run["ks"]) > 1 and run["diffs"]:
+        return f"{nums[k_force]} (memes reglages depuis le demarrage {nums[run['ks'][0]]})"
+    return nums[k_force]
+
+
 DEMO_PHASE_S = 14 * 86400                       # SPEC 1: two weeks on the demo; an observer that soon after the plan's start is the demo's copy
 
 
@@ -1081,27 +1237,30 @@ def demo_observer(s):
     return isinstance(T, int) and T > 0 and 0 <= int(s["utc"]) - C.srv_to_utc(T) <= DEMO_PHASE_S
 
 
-def settings_check(starts, lv, k_force=None):
+def settings_check(starts, lv, k_force=None, label=None):
     """the demo's settings (review4 A4, SPEC 1 steps 3-4) on the start in force at the end of the journal (review5b RH5-2: a start a later one
-    replaced is information, replaced_starts_info): the risk table S7 the user picked (the build's default is D2), a demo account, every sleeve
+    replaced is information, earlier_runs): the risk table S7 the user picked (the build's default is D2), a demo account, every sleeve
     (InpSleeves ALL), the .r names of the Raw account, the three switches on (they resolve on on a demo when left at -1), InpK1T (start_settings,
     shared with check_start.py), an observer copy during the demo (demo_observer), a plan in force while the journal runs (InpPlanStart at the
     go-live time: a state 'future' whose start lies after the journal, or more than a day after the first start, lets no entry through); and
-    intents sized to send with no real trade at all while the copy is not an observer. Returns the anomalies"""
+    intents sized to send with no real trade at all while the copy is not an observer. label = the start's number as the anomalies say it
+    (in_force_label; review6: the numbers of start_nums). Returns the anomalies"""
     out = []
     last = max((r["utc"] for r in lv), default=None)
     first_start = next((s["utc"] for s in starts if s["init"] and not s.get("refused")), None)
     k_force = in_force(starts) if k_force is None else k_force
+    nums = start_nums(starts)
     for k, s in enumerate(starts):
         i = s["init"]
         if not i or k != k_force:
             continue
+        n = label if label is not None else nums.get(k, k + 1)
         when = C.utc_txt(s["utc"])
         years = {time.gmtime(int(s["utc"])).tm_year} | ({time.gmtime(int(last)).tm_year} if last is not None else set())
-        out += [it["anomaly"] for it in start_settings(i, k + 1, when, years)
+        out += [it["anomaly"] for it in start_settings(i, n, when, years)
                 if not it["ok"] and it["in_check_demo"] and it["key"] not in SETTINGS_BUILD_KEYS]
         if demo_observer(s):
-            out.append(f"demarrage {k + 1} ({when}) : copie observatrice (observer=1 : InpTrade = false) pendant la demo : elle n'envoie aucun ordre, "
+            out.append(f"demarrage {n} ({when}) : copie observatrice (observer=1 : InpTrade = false) pendant la demo : elle n'envoie aucun ordre, "
                        f"la demo ne trade pas ; {GUIDE_F7}, InpTrade = true, OK (une copie observatrice n'est normale que sur le Mac pendant les "
                        "semaines VPS, apres la demo)")
         plan = s.get("plan") or {}
@@ -1109,7 +1268,7 @@ def settings_check(starts, lv, k_force=None):
         if plan.get("state") == "future" and isinstance(T, int) and T > 0:
             Tu = C.srv_to_utc(T)
             if (last is not None and Tu > last) or (first_start is not None and Tu > first_start + 86400):
-                out.append(f"demarrage {k + 1} : plan pas encore en vigueur (InpPlanStart = {C.ymdhm(T)} serveur, "
+                out.append(f"demarrage {n} : plan pas encore en vigueur (InpPlanStart = {C.ymdhm(T)} serveur, "
                            + ("apres la fin du journal" if last is not None and Tu > last else "plus d'un jour apres le premier demarrage")
                            + ") : aucune entree possible ; InpPlanStart doit etre l'heure de la mise en route (SPEC 1 etape 3)")
     inits = [s["init"] for s in starts if s["init"] and not s.get("refused")]
@@ -1132,46 +1291,50 @@ def start_years(s, lv):
     return {time.gmtime(int(s["utc"])).tm_year} | ({time.gmtime(int(last)).tm_year} if last is not None else set())
 
 
-def in_force_summary(starts, k_force, lv, builds, extra=None):
-    """the settings in force at the end of the journal, for the stdout line 'Reglages en vigueur' (review5b RH5-2): the start in force, its
-    differences from what the user was told to set (start_settings, the items check_demo judges), and a plan that begins before an earlier
-    start's INIT (InpPlanStart 0 on a demo: the account's first deal; the plan and the money then count that earlier run). extra = a start seen
-    only in the Experts tab (PRINTED-RESTART-UNCHECKED): {"utc", "init", "file"}"""
+def in_force_summary(starts, k_force, lv, builds, extra=None, replaced=None):
+    """the settings in force at the end of the journal, for the stdout line 'Reglages en vigueur' (review5b RH5-2): the start in force (its number
+    from start_nums, review6 FV5-START-NUMBERING), its differences from what the user was told to set (start_settings, the items check_demo
+    judges), and a plan that begins before an earlier run a later start replaced with other settings (replaced: earlier_runs; InpPlanStart 0 on
+    a demo: the account's first deal; the plan and the money then count that run; a restart with the same settings is part of the demo: not
+    said, review6 FV5-RH5-2-SAME-SETTINGS-RESTART). extra = a start seen only in the Experts tab (PRINTED-RESTART-UNCHECKED): {"utc", "init",
+    "file"}; 'fills' = the index of the files' start whose lost INIT line it is (its build then shows in the headline), None when it is one
+    more start"""
     if k_force is None and not extra:
         return None
+    nums = start_nums(starts)
+    fills = None
     if extra:
         # the start whose INIT line only the Experts tab holds: the files' start in force when its own INIT line is lost, else one more start
-        fills = k_force is not None and starts[k_force].get("init") is None
-        n, u, i, src = (k_force + 1) if fills else len(starts) + 1, extra["utc"], extra["init"], extra["file"]
-        s = {"utc": u, "init": i, "plan": starts[k_force].get("plan") if fills else None}
+        fills = k_force if (k_force is not None and starts[k_force].get("init") is None) else None
+        n, u, i, src = nums[fills] if fills is not None else len(nums) + 1, extra["utc"], extra["init"], extra["file"]
+        s = {"utc": u, "init": i, "plan": starts[fills].get("plan") if fills is not None else None}
     else:
         s = starts[k_force]
-        n, u, i, src = k_force + 1, s["utc"], s["init"], None
+        n, u, i, src = nums[k_force], s["utc"], s["init"], None
     if not i:
-        return {"n": n, "utc": u, "paris": C.paris_when(u), "known": False, "ok": None, "diffs": [], "source": src}
+        return {"n": n, "utc": u, "paris": C.paris_when(u), "known": False, "ok": None, "diffs": [], "source": src, "fills": fills, "build": None}
     items = start_settings(i, n, C.utc_txt(u), start_years(s, lv), builds)
     diffs = [settings_short(it) for it in items if not it["ok"] and it["in_check_demo"]]
     if demo_observer(s):
         diffs.append("copie observatrice (InpTrade = false)")
-    res = {"n": n, "utc": u, "paris": C.paris_when(u), "known": True, "ok": not diffs, "diffs": diffs, "source": src,
-           "what": f"build {i.get('build')}, mise {C.risk_preset(i.get('risk')) or i.get('risk')}, InpK1T {k1t_words(i.get('k1t'))}, sleeves "
+    res = {"n": n, "utc": u, "paris": C.paris_when(u), "known": True, "ok": not diffs, "diffs": diffs, "source": src, "fills": fills,
+           "build": i.get("build"),
+           "what": f"build {i.get('build')}, mise {C.risk_preset(i.get('risk')) or C.risk_shown(i.get('risk'))}, InpK1T {k1t_words(i.get('k1t'))}, sleeves "
                    f"{i.get('sleeves')}, compte {'demo' if i.get('demo') == 1 else 'reel'}, symboles "
                    + ("des .r" if all(i.get(b) == b + ".r" for b in C.ROBOT_BASES) else "autres que .r")}
     plan = s.get("plan") or {}
     T = plan.get("T")
     if isinstance(T, int) and T > 0:
         Tu = C.srv_to_utc(T)
-        # an earlier start with other settings that traded: its trades are in this plan's B(T) and in the money since the start (a start of the
-        # demo with the same settings is part of it: not said)
+        # an earlier run a later start replaced with other settings, that traded: its trades are in this plan's B(T) and in the money since the
+        # start (a restart with the same settings is part of the demo: not said)
         traded = {r.get("_si") for r in lv if r["ev"] == "FILL"}
-        early = [k for k, x in enumerate(starts) if x.get("init") and not x.get("refused") and Tu < x["utc"] < u and k != k_force
-                 and k in traded and any(not it["ok"] and it["in_check_demo"]
-                                         for it in start_settings(x["init"], k + 1, "", start_years(x, lv), builds))]
+        early = sorted(k for x in replaced or [] for k in x.get("ks") or [] if k in traded and Tu < starts[k]["utc"] < u)
         if early:
             k0 = early[0]
             res["plan_note"] = (f"le plan du demarrage {n} part du {C.ymdhm(T)} serveur (la premiere transaction du compte : InpPlanStart 0 sur la "
-                                f"demo), avant le demarrage {k0 + 1} ({C.paris_when(starts[k0]['utc'])}) : le plan et les montants depuis le debut "
-                                f"comptent aussi la marche du demarrage {k0 + 1}")
+                                f"demo), avant le demarrage {nums[k0]} ({C.paris_when(starts[k0]['utc'])}) : le plan et les montants depuis le debut "
+                                f"comptent aussi la marche {'du' if len(early) == 1 else 'des'} {who_txt([nums[k] for k in early])}")
     return res
 
 
@@ -1185,6 +1348,30 @@ def printed_starts_report(res_a, starts, hole_starts, hole_stops, builds, lv, an
     if not hole_starts and not hole_stops:
         return
     k_force = in_force(starts)
+    # the files' starts before the one in force whose INIT line the files lost and the Experts tab gives (review6b FV6-DEMO-UNKNOWN-RESTART-ADVICE):
+    # the latest INIT line the Experts tab shows between the stop before such a start and its first line in the files is its own; the runs are
+    # judged again with it, so that 'reglages du redemarrage inconnus' is settled (the same settings make one run with it, other settings
+    # replace the run before it). The start in force itself is the win/fills case below
+    filled = {}
+    for k, s in enumerate(starts):
+        if s.get("refused") or s.get("init") is not None or k == k_force or not any(not x.get("refused") for x in starts[:k]):
+            continue                                                  # (the journal's first start, purged or not sent, is not a restart)
+        lo = (starts[k - 1].get("end") or 0) - 60
+        cand = [x for x in hole_starts if lo <= x["row"]["utc"] <= int(s["utc"]) + 60]
+        if cand:
+            filled[k] = max(cand, key=lambda x: x["row"]["utc"])
+    filled_rows = {k: x["row"] for k, x in filled.items()}
+    if filled:
+        replaced2, unknown2 = earlier_runs(starts, k_force, lv, builds, filled=filled_rows, filled_file={k: x["file"] for k, x in filled.items()})
+        old = [x["text"] for x in res_a.get("unknown_next") or [] if x["text"] in anomalies]
+        at = min((anomalies.index(t) for t in old), default=len(anomalies))
+        for t in old:
+            anomalies.remove(t)
+        anomalies[at:at] = [x["text"] for x in unknown2]
+        res_a["unknown_next"] = unknown2
+        res_a["replaced_starts"] = replaced2
+        res_a["in_force"] = in_force_summary(starts, k_force, lv, builds,
+                                             replaced=replaced2 + [x for x in unknown2 if x.get("replaced_later")])
     last_p = max(hole_starts, key=lambda x: x["row"]["utc"]) if hole_starts else None
     win = None
     if last_p is not None:
@@ -1195,32 +1382,59 @@ def printed_starts_report(res_a, starts, hole_starts, hole_stops, builds, lv, an
         else:
             prev_end = (starts[k_force - 1].get("end") or 0) if k_force > 0 else 0
             win = last_p if last_p["row"]["utc"] >= prev_end - 60 else None
+    # the start in force the Experts tab shows against the files' runs (review6 FV5-RH5-2-SAME-SETTINGS-RESTART, FV5-START-NUMBERING): the
+    # same settings as the run it follows make one run with it (no 'remplace', the files' anomalies of that run said once, by the start in
+    # force: 'memes reglages depuis le demarrage N'); other settings replace that run (information, its trades: replaced_trades); a run the
+    # files left 'reglages du redemarrage inconnus' is settled by the INIT line that fills the lost one
+    nums = start_nums(starts)
+    same_from = None
+    if win is not None:
+        r_w = win["row"]
+        d_w = [settings_short(it) for it in start_settings(r_w, "", C.utc_txt(r_w["utc"]), start_years({"utc": r_w["utc"]}, lv), builds)
+               if not it["ok"] and it["in_check_demo"]]
+        runs = start_runs(starts, lv, builds, filled_rows)
+        fills = k_force is not None and starts[k_force].get("init") is None
+        prev = None
+        if k_force is not None and not fills:
+            prev = next((r for r in runs if k_force in r["ks"]), None)
+            res_a["restarts"] = res_a.get("restarts", 0) + 1         # one more start than the files show
+        elif fills:
+            j = next((j for j, r in enumerate(runs) if k_force in r["ks"]), None)
+            prev = runs[j - 1] if j else None
+            for x in [x for x in res_a.get("unknown_next") or [] if x["next"] == k_force]:   # 'reglages du redemarrage inconnus':
+                if x["text"] in anomalies:                                                   # settled by this INIT line
+                    anomalies.remove(x["text"])
+            res_a["unknown_next"] = [x for x in res_a.get("unknown_next") or [] if x["next"] != k_force]
+        if prev is not None and prev["diffs"]:
+            if not fills:
+                for a_ in res_a.get("settings_anomalies") or []:     # said by the start in force (the same) or replaced (other settings)
+                    if a_ in anomalies:
+                        anomalies.remove(a_)
+            if prev["diffs"] == d_w:
+                same_from = nums[prev["ks"][0]]
+            else:
+                # the files' lines after that restart belong to the start the Experts tab shows: the replaced run ends at it
+                stop = next((y for y in sorted(hole_stops, key=lambda y: y["row"]["utc"], reverse=True) if y["row"]["utc"] <= r_w["utc"]), None)
+                res_a.setdefault("replaced_starts", []).append(
+                    replaced_entry(starts, prev["ks"], prev["diffs"], f"le demarrage vu dans l'onglet Experts {win['file']}",
+                                   cut=None if fills else r_w["utc"], stop_txt=None if fills else (", arret vu dans l'onglet Experts" if stop
+                                                                                                    else "")))
     for x in hole_starts:
         r = x["row"]
         label = f"{C.utc_txt(r['utc'])}, vu dans l'onglet Experts {x['file']}"
+        if x is win and same_from is not None:
+            label += f" (memes reglages depuis le demarrage {same_from})"
         items = start_settings(r, f"du {label}", C.utc_txt(r["utc"]), start_years({"utc": r["utc"]}, lv), builds)
         diffs = [it for it in items if not it["ok"] and it["in_check_demo"]]
         if x is win:
             anomalies += [it["anomaly"] for it in diffs]
-        elif diffs:
+        elif diffs and not any(x is y for y in filled.values()):           # a filled start is said with its run (earlier_runs, review6b)
             res_a.setdefault("replaced_starts", []).append({"n": f"du {label}", "utc": r["utc"], "diffs": [settings_short(it) for it in diffs],
                                                             "text": f"demarrage du {label} : {' ; '.join(settings_short(it) for it in diffs[:4])} ; "
                                                                     "remplace par un demarrage suivant"})
     if win is not None:
-        # the files' start in force is replaced by the start the Experts tab shows: its settings anomalies become information
-        old = res_a.get("settings_anomalies") or []
-        if old and k_force is not None and starts[k_force].get("init") is not None:
-            for a in old:
-                if a in anomalies:
-                    anomalies.remove(a)
-            s = starts[k_force]
-            items = start_settings(s["init"], k_force + 1, C.utc_txt(s["utc"]), start_years(s, lv), builds)
-            res_a.setdefault("replaced_starts", []).append(
-                {"n": k_force + 1, "utc": s["utc"], "diffs": [settings_short(it) for it in items if not it["ok"] and it["in_check_demo"]],
-                 "text": f"demarrage {k_force + 1} ({C.paris_span(s['utc'])}) : "
-                         + " ; ".join(settings_short(it) for it in items if not it["ok"] and it["in_check_demo"])
-                         + f" ; remplace par le demarrage vu dans l'onglet Experts {win['file']}"})
-        res_a["in_force"] = in_force_summary(starts, k_force, lv, builds, extra={"utc": win["row"]["utc"], "init": win["row"], "file": win["file"]})
+        res_a["in_force"] = in_force_summary(starts, k_force, lv, builds, extra={"utc": win["row"]["utc"], "init": win["row"], "file": win["file"]},
+                                             replaced=res_a.get("replaced_starts"))
     # what the Experts tab shows in the lost files' days: information (the missing-file anomaly itself stays the same with and without
     # --printed), with the stop and start lines and whether the restart's settings are the user's
     days = [d for d in (C.day_of_file(n) for n in res_a.get("missing_files", [])) if d is not None]
@@ -1238,7 +1452,8 @@ def printed_starts_report(res_a, starts, hole_starts, hole_stops, builds, lv, an
         res_a.setdefault("printed_restarts", []).append(
             ("l'onglet Experts " + x["file"] + " montre " + (f"un arret le {C.utc_paris(stop['row']['utc'])} et " if stop else "")
              + f"un redemarrage le {C.utc_paris(r['utc'])}, dans le fichier du jour manquant {C.file_of_day(C.utc_to_srv(r['utc']) // 86400 * 86400)}"
-             + " : reglages de ce demarrage verifies sur sa ligne INIT : " + ("conformes" if not diffs else "DIFFERENTS (voir A regarder)")))
+             + " : reglages de ce demarrage verifies sur sa ligne INIT : "
+             + ("conformes" if not diffs else ("DIFFERENTS (voir A regarder)" if x is win else f"DIFFERENTS ({' ; '.join(diffs[:3])})"))))
     for y in sp:
         if not st:
             res_a.setdefault("printed_restarts", []).append(
@@ -1249,20 +1464,27 @@ def printed_starts_report(res_a, starts, hole_starts, hole_stops, builds, lv, an
 def replaced_trades(res_a, res_b, lv):
     """the real trades made by a start a later one replaced while its settings were not the user's (review5b RH5-2): their lots came from
     those settings and they count in the demo's numbers (trades, balance, plan). One anomaly per such start, with the trades, their result
-    from the prices (gross, the closed ones), the exits unknown and the positions the next start took over (ADOPT)"""
+    from the prices (gross, the closed ones), the exits unknown and the positions the next start took over (ADOPT); also for a run whose next
+    start's INIT line is lost when a later start's known settings differ (review6b: res_a['unknown_next'] with 'replaced_later')"""
     out = []
     pos = {e["ticket"]: e for e in res_b.get("positions", [])}
-    for x in res_a.get("replaced_starts") or []:
-        if not isinstance(x.get("n"), int):
+    # a run whose next start's INIT line is lost while a later start's known settings differ (review6b FV6-DEMO-UNKNOWN-RESTART-ADVICE): replaced
+    # by then at the latest, when exactly is unknown, so the same words without 'remplace'
+    runs = [(x, True) for x in res_a.get("replaced_starts") or []] + [(x, False) for x in res_a.get("unknown_next") or [] if x.get("replaced_later")]
+    for x, said_replaced in runs:
+        ks = x.get("ks")
+        if not ks:
             continue                                                  # a start seen only in the Experts tab: its trades are not in the files
-        k = x["n"] - 1
-        tickets = [r.get("ticket") for r in lv if r["ev"] == "FILL" and r.get("_si") == k]
+        tickets = [r.get("ticket") for r in lv if r["ev"] == "FILL" and r.get("_si") in ks and (x.get("cut") is None or r["utc"] < x["cut"])]
         if not tickets:
             continue
         known = [pos[t] for t in tickets if t in pos and pos[t].get("gross_eur") is not None]
         unknown = [t for t in tickets if t not in pos or pos[t].get("gross_eur") is None]
-        adopted = sorted({r.get("ticket") for r in lv if r["ev"] == "ADOPT" and (r.get("_si") or 0) > k and r.get("ticket") in tickets})
-        out.append(f"{len(tickets)} trade(s) reel(s) faits par le demarrage {x['n']} remplace ({' ; '.join(x['diffs'][:3])} ; "
+        adopted = sorted({r.get("ticket") for r in lv if r["ev"] == "ADOPT" and (r.get("_si") or 0) > max(ks) and r.get("ticket") in tickets})
+        who = x.get("who") or f"demarrage {x['n']}"
+        by = ('les ' + who + (' remplaces' if said_replaced else '')) if len(ks) > 1 else ('le ' + who + (' remplace' if said_replaced else ''))
+        out.append(f"{len(tickets)} trade(s) reel(s) faits par {by} "
+                   f"({' ; '.join(x['diffs'][:3])} ; "
                    f"{C.paris_span(x['utc'], x.get('end'))}) : resultat des prix {C.frs(sum(e['gross_eur'] for e in known), 2, 'EUR')} sur "
                    f"{len(known)} trade(s) ferme(s)" + (f", {len(unknown)} sortie(s) inconnue(s)" if unknown else "")
                    + (f" ; position(s) reprise(s) par le demarrage suivant (ADOPT) : ticket(s) {', '.join(str(t) for t in adopted[:6])}" if adopted
@@ -1281,26 +1503,62 @@ def k1t_words(k1t):
     return str(k1t)
 
 
-def replaced_starts_info(starts, k_force, lv, builds):
-    """the starts a later start replaced whose settings were not the user's (review5b RH5-2): information, with when they ran, how they
-    stopped and what differed; their real trades are named by run() (replaced_trades)"""
-    out = []
-    for k, s in enumerate(starts):
-        if k_force is None or k >= k_force or s.get("refused") or not s.get("init"):
+def replaced_entry(starts, ks, diffs, nxt_txt, cut=None, stop_txt=None):
+    """one run of starts a later start replaced with other settings, for res['replaced_starts'] (information; its real trades: replaced_trades).
+    cut = the time of the start that replaced it when the files hold no line of that start (seen only in the Experts tab): the run ends there
+    and its trades are the ones before; stop_txt = how it stopped then"""
+    nums = start_nums(starts)
+    ns = [nums[k] for k in ks]
+    first, last = starts[ks[0]], starts[ks[-1]]
+    dn = (last.get("deinit") or {}).get("deinit")
+    end = cut if cut is not None else last.get("end")
+    who = who_txt(ns)
+    how = stop_txt if stop_txt is not None else (f", arret : {DEINIT_FR.get(dn, dn)}" if dn is not None else ", sans ligne d'arret")
+    return {"n": ns[0] if len(ns) == 1 else who.split(" ", 1)[1], "ks": list(ks), "nums": ns, "who": who, "utc": first["utc"], "end": end,
+            "cut": cut, "paris": C.paris_when(first["utc"]), "paris_end": C.paris_when(end) if end else None, "deinit": dn,
+            "deinit_fr": DEINIT_FR.get(dn), "diffs": diffs,
+            "text": (f"{who} ({C.paris_span(first['utc'], end)}{how}) : {' ; '.join(diffs[:4])} ; {'remplaces' if len(ks) > 1 else 'remplace'} "
+                     f"par {nxt_txt}")}
+
+
+def earlier_runs(starts, k_force, lv, builds, filled=None, filled_file=None):
+    """the runs of starts before the one in force whose settings were not the user's (review5b RH5-2, review6 FV5-RH5-2-SAME-SETTINGS-RESTART;
+    start_runs). A run the next one replaced with other known settings is information, with when it ran, how it stopped and what differed (its
+    real trades: replaced_trades). A restart with the same settings is no run of its own: nothing is said of it apart, the start in force says
+    the settings (in_force_label: 'memes reglages depuis le demarrage N'). A run followed by a start whose INIT line is lost keeps its
+    differences as an anomaly ('reglages du redemarrage inconnus ... a verifier'): when that start is the one in force, the INIT line of the
+    robot that runs says its settings; when a later start is in force (review6b FV6-DEMO-UNKNOWN-RESTART-ADVICE), only the Mac's Experts logs of
+    that day do (MQL5/Logs, --printed), and when a later start's known settings differ from the run's, the run was replaced by then at the latest
+    ('replaced_later': its real trades are named, replaced_trades). filled = {index: INIT row} the Experts tab gives for starts whose INIT line the
+    files lost (printed_starts_report), filled_file = {index: Experts log}. Returns (replaced, unknown): replaced = [replaced_entry], unknown =
+    [{"ks", "next", "diffs", "who", "utc", "end", "replaced_later", "text"}]"""
+    replaced, unknown = [], []
+    if k_force is None:
+        return replaced, unknown
+    nums = start_nums(starts)
+    runs = start_runs(starts, lv, builds, filled)
+    for j, r in enumerate(runs[:-1]):
+        if k_force in r["ks"] or not r["diffs"]:
             continue
-        items = start_settings(s["init"], k + 1, C.utc_txt(s["utc"]), start_years(s, lv), builds)
-        diffs = [settings_short(it) for it in items if not it["ok"] and it["in_check_demo"]]
-        if not diffs:
+        nxt = runs[j + 1]
+        k_n = nxt["ks"][0]
+        if nxt["diffs"] is None:
+            ns = [nums[k] for k in r["ks"]]
+            who = who_txt(ns)
+            later = next((x for x in runs[j + 2:] if x["diffs"] is not None), None)
+            how = ("a verifier (demander a l'utilisateur la ligne INIT du robot qui tourne, ou donner a check_demo les journaux de MetaTrader de ces "
+                   "jours, MQL5/Logs : --printed)" if k_force in nxt["ks"] else
+                   "a verifier avec les journaux de MetaTrader du jour de ce redemarrage (MQL5/Logs : --printed ; sa ligne INIT y est)")
+            u0, u1 = starts[r["ks"][0]]["utc"], starts[r["ks"][-1]].get("end")
+            unknown.append({"ks": r["ks"], "next": k_n, "diffs": r["diffs"], "who": who, "utc": u0, "end": u1,
+                            "replaced_later": later is not None and later["diffs"] != r["diffs"],
+                            "text": (f"{who} ({C.paris_span(u0, u1)}) : {' ; '.join(r['diffs'][:4])} ; "
+                                     f"reglages du redemarrage inconnus (demarrage {nums[k_n]}, sa ligne INIT est perdue) : "
+                                     + (f"les {who} etaient" if len(ns) > 1 else f"le {who} etait") + " ainsi, " + how)})
             continue
-        nxt = next((x for x in range(k + 1, len(starts)) if not starts[x].get("refused")), None)
-        dn = (s.get("deinit") or {}).get("deinit")
-        out.append({"n": k + 1, "utc": s["utc"], "end": s.get("end"), "paris": C.paris_when(s["utc"]),
-                    "paris_end": C.paris_when(s["end"]) if s.get("end") else None, "deinit": dn, "deinit_fr": DEINIT_FR.get(dn),
-                    "diffs": diffs, "next_n": (nxt + 1) if nxt is not None else None,
-                    "text": (f"demarrage {k + 1} ({C.paris_span(s['utc'], s.get('end'))}"
-                             + (f", arret : {DEINIT_FR.get(dn, dn)}" if dn is not None else ", sans ligne d'arret")
-                             + f") : {' ; '.join(diffs[:4])} ; remplace par le demarrage {(nxt + 1) if nxt is not None else '?'}")})
-    return out
+        nxt_txt = f"le demarrage {nums[k_n]}" + (f" (sa ligne INIT vue dans l'onglet Experts {filled_file[k_n]})" if k_n in (filled_file or {}) else "")
+        replaced.append(replaced_entry(starts, r["ks"], r["diffs"], nxt_txt))
+    return replaced, unknown
 
 
 def outages_of(rows, starts, wins=None):
@@ -1436,10 +1694,12 @@ def analyse_journal(rows, builds, files=None, releve_end=None, info=None, points
         res["first_utc"], res["last_utc"] = live_period(rows)
     st_out, anomalies = [], []
     k_force = in_force(starts)                                      # the start in force at the end of the journal (review5b RH5-2)
+    nums = start_nums(starts)                                       # the numbers the reader sees: the starts that ran (review6)
+    label = in_force_label(starts, k_force, lv, builds)             # the start in force, with 'memes reglages depuis ...' (review6)
     for k, s in enumerate(starts):
         i = s["init"] or {}
         bs = C.build_status(i.get("build"), builds) if i else "UNKNOWN"
-        e = {"n": k + 1, "utc": s["utc"], "when": C.utc_txt(s["utc"]), "build": i.get("build"), "build_status": bs,
+        e = {"n": k + 1, "num": nums.get(k), "utc": s["utc"], "when": C.utc_txt(s["utc"]), "build": i.get("build"), "build_status": bs,
              "version": i.get("version"), "demo": i.get("demo"), "vps": i.get("vps"), "tester": i.get("tester"),
              "observer": i.get("observer"), "entries_off": i.get("entries_off"), "harness": i.get("harness"),
              "comm_pts": i.get("comm_pts"), "risk": i.get("risk"), "sleeves": i.get("sleeves"),
@@ -1471,7 +1731,7 @@ def analyse_journal(rows, builds, files=None, releve_end=None, info=None, points
             e["refused_errors"] = [x.get("what") for x in s["refused_errors"]]
             continue
         if i and k == k_force:                                      # build, harness, gold commission, version (start_settings), the start in force
-            anomalies += [it["anomaly"] for it in start_settings(i, k + 1, e["when"], builds=builds)
+            anomalies += [it["anomaly"] for it in start_settings(i, label, e["when"], builds=builds)
                           if it["key"] in SETTINGS_BUILD_KEYS and not it["ok"]]
         if s.get("init_lost"):
             # the start's INIT line was in a daily file known to be missing (between the stop and the start's first line): said once, with
@@ -1481,28 +1741,34 @@ def analyse_journal(rows, builds, files=None, releve_end=None, info=None, points
             if inside:
                 folded.update(inside)
             else:
-                anomalies.append(f"demarrage {k + 1} ({e['when']}) : des lignes du robot suivent son arret (INIT deinit) sans nouvelle ligne INIT : "
+                anomalies.append(f"demarrage {nums[k]} ({e['when']}) : des lignes du robot suivent son arret (INIT deinit) sans nouvelle ligne INIT : "
                                  "ligne de demarrage perdue (fichier coupe ou modifie ?) ; build et reglages de ce demarrage inconnus")
         if s.get("no_deinit"):
-            anomalies.append(f"demarrage {k + 1} ({e['when']}) : fini sans ligne d'arret (INIT deinit) avant le demarrage suivant : terminal "
+            anomalies.append(f"demarrage {nums[k]} ({e['when']}) : fini sans ligne d'arret (INIT deinit) avant le demarrage suivant : terminal "
                              "ferme d'un coup, Mac eteint, ou ligne perdue")
         if s["plan"] and s["plan"].get("state") == "unset":
-            anomalies.append(f"demarrage {k + 1} : plan non regle (InpPlanStart = 0 sur un compte reel) : aucune nouvelle entree")
+            anomalies.append(f"demarrage {nums[k]} : plan non regle (InpPlanStart = 0 sur un compte reel) : aucune nouvelle entree")
         if s["selftest"] and s["selftest"].get("ok") != 1:
-            anomalies.append(f"demarrage {k + 1} : auto-test en echec ({s['selftest'].get('why')}) : aucune entree")
+            anomalies.append(f"demarrage {nums[k]} : auto-test en echec ({s['selftest'].get('why')}) : aucune entree")
         if not s["selftest"] and i:
-            anomalies.append(f"demarrage {k + 1} : pas de ligne SELFTEST")
+            anomalies.append(f"demarrage {nums[k]} : pas de ligne SELFTEST")
         for b, x in (ready.items() if s["init"] else []):
             if x["ready_after_s"] is None and s.get("end") and s["end"] - s["utc"] > 900:
-                anomalies.append(f"demarrage {k + 1} : {b} jamais pret ({', '.join(x['notready_reasons']) or 'aucune ligne READY'})")
+                anomalies.append(f"demarrage {nums[k]} : {b} jamais pret ({', '.join(x['notready_reasons']) or 'aucune ligne READY'})")
             elif x["ready_after_s"] is not None and x["ready_after_s"] > 900:
-                anomalies.append(f"demarrage {k + 1} : {b} pret seulement apres {x['ready_after_s'] // 60} min "
+                anomalies.append(f"demarrage {nums[k]} : {b} pret seulement apres {x['ready_after_s'] // 60} min "
                                  f"({', '.join(x['notready_reasons'])})")
-    sc = settings_check(starts, lv, k_force)                        # review4 A4, review5b RH5-2: the start in force only
+    sc = settings_check(starts, lv, k_force, label)                 # review4 A4, review5b RH5-2: the start in force only
     res["settings_anomalies"] = list(sc)
     anomalies += sc
-    res["in_force"] = in_force_summary(starts, k_force, lv, builds)
-    res["replaced_starts"] = replaced_starts_info(starts, k_force, lv, builds)
+    # the earlier runs whose settings were not the user's (review6 FV5-RH5-2-SAME-SETTINGS-RESTART): replaced by other settings (information),
+    # or followed by a restart whose INIT line is lost (an anomaly); a restart with the same settings is part of the run in force
+    replaced, unknown = earlier_runs(starts, k_force, lv, builds)
+    res["replaced_starts"] = replaced
+    res["unknown_next"] = unknown
+    anomalies += [x["text"] for x in unknown]
+    # a run whose settings a later known start replaced (the restart between them lost, review6b) is in the plan's note like a replaced one
+    res["in_force"] = in_force_summary(starts, k_force, lv, builds, replaced=replaced + [x for x in unknown if x.get("replaced_later")])
     # the first start without its INIT line: its files were purged by the robot (30 days) or not sent, whether later starts
     # have theirs or not (review3 R3-2, review4 RC3-R3-2); a start OnInit refused is no start here (review5b RH5-1)
     run_starts = [s for s in starts if not s.get("refused")]
@@ -1519,7 +1785,7 @@ def analyse_journal(rows, builds, files=None, releve_end=None, info=None, points
         else:
             anomalies.append(f"{which} : build et reglages de ce demarrage inconnus (envoyer aussi le fichier du jour du demarrage)")
     res["starts"] = st_out
-    res["restarts"] = max(len([s for s in run_starts if s["init"]]) - 1, 0)
+    res["restarts"] = max(len(run_starts) - 1, 0)                   # every start that ran after the first, its INIT line lost or not (review6)
     # the starts OnInit refused (review5b RH5-1): information when a later start ran, the first anomaly when the robot never started again
     res["refused_starts"] = []
     for k, s in enumerate(starts):
@@ -1527,14 +1793,17 @@ def analyse_journal(rows, builds, files=None, releve_end=None, info=None, points
             continue
         nxt = next((x for x in starts[k + 1:] if not x.get("refused")), None)
         er = s["refused_errors"][0]
-        res["refused_starts"].append({"n": k + 1, "utc": s["utc"], "when": C.utc_txt(s["utc"]), "paris": C.paris_when(s["utc"]),
+        res["refused_starts"].append({"n": len(res["refused_starts"]) + 1, "k": k, "utc": s["utc"], "when": C.utc_txt(s["utc"]), "paris": C.paris_when(s["utc"]),
                                       "why": error_meaning(er, relaunch=True).split(" :")[0], "errors": [x.get("what") for x in s["refused_errors"]],
                                       "next_utc": nxt["utc"] if nxt else None, "next_paris": C.paris_when(nxt["utc"]) if nxt else None})
     if starts and starts[-1].get("refused"):
         s = starts[-1]
         er = s["refused_errors"][0]
         meaning = error_meaning(er, relaunch=True).replace(" : le robot n'a pas demarre ;", " :")
-        anomalies.insert(0, f"le robot n'a pas {'re' if run_starts else ''}demarre ({C.paris_when(s['utc'])}) : ERROR {er.get('what')} : {meaning}")
+        # refused because another copy runs (review6b FV6-START-LONE-SECOND-COPY): a copy of the robot runs elsewhere, never 'n'a pas demarre'
+        head = ("nouvelle copie du robot refusee" if "another copy" in str(er.get("what") or "") else
+                f"le robot n'a pas {'re' if run_starts else ''}demarre")
+        anomalies.insert(0, f"{head} ({C.paris_when(s['utc'])}) : ERROR {er.get('what')} : {meaning}")
     # the listed lines (live ones; COST, LATEBAR ... are live only anyway)
     listed = {}
     for ev in LISTED:
@@ -1810,7 +2079,9 @@ def tick_sizes(rows, fiches, points):
 
 EA_CLOSE_RC = (10009, 10010)                    # TRADE_RETCODE_DONE, TRADE_RETCODE_DONE_PARTIAL
 STOP_REASONS = ("stop", "trail", "gap")         # paper exits that the broker's own stop makes (no CLOSE line)
-KNOWN_EXITS = ("ea_close", "broker_stop_estimated", "broker_stop_race", "broker_stop_seen", "broker_stop_after_paper")
+KNOWN_EXITS = ("ea_close", "broker_stop_estimated", "broker_stop_race", "broker_stop_seen", "broker_stop_after_paper",
+               # review7: exits the account's history prices (deals.csv, ReleveFP 1.11; DEAL_EXITS below)
+               "broker_stop_deal", "ea_close_deal", "stop_out_deal", "tp_deal", "hand_close_deal", "other_close_deal")
 # the robot's closes that follow the paper's own exit (CR_Follower.mqh CR_FW_NAME: time, rule, paper, revise, void, prefuse,
 # latest_exit, crossed); the others (orphan, dup, slfix, prev, refused*, mark, the guards' stop, guard, lock, friday, clock,
 # friday_missed) close for another reason and are not slippage against the paper's exit (review3 R3-7)
@@ -1873,10 +2144,11 @@ def paper_stop_path(rows, code, oid, side, h, entry_utc, with_rp=False):
     return sorted(out, key=lambda x: x[0]) if with_rp else out
 
 
-def fills_report(rows, res_a, starts, points, fiches, tables=None, unreadable=None):
+def fills_report(rows, res_a, starts, points, fiches, tables=None, unreadable=None, deals=None):
     """each real position against its paper trade; tables = the releve's minutes (--bars: m1, else the terminal's bars
     r1, per market) or None; unreadable = the reader's unreadable lines (a CLOSE cut at the end of its file leaves its exit
-    unknown, review4b ADV5-10)"""
+    unknown, review4b ADV5-10); deals = the account's history (load_deals: ReleveFP 1.11's deals.csv and positions.csv), None
+    without it (then nothing changes)"""
     lv = C.live(rows)
     # tickets whose stop moves are known to be incomplete (a lost SLMOD line, review3 R3-4): their broker stop is taken
     # from the paper's stops (the robot keeps the broker stop at the paper's stop + side x h)
@@ -2133,6 +2405,8 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None, unreadable=No
                                    "l'historique du compte)")
         if t in refused:
             e["refused"] = refused[t].get("why")
+        if deals is not None:                                          # review7: the account's deals (ReleveFP 1.11)
+            deal_apply(e, deals, last_sl, lv[-1]["utc"] if lv else None)
         # the broker's own slippage: the fill against the quote the request went with (SEND bid / ask)
         sd = send.get((p["code"], p["oid"]))
         if sd and side and e.get("entry_real") is not None:
@@ -2225,6 +2499,15 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None, unreadable=No
             e0 = xs[0]
             tail = (" ; prix de sortie inconnu (estime au stop)" if kind in KNOWN_EXITS else " ; sortie inconnue, laissee hors des totaux en euros")
             anomalies.append(f"{len(xs)} {label}, par ex. {e0['code']} ticket {e0['ticket']} : {e0['close_why']}{tail}")
+    deals_rep = None
+    if deals is not None:                                              # review7: the journal against the account's history
+        lost_w = []                                                    # the hours of each missing daily file (review8: positions of it)
+        for f_ in res_a.get("missing_files") or []:
+            x_ = C.day_of_file(f_)
+            if x_ is not None:
+                lost_w.append((C.srv_to_utc(x_) - 600, C.srv_to_utc(x_ + 86400) + 600, f_))
+        deals_rep, dan = deals_report(out, deals, lv, rows, points, h, comm_side, starts, lost_w)
+        anomalies += dan
     # per sleeve, per market and in total; points only within one market (their sizes differ), totals in bp and EUR
     per, per_sym = {}, {}
     groups = [(c, "code", c) for c in C.CODES] + [(b, "symbol", b) for b in C.ROBOT_BASES] + [("TOTAL", None, None)]
@@ -2284,6 +2567,22 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None, unreadable=No
         q["broker_stops_estimated"] = sum(1 for e in ps if e["exit_kind"] in ESTIMATED_EXITS)
         q["exit_unknown"] = sum(1 for e in ps if e["exit_kind"] not in KNOWN_EXITS and e["exit_kind"] != "open_or_unknown")
         q["still_open"] = sum(1 for e in ps if e["exit_kind"] == "open_or_unknown")
+        if deals is not None:                                          # review7: the broker's stops at their real price, the deals' costs
+            sd = [e for e in ps if e["exit_kind"] == "broker_stop_deal"]
+            comp = [e for e in sd if e.get("paper_reason") in STOP_REASONS and e.get("exit_diff_net_bp") is not None]
+            q["stop_exits_deal"] = len(sd)
+            q["stop_slip_bp_mean"] = C.mean([e.get("stop_slip_bp") for e in sd])
+            if key_ is not None:
+                q["stop_slip_pts_mean"] = C.mean([e.get("stop_slip_pts") for e in sd])
+            se_ = [e["stop_slip_eur"] for e in sd if e.get("stop_slip_eur") is not None]
+            q["stop_slip_eur_sum"] = sum(se_) if se_ else None
+            q["stop_exits_vs_paper"] = len(comp)
+            q["stop_exit_beyond_paper_net_bp_mean"] = C.mean([e["exit_diff_net_bp"] for e in comp])
+            ce_ = [e["exit_diff_eur"] for e in comp if e.get("exit_diff_eur") is not None]
+            q["stop_exit_diff_eur_sum"] = sum(ce_) if ce_ else None
+            q["exits_from_history"] = sum(1 for e in ps if e.get("exit_from_deal"))
+            q["deal_commission_eur_sum"] = sum(e.get("deal_commission_eur") or 0 for e in ps if e.get("deal"))
+            q["deal_swap_eur_sum"] = sum(e.get("deal_swap_eur") or 0 for e in ps if e.get("deal"))
         (per_sym if key_ == "symbol" else per)[g] = q
     # money: DAY balances against the gross results of the positions closed between the first and the last DAY line;
     # incomplete when a position of that time has no known exit or a daily file is missing
@@ -2337,7 +2636,15 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None, unreadable=No
                  "payments": pays, "complete": not why, "incomplete_why": why,
                  "note": ("estimation : commission + swap + glissement des stops courtier (leur sortie est comptee au niveau du stop, "
                           "sans glissement) + autres operations du compte")}
+        # review7: with the account's history the money is read deal by deal (deals_money); its payments and costs replace the estimates
+        late_ = [(C.utc_to_srv(o["from"]), C.utc_to_srv(o["to"])) for o in res_a.get("outages") or [] if o.get("why") != "arret"]
+        dm = deals_money(money, deals, days, anomalies, late_) if (deals is not None and deals_rep and deals_rep.get("used")) else False
+        use_deals = bool(dm)
+        # review8 TOOL2-LATECOPY-SILENT: with the history up to its end only ('partial'), a payment after it is still the journal's to say
+        until_u = (C.srv_to_utc(money["deals"]["until_srv"]) + DEAL_EDGE_S) if dm == "partial" and money["deals"].get("until_srv") else None
         for p_ in pays:
+            if use_deals and (until_u is None or p_["utc"] <= until_u):
+                continue                                               # in the account's history: deals_report names it with its time
             inside = t0 <= p_["utc"] < t1 + 86400                 # the estimate is incomplete only when the payment is in its window (R4V-1)
             anomalies.append(f"versement ou retrait sur le compte le {C.utc_txt(p_['utc'])} (argent verse P_in de {C.fr(p_['before'], 2, 'EUR')} a "
                              f"{C.fr(p_['after'], 2, 'EUR')}) : le solde a bouge pour une autre raison que les trades du robot"
@@ -2353,7 +2660,7 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None, unreadable=No
         # 0, review4b R4V-3)
         money["allowed_gain_eur"] = floor + 1.5 * allow["swap_credit_eur"]
         cni = money["costs_not_in_prices_eur"]
-        money["judged"] = bool(money["complete"] and isnum(cni))       # judged only when nothing else explains the difference
+        money["judged"] = bool(money["complete"] and isnum(cni)) and not use_deals   # judged only when nothing else explains the difference
         if money["judged"]:
             # the smallest move from outside the robot this check sees (review5 FV4b-4): a gain g is flagged when cni + g > allowed_gain,
             # a loss l when -(cni - l) > allowed_cost (cni already holds the costs seen: negative)
@@ -2372,6 +2679,8 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None, unreadable=No
                                  f"{C.fr(money['allowed_cost_eur'], 2, 'EUR')} : commission {C.fr(money['model_commission_eur'], 2, 'EUR')} + 1,5 x "
                                  f"glissement des stops {C.fr(allow['stop_slippage_lab_eur'], 2, 'EUR')} + 1,5 x swaps {C.fr(allow['swap_lab_eur'], 2, 'EUR')}) : "
                                  "glissement anormal, ou le solde a bouge pour une autre raison (trade a la main, retrait ?) ; estimation incomplete")
+        if dm == "partial" and money["deals"].get("exact"):
+            money["after_history"] = after_history(money, days, out, comm_side, fiches, pays, anomalies)
         # the result since the start (review4 A11): from the plan's B(T) when the plan starts at the first start (or with
         # the history's first deal, T=0), else the first live SIZE line's balance
         base = None
@@ -2393,10 +2702,593 @@ def fills_report(rows, res_a, starts, points, fiches, tables=None, unreadable=No
     for b, c in costs.items():
         if c.get("beyond"):
             anomalies.append(f"glissement {b} au-dela de 1,5 fois celui du labo (les regles ont ete testees avec des frais x1,5) : " + " ; ".join(c["beyond"]))
-    return {"positions": out, "per_sleeve": per, "per_symbol": per_sym, "money_estimate": money, "points": points, "h_price": h,
-            "commission_per_side_price": comm_side, "commission_source": comm_src, "duplicates": doubles, "anomalies": anomalies,
-            "minutes_used_for_stops": bool(tables), "execution_costs": costs,
-            "commission_swap_per_trade": "UNKNOWN : le journal n'a pas de ligne par transaction (deal)"}
+    res = {"positions": out, "per_sleeve": per, "per_symbol": per_sym, "money_estimate": money, "points": points, "h_price": h,
+           "commission_per_side_price": comm_side, "commission_source": comm_src, "duplicates": doubles, "anomalies": anomalies,
+           "minutes_used_for_stops": bool(tables), "execution_costs": costs,
+           "commission_swap_per_trade": "UNKNOWN : le journal n'a pas de ligne par transaction (deal)"}
+    if deals_rep is not None:                                          # review7: the account's history (deals.csv)
+        res["deals"] = deals_rep
+        if deals_rep.get("used"):
+            res["commission_swap_per_trade"] = f"historique du compte ({deals_rep['file']}) : commission, frais et swap de chaque transaction"
+    return res
+
+
+# ---------------------------------------------------------------------------------------------- (e) the account's deals (ReleveFP 1.11)
+# an exit the account's history gives (the closing deal's DEAL_REASON): its price is known
+DEAL_EXIT_KIND = {"DEAL_REASON_SL": "broker_stop_deal", "DEAL_REASON_EXPERT": "ea_close_deal", "DEAL_REASON_SO": "stop_out_deal",
+                  "DEAL_REASON_TP": "tp_deal", "DEAL_REASON_CLIENT": "hand_close_deal", "DEAL_REASON_MOBILE": "hand_close_deal",
+                  "DEAL_REASON_WEB": "hand_close_deal"}
+DEAL_EXITS = ("broker_stop_deal", "ea_close_deal", "stop_out_deal", "tp_deal", "hand_close_deal", "other_close_deal")
+DEAL_KIND_FR = {"broker_stop_deal": "fermee par le stop courtier", "ea_close_deal": "fermee par le robot", "stop_out_deal": "fermee par un stop out",
+                "tp_deal": "fermee a un objectif courtier", "hand_close_deal": "fermee a la main", "other_close_deal": "fermee par un autre programme"}
+DEAL_PX_TOL_POINTS = 0.51                       # deals.csv prices have the symbol's digits: half a point of rounding, never more
+DEAL_EDGE_S = 60                                # a deal in the first minute after a DAY line's stamp may be in that day's balance or not
+
+
+def load_deals(path, scrub, fini=None):
+    """ReleveFP 1.11's deals.csv (--deals FILE, or the one beside --bars) and positions.csv beside it, read by demo_common.read_account_csv
+    (every field checked, a bad row counted and located, its text never kept). None when there is no deals file"""
+    if not path or not os.path.exists(path):
+        return None
+    deals, dinfo = C.read_account_csv(path, "deals", scrub)
+    ppath = os.path.join(os.path.dirname(os.path.abspath(path)), C.POSITIONS_FILE)
+    poss, pinfo = C.read_account_csv(ppath, "positions", scrub) if os.path.exists(ppath) else (None, {})
+    f = fini or {}
+    snap = f.get("positions_heure") if isinstance(f.get("positions_heure"), int) and f.get("positions_heure") else None
+    last = max(d["time"] for d in deals) if deals else None
+    rel = max(x for x in (snap, last) if x) if (snap or last) else None
+    # review8 TOOL2-FINI-COUNTS-IGNORED: fini.txt says whether ReleveFP wrote every row: deals=-1 (the history not read, or deals.csv not
+    # written), a count other than the rows read (a file cut while copied, or a write that failed), erreur_deals != 0 (a write that failed
+    # writes fewer rows and counts them), a cut last line. Such a file holds the oldest deals only (ReleveFP writes them oldest first): the
+    # history is used up to its last deal read (cut_srv), never as if it were complete
+    n_f, err = f.get("deals"), f.get("erreur_deals")
+    err = err if isinstance(err, int) else None
+    read_n = dinfo.get("rows", 0) + dinfo.get("bad_rows", 0) + dinfo.get("duplicates", 0) + int(bool(dinfo.get("cut_last")))
+    why = []
+    if isinstance(n_f, int) and n_f < 0:
+        why.append("fini.txt : deals=-1")
+    elif isinstance(n_f, int) and dinfo.get("header_ok") and n_f != read_n:
+        why.append(f"{dinfo.get('rows', 0)} lignes lues pour deals={n_f} dans fini.txt")
+    if dinfo.get("cut_last"):
+        why.append("derniere ligne coupee")
+    n_p = f.get("positions")
+    p_why = []
+    if isinstance(n_p, int) and n_p < 0:
+        p_why.append("fini.txt : positions=-1")
+    elif poss is not None and pinfo.get("header_ok", True) and isinstance(n_p, int):
+        read_p = pinfo.get("rows", 0) + pinfo.get("bad_rows", 0) + pinfo.get("duplicates", 0) + int(bool(pinfo.get("cut_last")))
+        if n_p != read_p:
+            p_why.append(f"{pinfo.get('rows', 0)} lignes lues pour positions={n_p} dans fini.txt")
+    if poss is not None and pinfo.get("cut_last"):
+        p_why.append("derniere ligne coupee de positions.csv")
+    if err:
+        # erreur_deals holds Deals()'s code, else Positions()' (Positions runs first): with positions=-1 and every deal row there, the code is
+        # Positions()'; else either file may be short
+        if not (p_why and not why and isinstance(n_f, int) and n_f >= 0 and n_f == read_n):
+            why.append(f"fini.txt : erreur_deals={err}")
+        p_why.append(f"fini.txt : erreur_deals={err}")
+    cut = last if why else None
+    return {"file": os.path.basename(path), "deals": deals, "info": dinfo, "positions": poss, "pinfo": pinfo,
+            "groups": C.deal_positions(deals), "ops": C.deal_operations(deals), "snap_srv": snap, "rel_srv": rel,
+            "incomplete": why, "cut_srv": cut, "unusable": bool(why) and not deals, "p_incomplete": p_why,
+            "cov_srv": cut if why else rel,
+            "fini": {k: f.get(k) for k in ("version", "deals", "deals_du", "deals_au", "positions", "positions_heure", "erreur_deals") if k in f}}
+
+
+def deal_apply(e, ctx, last_sl, lv_end_utc):
+    """the account's deals of one robot position of the journal (its FILL or ADOPT ticket is DEAL_POSITION_ID; hedging: the position
+    ticket is the opening order's ticket, CR_Broker.mqh BrkOpen): the entry of an adopted position, and any exit the journal did not
+    price (a broker stop, a lost CLOSE line, a close while the robot was stopped ...) from the closing deal and its reason. A robot close
+    the journal priced (CLOSE ok=1, rc done, px) keeps its CLOSE line (checked against the deal in deals_report)"""
+    e["stop_level_journal"] = last_sl
+    g = ctx["groups"].get(e["ticket"])
+    if g is None:
+        e["deal_found"] = False
+        return
+    e["deal_found"] = True
+    e["deal"] = {k_: g[k_] for k_ in ("position", "kind", "magic", "code", "side", "price_in", "vol_in", "time_in", "price_out", "vol_out",
+                                       "time_out", "reason_out", "magic_out", "sl_out", "commission", "fee", "swap", "profit", "money", "open")}
+    e["deal"]["n_deals"] = len(g["deals"])
+    if e.get("entry_real") is None and g["price_in"]:                 # an ADOPT: its entry is in the account's history
+        e["entry_real"] = g["price_in"]
+        e["entry_from_deal"] = True
+        if not e.get("side"):
+            e["side"] = g["side"]
+        if not e.get("lots"):
+            e["lots"] = g["vol_in"]
+    if g["open"] or not g["out"] or e["exit_kind"] == "ea_close":
+        return
+    t_out = C.srv_to_utc(g["time_out"])
+    if e["exit_kind"] == "open_or_unknown" and lv_end_utc is not None and t_out > lv_end_utc:
+        e["deal_closed_after_journal"] = t_out                         # closed after the journal's last line: not this journal's
+        return
+    new = DEAL_EXIT_KIND.get(g["reason_out"], "other_close_deal")
+    if new == "ea_close_deal" and not (g["magic_out"] in C.CODE_OF_MAGIC or g["magic_out"] == C.MARK_MAGIC):
+        new = "other_close_deal"
+    dec = max(0, min(8, max(d["price_decimals"] for d in g["out"])))
+    e["exit_kind_journal"], e["close_why_journal"] = e["exit_kind"], e.get("close_why")
+    e.update(exit_kind=new, exit_real=g["price_out"], exit_utc=t_out, exit_from_deal=True,
+             close_why=f"{DEAL_KIND_FR[new]} le {C.utc_txt(t_out)} a {g['price_out']:.{dec}f} (historique du compte)")
+
+
+def after_history(money, days, out, comm_side, fiches, pays, anomalies):
+    """review8 TOOL2-LATECOPY-SILENT: the DAY lines after the account's history ends (ReleveFP ran before the journal's last DAY line, e.g. the
+    files zipped the next day; or a deals.csv shown incomplete) are estimated from the balance, as without the history, on that window only:
+    the balance change from the last DAY line the history explains to the last one, against the gross results of the positions closed in it;
+    judged against the lab's allowance (the model's commission, 1.5 x the lab's stop slippage and swaps, a floor) when the window holds no
+    position without an exit price, no payment and the estimate has no other hole"""
+    isnum = lambda x: isinstance(x, (int, float)) and math.isfinite(x)   # noqa: E731
+    md = money["deals"]
+    k = next((i for i, d in enumerate(days) if d["utc"] == md.get("last_day_utc")), None)
+    if k is None or k >= len(days) - 1:
+        return None
+    d0, d1 = days[k], days[-1]
+    ta, tb = d0["utc"], d1["utc"]
+    closed = [e for e in out if e.get("exit_utc") and ta <= e["exit_utc"] < tb and e.get("gross_eur") is not None]
+    unknown = [e for e in out if e["exit_kind"] not in KNOWN_EXITS and e["exit_kind"] != "open_or_unknown" and (e.get("entry_utc") or 0) < tb
+               and ((e.get("exit_utc") or tb) >= ta)]
+    paid = [p_ for p_ in pays if ta <= p_["utc"] < tb + 86400]
+    db = (d1["balance"] - d0["balance"]) if isnum(d1.get("balance")) and isnum(d0.get("balance")) else None
+    gross = sum(e["gross_eur"] for e in closed)
+    cni = db - gross if db is not None else None
+    al = balance_allowance(closed, comm_side, fiches)
+    mc = sum(e.get("model_commission_eur") or 0 for e in closed)
+    floor = max(2.0, 0.002 * abs(d1["balance"] if isnum(d1.get("balance")) else 0.0))
+    ae = {"from": d0["day"], "to": d1["day"], "from_utc": ta, "to_utc": tb, "balance_change_eur": db, "gross_from_prices_eur": gross,
+          "costs_not_in_prices_eur": cni, "positions": len(closed), "model_commission_eur": mc,
+          "allowed_cost_eur": mc + 1.5 * (al["stop_slippage_lab_eur"] + al["swap_lab_eur"]) + floor,
+          "allowed_gain_eur": floor + 1.5 * al["swap_credit_eur"], "positions_exit_unknown": len(unknown), "payments": len(paid)}
+    ae["judged"] = bool(isnum(cni) and money.get("complete") and not unknown and not paid)
+    win = f"apres l'historique du compte (du soir du {d0['day']} au soir du {d1['day']})"
+    if ae["judged"] and cni > ae["allowed_gain_eur"]:
+        anomalies.append(f"{win} : le solde a bouge pour une autre raison que les trades du robot : {C.fr(cni, 2, 'EUR')} de plus que leurs "
+                         f"resultats (au plus {C.fr(ae['allowed_gain_eur'], 2, 'EUR')} attendus) (trade a la main, depot, autre copie ?)")
+    elif ae["judged"] and -cni > ae["allowed_cost_eur"]:
+        anomalies.append(f"{win} : frais hors des prix de {C.fr(-cni, 2, 'EUR')} d'apres le solde, au-dela de ce que le labo prevoit (au plus "
+                         f"{C.fr(ae['allowed_cost_eur'], 2, 'EUR')})")
+    return ae
+
+
+def _subset_sums(xs, cap=6):
+    out = {0.0}
+    for x in xs[:cap]:
+        out |= {s + x for s in out}
+    return out
+
+
+def deals_money(m, ctx, days, anomalies, late=()):
+    """the money with the account's history (review7 TOOL2-DEALS d): each DAY line's balance against the sum of every deal before its
+    stamp (a deal of the first minute after it may be in it or not: both are tried; a DAY line stamped inside an outage, late = [(from, to)]
+    server seconds, was written at the robot's return: the deals up to then may be in it; with more than six such deals the line is left
+    unchecked), so the balance moves the journal shows are explained deal by deal. Review8 MONEY-AU-CENTIME-CLAIM: line by line, not
+    cumulatively: from one checked DAY line to the next, the balance must move as the deals between them, within 0.011 EUR (the DAY line's own
+    rounding) + 0.005 EUR per money field of those deals (each rounded to the cent once: the harness's commission is not rounded, a real
+    account's is, and then the gap is 0); the largest gap seen is reported (said 'au centime pres' only when it is at most 0.011 EUR, else 'a
+    X EUR pres'). Exact when every step agrees; then the estimate is complete, whatever the journal lacks (lost files, lines, exits): the
+    deals hold every trade, payment and charge. Review8 TOOL2-LATECOPY-SILENT: the DAY lines after the history's end (the releve, or the last
+    deal of a deals.csv fini.txt shows incomplete) cannot be explained by it: the lines up to it are checked ('partial': the caller estimates the
+    rest from the balance), never a silent fall-back. Returns False (history not used), True (the whole window) or 'partial'"""
+    deals = ctx["deals"]
+    isnum = lambda x: isinstance(x, (int, float)) and math.isfinite(x)   # noqa: E731
+    pts = [(C.utc_to_srv(d["utc"]), d["balance"], d["day"]) for d in days if isnum(d.get("balance"))]
+    rel = ctx.get("cov_srv") if ctx.get("cov_srv") is not None else ctx["rel_srv"]
+    cov = [x for x in pts if rel is not None and x[0] <= rel + DEAL_EDGE_S]
+    partial = bool(len(cov) >= 2 and len(cov) < len(pts))
+    info = {"covered": bool(len(cov) >= 2 and len(cov) == len(pts)), "days_checked": len(cov), "partial": partial,
+            "until_srv": rel, "until_why": "deals.csv incomplet" if ctx.get("incomplete") else "releve",
+            "last_day_checked": cov[-1][2] if cov else None, "last_day_utc": C.srv_to_utc(cov[-1][0]) if cov else None}
+    m["deals"] = info
+    if len(cov) < 2 or not deals:
+        return False
+    srt = sorted(deals, key=C.deal_key)
+    times = [d["time"] for d in srt]
+    money = [C.deal_money(d) for d in srt]
+    cum = [0.0]
+    for x in money:
+        cum.append(cum[-1] + x)
+    import bisect
+    cands, tols, kept = [], [], []
+    prev_i = None
+    for M, bal, day_ in cov:
+        i = bisect.bisect_left(times, M)
+        end = max([b_ for a_, b_ in late if a_ <= M <= b_] + [M]) + DEAL_EDGE_S
+        j = bisect.bisect_left(times, end)
+        amb = [money[x] for x in range(i, j) if money[x] != 0]
+        if len(amb) > 6:
+            continue                                                    # written long after its stamp with many deals between: unchecked
+        kept.append((M, bal, day_))
+        cands.append({bal - cum[i] - s for s in _subset_sums(amb)})
+        lo = i if prev_i is None else prev_i                            # the deals since the last checked line (its edge deals included)
+        tols.append(0.011 + 0.005 * sum(1 for x in range(lo, j) for f in ("profit", "commission", "swap", "fee") if srt[x][f]))
+        prev_i = i
+    exact, worst, max_step = True, None, 0.0
+    reach = set(cands[0]) if cands else set()
+    for k_ in range(1, len(cands)):
+        nxt = {c for c in cands[k_] if any(abs(c - r) <= tols[k_] for r in reach)}
+        if not nxt:
+            exact = False
+            worst = (min(abs(c - r) for c in cands[k_] for r in reach), kept[k_][2], tols[k_])
+            break
+        max_step = max(max_step, min(abs(c - r) for c in nxt for r in reach))
+        reach = nxt
+    t0, t1 = cov[0][0], cov[-1][0]
+    win = [d for d in srt if t0 <= d["time"] < t1]
+    gk = {}
+    for pid, g in ctx["groups"].items():
+        gk[pid] = g["kind"]
+    sums = defaultdict(float)
+    for d in win:
+        if d["type"] in C.TRADE_TYPES:
+            kind = gk.get(d["position"], "hand" if d["magic"] == 0 else "other")
+            sums[kind] += C.deal_money(d)
+            if kind == "robot":
+                for f in ("profit", "commission", "swap", "fee"):
+                    sums["robot_" + f] += d[f]
+        elif d["type"] == "DEAL_TYPE_BALANCE":
+            sums["payments"] += C.deal_money(d)
+        else:
+            sums["other_ops"] += C.deal_money(d)
+    info.update(exact=exact, days_unchecked=len(cov) - len(kept), max_gap_eur=max_step if exact else None,
+                tolerance_max_eur=max(tols[1:]) if len(tols) > 1 else None,
+                worst_gap_eur=None if exact else (worst[0] if worst else None), worst_day=None if exact else (worst[1] if worst else None),
+                robot_eur=sums["robot"], robot_profit_eur=sums["robot_profit"], robot_commission_eur=sums["robot_commission"],
+                robot_swap_eur=sums["robot_swap"], robot_fee_eur=sums["robot_fee"], mark_eur=sums["mark"], hand_eur=sums["hand"],
+                other_programs_eur=sums["other"], payments_eur=sums["payments"], other_operations_eur=sums["other_ops"],
+                deals_in_window=len(win), explained_eur=sum(C.deal_money(d) for d in win))
+    if not info["covered"] and not partial:
+        return False
+    if exact:
+        if partial:
+            return "partial"                                            # the caller estimates the DAY lines after the history's end
+        m["complete"] = True
+        m["incomplete_why"] = []
+        m["judged"] = False
+        return True
+    m["complete"] = False
+    m["incomplete_why"] = [f"le solde des lignes DAY ne suit pas l'historique du compte (ecart de {C.fr(worst[0] if worst else None, 2, 'EUR')} "
+                           f"le {worst[1] if worst else '?'})"]
+    m["judged"] = False
+    anomalies.append(f"le solde du journal (lignes DAY) ne suit pas l'historique du compte (deals.csv) : ecart de "
+                     f"{C.fr(worst[0] if worst else None, 2, 'EUR')} le {worst[1] if worst else '?'} d'une ligne DAY a la precedente (au plus "
+                     f"{C.fr(worst[2] if worst else None, 3, 'EUR')} d'arrondis) : historique "
+                     "d'un autre compte, coupe, ou journal modifie ? (estimation de l'argent incomplete)")
+    return "partial" if partial else True                           # partial: the payments after the history's end stay the journal's
+
+
+def deals_report(out, ctx, lv, rows, points, h, comm_side, starts, lost=()):
+    """the journal's robot positions against the account's history (review7 TOOL2-DEALS): (a) entry and close prices, lots and magic;
+    (b) the broker's stop exits at their real price: slippage against the stop level (DEAL_SL of the closing deal, else the journal's stop)
+    and, where the paper also left by its stop, beyond the paper's own stop exit, which books the lab's stop slippage: judged per market
+    against 1.5 x the lab's (fp_costs.json) with the execution-cost judge (Student 99.9 %, 3 stops at least, never against 0); (c) commission,
+    fee and swap per trade against the lab's model (gold 3 points a side = h, none elsewhere; fp_costs.json swaps with its triple day),
+    per market; (e) trades by hand (magic 0), trades of other programs, payments and other operations, with their times; (f) positions.csv
+    against the journal's positions open at the snapshot; (g) robot positions of the history the journal does not know, and journal
+    positions without deals. Review8: a deals.csv fini.txt shows incomplete (deals=-1, fewer rows than deals=, a cut last line,
+    erreur_deals != 0) is one anomaly that says so; without any row the history is not used at all; with rows it is used up to its last
+    deal (ctx cut_srv): positions after it are not called 'without deals' nor 'still open in the history', and the money is checked up to
+    it. positions.csv incomplete (positions=-1, fewer rows than positions=, erreur_deals) is not compared (f), said. A robot position of
+    the history that a DUP, ORPHAN, CLOSE, SLMOD, SLFIX or WATCH line names is known to the journal; one whose entry or exit falls inside
+    a missing daily file's hours (lost = [(utc from, utc to, file)]) had its lines in that file: information, never 'que le journal ne
+    connait pas'. The period is the earliest and the latest deal. Returns (summary for report.json, anomalies)"""
+    an = []
+    info, groups, deals = ctx["info"], ctx["groups"], ctx["deals"]
+    rep = {"file": ctx["file"], "rows": info.get("rows", 0), "header_ok": info.get("header_ok", False), "bad_rows": info.get("bad_rows", 0),
+           "bad_lines": info.get("bad_lines", []), "cut_last": info.get("cut_last", False), "duplicates": info.get("duplicates", 0),
+           "fini": ctx.get("fini", {}), "from_srv": min(d["time"] for d in deals) if deals else None,
+           "to_srv": max(d["time"] for d in deals) if deals else None,
+           "releve_srv": ctx.get("rel_srv"), "positions_file": ctx.get("positions") is not None,
+           "incomplete": list(ctx.get("incomplete") or []), "cut_srv": ctx.get("cut_srv"), "positions_incomplete": list(ctx.get("p_incomplete") or [])}
+    fin = ctx.get("fini") or {}
+    inc, p_inc = ctx.get("incomplete") or [], ctx.get("p_incomplete") or []
+    err_ = fin.get("erreur_deals") if isinstance(fin.get("erreur_deals"), int) else 0
+    if info.get("header_ok") and ctx.get("unusable"):
+        # review8 TOOL2-FINI-COUNTS-IGNORED: ReleveFP wrote no row (deals=-1: the history not read or the file not written): nothing to compare
+        an.append(f"{ctx['file']} sans aucune transaction et incomplet ({' ; '.join(dict.fromkeys(inc + p_inc))}) : ReleveFP n'a pas pu lire "
+                  "l'historique du compte ou ecrire le fichier : historique du compte non utilise (rien n'est compare a l'historique)"
+                  + (" ; positions.csv incomplet aussi : positions ouvertes au releve non comparees" if p_inc else "")
+                  + " ; relancer ReleveFP jusqu'a l'alerte 'Releve termine' (onglet Historique de la Boite a outils : 'Tout l'historique')")
+        rep["used"] = False
+        return rep, an
+    if not info.get("header_ok"):
+        an.append(f"{ctx['file']} illisible (en-tete qui n'est pas celui de ReleveFP 1.11 : fichier modifie ou autre fichier ?) : historique du "
+                  "compte non utilise ; recopier le dossier claude/releve tel quel")
+        rep["used"] = False
+        return rep, an
+    rep["used"] = True
+    if info.get("bad_rows"):
+        an.append(f"{ctx['file']} : {info['bad_rows']} ligne(s) illisible(s) laissee(s) de cote (lignes {', '.join(str(x) for x in info['bad_lines'][:5])} ; "
+                  "fichier modifie ou coupe ? texte jamais recopie)")
+    cut_utc = C.srv_to_utc(ctx["cut_srv"]) if ctx.get("cut_srv") else None
+    if inc or p_inc:
+        # one anomaly for what fini.txt says ReleveFP could not write whole (review8): the checks below stop at the last deal read
+        files_ = " et ".join(x for x, y in ((ctx["file"], inc), (C.POSITIONS_FILE, p_inc)) if y)
+        why_ = " ; ".join(dict.fromkeys(inc + p_inc))
+        what = []
+        if inc:
+            what.append(f"historique du compte lu jusqu'au {C.utc_txt(cut_utc)} seulement (sa derniere transaction lue) : les positions et le "
+                        "solde d'apres ne sont pas compares a l'historique")
+        if p_inc:
+            what.append("positions ouvertes au releve non comparees")
+        advice = ("relancer ReleveFP jusqu'a l'alerte 'Releve termine'" if err_ or any("=-1" in x for x in inc + p_inc) else
+                  "recopier le dossier claude/releve tel quel depuis le Mac (et s'il y est aussi court, relancer ReleveFP)")
+        an.append(f"{files_} {'incomplets' if inc and p_inc else 'incomplet'} ({why_}) : " + " ; ".join(what) + f" ; {advice}")
+    fills = [r for r in lv if r["ev"] == "FILL" and (cut_utc is None or r["utc"] <= cut_utc - DEAL_EDGE_S)]
+    if fills and not any(g["kind"] == "robot" for g in groups.values()):
+        an.append(f"l'historique du compte ({ctx['file']}) n'a aucune transaction du robot alors que le journal a {len(fills)} ligne(s) FILL : "
+                  "historique d'un autre compte, ou pas encore charge par MetaTrader (relancer ReleveFP)")
+    lv_first = lv[0]["utc"] if lv else None
+    lv_last = lv[-1]["utc"] if lv else None
+    rel_utc = C.srv_to_utc(ctx["rel_srv"]) if ctx.get("rel_srv") else None
+    snap_utc = C.srv_to_utc(ctx["snap_srv"]) if ctx.get("snap_srv") else rel_utc
+    # (a) prices, lots, magic
+    dis, mag, closed_open = [], [], []
+    for e in out:
+        g = groups.get(e["ticket"])
+        if g is None:
+            continue
+        b = e["symbol"]
+        tol = DEAL_PX_TOL_POINTS * points[b]
+        want = 20261200 + C.SLEEVE_ID[e["code"]]
+        if g["magic"] != want:
+            mag.append(f"{e['code']} ticket {e['ticket']} : magic {g['magic']} au lieu de {want}" if g["magic"] in C.CODE_OF_MAGIC or g["magic"] in (0, C.MARK_MAGIC)
+                       else f"{e['code']} ticket {e['ticket']} : magic d'un autre programme")
+        if e.get("src") == "FILL" and isinstance(e.get("entry_real"), (int, float)) and g["price_in"] is not None \
+                and abs(e["entry_real"] - g["price_in"]) > tol + 1e-9 * abs(g["price_in"]):
+            dis.append(f"{e['code']} ticket {e['ticket']} : entree {e['entry_real']:.{_dec(points[b])}f} au journal (FILL), "
+                       f"{g['price_in']:.{_dec(points[b])}f} dans l'historique")
+        if e.get("src") == "FILL" and e.get("lots") and g["vol_in"] and abs(e["lots"] - g["vol_in"]) > 1e-6:
+            dis.append(f"{e['code']} ticket {e['ticket']} : {C.fr(e['lots'], 2)} lot au journal, {C.fr(g['vol_in'], 2)} dans l'historique")
+        if e["exit_kind"] == "ea_close":
+            if g["out"] and not g["open"]:
+                if isinstance(e.get("exit_real"), (int, float)) and abs(e["exit_real"] - g["price_out"]) > tol + 1e-9 * abs(g["price_out"]):
+                    dis.append(f"{e['code']} ticket {e['ticket']} : fermeture {e['exit_real']:.{_dec(points[b])}f} au journal (CLOSE), "
+                               f"{g['price_out']:.{_dec(points[b])}f} dans l'historique")
+                if g["reason_out"] != "DEAL_REASON_EXPERT":
+                    dis.append(f"{e['code']} ticket {e['ticket']} : fermee par le robot au journal (CLOSE), "
+                               f"{C.DEAL_REASON_FR.get(g['reason_out'], 'autrement')} dans l'historique")
+            elif rel_utc is not None and (e.get("exit_utc") or 0) <= rel_utc - DEAL_EDGE_S \
+                    and (cut_utc is None or (e.get("exit_utc") or 0) <= cut_utc - DEAL_EDGE_S):
+                closed_open.append(e)                                  # never after the last deal of a short deals.csv (review8)
+    if dis:
+        an.append(f"{len(dis)} prix ou lot(s) du journal differents de l'historique du compte (ils doivent etre egaux), par ex. {dis[0]}")
+    if mag:
+        an.append(f"{len(mag)} position(s) du journal dont la transaction d'ouverture n'a pas le magic de sa sleeve, par ex. {mag[0]}")
+    if closed_open:
+        e0 = closed_open[0]
+        an.append(f"{len(closed_open)} position(s) fermee(s) par le robot d'apres le journal (CLOSE) mais encore ouverte(s) dans l'historique du "
+                  f"compte au releve, par ex. {e0['code']} ticket {e0['ticket']} fermee le {C.utc_txt(e0['exit_utc'])}")
+    rep["price_disagreements"] = dis
+    rep["magic_disagreements"] = mag
+    # exits the journal did not price, now known from the history: what it said, what the history says
+    conv = [e for e in out if e.get("exit_from_deal")]
+    quiet = ("broker_stop_estimated", "broker_stop_race", "broker_stop_seen")
+    loud = [e for e in conv if not (e["exit_kind"] == "broker_stop_deal" and e.get("exit_kind_journal") in quiet)]
+    if loud:
+        e0 = loud[0]
+        an.append(f"{len(loud)} position(s) dont la sortie manquait ou etait douteuse au journal, connue par l'historique du compte, par ex. "
+                  f"{e0['code']} ticket {e0['ticket']} : journal : {e0.get('close_why_journal')} ; historique : {e0['close_why']}")
+    rep["exits_from_history"] = {k_: sum(1 for e in conv if e["exit_kind"] == k_) for k_ in DEAL_EXITS if any(e["exit_kind"] == k_ for e in conv)}
+    rep["exits_from_history_flagged"] = len(loud)
+    # (b) the broker's stops at their real price, per market
+    stops = {}
+    for b in C.ROBOT_BASES:
+        es = [e for e in out if e["symbol"] == b and e["exit_kind"] == "broker_stop_deal" and e.get("side")]
+        if not es:
+            continue
+        pt = points[b]
+        for e in es:
+            lvl = e["deal"]["sl_out"] if (e["deal"].get("sl_out") or 0) > 0 else e.get("stop_level_journal")
+            if not (isinstance(lvl, (int, float)) and lvl > 0):
+                continue
+            sl = e["side"] * (lvl - e["exit_real"])
+            e.update(stop_level=lvl, stop_slip_pts=sl / pt, stop_slip_bp=sl / lvl * 1e4,
+                     stop_slip_eur=sl * e["lots"] * e["eur_per_price_per_lot"] if (e.get("lots") and e.get("eur_per_price_per_lot")) else None)
+        lab = C.SLIP_BPS[b][1]
+        comp = [e for e in es if e.get("paper_reason") in STOP_REASONS and e.get("exit_diff_net_bp") is not None]
+        jd = judge([e["exit_diff_net_bp"] for e in comp], 0.5 * lab)
+        s = {"n": len(es), "lab_stop_bp": lab, "slip_bp_mean": C.mean([e.get("stop_slip_bp") for e in es]),
+             "slip_pts_mean": C.mean([e.get("stop_slip_pts") for e in es]),
+             "slip_eur_sum": sum(e["stop_slip_eur"] for e in es if e.get("stop_slip_eur") is not None),
+             "n_vs_paper": jd[1], "beyond_paper_bp_mean": jd[0], "beyond": jd[2],
+             "beyond_paper_eur_sum": sum(e["exit_diff_eur"] for e in comp if e.get("exit_diff_eur") is not None)}
+        stops[b] = s
+        if jd[2]:
+            an.append(f"glissement des stops courtier {b} au-dela de 1,5 fois celui du labo (les regles ont ete testees avec des frais x1,5) : "
+                      f"{C.frs(jd[0], 2, 'pb')} au-dela du papier en moyenne sur {jd[1]} stop(s) (le papier compte deja {C.fr(lab, 2, 'pb')}) ; "
+                      f"glissement au niveau du stop {C.frs(s['slip_bp_mean'], 2, 'pb')} soit {C.frs(s['slip_pts_mean'], 1, 'points')} en moyenne, "
+                      f"{C.frs(s['slip_eur_sum'], 2, 'EUR')} en tout")
+    rep["stops"] = stops
+    # (c) commission, fee and swap per trade, per market, against the lab's model
+    costs = C.load_fp_costs()
+    cm = {}
+    for b in C.ROBOT_BASES:
+        es = [e for e in out if e["symbol"] == b and e.get("deal")]
+        if not es:
+            continue
+        sides = sum((e["deal"]["vol_in"] or 0) + (e["deal"]["vol_out"] or 0) for e in es)
+        com = -sum(e["deal"]["commission"] + e["deal"]["fee"] for e in es)
+        model = sum(h[b] * (e.get("eur_per_price_per_lot") or 0) * ((e["deal"]["vol_in"] or 0) + (e["deal"]["vol_out"] or 0)) for e in es)
+        nd = sum(e["deal"]["n_deals"] for e in es)
+        marg = 0.005 * nd + 0.01
+        for e in es:
+            e["deal_commission_eur"] = e["deal"]["commission"] + e["deal"]["fee"]
+            e["deal_swap_eur"] = e["deal"]["swap"]
+        closed = [e for e in es if not e["deal"]["open"] and e.get("entry_utc") and e.get("exit_utc") and e.get("eur_per_price_per_lot")]
+        lab_sw = costs.get(C.LAB_SYM.get(b, ""), {})
+        for e in closed:
+            e["swap_nights"] = C.swap_nights(e["entry_utc"], e["exit_utc"], lab_sw.get("swap_triple"))
+            e["lab_swap_eur"] = C.lab_swap_eur(b, e["side"], e.get("entry_real") or e.get("paper_entry"), e.get("lots"), e["eur_per_price_per_lot"],
+                                               e["swap_nights"], costs)
+        sw_real = -sum(e["deal"]["swap"] for e in closed)
+        sw_lab = sum(e.get("lab_swap_eur") or 0 for e in closed)
+        n_sw = sum(1 for e in closed if e["deal"]["swap"])
+        sw_marg = 0.005 * n_sw + 0.01                                 # each swap rounded to the cent, and a cent
+        c = {"positions": len(es), "lot_sides": sides, "commission_eur": -com + 0.0, "model_commission_eur": -model + 0.0,
+             "per_lot_side_eur": (com / sides + 0.0) if sides else None, "model_per_lot_side_eur": (model / sides + 0.0) if sides else None,
+             "commission_beyond": bool(com > 1.5 * model + marg), "swap_eur": -sw_real + 0.0, "lab_swap_eur": -sw_lab + 0.0,
+             "swap_nights": sum(e.get("swap_nights") or 0 for e in closed), "swap_beyond": bool(sw_real > 1.5 * sw_lab + sw_marg),
+             "swap_credit": bool(sw_real < -sw_marg)}
+        # per trade too: a swap beyond 1.5 x the lab's for that trade's nights (a triple charged on another day than the lab's ...), which the
+        # market's total can hide behind the trades the lab charges and the broker does not
+        tb = [e for e in closed if -e["deal"]["swap"] > 1.5 * (e.get("lab_swap_eur") or 0) + 0.015]
+        c["swap_trades_beyond"] = [e["ticket"] for e in tb]
+        cm[b] = c
+        if c["commission_beyond"]:
+            an.append(f"commission {b} au-dela du modele du labo : {C.fr(com, 2, 'EUR')} sur {len(es)} trade(s), soit {C.fr(c['per_lot_side_eur'], 2, 'EUR')} "
+                      f"par lot et par cote (modele {C.fr(c['model_per_lot_side_eur'], 2, 'EUR')}"
+                      + (" : 3 points par cote, CR_XAU_COMM_PTS" if b == "XAUUSD" else " : aucune commission sur ce marche (compte Raw)") + ")")
+        if c["swap_beyond"] or tb:
+            worst = max(tb or closed, key=lambda e: -e["deal"]["swap"] - 1.5 * (e.get("lab_swap_eur") or 0))
+            tri = (f"fp_costs.json, triple le "
+                   f"{C.DOW_FR[C.DOW_EN3.index(lab_sw['swap_triple'])] if lab_sw.get('swap_triple') in C.DOW_EN3 else '?'}")
+            head = f"swaps {b} plus chers que 1,5 fois ceux du labo"
+            head += (f" : {C.frs(-sw_real, 2, 'EUR')} pour {C.frs(-sw_lab, 2, 'EUR')} au calcul du labo ({tri})" if c["swap_beyond"] else
+                     f" sur {len(tb)} trade(s) (l'ensemble : {C.frs(-sw_real, 2, 'EUR')} pour {C.frs(-sw_lab, 2, 'EUR')} au calcul du labo, {tri})")
+            an.append(head + f", par ex. ticket {worst['ticket']} : {C.frs(worst['deal']['swap'], 2, 'EUR')} pour {worst.get('swap_nights')} nuit(s) au "
+                      f"calcul du labo ({C.frs(-(worst.get('lab_swap_eur') or 0), 2, 'EUR')}), ouverte le {C.utc_txt(worst['entry_utc'])}, fermee le "
+                      f"{C.utc_txt(worst['exit_utc'])}")
+    rep["costs"] = cm
+    # (e) trades by hand, by other programs, the guard's marks, payments and other operations (with their times)
+    start_u = next((s["utc"] for s in starts if not s.get("refused")), lv_first)
+
+    def before_demo(g):
+        """opened and closed before the robot's first start: information (the account's own past), not the demo's"""
+        return bool(start_u is not None and g["time_in"] and not g["open"] and g["time_out"]
+                    and C.srv_to_utc(g["time_out"]) < start_u - DEAL_EDGE_S)
+    hands_all = [g for g in groups.values() if g["kind"] == "hand"]
+    others_all = [g for g in groups.values() if g["kind"] == "other"]
+    hands = [g for g in hands_all if not before_demo(g)]
+    others = [g for g in others_all if not before_demo(g)]
+    marks = [g for g in groups.values() if g["kind"] == "mark"]
+
+    def gtxt(g):
+        t_in = C.utc_txt(C.srv_to_utc(g["time_in"])) if g["time_in"] else "?"
+        t_out = (f", fermee le {C.utc_txt(C.srv_to_utc(g['time_out']))}" if (g["time_out"] and not g["open"]) else ", encore ouverte")
+        return (f"{C.deal_symbol_shown(g['symbol'])} {'achat' if g['side'] > 0 else 'vente'} de {C.fr(g['vol_in'] or g['vol_out'], 2)} lot ouverte le "
+                f"{t_in}{t_out}, resultat {C.frs(g['money'], 2, 'EUR')}")
+    if hands:
+        an.append(f"{len(hands)} trade(s) a la main sur le compte (magic 0, historique du compte), resultat {C.frs(sum(g['money'] for g in hands), 2, 'EUR')} : "
+                  + " ; ".join(gtxt(g) for g in hands[:3]) + (" ..." if len(hands) > 3 else ""))
+    if others:
+        names = sorted({C.LAB_PROGRAM_MAGIC.get(g["magic"], "un autre programme") for g in others})
+        an.append(f"{len(others)} trade(s) d'un autre programme sur le compte ({', '.join(names)}), resultat {C.frs(sum(g['money'] for g in others), 2, 'EUR')} : "
+                  + " ; ".join(gtxt(g) for g in others[:2]))
+    ops = ctx["ops"]
+    during = [d for d in ops if C.deal_money(d) != 0 and start_u is not None and C.srv_to_utc(d["time"]) >= start_u - DEAL_EDGE_S]
+    before = [d for d in ops if C.deal_money(d) != 0 and d not in during]
+
+    def otxt(d):
+        x = C.deal_money(d)
+        what = (("versement" if x > 0 else "retrait") if d["type"] == "DEAL_TYPE_BALANCE" else C.DEAL_TYPE_FR.get(d["type"], "operation"))
+        return f"{what} de {C.fr(abs(x), 2, 'EUR')} le {C.utc_txt(C.srv_to_utc(d['time']))}"
+    if during:
+        an.append(f"{len(during)} operation(s) sur le solde pendant la demo (historique du compte) : " + " ; ".join(otxt(d) for d in during[:3])
+                  + (" ..." if len(during) > 3 else "") + " : le solde a bouge pour une autre raison que les trades du robot")
+    rep.update(hand=[gtxt(g) for g in hands], other_programs=[gtxt(g) for g in others], marks=len(marks),
+               trades_before_demo=[gtxt(g) for g in hands_all + others_all if before_demo(g)],
+               operations_during=[otxt(d) for d in during], operations_before=[otxt(d) for d in before])
+    # (f) positions.csv: the positions open at the snapshot against the journal's
+    poss = ctx.get("positions")
+    known = {e["ticket"]: e for e in out}
+    mark_tickets = {r.get("ticket") for r in lv if r["ev"] == "MARK" and r.get("ticket")}
+    if p_inc:
+        rep["open_at_releve"] = {"skipped": "positions.csv incomplet (" + " ; ".join(p_inc) + ")"}    # said in the anomaly above (review8)
+    elif poss is not None and ctx.get("pinfo", {}).get("header_ok") and snap_utc is not None:
+        by_t = {}
+        for q in poss:
+            by_t[q["ticket"]] = q
+            by_t.setdefault(q["identifier"], q)
+        unk_open, shut, missing, pdis = [], [], [], []
+        for q in poss:
+            if not (q["magic"] in C.CODE_OF_MAGIC or q["magic"] == C.MARK_MAGIC):
+                continue
+            e = known.get(q["ticket"]) or known.get(q["identifier"])
+            if e is None:
+                if q["ticket"] not in mark_tickets and q["identifier"] not in mark_tickets:
+                    unk_open.append(q)
+                continue
+            e["open_at_releve"] = True
+            if e.get("exit_utc") and e["exit_kind"] in KNOWN_EXITS and e["exit_utc"] < snap_utc - DEAL_EDGE_S:
+                shut.append(e)
+            tol = DEAL_PX_TOL_POINTS * points[e["symbol"]]
+            if e.get("src") == "FILL" and isinstance(e.get("entry_real"), (int, float)) and abs(q["price_open"] - e["entry_real"]) > tol + 1e-9 * q["price_open"]:
+                pdis.append(f"{e['code']} ticket {e['ticket']} : prix d'ouverture {q['price_open']} au releve, {e['entry_real']} au journal")
+        for e in out:
+            if e.get("open_at_releve") or not e.get("entry_utc") or e["entry_utc"] >= snap_utc - DEAL_EDGE_S:
+                continue
+            closed_before = (e.get("exit_utc") and e["exit_utc"] <= snap_utc + DEAL_EDGE_S and e["exit_kind"] in KNOWN_EXITS) or \
+                            (e.get("deal") and not e["deal"]["open"] and e["deal"]["time_out"] and C.srv_to_utc(e["deal"]["time_out"]) <= snap_utc + DEAL_EDGE_S)
+            if not closed_before and e["exit_kind"] in ("open_or_unknown",) + KNOWN_EXITS:
+                missing.append(e)
+        if unk_open:
+            q0 = unk_open[0]
+            an.append(f"{len(unk_open)} position(s) du robot ouverte(s) sur le compte au releve (positions.csv) que le journal ne connait pas, par ex. "
+                      f"{C.deal_symbol_shown(q0['symbol'])} magic {q0['magic']} ouverte le {C.utc_txt(C.srv_to_utc(q0['time']))}")
+        if shut:
+            an.append(f"{len(shut)} position(s) fermee(s) d'apres le journal mais encore ouverte(s) au releve (positions.csv), par ex. {shut[0]['code']} "
+                      f"ticket {shut[0]['ticket']}")
+        if missing:
+            m0 = missing[0]
+            an.append(f"{len(missing)} position(s) du journal ouverte(s) au moment du releve d'apres le journal et l'historique, absente(s) de "
+                      f"positions.csv, par ex. {m0['code']} ticket {m0['ticket']} ouverte le {C.utc_txt(m0['entry_utc'])}")
+        if pdis:
+            an.append(f"{len(pdis)} position(s) ouverte(s) au releve dont le prix d'ouverture differe du journal, par ex. {pdis[0]}")
+        rep["open_at_releve"] = {"robot": sum(1 for q in poss if q["magic"] in C.CODE_OF_MAGIC or q["magic"] == C.MARK_MAGIC),
+                                 "others": sum(1 for q in poss if not (q["magic"] in C.CODE_OF_MAGIC or q["magic"] == C.MARK_MAGIC)),
+                                 "journal_matched": sum(1 for e in out if e.get("open_at_releve")), "unknown": len(unk_open), "missing": len(missing)}
+    elif poss is None:
+        rep["open_at_releve"] = None
+    # (g) robot positions of the history the journal does not know, and journal positions without any deal. Review8: a ticket a DUP, ORPHAN,
+    # CLOSE, SLMOD, SLFIX or WATCH line names is known to the journal (a duplicate the robot closed, a position whose FILL was in a lost file
+    # ...); a position whose entry or exit falls inside a missing daily file's hours had its lines in that file
+    named = {r.get("ticket") for r in lv if r["ev"] in ("DUP", "ORPHAN", "CLOSE", "SLMOD", "SLFIX", "WATCH") and r.get("ticket")}
+    unk, before_j, after_j, by_lines, in_lost = [], [], [], [], defaultdict(list)
+    for pid, g in groups.items():
+        if g["kind"] not in ("robot", "mark") or pid in known or pid in mark_tickets:
+            continue
+        t_in = C.srv_to_utc(g["time_in"]) if g["time_in"] else C.srv_to_utc(g["deals"][0]["time"])
+        t_out = C.srv_to_utc(g["time_out"]) if (g["time_out"] and not g["open"]) else None
+        lost_f = next((f_ for a_, z_, f_ in lost if a_ <= t_in <= z_ or (t_out is not None and a_ <= t_out <= z_)), None)
+        if pid in named:
+            by_lines.append(g)
+        elif lv_first is not None and t_in < lv_first - DEAL_EDGE_S:
+            before_j.append(g)
+        elif lv_last is not None and t_in > lv_last:
+            after_j.append(g)
+        elif lost_f:
+            in_lost[lost_f].append(g)
+        else:
+            unk.append(g)
+    if unk:
+        g0 = unk[0]
+        an.append(f"{len(unk)} position(s) du robot dans l'historique du compte que le journal ne connait pas (aucune ligne du journal ne nomme "
+                  f"son ticket, hors des fichiers manquants), par ex. {g0['code'] or 'marque du garde'} : {gtxt(g0)}")
+    rep["known_by_other_lines"] = [f"{g['code'] or 'marque du garde'} ticket {g['position']}" for g in by_lines]
+    rep["in_lost_files"] = {f_: len(gs) for f_, gs in sorted(in_lost.items())}
+    rep["in_lost_files_txt"] = [f"{len(gs)} position(s) du robot ouverte(s) ou fermee(s) pendant le fichier manquant {f_} (leurs lignes etaient "
+                                f"dedans), connue(s) par l'historique, par ex. {gs[0]['code'] or 'marque du garde'} : {gtxt(gs[0])}"
+                                for f_, gs in sorted(in_lost.items())]
+    nod = [e for e in out if not e.get("deal_found") and (rel_utc is None or (e.get("entry_utc") or 0) <= rel_utc - DEAL_EDGE_S)
+           and (cut_utc is None or (e.get("entry_utc") or 0) <= cut_utc - DEAL_EDGE_S)]
+    after_cut = [e for e in out if not e.get("deal_found") and e not in nod and cut_utc is not None and (e.get("entry_utc") or 0) > cut_utc - DEAL_EDGE_S
+                 and (rel_utc is None or (e.get("entry_utc") or 0) <= rel_utc - DEAL_EDGE_S)]
+    late = [e for e in out if not e.get("deal_found") and e not in nod and e not in after_cut]
+    if nod and deals:
+        e0 = nod[0]
+        an.append(f"{len(nod)} position(s) du journal sans aucune transaction dans l'historique du compte, par ex. {e0['code']} ticket {e0['ticket']} "
+                  f"ouverte le {C.utc_txt(e0['entry_utc']) if e0.get('entry_utc') else '?'} (historique d'un autre compte, ou ticket faux au journal ?)")
+    rep.update(robot_positions=sum(1 for g in groups.values() if g["kind"] == "robot"), matched=sum(1 for e in out if e.get("deal_found")),
+               unknown_to_journal=len(unk), before_journal=len(before_j), after_journal=len(after_j), journal_without_deals=len(nod),
+               journal_after_releve=len(late), journal_after_cut=len(after_cut))
+    return rep, an
+
+
+def _dec(pt):
+    """decimals of a point size (0.01 -> 2)"""
+    try:
+        return max(0, min(8, int(round(-math.log10(pt)))))
+    except (ValueError, TypeError):
+        return 2
 
 
 COST_MIN_N = 3                                  # trades of a market before its slippage is judged
@@ -3417,7 +4309,7 @@ def replay_check(rows, starts, minutes, out, fiches, spread_opt, inputs_extra, r
     if unusable and len(unusable) == len(src):
         best = max((cal["paper_lines"][k]["match"] for k in SPREAD_CONV), default=0)
         rep.update(status="unusable", problems=problems,
-                   why=("les minutes de ReleveFP (fichiers m1) ne permettent pas de refaire les calculs du robot : lancer ReleveFP 1.10 et "
+                   why=("les minutes de ReleveFP (fichiers m1) ne permettent pas de refaire les calculs du robot : lancer ReleveFP 1.11 et "
                         "renvoyer aussi ses fichiers r1_<marche>.csv"),
                    detail=(f"aucune colonne des fichiers m1 ne redonne l'ecart des barres du robot (MqlRates.spread) : au mieux {best} barres "
                            f"sur {cal['paper_lines']['open']['n']} ; minimum compatible {cal['min_consistent']['inside']}/"
@@ -3636,7 +4528,7 @@ def replay_check(rows, starts, minutes, out, fiches, spread_opt, inputs_extra, r
         # warm-up, whichever is longer, from the demo's start to ReleveFP's run, and a week; InpDays (the m1 minutes) no longer
         # helps: the replay reads the terminal's bars (r1)
         need = r1_days_advice(live0, max(span[1], live1))
-        advice.append("pour comparer toutes les sleeves sur toute la demo, relancer ReleveFP 1.10 avec InpRateSymbols = "
+        advice.append("pour comparer toutes les sleeves sur toute la demo, relancer ReleveFP 1.11 avec InpRateSymbols = "
                       + ",".join(f"{b}:{need[b]}" for b in C.ROBOT_BASES) + " (barres r1 : le robot attend 120 jours d'historique sur l'or, "
                       "60 sur les autres, et les regles leur echauffement)")
     advice += [a for a in minutes.get("advice", []) if a not in advice]
@@ -3657,6 +4549,38 @@ VPS_NOTE = ("seules les lignes de SPEC 10.12 sont comparees : ses propres lignes
 
 
 COPY_OWN = ("INIT", "REBUILD", "READY", "DAY")      # lines whose text belongs to one copy (its start, its load, the bars fed since it)
+SECOND_COPY = "another copy of ClaudeRobot runs on this terminal"   # dist/ClaudeRobot.mq5 OnInit: GrdLockTake failed, INIT_FAILED
+
+
+def printed_second_copies(prows, lv_raw):
+    """the printed lines of a second copy MetaTrader refused while a copy runs (review6b FV6-DEMO-PRINTED-SECOND-COPY, the rule of check_start's
+    second_copies): dragged onto another chart, its OnInit finds the instance lock taken (GrdLockTake refuses only a lock another copy refreshed
+    less than 10 s before, CR_GRD_LOCK_STALE_MS: a copy runs on this terminal and account), writes ERROR 'another copy of ClaudeRobot runs on
+    this terminal' and returns INIT_FAILED (MetaTrader unloads it, MQL5 documentation of OnInit); OnDeinit writes its stop line INIT deinit=8
+    (REASON_INITFAILED, rebuilds=0) the same second. The copy that runs holds the daily file (FILE_SHARE_READ), so only the Experts tab shows
+    these two lines: an ERROR 'another copy' not in the files and the deinit=8 line of the same printed file within 60 s are set apart, said as
+    information, never a difference nor a stop of the robot. Returns (the other printed rows, [{file, utc, when, stop, text}])"""
+    drop, out = set(), []
+    by_file = defaultdict(list)
+    for r in prows:
+        by_file[r.get("_f")].append(r)
+    for fn, rs in by_file.items():
+        at = {id(x): i for i, x in enumerate(rs)}
+        for k, r in enumerate(rs):
+            if r["ev"] != "ERROR" or str(r.get("what") or "") != SECOND_COPY or lv_raw.get(r["_raw"], 0) > 0 or id(r) in drop:
+                continue
+            cand = [x for x in rs if x["ev"] == "INIT" and x.get("deinit") == 8 and x.get("rebuilds", 0) == 0 and id(x) not in drop
+                    and lv_raw.get(x["_raw"], 0) == 0 and abs(int(x["utc"]) - int(r["utc"])) <= 60]
+            after = [x for x in cand if at[id(x)] > k]
+            stop = after[0] if after else (cand[-1] if cand else None)
+            drop.add(id(r))
+            if stop is not None:
+                drop.add(id(stop))
+            out.append({"file": fn, "utc": int(r["utc"]), "when": C.utc_txt(r["utc"]), "stop": stop is not None,
+                        "text": (f"deuxieme copie du robot refusee {C.paris_when(r['utc'])} (onglet Experts {fn} : ERROR {SECOND_COPY}"
+                                 + (", puis sa ligne d'arret deinit=8" if stop is not None else "") + ") : MetaTrader l'a retiree de son graphique, "
+                                 "la copie qui tournait n'a pas ete touchee (un seul graphique doit porter le robot)")})
+    return [r for r in prows if id(r) not in drop], sorted(out, key=lambda x: x["utc"])
 
 
 def printed_check(rows, prows, starts, scrub, holes=()):
@@ -3674,6 +4598,8 @@ def printed_check(rows, prows, starts, scrub, holes=()):
     do not cover: a hole, before the journal, after its last line (the missing tail, with or without --bars), between a stop and a start."""
     lv = [r for r in rows if r.get("rp") != 1]
     lv_raw = Counter(r["_raw"] for r in lv)
+    n_printed = len(prows)
+    prows, copies = printed_second_copies(prows, lv_raw)
     first_live = min((r["utc"] for r in lv), default=None)
     last_live = max((r["utc"] for r in lv), default=None)
     cov = [(s.get("live_from") if s.get("init") is None and s.get("live_from") else s["utc"], s.get("end")) for s in starts if s.get("end")]
@@ -3740,9 +4666,9 @@ def printed_check(rows, prows, starts, scrub, holes=()):
                  ("apres le journal" if last_live is not None and t0 > last_live else "pendant un arret ou un trou du journal"))
         period.append({"file": fn, "from": C.utc_txt(t0), "to": C.utc_txt(t1), "where": where, "lines": len(rs),
                        "start": any(r["ev"] == "INIT" and "build" in r for r in rs), "t0": int(t0), "t1": int(t1)})
-    res = {"lines": len(prows), "inits": sum(1 for r in prows if r["ev"] == "INIT" and "build" in r), "files_kind": kinds,
+    res = {"lines": n_printed, "inits": sum(1 for r in prows if r["ev"] == "INIT" and "build" in r), "files_kind": kinds,
            "same_copy_as_files": bool(same_rows) and not other_rows, "other_period_files": period,
-           "printed_vps": any(r.get("vps") == 1 for r in other_rows if r["ev"] == "INIT")}
+           "printed_vps": any(r.get("vps") == 1 for r in other_rows if r["ev"] == "INIT"), "second_copies": copies}
     # the starts and stops of the Mac's copy that only the Experts tab holds, written at a time the files do not cover (a lost daily file):
     # their INIT lines are checked like the files' (review5b PRINTED-RESTART-UNCHECKED); taken out of the report by run()
     res["hole_starts"] = [{"file": r.get("_f"), "row": r} for r in same_rows if r["ev"] == "INIT" and "build" in r and not in_files(r) and explained(r)]
@@ -3750,6 +4676,9 @@ def printed_check(rows, prows, starts, scrub, holes=()):
                          and explained(r)]
     if prows:
         res["from"], res["to"] = C.utc_txt(min(r["utc"] for r in prows)), C.utc_txt(max(r["utc"] for r in prows))
+    elif copies:                                # only the lines of a refused second copy: nothing else to compare (review6b)
+        res.update(kind="deuxieme copie refusee seulement", ok=True)
+        return res
     else:                                       # no robot line at all (the terminal's Journal tab, say): nothing checked
         res.update(kind="aucune ligne du robot", ok=False)
         return res
@@ -3812,8 +4741,9 @@ def printed_check(rows, prows, starts, scrub, holes=()):
 # ---------------------------------------------------------------------------------------------- report
 def releve_end_utc(dirs, fiches, minutes, scrub):
     """when ReleveFP ran, UTC (review2 N5): fini.txt's server_time (beside the m1 files or fiches.csv), the latest tick
-    time of fiches.csv, the end of its minutes or bars; None when none is there. fini.txt names the account's server:
-    it is masked at once and nothing else of the file is kept"""
+    time of fiches.csv, the end of its minutes or bars; None when none is there. fini.txt of ReleveFP 1.10 and older names the account's
+    server: it is masked at once and nothing else of the file is kept (1.11 writes no server line: the scrubber then learns the name from
+    SondeFP's sonde.csv and MetaTrader's logs only, review8 SERVER-CLAIM)"""
     cands = []
     for d in dirs:
         p = os.path.join(d, "fini.txt") if d else None
@@ -3901,8 +4831,8 @@ def french_report(rep):
         L.append(f"  LIGNE MANQUANTE ({MISSING_FR.get(k['missing'], k['missing'])}) : {k['text_fr']} ({k['file']} ligne {k['line']})")
     if a.get("first_utc"):
         L.append(f"Periode en direct : du {C.utc_txt(a['first_utc'])} au {C.utc_txt(a['last_utc'])}.")
-    n_ref = sum(1 for s in a["starts"] if s.get("refused"))
-    L.append(f"Demarrages : {len(a['starts']) - n_ref} (redemarrages : {a['restarts']})"
+    n_ran, n_ref, _ = start_counts(a)                              # review6 FV5-START-NUMBERING: the headline's numbers
+    L.append(f"Demarrages : {n_ran} (redemarrages : {a['restarts']})"
              + (f" ; demarrage(s) refuse(s) par le robot : {n_ref}" if n_ref else "") + ".")
     f_ = a.get("in_force")
     if f_ and f_.get("known"):
@@ -3929,7 +4859,7 @@ def french_report(rep):
         else:
             sw = ", ".join(f"{k} {v}" for k, v in s["switches"].items() if v)
             L.append(f"  - {s['when']} : build {q(s['build'])} ({s['build_status']}), demo={q(s['demo'])} vps={q(s['vps'])} "
-                     f"observateur={q(s['observer'])} entrees coupees={q(s['entries_off'])} commission or {q(s['comm_pts'])} pts, plan {q(s['risk'])}, "
+                     f"observateur={q(s['observer'])} entrees coupees={q(s['entries_off'])} commission or {q(s['comm_pts'])} pts, plan {q(s['risk']) if s.get('risk') is None else C.risk_shown(s['risk'])}, "
                      f"sleeves {q(s['sleeves'])}" + (f", {sw}" if sw else "") + (f", K1T {s['k1t']}" if s.get("k1t") else "")
                      + (", symboles " + ", ".join(str(v) for v in s["symbols"].values() if v) if s.get("symbols") else ""))
         if s["selftest"]:
@@ -4104,17 +5034,34 @@ def french_report(rep):
                     "open_or_unknown": "encore ouvertes a la fin du journal", "race_unchecked": "CLOSE SANS PRIX NON VERIFIE",
                     "stop_lines_missing": "STOP INCONNU (SLMOD manquants)", "close_unreadable": "ligne CLOSE illisible (sortie inconnue)",
                     "broker_stop_after_paper": "PAS FERMEES A LA SORTIE DU PAPIER, puis stop courtier",
-                    "exit_in_lost_file": "SORTIE DANS UN FICHIER MANQUANT", "closed_while_stopped": "FERMEES PENDANT UN ARRET DU ROBOT"}
+                    "exit_in_lost_file": "SORTIE DANS UN FICHIER MANQUANT", "closed_while_stopped": "FERMEES PENDANT UN ARRET DU ROBOT",
+                    # review7: exits priced by the account's history (deals.csv)
+                    "broker_stop_deal": "stop courtier au prix reel (historique du compte)", "ea_close_deal": "fermees par le robot (historique du compte, pas de ligne CLOSE)",
+                    "stop_out_deal": "STOP OUT (historique du compte)", "tp_deal": "OBJECTIF COURTIER (historique du compte)",
+                    "hand_close_deal": "FERMEES A LA MAIN (historique du compte)", "other_close_deal": "FERMEES PAR UN AUTRE PROGRAMME (historique du compte)"}
         L.append("  sorties : " + ", ".join(f"{kinds_fr.get(k, k)} {n}" for k, n in ex.most_common()))
         for e in [e for e in b["positions"] if e["exit_kind"] not in KNOWN_EXITS and e["exit_kind"] != "open_or_unknown"][:10]:
             L.append(f"    {e['code']} ticket {e['ticket']} ouverte le {C.utc_txt(e['entry_utc']) if e.get('entry_utc') else '?'} : {e['close_why']}")
-    L.append(f"  commission et swap par trade : inconnus (le journal n'a pas de ligne par transaction) ; commission or retenue : "
-             f"{b['commission_source']}.")
-    if b.get("money_estimate") and b["money_estimate"]["positions"]:
+    if (b.get("deals") or {}).get("used"):
+        L += deals_report_lines(b)
+    else:
+        L.append(f"  commission et swap par trade : inconnus (le journal n'a pas de ligne par transaction) ; commission or retenue : "
+                 f"{b['commission_source']}.")
+    md_ = ((b.get("money_estimate") or {}).get("deals") or {})
+    if md_.get("covered") and md_.get("exact"):
+        L.append(f"  {money_window(b['money_estimate'])} ; {deals_money_words(md_)} ({md_.get('days_checked')} lignes DAY comparees a l'historique, "
+                 f"tolerance d'une ligne a la suivante au plus {C.fr(md_.get('tolerance_max_eur'), 3, 'EUR')} : 0,011 EUR + 0,005 EUR par montant "
+                 "arrondi au centime)")
+    elif md_.get("partial") and md_.get("exact"):
+        L.append(f"  {money_window(b['money_estimate'])} ; historique du compte {history_until_words(b['money_estimate'])}")
+    elif b.get("money_estimate") and b["money_estimate"]["positions"]:
         m = b["money_estimate"]
         L.append(f"  {money_window(m)} ; resultat brut des prix "
-                 f"{C.frs(m['gross_from_prices_eur'], 2, 'EUR')} ; frais hors des prix (commission + swap + glissement des stops, estimation) : "
-                 f"{cost_words(m['costs_not_in_prices_eur'])} ; commission du modele {C.fr(m['model_commission_eur'], 2, 'EUR')}"
+                 f"{C.frs(m['gross_from_prices_eur'], 2, 'EUR')} ; "
+                 + (f"frais hors des prix (commission + swap + glissement des stops, estimation) : {cost_words(m['costs_not_in_prices_eur'])}"
+                    if m.get("complete", True) else f"difference non expliquee entre le solde et les trades : {gap_words(m)} (pas que des "
+                                                   "frais : estimation incomplete, voir plus bas)")
+                 + f" ; commission du modele {C.fr(m['model_commission_eur'], 2, 'EUR')}"
                  + (f" ; le labo en attend au plus {C.fr(m['allowed_cost_eur'], 2, 'EUR')} (commission + 1,5 x glissement des stops "
                     f"{C.fr(m.get('stop_slippage_lab_eur'), 2, 'EUR')} + 1,5 x swaps {C.fr(m.get('swap_lab_eur'), 2, 'EUR')})" if m.get("judged") else ""))
         if m.get("judged") and isinstance(m.get("costs_not_in_prices_eur"), (int, float)):
@@ -4224,6 +5171,8 @@ def french_report(rep):
                     L.append(f"    [{d['kind']}] {d['event']} {d['code']} {d['when']}" + (f" champs {','.join(d['fields'])}" if d.get("fields") else ""))
                 if p.get("vps_note"):
                     L.append(f"  {p['vps_note']}")
+        for x in p.get("second_copies") or []:                         # review6b FV6-DEMO-PRINTED-SECOND-COPY
+            L.append(f"Lignes imprimees : information : {x['text']}")
     L.append("")
     if rep["anomalies"]:
         L.append("A REGARDER :")
@@ -4303,6 +5252,27 @@ def cost_words(x):
     return f"cout de {C.fr(-x, 2, 'EUR')}" if x <= 0 else f"gain de {C.fr(x, 2, 'EUR')} (inattendu)"
 
 
+def gap_words(m):
+    """the balance's difference from the trades' results in words, with its direction (review6 FV5-RH5-7-LOST-FILE-COST): 'solde plus bas de
+    257,78 EUR que les resultats des trades'"""
+    x = m.get("costs_not_in_prices_eur")
+    if not isinstance(x, (int, float)):
+        return "inconnue"
+    return f"solde plus {'bas' if x < 0 else 'haut'} de {C.fr(abs(x), 2, 'EUR')} que les resultats des trades"
+
+
+def incomplete_words(m):
+    """why the money estimate is incomplete, each reason with what the difference then holds (review5b RH5-7, review6)"""
+    out = []
+    for w in m.get("incomplete_why") or []:
+        if "sans prix de sortie" in w:
+            w += ", leur resultat est dedans"
+        elif "jour(s) de journal manquant(s)" in w:
+            w += ", les trades de ces jours sont dedans"
+        out.append(w)
+    return out
+
+
 def money_window(m):
     """the balance's window in words (review4 A11): the DAY lines are written at the end of their day, so the window runs from
     the evening of the first to the evening of the last; and the result since the start (B(T) or the first intent's balance)"""
@@ -4324,7 +5294,18 @@ def costs_lines(b, detail=False):
     few = [k for k, v in ec.items() if not v.get("beyond") and not v.get("ok")]
     parts = ([f"AU-DELA pour {', '.join(beyond)}"] if beyond else []) + ([f"dans la marge pour {', '.join(ok)}"] if ok else []) \
         + ([f"trop peu de trades pour juger {', '.join(few)}"] if few else [])
-    out = ["Frais d'execution contre le labo (glissement par marche, les regles ont ete testees avec des frais x1,5) : " + " ; ".join(parts) + "."]
+    # review8 DEALS-WORDING: this line judges the market orders' fills; the broker's stops (priced by the account's history) are judged apart,
+    # and their verdict is said here too, so that 'dans la marge' is never read as the whole cost verdict
+    st = ((b.get("deals") or {}).get("stops") or {}) if (b.get("deals") or {}).get("used") else {}
+    sb = [k for k, v in st.items() if v.get("beyond")]
+    sk = [k for k, v in st.items() if not v.get("beyond") and v.get("n_vs_paper", 0) >= COST_MIN_N]
+    stops_txt = ""
+    if st:
+        stops_txt = " ; stops courtier (historique du compte) : " + " ; ".join(
+            ([f"AU-DELA pour {', '.join(sb)}"] if sb else []) + ([f"dans la marge pour {', '.join(sk)}"] if sk else [])
+            + ([f"trop peu pour juger {', '.join(k for k in st if k not in sb and k not in sk)}"] if any(k not in sb and k not in sk for k in st) else []))
+    out = ["Frais d'execution des ordres au marche (remplissage contre le papier, glissement par marche ; les regles ont ete testees avec des "
+           "frais x1,5) : " + " ; ".join(parts) + stops_txt + "."]
     if detail:
         out.append("  (l'ecart au papier compte aussi le mouvement du prix entre l'ouverture de la barre, le prix du papier, et l'ordre une seconde "
                    "plus tard : un marche n'est juge au-dela que si sa moyenne depasse la limite de plus que ce bruit, test a 99,9 %)")
@@ -4337,18 +5318,152 @@ def costs_lines(b, detail=False):
 
 def headline_eur(tot):
     """the euros of the headline (review3 R3-7): every entry (the late-by-design ones too, said apart) and the robot's closes
-    at the paper's exit; positive = the real trades did worse than the paper"""
-    total = (tot.get("entry_diff_eur_sum") or 0) + (tot.get("exit_diff_eur_sum") or 0)
+    at the paper's exit; positive = the real trades did worse than the paper. With the account's history (review7), the broker's stop
+    exits at their real price against the paper's own stop exit too (stop_exit_diff_eur_sum; absent without deals.csv)"""
+    total = (tot.get("entry_diff_eur_sum") or 0) + (tot.get("exit_diff_eur_sum") or 0) + (tot.get("stop_exit_diff_eur_sum") or 0)
     return total, tot.get("entry_diff_late_eur_sum")
+
+
+def start_counts(a):
+    """the starts the reader is told of (review6 FV5-START-NUMBERING): (starts that ran, starts OnInit refused, the builds shown). A start the
+    Experts tab shows in a lost daily file counts when it is one more start, and its INIT line gives the build of a start whose INIT line the
+    files lost ('fills'); the numbers of start_nums match this count"""
+    ran = [s for s in a["starts"] if not s.get("refused")]
+    f = a.get("in_force") or {}
+    seen = bool(f.get("source"))
+    extra = 1 if seen and f.get("fills") is None else 0
+    blds = []
+    for s in ran:
+        b = s.get("build") or (f.get("build") if seen and f.get("fills") == s.get("n", 0) - 1 else None)
+        blds.append(str(b) if b else "?")
+    if extra:
+        blds.append(str(f.get("build") or "?"))
+    return len(ran) + extra, len(a["starts"]) - len(ran), sorted(set(blds))
+
+
+def deals_report_lines(b):
+    """report_fr.txt's section on the account's history (review7): the file, the matching, the price checks, the broker's stops, the costs
+    per market, trades by hand and payments, the positions open at the releve"""
+    d = b["deals"]
+    fr_t = lambda s_: C.utc_txt(C.srv_to_utc(s_)) if s_ else "?"     # noqa: E731
+    L = [f"  historique du compte ({d['file']}, ReleveFP 1.11) : {d.get('rows', 0)} transactions du {fr_t(d.get('from_srv'))} au {fr_t(d.get('to_srv'))}"
+         + (f", {d['bad_rows']} ligne(s) illisible(s)" if d.get("bad_rows") else "") + f" ; commission et swap par trade : {b['commission_swap_per_trade']}"]
+    if d.get("incomplete"):
+        L.append(f"    fichier incomplet ({' ; '.join(d['incomplete'])}) : historique lu jusqu'a sa derniere transaction, le "
+                 f"{fr_t(d.get('cut_srv'))} ; positions du journal ouvertes apres elle : {d.get('journal_after_cut', 0)} (non comparees)")
+    L.append(f"    positions du robot dans l'historique : {d.get('robot_positions', 0)} ; rapprochees du journal : {d.get('matched', 0)} ; inconnues du "
+             f"journal : {d.get('unknown_to_journal', 0)} (avant le journal {d.get('before_journal', 0)}, apres {d.get('after_journal', 0)}) ; du journal "
+             f"sans transaction : {d.get('journal_without_deals', 0)} (apres le releve {d.get('journal_after_releve', 0)})")
+    if d.get("known_by_other_lines"):
+        L.append(f"    positions de l'historique que d'autres lignes du journal nomment (DUP, ORPHAN, CLOSE, SLMOD ...) : {len(d['known_by_other_lines'])} ("
+                 + ", ".join(d["known_by_other_lines"][:5]) + ")")
+    for x in d.get("in_lost_files_txt") or []:
+        L.append(f"    {x}")
+    L.append(f"    prix et lots du journal contre l'historique : {len(d.get('price_disagreements') or [])} difference(s)"
+             + (" : " + " ; ".join(d["price_disagreements"][:5]) if d.get("price_disagreements") else " (entrees FILL et fermetures CLOSE egales)"))
+    if d.get("exits_from_history"):
+        L.append("    sorties connues par l'historique : " + ", ".join(f"{DEAL_KIND_FR.get(k, k)} {v}" for k, v in d["exits_from_history"].items()))
+    for k, v in (d.get("stops") or {}).items():
+        L.append(f"    stops courtier {k} : {v['n']} au prix reel ; glissement au niveau du stop {C.frs(v['slip_bp_mean'], 2, 'pb')} soit "
+                 f"{C.frs(v['slip_pts_mean'], 1, 'points')} en moyenne, {C.frs(v['slip_eur_sum'], 2, 'EUR')} en tout (labo {C.fr(v['lab_stop_bp'], 2, 'pb')} "
+                 f"par cote) ; contre le stop du papier (qui compte deja le glissement du labo) : {C.frs(v['beyond_paper_bp_mean'], 2, 'pb')} sur "
+                 f"{v['n_vs_paper']}, {C.frs(v['beyond_paper_eur_sum'], 2, 'EUR')} : "
+                 + ("AU-DELA de 1,5 fois le labo" if v.get("beyond") else ("trop peu pour juger" if v["n_vs_paper"] < COST_MIN_N else "dans la marge")))
+    for k, v in (d.get("costs") or {}).items():
+        L.append(f"    frais {k} : commission {C.fr(v['commission_eur'], 2, 'EUR')} sur {v['positions']} trade(s), {C.fr(v['per_lot_side_eur'], 3, 'EUR')} par lot "
+                 f"et par cote (modele {C.fr(v['model_per_lot_side_eur'], 3, 'EUR')}){' : AU-DELA' if v.get('commission_beyond') else ''} ; swaps "
+                 f"{C.frs(v['swap_eur'], 2, 'EUR')} ({v['swap_nights']} nuit(s) au calcul du labo : {C.frs(v['lab_swap_eur'], 2, 'EUR')})"
+                 + (" : AU-DELA" if v.get("swap_beyond") else (" : credit" if v.get("swap_credit") else "")))
+    for x in d.get("hand") or []:
+        L.append(f"    trade a la main : {x}")
+    for x in d.get("other_programs") or []:
+        L.append(f"    trade d'un autre programme : {x}")
+    for x in (d.get("operations_before") or []) + (d.get("trades_before_demo") or []):
+        L.append(f"    avant la demo : {x}")
+    for x in d.get("operations_during") or []:
+        L.append(f"    PENDANT LA DEMO : {x}")
+    if d.get("marks"):
+        L.append(f"    marques du garde (magic {C.MARK_MAGIC}) : {d['marks']}")
+    o = d.get("open_at_releve")
+    if o and o.get("skipped"):
+        L.append(f"    positions ouvertes au releve : {o['skipped']} : non comparees")
+    elif o:
+        L.append(f"    positions ouvertes au releve (positions.csv) : {o['robot']} du robot ({o['journal_matched']} connues du journal, {o['unknown']} inconnues, "
+                 f"{o['missing']} du journal absentes), {o['others']} autre(s)")
+    elif o is None and d.get("positions_file") is False:
+        L.append("    positions.csv absent : positions ouvertes au releve non comparees")
+    return L
+
+
+def deals_money_words(md, head=True):
+    """the balance's window explained by the account's history (review7): the robot's trades with their commission and swap, trades by hand,
+    other programs, payments and other operations"""
+    parts = [f"trades du robot {C.frs(md.get('robot_eur'), 2, 'EUR')} (prix {C.frs(md.get('robot_profit_eur'), 2, 'EUR')}, commission "
+             f"{C.frs(md.get('robot_commission_eur'), 2, 'EUR')}, swap {C.frs(md.get('robot_swap_eur'), 2, 'EUR')}"
+             + (f", frais {C.frs(md.get('robot_fee_eur'), 2, 'EUR')}" if md.get("robot_fee_eur") else "") + ")"]
+    for k, w in (("mark_eur", "marques du garde"), ("hand_eur", "trades a la main"), ("other_programs_eur", "autres programmes"),
+                 ("payments_eur", "versements et retraits"), ("other_operations_eur", "autres operations")):
+        if md.get(k):
+            parts.append(f"{w} {C.frs(md[k], 2, 'EUR')}")
+    # review8 MONEY-AU-CENTIME-CLAIM: the largest gap seen from one DAY line to the next, as it is ('au centime pres' only when it is one)
+    gap = md.get("max_gap_eur")
+    how = "au centime pres" if gap is not None and gap <= 0.011 else f"a {C.fr(gap, 2, 'EUR')} pres"
+    return ("historique du compte : " if head else "") + ", ".join(parts) + f" ; le solde suit l'historique {how} d'une ligne DAY a la suivante"
+
+
+def history_until_words(m):
+    """review8 TOOL2-LATECOPY-SILENT: the window split at the history's end: the DAY lines it explains, then the estimate from the balance
+    after it ('apres le releve' : ReleveFP ran before the journal's last DAY line)"""
+    md, ae = m.get("deals") or {}, m.get("after_history") or {}
+    end = ("jusqu'au releve" if md.get("until_why") == "releve" else "jusqu'a la derniere transaction de deals.csv (fichier incomplet)")
+    txt = (f"{end} (soir du {md.get('last_day_checked')}, {md.get('days_checked')} lignes DAY) : " + deals_money_words(md, head=False))
+    if ae:
+        txt += (f" ; apres {'le releve' if md.get('until_why') == 'releve' else 'cette transaction'}, du soir du {ae['from']} au soir du {ae['to']} "
+                f"(estimation d'apres le solde) : solde {C.frs(ae['balance_change_eur'], 2, 'EUR')}, resultats des trades "
+                f"{C.frs(ae['gross_from_prices_eur'], 2, 'EUR')} sur {ae['positions']} position(s), frais hors des prix : "
+                f"{cost_words(ae['costs_not_in_prices_eur'])}" + ("" if ae.get("judged") else " (non jugee)"))
+    return txt
+
+
+def deals_lines(b):
+    """the account's history in a few lines for stdout (review7): the positions matched, the broker's stops at their real price and the
+    costs per market against the lab's"""
+    d = b.get("deals")
+    if not d or not d.get("used"):
+        return []
+    out = [f"Historique du compte ({d['file']}) : {d.get('rows', 0)} transactions ; positions du robot : {d.get('matched', 0)} rapprochees du journal"
+           + (f", {(d.get('exits_from_history') or {})['broker_stop_deal']} sortie(s) par stop courtier au prix reel"
+              if (d.get("exits_from_history") or {}).get("broker_stop_deal") else "")
+           + (f" ; ouvertes au releve : {d['open_at_releve']['robot']} du robot" if (d.get("open_at_releve") or {}).get("robot") is not None else "")
+           + (f" ; incomplet : lu jusqu'au {C.utc_txt(C.srv_to_utc(d['cut_srv']))}" if d.get("incomplete") and d.get("cut_srv") else "")
+           + "."]
+    if d.get("in_lost_files"):                                         # review8: the positions whose lines were in a missing daily file
+        out.append("  positions des fichiers du jour manquants connues par l'historique (leurs lignes etaient dedans) : "
+                   + ", ".join(f"{f_} {n_}" for f_, n_ in d["in_lost_files"].items()))
+    for k, v in (d.get("stops") or {}).items():
+        out.append(f"  stops courtier {k} : {v['n']}, glissement au niveau du stop {C.frs(v['slip_bp_mean'], 2, 'pb')} en moyenne (labo "
+                   f"{C.fr(v['lab_stop_bp'], 2, 'pb')}), {C.frs(v['slip_eur_sum'], 2, 'EUR')}"
+                   + (f" ; au-dela du stop du papier {C.frs(v['beyond_paper_bp_mean'], 2, 'pb')} sur {v['n_vs_paper']} : "
+                      + ("AU-DELA de 1,5 fois le labo" if v.get("beyond") else "dans la marge") if v.get("n_vs_paper") else ""))
+    parts = []
+    for k, v in (d.get("costs") or {}).items():
+        if not (abs(v["commission_eur"]) >= 0.005 or abs(v["model_commission_eur"]) >= 0.005 or abs(v["swap_eur"]) >= 0.005
+                or abs(v["lab_swap_eur"]) >= 0.005 or v.get("commission_beyond") or v.get("swap_beyond")):
+            continue
+        parts.append(f"{k} commission {C.fr(v['commission_eur'], 2, 'EUR')} (modele {C.fr(v['model_commission_eur'], 2, 'EUR')}"
+                     + (", AU-DELA" if v.get("commission_beyond") else "") + f"), swaps {C.frs(v['swap_eur'], 2, 'EUR')} (labo {C.frs(v['lab_swap_eur'], 2, 'EUR')}"
+                     + (", AU-DELA" if v.get("swap_beyond") else (", credit" if v.get("swap_credit") else "")) + ")")
+    if d.get("costs"):
+        out.append("  frais reels des trades du robot contre le modele du labo : " + (" ; ".join(parts) if parts else "ni commission ni swap") + ".")
+    return out
 
 
 def short_summary(rep):
     a, b, r = rep["journal"], rep["fills"], rep.get("replay")
     ran = [s for s in a["starts"] if not s.get("refused")]               # a start OnInit refused is no start (review5b RH5-1)
-    n_ref = len(a["starts"]) - len(ran)
-    if ran:
-        S = [f"Journal : {a['live_lines']} lignes en direct, {len(ran)} demarrage(s), build "
-             f"{', '.join(sorted({str(s['build']) if s['build'] else '?' for s in ran})) or '?'}."]
+    n_ran, n_ref, blds = start_counts(a)
+    if ran or n_ran:
+        S = [f"Journal : {a['live_lines']} lignes en direct, {n_ran} demarrage(s), build {', '.join(blds) or '?'}."]
     else:
         S = [f"Journal : {a['live_lines']} lignes en direct, aucun demarrage reussi" + (f" ({n_ref} refuse(s) par le robot)" if n_ref else "") + "."]
     f = a.get("in_force")
@@ -4370,6 +5485,11 @@ def short_summary(rep):
         S.append(f"Information : {f['plan_note']}.")
     for x in a.get("printed_restarts") or []:                            # review5b PRINTED-RESTART-UNCHECKED
         S.append(f"Information : {x}.")
+    for x in (rep.get("printed") or {}).get("second_copies") or []:     # review6b FV6-DEMO-PRINTED-SECOND-COPY
+        S.append(f"Information : {x['text']}.")
+    end_ = a.get("end") or {}
+    if end_.get("copy_margin"):                                          # review6 FV5-COPIE-MIDNIGHT: a copy given just after midnight
+        S.append(f"Information : {end_['note']}.")
     mi = C.macos_info(rep["inputs"].get("macos_files_ignored"))
     if mi:
         S.append(f"Information : {mi}.")
@@ -4393,6 +5513,9 @@ def short_summary(rep):
             hors.append(f"{tot['exits_apart']} fermeture(s) pour une autre raison que la sortie du papier")
         if hors:
             sor += f" (hors {' ; '.join(hors)})"
+        if tot.get("stop_exits_vs_paper"):                               # review7: the broker's stops priced by the account's history
+            sor += (f" ; stops courtier au prix reel (historique du compte) : {C.frs(tot.get('stop_exit_beyond_paper_net_bp_mean'), 2, 'pb')} "
+                    f"au-dela du stop du papier sur {tot['stop_exits_vs_paper']}")
         total, late_eur = headline_eur(tot)
         dont = (f" (dont {C.fr(abs(late_eur), 2, 'EUR')} de {'moins' if late_eur > 0 else 'plus'} sur les entrees en retard par "
                 "construction)") if late_eur else ""
@@ -4400,17 +5523,25 @@ def short_summary(rep):
                  f"ecart moyen avec le papier (positif = cout) : entree {ent}, sortie {sor} ; en tout {money_words(total)} sur les prix "
                  f"connus{dont} (points par marche dans report_fr.txt).")
         m = b.get("money_estimate")
-        if m and m.get("positions"):
-            if m.get("positions_exit_unknown"):
-                # positions without an exit price: the difference holds their result, it is no cost (review5b RH5-7)
-                gap = (f"difference non expliquee de {C.fr(abs(m['costs_not_in_prices_eur'] or 0), 2, 'EUR')} entre le solde et les trades (dont "
-                       f"{m['positions_exit_unknown']} position(s) sans prix de sortie, leur resultat est dedans)")
+        md = (m or {}).get("deals") or {}
+        if m and md.get("covered") and md.get("exact"):
+            # review7: the balance explained deal by deal by the account's history
+            S.append(f"{money_window(m)[0].upper()}{money_window(m)[1:]} ; " + deals_money_words(md) + ".")
+        elif m and md.get("partial") and md.get("exact"):
+            # review8: the history up to its end, the estimate after it
+            S.append(f"{money_window(m)[0].upper()}{money_window(m)[1:]} ; historique du compte {history_until_words(m)}.")
+        elif m and m.get("positions"):
+            if not m.get("complete", True):
+                # the estimate is incomplete (positions without an exit price, days of journal lost, the journal's start or end missing ...): the
+                # difference holds what the journal lacks, it is no cost (review5b RH5-7, review6 FV5-RH5-7-LOST-FILE-COST)
+                gap = f"difference non expliquee entre le solde et les trades : {gap_words(m)} ({' ; '.join(incomplete_words(m)[:3])})"
             else:
                 gap = (f"frais hors des prix estimes d'apres le solde (commission, swap, glissement des stops) : "
                        f"{cost_words(m['costs_not_in_prices_eur'])} (commission du modele {C.fr(m['model_commission_eur'], 2, 'EUR')})")
             S.append(f"{money_window(m)[0].upper()}{money_window(m)[1:]} ; {gap}"
                      + ("" if m.get("complete", True) else " ; estimation incomplete (report_fr.txt)") + ".")
         S += costs_lines(b)
+        S += deals_lines(b)
     else:
         # an observer sends nothing because InpTrade is false; normal only for the Mac's copy in the VPS weeks, not on the demo (review5b
         # OBSERVER-NORMAL: never said 'normal')
@@ -4455,7 +5586,7 @@ def short_summary(rep):
         S.append(f"Rejeu : {n} difference(s) sur {ncmp} lignes comparees ; {how}.")
         if r.get("unusable_markets"):
             S.append(f"  rejeu inutilisable pour {', '.join(r['unusable_markets'])} : les minutes du releve ne redonnent pas l'ecart des barres "
-                     "du robot ; lancer ReleveFP 1.10 et renvoyer ses fichiers r1_<marche>.csv")
+                     "du robot ; lancer ReleveFP 1.11 et renvoyer ses fichiers r1_<marche>.csv")
         cov = r.get("coverage", {})
         never = [c for c, v in cov.items() if v["never"]]
         part = [c for c, v in cov.items() if v["partial"] and not v["never"]]
@@ -4534,7 +5665,24 @@ def run(args):
     ticks = tick_sizes(rows, fiches, points)
     res_a, anomalies, starts = analyse_journal(rows, builds, info["files"], rel_end, info, points, ticks, getattr(args, "copy_utc", None))
     res_a["tick_sizes"] = ticks
-    res_b = fills_report(rows, res_a, starts, points, fiches, minutes["stop"], info.get("unparsable_all"))
+    # review7: the account's deals and open positions (ReleveFP 1.11): --deals FILE, else deals.csv beside --bars; without them nothing changes
+    deals_path = getattr(args, "deals", None) or (os.path.join(args.bars, C.DEALS_FILE) if args.bars and os.path.isfile(os.path.join(args.bars, C.DEALS_FILE)) else None)
+    deals_ctx = None
+    if deals_path:
+        dfini = fini if (args.bars and os.path.dirname(os.path.abspath(deals_path)) == os.path.abspath(args.bars)) else \
+            read_fini_near(os.path.dirname(os.path.abspath(deals_path)), scrub)
+        deals_ctx = load_deals(deals_path, scrub, dfini)
+        if deals_ctx is None:
+            raise SystemExit("--deals : fichier introuvable (il faut claude/releve/deals.csv de ReleveFP 1.11)")
+    elif fini and any(k in fini for k in ("deals", "erreur_deals", "positions")):
+        # review8 OPEN-FAIL-UNTESTED: fini.txt is ReleveFP 1.11's but deals.csv is not beside it: ReleveFP could not open it (deals=-1 and its
+        # error), or the folder was not copied whole
+        nd = fini.get("deals")
+        anomalies.append("deals.csv absent de --bars alors que fini.txt est celui de ReleveFP 1.11 "
+                         + (f"(deals=-1, erreur_deals={fini.get('erreur_deals')}) : ReleveFP n'a pas pu ecrire l'historique du compte ; relancer "
+                            "ReleveFP jusqu'a l'alerte 'Releve termine'" if isinstance(nd, int) and nd < 0 else
+                            f"(deals={nd}) : recopier le dossier claude/releve en entier") + " : historique du compte non utilise")
+    res_b = fills_report(rows, res_a, starts, points, fiches, minutes["stop"], info.get("unparsable_all"), deals_ctx)
     res_b["points_source"] = how
     rep = {"tool": "check_demo", "version": 2,
            "inputs": {"journal_files": info["files"], "unparsable": info["unparsable"], "unparsable_first": info["unparsable_first"],
@@ -4543,6 +5691,8 @@ def run(args):
                       "repeated_first": info.get("repeated_first", []), "unknown_keys_dropped": info.get("unknown_keys_dropped", 0),
                       "fiches_problems": fiche_problems, "macos_files_ignored": macos},
            "required_build": C.REQUIRED_BUILD, "known_builds": builds, "journal": res_a, "fills": res_b, "anomalies": anomalies}
+    if res_b.get("deals") is not None:                                 # review7: the account's history
+        rep["deals"] = res_b["deals"]
     if info["skipped_files"]:
         anomalies.append(f"{len(info['skipped_files'])} fichier(s) ignore(s) dans --journals : "
                          + "; ".join(f"{s_['file']} ({s_['why']})" for s_ in info["skipped_files"][:4]))
@@ -4577,7 +5727,6 @@ def run(args):
     unmatched = [e for e in res_b["positions"] if e.get("paper_entry") is None]
     if unmatched:
         anomalies.append(f"{len(unmatched)} position(s) reelle(s) sans trade papier connu dans le journal")
-    anomalies += replaced_trades(res_a, res_b, C.live(rows))           # review5b RH5-2
     anomalies += res_b["anomalies"]
     if args.bars and not args.no_replay:
         r = replay_check(rows, starts, minutes, out, fiches, args.spread, args.input, args.rebuild, scrub,
@@ -4649,6 +5798,9 @@ def run(args):
                                  f"{x['from']} au {x['to']} qu'aucun fichier de MQL5/Files/ClaudeRobot ne contient : envoyer le fichier de ce jour")
         if not p.get("ok") and p.get("kind") != "aucune ligne du robot":
             anomalies.append("lignes imprimees (onglet Experts) differentes des fichiers du robot (les lignes dans report_fr.txt)")
+    # the real trades of the runs a later start replaced (review5b RH5-2), after --printed: a run the start seen only in the Experts tab
+    # replaced is named too (review6)
+    anomalies += replaced_trades(res_a, res_b, C.live(rows))
     lines = french_report(rep)
     C.write_json(os.path.join(out, "report.json"), C.clean_json(rep), scrub)
     C.write_text(os.path.join(out, "report_fr.txt"), lines, scrub)
@@ -4663,6 +5815,7 @@ def main(argv=None):
     ap.add_argument("--printed", action="extend", nargs="+", help="the Experts tab's logs: files, or a folder (MQL5/Logs)")
     ap.add_argument("--out", default=C.DEFAULT_OUT)
     ap.add_argument("--fiches")
+    ap.add_argument("--deals", help="ReleveFP 1.11's deals.csv (positions.csv beside it); default: the one beside --bars")
     ap.add_argument("--spread", default="auto", choices=["auto"] + SPREAD_CONV)
     ap.add_argument("--input", action="append", help="InpName=value for an input the INIT line does not show")
     ap.add_argument("--no-replay", action="store_true")
@@ -4678,7 +5831,7 @@ def main(argv=None):
     for kv in a.input or []:                                      # checked before the run (review4 A12): never a traceback
         if not re.match(r"^Inp[A-Za-z0-9_]{1,40}=", kv):
             ap.error("--input attend InpNom=valeur (par exemple --input InpExtraClosures=...) ; recu une valeur sans '=' ou sans nom Inp...")
-    C.warn_if_in_repo([a.journals, a.bars, a.fiches] + list(a.printed or []))
+    C.warn_if_in_repo([a.journals, a.bars, a.fiches, a.deals] + list(a.printed or []))
     run(a)
     out = C.safe_out(a.out)
     print(f"Fichiers ecrits : {os.path.join(out, 'report.json')} et {os.path.join(out, 'report_fr.txt')}")

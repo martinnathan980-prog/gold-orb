@@ -14,7 +14,9 @@ Any of these files may be missing (the folder is MQL5/Files/claude/releve on the
                  account currency, 0 when it failed (:107-108).
   tous.csv       ReleveFP.mq5 AllSymbols() (:139-162): name,path,description,digits,contract_size,vol_min,vol_step,
                  calc_mode,swap_long,swap_short,ccy_profit,trade_mode, every symbol of the server in its own order.
-  fini.txt       ReleveFP.mq5 OnStart(): key=value lines (version 1.00 or 1.10, server, company, currency, leverage, demo,
+  fini.txt       ReleveFP.mq5 OnStart(): key=value lines (version 1.00, 1.10 or 1.11, server (not in 1.11: from 1.11 on the scrubber learns
+                 the server's name only from sonde.csv's last line, and check_demo also from MetaTrader's own logs), company, currency,
+                 leverage, demo,
                  server_time, server_minus_gmt_sec, all_symbols, one "BASE=NAME jours=.. minutes=.. ticks=.. du=..
                  au=.. derniere_erreur=.. jours_incomplets=.." line per market (1.10 adds " barres=.. jours_barres=..
                  erreur_barres=.." at its end) or "BASE=INTROUVABLE", stopped, seconds). The server name is masked at
@@ -35,6 +37,30 @@ Any of these files may be missing (the folder is MQL5/Files/claude/releve on the
                  "base,,INTROUVABLE" when not found); commission, fee, profit and swap are the sums over the position's
                  deals (DEAL_COMMISSION etc., account currency) for `volume` lots; status "ok" only when both deals
                  were read back. Last line "#currency=..,server=..,server_time=.." (server masked).
+  deals.csv      ReleveFP.mq5 1.11 Deals(): every deal of the account (HistorySelect from 0 to the server time + a day), oldest first:
+                 time,time_msc,ticket,order,position,symbol,type,entry,reason,magic,volume,price,sl,tp,commission,swap,fee,profit
+                 (server seconds; type, entry and reason by name: DEAL_TYPE_BUY, DEAL_ENTRY_OUT, DEAL_REASON_SL ...; prices with the
+                 symbol's digits, volumes with its volume step's, money with the account currency's, 2 at least; no comment, no external
+                 id; the symbol is empty for a balance deal). Read by demo_common.read_account_csv (ReleveFP's header only, every field
+                 checked, a bad row counted and located, its text never kept).
+  positions.csv  ReleveFP.mq5 1.11 Positions(): the positions open at the run (ticket,identifier,time,time_msc,symbol,type,magic,
+                 volume,price_open,sl,tp,price_current,swap,profit). fini.txt 1.11 adds positions=, positions_heure=, deals=,
+                 deals_du=, deals_au= and erreur_deals= (and no longer writes the server's name). Both files are optional: ReleveFP 1.10
+                 folders have none, and nothing is said about them then. With deals.csv (review7): the period, the robot's positions per
+                 sleeve (demo_common's magic map; the guard's mark 20261290 apart), trades by hand (magic 0 on a symbol) and of other
+                 programs (DIFFERENT), the operations on the balance (the deposit before the robot's first trade is information, any
+                 after it DIFFERENT), the robot's commission per lot and side and in points round trip for each robot market against
+                 the lab's (gold 6 points round trip, CR_XAU_COMM_PTS; none on US100, BTC, ETH; within the cents each deal was rounded
+                 to), its swaps against fp_costs.json's (an annual fraction of the notional, its triple day; per market and per
+                 position, beyond 1.5 x: DIFFERENT, a credit: INFO); DIFFERENT also: deals=0 (not even the opening deposit), no robot
+                 position, rows that cannot be read or a count other than fini.txt's deals=, erreur_deals != 0, a version 1.11 without
+                 deals.csv or positions.csv. Review8: the period is the earliest and the latest deal (whatever the file's order); trades by
+                 hand and of other programs closed before the robot's first trade are INFO ('avant le premier trade du robot': tool 1 has
+                 no journal, check_demo dates them against the robot's start), those open at or after it DIFFERENT; the account's first
+                 balance deal (the opening deposit) is INFO, any later operation that moves the balance DIFFERENT (a deposit on the Sunday
+                 before the first trade too: check_demo says whether it came before the start), each named 'versement' or 'retrait' by its
+                 sign; a robot position closed by hand (its closing deal DEAL_REASON_CLIENT, MOBILE or WEB) is DIFFERENT. Every deal row
+                 ends in CR LF (ReleveFP 1.11 writes "\r\n"); the readers take both line ends.
 What is set against what (robot = the shipped EA's constants and SPEC; lab = lab/r2/fp_costs.json and the harness,
 check/mock_replay.h): names (CR_Broker.mqh BrkResolve on tous.csv), digits and point (the harness rounds to 2
 digits), contract size, volume min / step / max, EUR tick value (harness 0.89 x tick size x units), stops level
@@ -60,8 +86,8 @@ a fiche's tick time) are set aside, and the server clock then says server_time i
 whose prices are 0 or less, whose low lies above its open or close or whose high below them, or whose spread is negative, is
 dropped and counted (review4b ADV5-12). ReleveFP's other files without fini.txt are DIFFERENT (it deletes fini.txt at its start
 and writes it last: a run that did not finish, review4b ADV5-8); without fiches.csv, a DIFFERENT item says so and each robot
-market's fiche items are listed UNKNOWN (review4b ADV5-9). The version is kept as text and a run older than 1.10 is DIFFERENT (the
-new .mq5 not compiled); fini.txt's max_barres (Max bars in chart) must be 500000. Files of ReleveFP 1.00 (no sp_min, no r1, no barres=)
+market's fiche items are listed UNKNOWN (review4b ADV5-9). The version is kept as text and a run older than 1.11 is DIFFERENT (the
+new .mq5 not compiled: 1.10 writes no deals.csv, review8; older ones no r1 either); fini.txt's max_barres (Max bars in chart) must be 500000. Files of ReleveFP 1.00 (no sp_min, no r1, no barres=)
 are read without a reading problem. Without a usable gold fiche line the Friday gold session check stays, UNKNOWN. Only
 the lines ReleveFP and SondeFP write are kept (known keys, ReleveFP's markets, SondeFP's own status texts; the broker
 company is not kept); a bad row of an m1 or r1 file is dropped and counted; a fiches.csv or tous.csv re-saved by a
@@ -107,8 +133,9 @@ SONDE_COLS = ["base", "name", "status", "volume", "bid_before", "ask_before", "b
 M1_COLS = ["time", "bo", "bh", "bl", "bc", "ao", "ah", "al", "ac", "n", "sp_mean", "sp_max"]   # ReleveFP 1.00; 1.10 adds sp_min
 R1_COLS = ["time", "open", "high", "low", "close", "tick_volume", "spread", "real_volume"]       # ReleveFP 1.10 r1_<BASE>.csv
 FINI_KEYS = {"version", "server", "company", "currency", "leverage", "demo", "server_time", "server_minus_gmt_sec",
-             "all_symbols", "stopped", "seconds", "max_barres"}
-FINI_INT_KEYS = {"leverage", "demo", "server_time", "server_minus_gmt_sec", "all_symbols", "stopped", "seconds", "max_barres"}
+             "all_symbols", "stopped", "seconds", "max_barres", "positions", "positions_heure", "deals", "deals_du", "deals_au", "erreur_deals"}
+FINI_INT_KEYS = {"leverage", "demo", "server_time", "server_minus_gmt_sec", "all_symbols", "stopped", "seconds", "max_barres",
+                 "positions", "positions_heure", "deals", "deals_du", "deals_au", "erreur_deals"}     # the last six: ReleveFP 1.11
 # the markets ReleveFP may write a line for (its InpSymbols default, the robot's four, the lab's names): a fini line for any
 # other key is not ReleveFP's and is not kept (review3 P5)
 RELEVE_BASES = set(C.LAB_SYM) | {"JP225"}
@@ -253,6 +280,9 @@ def read_fini(path, scrub):
             out[k] = x if isinstance(x, int) and not isinstance(x, bool) else None
             if k == "server_time" and out[k] is not None and not C.time_ok(out[k], zero_ok=False):
                 out[k] = None                                           # outside 2015-2100: an edited file (review4 A12)
+                out.setdefault("bad_times", []).append(k)
+            if k in ("positions_heure", "deals_du", "deals_au") and out[k] is not None and not C.time_ok(out[k]):
+                out[k] = None                                           # ReleveFP 1.11's times: 0 = none, else 2015-2100
                 out.setdefault("bad_times", []).append(k)
             continue
         if k == "currency":
@@ -973,7 +1003,7 @@ def r1_days_check(rep, base, span, fini_m):
                + " : Max bars in chart a 500000 ? sinon l'historique du courtier ne remonte pas plus loin")
     else:
         why = ("ReleveFP n'en a pas demande assez" + (f" ({asked} jours dans InpRateSymbols)" if isinstance(asked, int) else ""))
-    note = (f"{why} : relancer ReleveFP 1.10 avec son reglage par defaut InpRateSymbols = {C.RELEVE_RATE_TEXT} ; sinon les sleeves de "
+    note = (f"{why} : relancer ReleveFP 1.11 avec son reglage par defaut InpRateSymbols = {C.RELEVE_RATE_TEXT} ; sinon les sleeves de "
             f"{base} ne sont comparees qu'une fois le rejeu pret (check_demo dit lesquelles et depuis quand)")
     rep.add(base, "r1_days", "jours de barres r1 pour le rejeu", "DIFFERENT", broker, assumed, note,
             "CR_Bars.mqh (profondeur), ReleveFP.mq5 InpRateSymbols")
@@ -1269,8 +1299,12 @@ def account_checks(rep, fini, sonde_rows, sonde_meta, m1, present=None, releve_f
         # (review3 R13); kept as text ('1.10')
         ver = fini.get("version")
         vt = tuple(int(x) for x in ver.split(".")) if isinstance(ver, str) else None
-        rep.add("compte", "releve_version", "version de ReleveFP", "OK" if vt and vt >= (1, 10) else "DIFFERENT", ver or "absente", "1.10",
-                "" if vt and vt >= (1, 10) else "ReleveFP 1.10 attendu (le compiler dans MetaEditor avec F7, puis le relancer) : pas de barres r1",
+        # review8: the user gets ReleveFP 1.11 (the account's deals); a 1.10 folder is an old .ex5 not recompiled: everything else is read as
+        # before, but deals.csv and positions.csv are missing
+        rep.add("compte", "releve_version", "version de ReleveFP", "OK" if vt and vt >= DEALS_VERSION else "DIFFERENT", ver or "absente", "1.11",
+                "" if vt and vt >= DEALS_VERSION else
+                ("ancien script : recompiler ReleveFP 1.11 dans MetaEditor (F7) et le relancer : ReleveFP 1.11 attendu (historique des "
+                 "transactions, deals.csv)" + ("" if vt and vt >= (1, 10) else " ; pas de barres r1 non plus")),
                 "ReleveFP.mq5")
         # Max bars in chart: the M1 series the robot reads holds at most that many bars (SPEC 1 step 2: 500000)
         mb = fini.get("max_barres")
@@ -1336,12 +1370,269 @@ def account_checks(rep, fini, sonde_rows, sonde_meta, m1, present=None, releve_f
                 "la pause de l'or n'est pas a minuit serveur : serveur different de New York + 7 h ?", "SPEC 2.1, 10.4")
 
 
+# ---------------------------------------------------------------------------------------------- the account's deals (ReleveFP 1.11)
+DEALS_VERSION = (1, 11)
+COMM_MODEL_RT_PTS = {"XAUUSD": float(C.XAU_COMM_PTS), "US100": 0.0, "BTCUSD": 0.0, "ETHUSD": 0.0}   # SPEC 2.2: round trip, points
+
+
+def when_txt(srv_t, le=True):
+    """a deal's server time as the lead relays it: the Paris time, with the server's ('le 14/11/2026 a 14:30 (heure de Paris ; 15:30
+    serveur)'; without the 'le' after 'du' and 'au', review8 DEALS-WORDING)"""
+    t = C.paris_when(C.srv_to_utc(srv_t)) if srv_t else "?"
+    return t if le or not t.startswith("le ") else t[3:]
+
+
+def deal_k(groups, base, fiche):
+    """EUR per price unit and lot of a robot market: the fiche's tick value / tick size, else the broker's own conversion read on the
+    closed robot positions (profit / (side x price move x lots), their median)"""
+    if fiche and fiche.get("found") and fiche.get("tick_value") and fiche.get("tick_size"):
+        return fiche["tick_value"] / fiche["tick_size"], "fiche"
+    ks = []
+    for g in groups.values():
+        if g["base"] == base and g["kind"] in ("robot", "mark") and not g["open"] and g["price_in"] and g["price_out"]:
+            mv = g["side"] * (g["price_out"] - g["price_in"]) * g["vol_in"]
+            if abs(mv) > 1e-12 and g["profit"]:
+                ks.append(g["profit"] / mv)
+    return (C.median(ks), "transactions") if ks else (None, None)
+
+
+def deals_checks(rep, fini, present, deals, dinfo, positions, pinfo, fiches, costs):
+    """ReleveFP 1.11's deals.csv and positions.csv (both optional: a 1.10 folder has none, and nothing is said then). Returns the summary
+    of the deals for summary.json (None without deals.csv)"""
+    ver = fini.get("version") if fini else None
+    vt = tuple(int(x) for x in ver.split(".")) if isinstance(ver, str) else None
+    keys = bool(fini) and any(k in fini for k in ("deals", "erreur_deals", "positions"))
+    src = "ReleveFP.mq5 1.11 Deals()"
+    err = fini.get("erreur_deals") if fini else None
+    n_fini = fini.get("deals") if fini else None
+    if not present.get("deals.csv"):
+        if (vt and vt >= DEALS_VERSION) or keys:
+            failed = isinstance(n_fini, int) and n_fini < 0               # review8 OPEN-FAIL-UNTESTED: ReleveFP could not open or write it
+            rep.add("compte", "deals_file", "historique des transactions du compte (deals.csv)", "DIFFERENT",
+                    "deals.csv absent" + (f" (fini.txt : deals=-1, erreur_deals={err})" if failed else ""),
+                    "deals.csv (ReleveFP 1.11, ecrit a la fin du releve)",
+                    "ReleveFP n'a pas pu ecrire deals.csv : relancer ReleveFP jusqu'a l'alerte 'Releve termine'" if failed else
+                    "recopier le dossier claude/releve en entier ; s'il n'y est pas, relancer ReleveFP jusqu'a l'alerte 'Releve termine'", src)
+            if isinstance(err, int) and err != 0:
+                rep.add("compte", "deals_error", "lecture de l'historique du compte par ReleveFP", "DIFFERENT", f"erreur {err}", "erreur_deals=0",
+                        "MetaTrader n'a pas donne l'historique, ou le fichier n'a pas pu etre ecrit en entier : relancer ReleveFP", src)
+        return None
+    if isinstance(err, int) and err != 0:
+        rep.add("compte", "deals_error", "lecture de l'historique du compte par ReleveFP", "DIFFERENT", f"erreur {err}", "erreur_deals=0",
+                "MetaTrader n'a pas donne l'historique, ou le fichier n'a pas pu etre ecrit en entier : relancer ReleveFP (historique du compte "
+                "charge : onglet Historique de la Boite a outils, 'Tout l'historique')", src)
+    if not dinfo.get("header_ok"):
+        rep.add("compte", "deals_file", "historique des transactions du compte (deals.csv)", "DIFFERENT",
+                "fichier vide" if dinfo.get("empty") else "en-tete inconnu (pas celui de ReleveFP 1.11 : fichier modifie ?)",
+                C.DEALS_HEADER, "recopier deals.csv tel quel depuis le Mac", src)
+        return {"rows": 0, "header_ok": False}
+    groups = C.deal_positions(deals)
+    ops = C.deal_operations(deals)
+    probs = []
+    if dinfo["bad_rows"]:
+        probs.append(f"{dinfo['bad_rows']} ligne(s) illisible(s) laissee(s) de cote (lignes {', '.join(str(x) for x in dinfo['bad_lines'][:5])})")
+    if dinfo["cut_last"]:
+        probs.append("derniere ligne coupee (copie incomplete)")
+    if dinfo["duplicates"]:
+        probs.append(f"{dinfo['duplicates']} transaction(s) en double")
+    if isinstance(n_fini, int) and n_fini >= 0 and n_fini != dinfo["rows"] + dinfo["bad_rows"] + dinfo["duplicates"] + int(dinfo["cut_last"]):
+        probs.append(f"{dinfo['rows']} lignes lues pour deals={n_fini} dans fini.txt (fichier coupe ?)")
+    if isinstance(n_fini, int) and n_fini < 0:
+        probs.append("ReleveFP n'a pas pu lire l'historique (deals=-1)")
+    t0 = min(d["time"] for d in deals) if deals else None            # the earliest and the latest deal, whatever the file's order (review8)
+    t1 = max(d["time"] for d in deals) if deals else None
+    robot = [g for g in groups.values() if g["kind"] == "robot"]
+    marks = [g for g in groups.values() if g["kind"] == "mark"]
+    hands = [g for g in groups.values() if g["kind"] == "hand"]
+    others = [g for g in groups.values() if g["kind"] == "other"]
+    per_code = {c: sum(1 for g in robot if g["code"] == c) for c in C.CODES}
+    broker = (f"{dinfo['rows']} transactions" + (f" du {when_txt(t0, le=False)} au {when_txt(t1, le=False)}" if deals else "")
+              + f" ; positions : {len(robot)} du robot, {len(marks)} du garde (marque), {len(hands)} a la main, {len(others)} d'un autre programme ; "
+              f"{len(ops)} operation(s) hors trades")
+    st = "DIFFERENT" if probs or not deals else "OK"
+    rep.add("compte", "deals_file", "historique des transactions du compte (deals.csv)", st, broker + ("" if not probs else " ; " + " ; ".join(probs)),
+            "tout l'historique du compte, de la plus ancienne a la plus recente",
+            "" if deals else "historique vide : un compte a au moins son versement de depart ; MetaTrader n'avait pas charge l'historique : "
+            "relancer ReleveFP", src)
+    if deals:
+        rep.add("compte", "deals_robot", "trades du robot dans l'historique (par sleeve)", "OK" if robot else "DIFFERENT",
+                ", ".join(f"{c} {n}" for c, n in per_code.items() if n) or "aucun",
+                "des trades du robot pendant la demo (magics 20261201-20261210)",
+                "" if robot else "aucune position du robot dans l'historique : le robot n'a pas trade sur ce compte (copie observatrice ?), ou ce "
+                "n'est pas le compte de la demo", "CR_Registry.mqh (magic = 20261200 + sleeve)")
+    first_robot = min((g["time_in"] or g["deals"][0]["time"] for g in robot), default=None)
+
+    def before_robot(g):
+        """opened and closed before the robot's first trade (review8 TOOL1-PREDEMO-TRADES): the account's past, information; tool 1 has no
+        journal, so it cannot tell the robot's start: check_demo dates them against it"""
+        return bool(first_robot is not None and not g["open"] and g["time_out"] is not None and g["time_out"] < first_robot)
+
+    def gtxt(g):
+        return (f"{C.deal_symbol_shown(g['symbol'])} {'achat' if g['side'] > 0 else 'vente'} {fmtv(g['vol_in'] or g['vol_out'], 2)} lot ouverte "
+                f"{when_txt(g['time_in'])}")
+    first_txt = f"le premier trade du robot ({when_txt(first_robot)})" if first_robot is not None else ""
+    for kind, item, label, rows_ in (("hand", "deals_hand", "trades a la main sur le compte (magic 0)", hands),
+                                     ("other", "deals_other", "trades d'un autre programme sur le compte", others)):
+        pre = [g for g in rows_ if before_robot(g)]
+        dem = [g for g in rows_ if not before_robot(g)]
+        names = (" (" + ", ".join(sorted({C.LAB_PROGRAM_MAGIC.get(g["magic"], "un autre programme") for g in rows_})) + ")") if kind == "other" else ""
+        if dem:
+            rep.add("compte", item, label, "DIFFERENT",
+                    f"{len(dem)} position(s){names if kind == 'other' else ''}, resultat {C.frs(sum(g['money'] for g in dem), 2, 'EUR')} ; la premiere : "
+                    f"{gtxt(dem[0])}",
+                    "aucun trade a la main pendant la demo" if kind == "hand" else "seul le robot trade sur le compte de la demo",
+                    "a dire au labo : le solde a bouge pour une autre raison que le robot" if kind == "hand" else
+                    "a dire au labo : un autre programme a trade sur le compte de la demo", "")
+        if pre:
+            rep.add("compte", item + "_before", label + " avant le premier trade du robot", "INFO",
+                    f"{len(pre)} position(s){names if kind == 'other' else ''} fermee(s) avant {first_txt}, resultat "
+                    f"{C.frs(sum(g['money'] for g in pre), 2, 'EUR')} ; la premiere : {gtxt(pre[0])}",
+                    "rien avant la demo, ou sans effet sur elle",
+                    "avant la demo si avant le demarrage du robot (check_demo le verifie avec le journal) : sans effet sur le robot", "")
+    # robot positions closed by hand (review8 TOOL1-HAND-CLOSE-UNSEEN): the opening deal is the robot's, the closing one has a hand reason
+    hand_closed = [g for g in robot + marks if g["out"] and any(d["reason"] in C.HAND_REASONS for d in g["out"])]
+    if hand_closed:
+        g0 = hand_closed[0]
+        r0 = next(d["reason"] for d in g0["out"] if d["reason"] in C.HAND_REASONS)
+        rep.add("compte", "deals_robot_hand_close", "positions du robot fermees a la main", "DIFFERENT",
+                f"{len(hand_closed)} position(s), resultat {C.frs(sum(g['money'] for g in hand_closed), 2, 'EUR')} ; la premiere : "
+                f"{g0['code'] or 'marque du garde'} {gtxt(g0)}, fermee {C.DEAL_REASON_FR.get(r0, 'a la main')} {when_txt(g0['time_out'])}",
+                "le robot ferme ses positions lui-meme (ou le stop du courtier)",
+                "position du robot fermee a la main : a dire au labo (son resultat n'est plus celui du robot)", "")
+    if ops:
+        pays = [d for d in ops if d["type"] == "DEAL_TYPE_BALANCE"]
+        dep = sum(d["profit"] for d in pays if d["profit"] > 0)
+        wd = sum(d["profit"] for d in pays if d["profit"] < 0)
+        other_ops = [d for d in ops if d["type"] != "DEAL_TYPE_BALANCE"]
+        # review8 TOOL1-DEPOSIT-BEFORE-FIRST-TRADE: the account's first balance deal is its opening deposit (information); any later operation
+        # that moves the balance is DIFFERENT, even before the robot's first trade (tool 1 has no journal: check_demo dates it against the
+        # robot's start)
+        opening = pays[0] if pays and pays[0]["profit"] > 0 else None
+        later = [d for d in ops if d is not opening and C.deal_money(d) != 0]
+        during = [d for d in later if first_robot is not None and d["time"] > first_robot]
+
+        def what(d):
+            x = C.deal_money(d)
+            return ("versement" if x > 0 else "retrait") if d["type"] == "DEAL_TYPE_BALANCE" else C.DEAL_TYPE_FR.get(d["type"], "operation")
+        txt = (f"versements {C.fr(dep, 2, 'EUR')}, retraits {C.fr(-wd, 2, 'EUR')}"
+               + (f", autres operations {len(other_ops)} ({', '.join(sorted({C.DEAL_TYPE_FR.get(d['type'], 'operation') for d in other_ops}))}) "
+                  f"{C.frs(sum(C.deal_money(d) for d in other_ops), 2, 'EUR')}" if other_ops else ""))
+        if later:
+            d0 = later[0]
+            txt += (f" ; {len(later)} apres le versement de depart" + (f" (dont {len(during)} apres le premier trade du robot)" if during else "")
+                    + f", la premiere : {what(d0)} {C.frs(C.deal_money(d0), 2, 'EUR')} {when_txt(d0['time'])}")
+        rep.add("compte", "deals_balance", "operations sur le solde (versements, retraits, frais)", "DIFFERENT" if later else "INFO", txt,
+                "le versement de depart, puis rien pendant la demo",
+                ("argent verse ou retire apres le versement de depart : pendant la demo, le plan de mise du robot en tient compte et le labo "
+                 "doit le savoir ; check_demo dit, avec le journal, s'il est venu avant le demarrage du robot") if later else "", "")
+    out = {"rows": dinfo["rows"], "header_ok": True, "bad_rows": dinfo["bad_rows"], "bad_lines": dinfo["bad_lines"], "cut_last": dinfo["cut_last"],
+           "duplicates": dinfo["duplicates"], "from_srv": t0, "to_srv": t1, "robot_positions": per_code, "mark_positions": len(marks),
+           "hand_positions": len(hands), "other_positions": len(others), "operations": len(ops), "markets": {}}
+    # commission and swaps of the robot's trades per market, against the lab's model (SPEC 2.2: gold 6 points round trip = 3 USD per lot
+    # and side; US100, BTC, ETH none on Raw; fp_costs.json swaps: an annual fraction of the notional, 360-day basis, tripled on swap_triple)
+    for b in C.ROBOT_BASES:
+        gs = [g for g in groups.values() if g["base"] == b and g["kind"] in ("robot", "mark")]
+        if not gs:
+            continue
+        fiche = (fiches or {}).get(b)
+        k, k_src = deal_k(groups, b, fiche)
+        dl = [d for g in gs for d in g["deals"]]
+        vol = sum(d["volume"] for d in dl)
+        com = -sum(d["commission"] + d["fee"] for d in dl) + 0.0           # + 0.0: never a negative zero in the outputs (review8 DEALS-WORDING)
+        side_lot = com / vol + 0.0 if vol > 0 else None
+        margin = 0.005 * len(dl) / vol if vol > 0 else None               # each deal's money is rounded to the cent
+        pt = (fiche.get("point") if fiche and fiche.get("found") else None) or (10.0 ** -max(d["price_decimals"] for d in dl))
+        m = {"positions": len(gs), "deals": len(dl), "volume": vol, "commission_eur": -com, "per_lot_side_eur": side_lot, "eur_per_price_lot": k,
+             "k_source": k_src}
+        model = COMM_MODEL_RT_PTS[b]
+        model_txt = ("6 points aller-retour = 0,06 USD par once = 3 USD par lot et par cote" if b == "XAUUSD" else "aucune (compte Raw)")
+        if side_lot is None:
+            pass
+        elif k and pt:
+            rt_pts = 2 * side_lot / k / pt + 0.0
+            mpts = 2 * margin / k / pt + 0.0
+            m.update(rt_points=rt_pts, margin_points=mpts)
+            ok = abs(rt_pts - model) <= max(1.0 if model else 0.0, mpts) + 1e-9
+            rep.add(b, "deals_commission", "commission des trades du robot (historique du compte)", "OK" if ok else "DIFFERENT",
+                    f"{fmtv(side_lot, 3)} EUR par lot et par cote = {fmtv(rt_pts, 2)} points aller-retour sur {len(dl)} transactions "
+                    f"({fmtv(vol, 2)} lot ; a {fmtv(mpts, 2)} point pres : centimes arrondis)", model_txt,
+                    "" if ok else ("le papier du robot compte 6 points sur l'or (CR_XAU_COMM_PTS) : la commission reelle est differente, a dire au labo"
+                                   if b == "XAUUSD" else "le papier du robot ne compte pas de commission sur ce marche : chaque trade coute ce montant de plus"),
+                    "SPEC 2.2, CR_Types.mqh CR_XAU_COMM_PTS")
+        else:
+            rep.add(b, "deals_commission", "commission des trades du robot (historique du compte)", "UNKNOWN",
+                    f"{fmtv(side_lot, 3)} EUR par lot et par cote sur {len(dl)} transactions", model_txt, "valeur du point inconnue (pas de fiche)", "SPEC 2.2")
+        closed = [g for g in gs if not g["open"] and g["time_in"] and g["time_out"]]
+        if closed and k:
+            lab = costs.get(C.LAB_SYM.get(b, ""), {})
+            tri = C.DOW_FR[C.DOW_EN3.index(lab["swap_triple"])] if lab.get("swap_triple") in C.DOW_EN3 else "?"
+            per = []
+            for g in closed:
+                n_ = C.swap_nights(C.srv_to_utc(g["time_in"]), C.srv_to_utc(g["time_out"]), lab.get("swap_triple"))
+                per.append((g, n_, C.lab_swap_eur(b, g["side"], g["price_in"], g["vol_in"], k, n_, costs)))
+            real = -sum(g["swap"] for g in closed)
+            exp = sum(x for _, _, x in per)
+            nights = sum(n_ for _, n_, _ in per)
+            n_sw = sum(1 for g in closed if g["swap"] != 0)
+            marg = 0.005 * n_sw + 0.01                                  # each swap rounded to the cent, and a cent
+            # per position too: a swap beyond 1.5 x the lab's for its nights (a triple charged on another day than the lab's)
+            tb = [(g, n_, x) for g, n_, x in per if -g["swap"] > 1.5 * x + 0.015]
+            st_sw = "INFO" if real < -marg and not tb else ("DIFFERENT" if (real > 1.5 * exp + marg or tb) else "OK")
+            m.update(swap_eur=-real, lab_swap_eur=exp, swap_nights=nights, swap_positions_beyond=[g["position"] for g, _, _ in tb])
+            ex = ""
+            if tb:
+                g0, n0, x0 = max(tb, key=lambda z: -z[0]["swap"] - 1.5 * z[2])
+                ex = (f" ; {len(tb)} position(s) au-dela, par ex. {C.frs(g0['swap'], 2, 'EUR')} pour {n0} nuit(s) au calcul du labo "
+                      f"({C.frs(-x0, 2, 'EUR')}), ouverte {when_txt(g0['time_in'])}")
+            rep.add(b, "deals_swap", "swaps des trades du robot (historique du compte)", st_sw,
+                    f"{C.frs(-real, 2, 'EUR')} sur {len(closed)} position(s) fermee(s), {nights} nuit(s) au calcul du labo" + ex,
+                    f"cout du labo {C.fr(exp, 2, 'EUR')} (fp_costs.json, triple le {tri})",
+                    {"INFO": "swap credite (le labo ne compte pas les credits)", "OK": "",
+                     "DIFFERENT": "swaps plus chers que 1,5 fois ceux du labo (les regles ont ete testees avec des frais x1,5) : a dire au labo"}[st_sw],
+                    "fp_costs.json")
+        out["markets"][b] = m
+    # the positions open at ReleveFP's run
+    if present.get("positions.csv"):
+        if not pinfo.get("header_ok"):
+            rep.add("compte", "positions_file", "positions ouvertes au releve (positions.csv)", "DIFFERENT", "en-tete inconnu (fichier modifie ?)",
+                    C.POSITIONS_HEADER, "recopier positions.csv tel quel depuis le Mac", "ReleveFP.mq5 1.11 Positions()")
+        else:
+            rob = [q for q in positions if q["magic"] in C.CODE_OF_MAGIC or q["magic"] == C.MARK_MAGIC]
+            n_p = fini.get("positions") if fini else None
+            count_off = isinstance(n_p, int) and n_p != pinfo["rows"] + pinfo["bad_rows"] + pinfo["duplicates"] + int(pinfo["cut_last"])
+            bad = pinfo["bad_rows"] or count_off
+            # why the file is DIFFERENT and what to ask (review FV7-T1-POSITIONS-COUNT-WORDING): positions=-1 means ReleveFP could not
+            # write the file (run it again); another count means a file cut while copied (copy the folder again)
+            why_bad = ""
+            if count_off:
+                why_bad = (" ; fini.txt : positions=-1 (ReleveFP n'a pas pu ecrire le fichier)" if n_p == -1 else
+                           f" ; {pinfo['rows']} ligne(s) lue(s) pour positions={n_p} dans fini.txt (fichier coupe ?)")
+            if count_off and n_p == -1:
+                todo = "relancer ReleveFP (etapes 7 a 12)"
+            elif count_off:
+                todo = "recopier le dossier claude/releve en entier ; s'il y est aussi court, relancer ReleveFP (etapes 7 a 12)"
+            elif bad:
+                todo = "recopier positions.csv tel quel depuis le Mac (ne pas l'ouvrir avec Numbers ni Excel)"
+            else:
+                todo = "check_demo.py les compare au journal du robot"
+            rep.add("compte", "positions_file", "positions ouvertes au releve (positions.csv)", "DIFFERENT" if bad else "INFO",
+                    f"{pinfo['rows']} position(s) ouverte(s) " + (f"{when_txt(fini.get('positions_heure'))}" if fini and fini.get("positions_heure") else "")
+                    + f", dont {len(rob)} du robot" + (f" ; {pinfo['bad_rows']} ligne(s) illisible(s)" if pinfo["bad_rows"] else "") + why_bad,
+                    "les positions du robot encore ouvertes au moment du releve", todo, "ReleveFP.mq5 1.11 Positions()")
+            out["open_positions"] = pinfo["rows"]
+            out["open_robot_positions"] = len(rob)
+    elif (vt and vt >= DEALS_VERSION) or keys:
+        rep.add("compte", "positions_file", "positions ouvertes au releve (positions.csv)", "DIFFERENT", "positions.csv absent",
+                "positions.csv (ReleveFP 1.11)", "recopier le dossier claude/releve en entier", "ReleveFP.mq5 1.11 Positions()")
+    return out
+
+
 # ---------------------------------------------------------------------------------------------- main
 def run(folder, out_dir):
     scrub = C.Scrubber()
     out = C.safe_out(out_dir)
     macos = C.macos_meta_files(folder)                                  # what the Finder's zip adds (review5 MAC-ZIP): never read, named once
-    present = {n: os.path.exists(os.path.join(folder, n)) for n in ("fiches.csv", "tous.csv", "fini.txt", "sonde.csv")}
+    present = {n: os.path.exists(os.path.join(folder, n)) for n in ("fiches.csv", "tous.csv", "fini.txt", "sonde.csv", C.DEALS_FILE, C.POSITIONS_FILE)}
     m1_files = sorted(f for f in os.listdir(folder) if f.startswith("m1_") and f.endswith(".csv"))
     r1_files = sorted(f for f in os.listdir(folder) if f.startswith("r1_") and f.endswith(".csv"))
     problems = []
@@ -1401,14 +1692,21 @@ def run(folder, out_dir):
                       os.path.join(folder, f"r1_{b}.csv") if f"r1_{b}.csv" in r1_files else None, m1_df.get(b), r1_df.get(b),
                       digits_of.get(b), fini, m1_info.get(b), r1_info.get(b))
     session_checks(rep, fiches, m1)
+    # ReleveFP 1.11: the account's deals and the positions open at its run (both optional: a 1.10 folder has none)
+    deals, dinfo = C.read_account_csv(os.path.join(folder, C.DEALS_FILE), "deals", scrub) if present[C.DEALS_FILE] else ([], {})
+    poss, pinfo = C.read_account_csv(os.path.join(folder, C.POSITIONS_FILE), "positions", scrub) if present[C.POSITIONS_FILE] else ([], {})
+    deals_sum = deals_checks(rep, fini, present, deals, dinfo, poss, pinfo, fiches, costs)
     counts = {s: sum(1 for c in rep.checks if c["status"] == s) for s in ("OK", "DIFFERENT", "UNKNOWN", "INFO")}
     summary = {"tool": "read_mac_files", "version": 2, "releve_version": fini.get("version") if fini else None,
-               "files_read": {**present, "m1": m1_files, "r1": r1_files}, "macos_files_ignored": macos,
+               "files_read": {**{k: v for k, v in present.items() if k not in (C.DEALS_FILE, C.POSITIONS_FILE) or v}, "m1": m1_files,
+                              "r1": r1_files}, "macos_files_ignored": macos,
                "macos_folder": C.is_macos_meta(os.path.abspath(folder)),
                "problems": problems, "account": {k: v for k, v in fini.items() if k != "markets"} if fini else {},
                "releve_markets": fini.get("markets", {}) if fini else {}, "sonde_meta": sonde_meta,
                "fiches": fiches, "sonde": sonde_rows, "m1": m1, "checks": rep.checks, "counts": counts,
                "robot_names_by_brkresolve": {b: resolve(b, tous, ROBOT_ALIASES) for b in C.ROBOT_BASES} if tous else {}}
+    if deals_sum is not None:
+        summary["deals"] = deals_sum
     lines = french(summary, rep.checks, counts, problems)
     C.write_json(os.path.join(out, "summary.json"), C.clean_json(summary), scrub)
     C.write_text(os.path.join(out, "summary_fr.txt"), lines["full"], scrub)
@@ -1418,7 +1716,8 @@ def run(folder, out_dir):
 
 def french(summary, checks, counts, problems):
     files = summary["files_read"]
-    lus = [n for n in ("fiches.csv", "tous.csv", "fini.txt", "sonde.csv") if files.get(n)] + files.get("m1", []) + files.get("r1", [])
+    lus = ([n for n in ("fiches.csv", "tous.csv", "fini.txt", "sonde.csv") if files.get(n)] + files.get("m1", []) + files.get("r1", [])
+           + [n for n in (C.POSITIONS_FILE, C.DEALS_FILE) if files.get(n)])
     head = [f"Lecture des fichiers du Mac : {', '.join(lus) if lus else 'aucun fichier reconnu'}.",
             f"{counts['OK']} points conformes, {counts['DIFFERENT']} differents, {counts['UNKNOWN']} inconnus"
             + (f", {counts['INFO']} pour information." if counts.get("INFO") else ".")]
@@ -1445,7 +1744,8 @@ def french(summary, checks, counts, problems):
         if len(key) > 25:
             short.append(f"  ... et {len(key) - 25} autres (voir summary_fr.txt)")
     imp = [c for c in checks if c["item"] in ("margin_mode", "server_clock") or (c["market"] in ("BTCUSD", "ETHUSD") and c["item"] == "margin")
-           or (c["market"] == "XAUUSD" and c["item"] in ("commission", "friday_session")) or (c["market"] == "US100" and c["item"] == "vol_min")]
+           or (c["market"] == "XAUUSD" and c["item"] in ("commission", "friday_session", "deals_commission")) or (c["market"] == "US100" and c["item"] == "vol_min")
+           or (c["market"] == "compte" and c["item"] == "deals_file")]
     if imp:
         short.append("Points cles :")
         for c in imp:

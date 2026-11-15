@@ -73,6 +73,44 @@ verdict on the same lines), a start replaced by a later one, with and without re
 stop moves in a lost file (LOST-FILE-POSITIONS), closes refused with Algo Trading off (RH5-3), the copy taken while the robot runs and --copie
 (RH5-4), a paper trade while MetaTrader was closed (RH5-6), a position closed while the robot was stopped and the balance difference (RH5-7), the
 Mac asleep (RH5-8), a position open at the copy (RH5-9) and the Paris times on stdout (RH5-10).
+The cases of the sixth round are the tests named 'review6 ...' (the final verifier's ids FV5-...): check_start.py with a time, a number, a dot or
+the login typed alone on the line after a PLAN, SELFTEST or CLOCK line, or glued on that line, and an INIT line whose risk table holds the login
+(FV5-START-TRAILING-DIGITS; lines the chat really wrapped inside their last value as controls), a second copy MetaTrader refused while the start
+runs, its two lines after or among the start's lines (FV5-START-SECOND-COPY); check_demo on story_journal's November 2026 journals with a D2 demo
+restarted with the same settings, also with the restart's daily file lost, without and with the Mac's Experts logs (FV5-RH5-2-SAME-SETTINGS-RESTART),
+a lost daily file whose trades lost money (FV5-RH5-7-LOST-FILE-COST), --copie a few minutes after the server's midnight (FV5-COPIE-MIDNIGHT), and the
+start numbers after refused starts and with a restart seen only in the Experts tab (FV5-START-NUMBERING).
+The cases of the sixth round's second pass are the tests named 'review6b ...' (the verifier's ids FV6-...): check_start.py with the login glued
+right after a MISSED line whose reason is refused_<rc> or code<k> (FV6-START-MISSED-GLUED-DIGITS), a paste holding only the lines of a second copy
+MetaTrader refused, with or without lines of the copy that runs (FV6-START-LONE-SECOND-COPY), a risk table typed with the ';' the robot accepts at
+its end, then a time, the login or '0' on the next chat line (FV6-START-SEMICOLON-CUT), 'CR|' in the user's own words (FV6-START-PROSE-CR-PIPE);
+check_demo with a restart inside a lost daily file before the start in force, with and without the Mac's Experts logs
+(FV6-DEMO-UNKNOWN-RESTART-ADVICE), and a second copy refused while the robot runs, in the Experts log of a day kept or lost
+(FV6-DEMO-PRINTED-SECOND-COPY, insert_printed).
+The cases of the seventh round are the tests named 'deals ...' (ReleveFP 1.11 writes the account's deals and open positions, ids RELEVE-111, TOOL1,
+TOOL2): ReleveFP.mq5 1.11 itself, translated and built against releve_mock, run on story_journal accounts (story_history: the opening deposit and each
+trade's deals, agreeing with the journal by construction) and on the harness's own account (harness_history: check/mock_replay.h's _mock/deals.csv
+and state.txt, a deposit first, MetaTrader's magic 0 for the harness's hand trades, the deals' stops from the journal); check_demo with --deals or
+deals.csv beside --bars, read_mac_files on a releve folder holding the deals (merge_deals). Faults: the broker's stops slipping 1x (no alarm), 3x and
+10x the lab's (MOCK_SLIP_STOP_BPS), the gold commission twice the lab's (MOCK_COMM, and edited deals), a triple swap charged on a Wednesday night
+(crypto: the lab triples on Friday; gold, the lab's own triple day: no anomaly), a trade by hand, a deposit, a robot deal the journal does not know, a CLOSE line lost whose deal
+exists, a position still open at the run and the same missing from positions.csv, a deals.csv row with an extra field (the holder's name glued), a
+1.11 folder without deals.csv, erreur_deals, an empty history, a 1.10 folder (both tools unchanged: controls), the account's words planted in the
+deals' comments and external ids (never in any output). DAY balances are moved with the deals the tests add (shift_balances).
+The cases of the deals stage's second pass are the tests named 'deals2 ...' (review8, the verifiers' ids): releve_mock now follows the documented
+MetaTrader (FileWriteString adds a CR before a bare LF of a TXT or CSV file and returns the bytes written, the deal getters answer for the deals
+HistorySelect listed, SymbolInfoInteger may fail with 4302, FileOpen and FileWriteString fail on demand, the account plants a server, company,
+holder's name and login), checked by a C++ probe; ReleveFP 1.11 writes every row ending in CR LF and counts them (RELEVE111-CRLF), the first 1.11
+rebuilt (rows ending in a bare LF, WriteRow with ==) fails as the documentation predicts and both tools then say plainly that ReleveFP could not write
+the history (IMIT-CRLF, TOOL2-FINI-COUNTS-IGNORED); deals.csv or positions.csv that cannot be opened (OPEN-FAIL-UNTESTED), a failed write without its
+own code after an unknown symbol (LASTERR-STALE), the planted account in no file (IMIT-LOOSE); tool 1: a withdrawal named 'retrait', trades by hand
+or of another program closed before the robot's first trade INFO, a deposit on the Sunday before the first trade DIFFERENT, ReleveFP 1.11 expected
+(a 1.10 folder DIFFERENT), a robot position closed by hand DIFFERENT; check_demo: positions=-1 with positions.csv's header only, deals.csv cut after
+4 of 9 rows, a DUP line's ticket and a lost daily file's positions known to the journal, ReleveFP run the day before the copy (the history up to the
+releve, then an estimate), 40 trades then one deal edited by 0.20 EUR (and the same on the harness account), deals.csv reversed (the period), tool 1's
+wording (no 'du le', no negative zero), the execution cost line beside the broker's stops (harness, 10x), the server name's sources from 1.11 on
+(control), every check's info JSON-safe (SELFTEST-JSON: the results file is written in a finally block, the scratch deleted after it, and each
+replay group's own scratch folders deleted when it ends, so that a full run stays within the disk the session keeps free).
 --quick: tool 1, the ReleveFP harness and the journal-only checks of tool 2 (no robot build or replay).
 DEMO_TEST_SCRATCH and DEMO_TEST_RESULTS (environment) move the scratch folder and the results file (used to run this
 file against a copy of earlier tools).
@@ -109,8 +147,25 @@ REC = np.dtype([("t", "<i8"), ("o", "<i4"), ("h", "<i4"), ("l", "<i4"), ("c", "<
 RESULTS = []
 
 
+def jsonable(x, depth=0):
+    """a check's info as the results file can hold it (review8 SELFTEST-JSON): dict keys as text (a (market, item) tuple becomes
+    'market/item'), tuples and sets as lists, anything else that json cannot write as its text"""
+    if depth > 20:
+        return str(x)
+    if isinstance(x, dict):
+        return {("/".join(str(p) for p in k) if isinstance(k, tuple) else (k if isinstance(k, (str, int, float, bool)) or k is None else str(k))):
+                jsonable(v, depth + 1) for k, v in x.items()}
+    if isinstance(x, (list, tuple, set, frozenset)):
+        return [jsonable(v, depth + 1) for v in x]
+    if isinstance(x, (str, int, float, bool)) or x is None:
+        return x
+    if isinstance(x, np.generic):
+        return x.item()
+    return str(x)
+
+
 def check(name, cond, info=None):
-    RESULTS.append({"test": name, "pass": bool(cond), "info": info})
+    RESULTS.append({"test": name, "pass": bool(cond), "info": jsonable(info)})
     print(("PASS " if cond else "FAIL ") + name + ("" if cond or info is None else f"  -> {str(info)[:300]}"))
     return bool(cond)
 
@@ -1469,12 +1524,12 @@ def test_review2_tool1(lit):
         return rc, so, se, {(c["market"], c["item"]): c for c in s["checks"]}, s
     src = lit["releve_src"]
     hdr = lit["m1_mq5"]
-    chk("review2 N4: ReleveFP.mq5 is version 1.10: m1 header unchanged plus sp_min at the end, r1 file with the terminal's M1 bars "
-        "(CopyRates; days per market in InpRateSymbols, gold 200 since review3 R4), barres= at the end of each market's fini line",
-        lambda: (re.search(r'#property version\s+"1\.10"', src) is not None and hdr == lit["m1_v100"] + ",sp_min"
+    chk("review2 N4: ReleveFP.mq5 is version 1.10 or later (review7: 1.11): m1 header unchanged plus sp_min at the end, r1 file with the "
+        "terminal's M1 bars (CopyRates; days per market in InpRateSymbols, gold 200 since review3 R4), barres= at the end of each market's fini line",
+        lambda: (re.search(r'#property version\s+"1\.1[01]"', src) is not None and hdr == lit["m1_v100"] + ",sp_min"
                  and lit["m1_v100"] == "time,bo,bh,bl,bc,ao,ah,al,ac,n,sp_mean,sp_max" and lit["r1_mq5"] == R1_HEADER
                  and re.search(r'input\s+string\s+InpRateSymbols\s*=\s*"XAUUSD:200,', src) is not None and "CopyRates(" in src
-                 and '"r1_"' in src and "version=1.10" in src and 'info = "barres="' in src and '" jours_barres="' in src
+                 and '"r1_"' in src and re.search(r'"version=1\.1[01]\\n"', src) is not None and 'info = "barres="' in src and '" jours_barres="' in src
                  and '" erreur_barres="' in src and re.search(r'info_m\[i\] \+ \(info_r\[i\] != ""', src) is not None, (hdr, lit["r1_mq5"])))
     rc, so, se, ck, s = go("v110")
     chk("review2 N4: ReleveFP 1.10's r1 files are read: bar count against fini.txt's barres= (OK) and the days covered",
@@ -1822,7 +1877,7 @@ def test_tool2_replay(lit):
                  and "rejeu inutilisable" in txt8 and not any("differente(s)" in a for a in r8.get("anomalies", []))
                  and "Rien d'anormal." not in so8, (cal8.get("paper_lines"), cal8.get("min_consistent"), r8.get("anomalies"), so8[-400:])))
     chk("review3 U5: the unusable replay is said once on stdout, in plain words, and report_fr.txt names no convention for a replay not run",
-        lambda: (rc == 0 and so8.count("inutilisable") == 1 and "retenu : " not in txt8 and "ReleveFP 1.10" in so8, (so8[-500:], txt8.count("retenu"))))
+        lambda: (rc == 0 and so8.count("inutilisable") == 1 and "retenu : " not in txt8 and "ReleveFP 1.11" in so8, (so8[-500:], txt8.count("retenu"))))
     # ReleveFP 1.10's sp_min column: the 'min' convention is found and the replay is exact again
     spmin = csv_dir("csv_min_spmin", SPAN, lit, style="min_hidden", version="1.10")
     out12 = os.path.join(SCRATCH, "out_min_spmin")
@@ -2389,7 +2444,7 @@ def test_review3_tool1(lit):
         lambda: (g["rc"] == 0 and " Sat " not in g["so"] and "mock" not in g["so"] and "cotation le week-end" not in g["so"].split("Points cles")[0],
                  g["so"][:800]))
     g = go("r13_v100", version="1.00")
-    chk("review3 R13: a 1.00 run (the new .mq5 not compiled) is DIFFERENT 'ReleveFP 1.10 attendu (recompiler)'",
+    chk("review3 R13: a 1.00 run (the new .mq5 not compiled) is DIFFERENT 'ReleveFP 1.11 attendu (recompiler)'",
         lambda: (g["rc"] == 0 and g["ck"].get(("compte", "releve_version"), {}).get("status") == "DIFFERENT"
                  and "F7" in g["ck"].get(("compte", "releve_version"), {}).get("note", ""), g["ck"].get(("compte", "releve_version"))))
 
@@ -2608,11 +2663,12 @@ def test_review4_releve(lit):
     chk("review4 A1/RC3-R4: demo_common.R1_DAYS_NEEDED counts the robot's depth (DEPTH_DAYS: 60 days for US100, BTCUSD, ETHUSD, 120 "
         "for gold) + a four-week demo + a week: at least 95 and 155 days",
         lambda: (all(C.R1_DAYS_NEEDED.get(b, 0) >= need[b] for b in C.ROBOT_BASES), (C.R1_DAYS_NEEDED, need)))
-    chk("review4 A1/RC3-R4: ReleveFP 1.10's default InpRateSymbols gives every robot market those days "
-        "(XAUUSD:200,US100:100,BTCUSD:100,ETHUSD:100) and the version stays 1.10",
+    chk("review4 A1/RC3-R4: ReleveFP's default InpRateSymbols gives every robot market those days "
+        "(XAUUSD:200,US100:100,BTCUSD:100,ETHUSD:100) and the version is 1.10 or later (review7: 1.11)",
         lambda: (all(rate.get(b, 0) >= need[b] for b in C.ROBOT_BASES) and rate.get("XAUUSD") == 200
                  and rate.get("US100") == rate.get("BTCUSD") == rate.get("ETHUSD") == 100
-                 and re.search(r'#property version\s+"1\.10"', src) is not None and "version=1.10" in src, (rate, need)))
+                 and re.search(r'#property version\s+"1\.1[01]"', src) is not None and re.search(r'"version=1\.1[01]\\n"', src) is not None,
+                 (rate, need)))
     chk("review4 A9: ReleveFP waits up to 300 s for a loading M1 series (InpRateWait default)",
         lambda: (re.search(r"input\s+int\s+InpRateWait\s*=\s*300\s*;", src) is not None,
                  (re.search(r"input\s+int\s+InpRateWait[^\n]*", src) or re.search("x", "x")).group(0)))
@@ -4319,6 +4375,448 @@ def test_review5b_fills(lit):
                                                                           None))
 
 
+def test_review6_start(lit):
+    """review6 (the sixth round), check_start.py: FV5-START-TRAILING-DIGITS (a time, a number, a dot or the login typed alone on the line after a
+    PLAN, SELFTEST or CLOCK line was glued onto its last value: a false DIFFERENT, the login printed; text glued on the same line), with lines
+    the chat really wrapped inside their last value as controls; FV5-START-SECOND-COPY (a second copy MetaTrader refused while the start runs,
+    its ERROR and stop line after or inside the start's lines)"""
+    del lit
+    base_dir = os.path.join(SCRATCH, "rv6s")
+    os.makedirs(base_dir, exist_ok=True)
+    full = start_lines()
+    init, selftest, plan_src, plan = full[:4]
+    up_plan = [init, selftest, plan_src, plan]
+    clock = jl(START_U, "CLOCK", "-", ("state", "wrong"), ("measured_s", 3600), ("rule_s", 7200))
+    pre = "2026.11.15 10:02:14.111\tClaudeRobot (XAUUSD.r,M1)\t"
+
+    def ep(ls):
+        return experts_paste(ls, account=False)
+    # FV5-START-TRAILING-DIGITS: a line the user typed after the robot's lines
+    res = {}
+    for name, text in (("plan_time", ep(up_plan) + "10:02\n"), ("plan_login", ep(up_plan) + FAKE_LOGIN + "\n"), ("plan_dot", ep(up_plan) + ".\n"),
+                       ("plan_1500", ep(up_plan) + "1500\n"), ("bare_plan_login", "\n".join(up_plan) + "\n" + FAKE_LOGIN + "\n"),
+                       ("selftest_0", ep([init, selftest]) + "0\n")):
+        res[name] = start_go(base_dir, "trail6_" + name, text)
+    bad = {k: (g["rc"], g["diff"][:2], g["leak"]) for k, g in res.items()
+           if g["rc"] != 0 or g["diff"] or "recollee" in g["so"] or g["leak"] or "OK : SELFTEST ok=1 (366 vecteurs)" not in g["so"]
+           or (k != "selftest_0" and "OK : PLAN state=ok" not in g["so"])}
+    chk("review6 FV5-START-TRAILING-DIGITS: the start lines up to PLAN (or SELFTEST), then a time ('10:02'), a number, a dot or the login typed alone "
+        "on the next line, with or without the Experts prefix: never glued onto the risk table or golden=, every check OK, exit code 0, the login "
+        "never printed", lambda: (not bad, bad))
+    g = start_go(base_dir, "trail6_clock_login", ep(full + [clock]) + FAKE_LOGIN + "\n")
+    chk("review6 FV5-START-TRAILING-DIGITS: a CLOCK state=wrong line, then the login alone on the next line: the CLOCK line read alone (its rule, "
+        "7200 s), the login never printed", lambda: (g["rc"] == 1 and any("CLOCK" in x and "7200 s" in x for x in g["diff"]) and not g["leak"],
+                                                     (g["diff"][:2], g["leak"])))
+    glued = {"plan_space": start_go(base_dir, "glue6_plan_space", ep([init, selftest, plan_src, plan + " " + FAKE_LOGIN])),
+             "plan": start_go(base_dir, "glue6_plan", ep([init, selftest, plan_src, plan + FAKE_LOGIN])),
+             "clock": start_go(base_dir, "glue6_clock", ep(full + [clock + FAKE_LOGIN])),
+             "selftest": start_go(base_dir, "glue6_selftest", ep([init, selftest + "12"]))}
+    bad = {k: (g["rc"], g["diff"][:2], g["leak"]) for k, g in glued.items()
+           if g["rc"] != 1 or g["leak"] or "36612" in g["so"] or "pas le fichier envoye" in g["so"]
+           or not any(("texte colle" in x and "recopier" in x) for x in g["diff"])}
+    chk("review6 FV5-START-TRAILING-DIGITS: the login glued after the PLAN line (with or without a space) or after the CLOCK line, digits glued "
+        "after golden=366, on the same line: the glued text never printed, 'texte colle ... recopier' (never 'pas le fichier envoye'), exit code 1",
+        lambda: (not bad, bad))
+    fz = start_go(base_dir, "glue6_risk_edited", ep([init.replace("risk=0:7;3000:3.5", f"risk=0:7;3{FAKE_LOGIN}000:3.5")] + full[1:]))
+    chk("review6 FV5-START-TRAILING-DIGITS: an INIT line whose risk table holds the login (an edited line: the robot refuses such a table at "
+        "OnInit): never printed, the line to be copied again, exit code 1",
+        lambda: (fz["rc"] == 1 and not fz["leak"] and any("recopier" in x for x in fz["diff"]), (fz["diff"][:2], fz["leak"])))
+    wrapped = {"plan_cut_dot": ep([init, selftest, plan_src]) + pre + plan[:-1] + "\n" + plan[-1:] + "\n",
+               "plan_cut_digit": ep([init, selftest, plan_src]) + pre + plan[:-2] + "\n" + plan[-2:] + "\n",
+               "selftest_cut_digit": ep([init]) + pre + selftest[:-1] + "\n" + selftest[-1:] + "\n",
+               "selftest_cut_field": ep([init]) + pre + selftest[:-len("|golden=366")] + "\n|golden=366\n"}
+    gw = {k: start_go(base_dir, "wrap6_" + k, v) for k, v in wrapped.items()}
+    chk("review6 control FV5-START-TRAILING-DIGITS: PLAN and SELFTEST lines the chat wrapped inside their last value ('20000:0.' then '7', "
+        "'20000:0' then '.7', 'golden=36' then '6', before '|golden=366'): put back together, every check OK, exit code 0",
+        lambda: (all(g["rc"] == 0 and not g["diff"] and "OK : SELFTEST ok=1 (366 vecteurs)" in g["so"] for g in gw.values()),
+                 {k: (g["rc"], g["diff"][:2]) for k, g in gw.items()}))
+    gi = [start_go(base_dir, "trail6_init_" + w, ep([init]) + t + "\n") for w, t in (("time", "10:02"), ("login", FAKE_LOGIN))]
+    gd = start_go(base_dir, "trail6_d2_time", ep(start_lines(risk=D2)[:4]) + "10:02\n")
+    chk("review6 control FV5-START-TRAILING-DIGITS: the INIT line alone then a time or the login: OK, exit code 0, nothing printed; a D2 start up "
+        "to PLAN then a time: D2 flagged, exit code 1",
+        lambda: (all(g["rc"] == 0 and not g["diff"] and not g["leak"] for g in gi) and gd["rc"] == 1 and any("D2" in x for x in gd["diff"]),
+                 ([g["diff"][:1] for g in gi], gd["diff"][:2])))
+
+    # FV5-START-SECOND-COPY: dragged onto another chart while the start runs, the second copy finds the lock taken (OnInit: ERROR 'another copy',
+    # INIT_FAILED, then OnDeinit's stop line deinit=8, rebuilds=0); MetaTrader unloads it from its chart, the first copy goes on
+    def sec(u):
+        return [jl(u, "ERROR", "-", ("what", "another copy of ClaudeRobot runs on this terminal")),
+                jl(u, "INIT", "-", ("deinit", 8), ("lines", 1), ("bars_fed", 0), ("rebuilds", 0), ("masked_XAUUSD", 0), ("masked_US100", 0),
+                   ("masked_BTCUSD", 0), ("masked_ETHUSD", 0))]
+
+    def with_second(ls, at, u):
+        txt = ep(ls).splitlines()
+        two = [f"2026.11.15 10:05:10.{k:03d}\tClaudeRobot (US100.r,M1)\t{x}" for k, x in enumerate(sec(u))]
+        return "\n".join(txt[:at + 1] + two + txt[at + 1:]) + "\n"
+    sc = {"after": start_go(base_dir, "second6_after", with_second(full, len(full) - 1, START_U + 180)),
+          "inside": start_go(base_dir, "second6_inside", ep(full[:5] + sec(START_U + 30) + full[5:])),
+          "inside_late": start_go(base_dir, "second6_inside_late", with_second(full, 4, START_U + 180))}
+    bad = {k: (g["rc"], g["diff"][:2]) for k, g in sc.items()
+           if g["rc"] != 0 or g["diff"] or "deuxieme copie" not in g["so"] or "ne pas relancer" not in g["so"] or "finit par l'arret" in g["so"]
+           or "ABSENT : INIT" in g["so"] or "OK : READY ETHUSD" not in g["so"] or "deuxieme copie" not in g["verdict"]}
+    chk("review6 FV5-START-SECOND-COPY: a second copy MetaTrader refused while the start runs (ERROR 'another copy', then its stop line deinit=8, "
+        "from another chart), after the start's lines or inside them (in time order, or later lines pasted among them): the running start checked "
+        "(OK, exit code 0), the refused copy said as information and in the verdict ('ne pas relancer'), never 'le collage finit par l'arret du "
+        "robot' nor 'ABSENT : INIT'", lambda: (not bad, bad))
+    g2 = start_go(base_dir, "second6_after_d2", with_second(start_lines(risk=D2), len(full) - 1, START_U + 180))
+    chk("review6 FV5-START-SECOND-COPY: the same after a start with D2: D2 still flagged (exit code 1), the second copy information only (no "
+        "DIFFERENT for it, no stop of the running start)",
+        lambda: (g2["rc"] == 1 and any("D2" in x for x in g2["diff"]) and not any("another copy" in x or "arret du robot" in x for x in g2["diff"])
+                 and "deuxieme copie" in g2["so"], g2["diff"][:4]))
+    alone = start_go(base_dir, "second6_alone", ep(sec(START_U)))
+    before = start_go(base_dir, "second6_before", ep(sec(START_U - 120) + full))
+    chk("review6 control FV5-START-SECOND-COPY: the refused copy alone (no running start in the paste): the guide's advice (another chart), INIT "
+        "absent, exit code 1; a start refused for another copy, then the right start (the old copy removed): information, exit code 0",
+        lambda: (alone["rc"] == 1 and any("autre graphique" in x for x in alone["diff"]) and "ABSENT : INIT" in alone["so"]
+                 and before["rc"] == 0 and not before["diff"] and "INFO : demarrage 1" in before["so"], (alone["diff"][:2], before["diff"][:2])))
+    chk("review6: no account word in any check_start output of these cases",
+        lambda: (all(not g["leak"] for g in list(res.values()) + list(glued.values()) + list(gw.values()) + list(sc.values()) + gi
+                     + [g, fz, gd, g2, alone, before]), None))
+
+
+def test_review6_journal(lit):
+    """review6, check_demo on journals of the user's November 2026 demo (story_journal): FV5-RH5-2-SAME-SETTINGS-RESTART (a D2 demo that MetaTrader
+    restarted with the same settings; the same with the restart's daily file lost, without and with the Mac's Experts logs; control: D2 replaced
+    by S7), FV5-RH5-7-LOST-FILE-COST (a lost daily file whose trades lost money: the balance difference is no cost), FV5-COPIE-MIDNIGHT (--copie
+    a few minutes after the server's midnight), FV5-START-NUMBERING (start numbers after refused starts; a restart seen only in the Experts tab
+    counted; the Experts INIT gives the build of a start whose INIT line the files lost)"""
+    del lit
+    base_dir = os.path.join(SCRATCH, "rv6j")
+
+    def go(name, segs=None, trades=(), extra=(), prep=None, jdir=None, **kw):
+        jdir = jdir or os.path.join(base_dir, "j_" + name, "ClaudeRobot")
+        if not os.path.isdir(jdir) or not os.listdir(jdir):
+            story_journal(jdir, segs, trades, **kw)
+        if prep:
+            prep(jdir)
+        out = os.path.join(base_dir, "out_" + name)
+        rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(jdir), "--out", out] + list(extra))
+        rp = os.path.join(out, "report.json")
+        r = json.load(open(rp)) if rc == 0 and os.path.exists(rp) else {}
+        rt = os.path.join(out, "report_fr.txt")
+        return {"rc": rc, "so": so, "se": se, "r": r, "an": r.get("anomalies", []), "jdir": jdir,
+                "rtxt": open(rt, encoding="utf-8").read() if rc == 0 and os.path.exists(rt) else "",
+                "txt": (outputs_text(out) if rc == 0 else "") + so + se}
+
+    def drop(*names):
+        def prep(jdir):
+            for n in names:
+                if os.path.exists(os.path.join(jdir, n)):
+                    os.remove(os.path.join(jdir, n))
+        return prep
+
+    def line(g, head):
+        return next((ln for ln in g["so"].splitlines() if ln.startswith(head)), "")
+    S0, END = STORY_START, STORY_END
+    tr = story_trades()
+    # FV5-RH5-2-SAME-SETTINGS-RESTART: D2 in both starts, MetaTrader quit on Monday 22:00 server and opened again on Tuesday 08:00
+    d2d2 = [{"at": S0, "to": srv("2026-11-16 22:00"), "deinit": 9, "risk": D2}, {"at": srv("2026-11-17 08:00"), "to": END, "risk": D2}]
+    g = go("same", d2d2, tr)
+    info = [ln for ln in g["so"].splitlines() if ln.startswith("Information")]
+    chk("review6 FV5-RH5-2-SAME-SETTINGS-RESTART: a D2 demo restarted with the same settings: D2 flagged once, on the start in force (with the "
+        "earlier start named), no 'remplace' information, no plan note, no separate anomaly for the first start's trades",
+        lambda: (g["rc"] == 0 and sum(1 for a in g["an"] if "D2" in a) == 1 and any("D2" in a and "demarrage 2" in a and "demarrage 1" in a for a in g["an"])
+                 and not any("remplace" in ln or "comptent aussi" in ln for ln in info) and not any("trade(s) reel(s)" in a for a in g["an"]),
+                 (g["an"][:3], info)))
+    gl = go("same_lost", d2d2, tr, prep=drop("20261117.log"))
+    info = [ln for ln in gl["so"].splitlines() if ln.startswith("Information")]
+    chk("review6 FV5-RH5-2-SAME-SETTINGS-RESTART: the same with the restart's daily file lost (no Experts logs): the settings in force unknown, the "
+        "first start's D2 is an anomaly ('reglages du redemarrage inconnus', 'a verifier'), never 'remplace'",
+        lambda: (gl["rc"] == 0 and any("D2" in a and "demarrage 1" in a and "inconnus" in a and "a verifier" in a for a in gl["an"])
+                 and not any("remplace" in ln for ln in info) and not any("remplace" in a for a in gl["an"]) and "inconnus" in line(gl, "Reglages en vigueur"),
+                 (gl["an"][:3], info)))
+    jfull = os.path.join(base_dir, "j_same_src", "ClaudeRobot")
+    story_journal(jfull, d2d2, tr)
+    logs = printed_files(os.path.join(base_dir, "logs_same"), jfull)
+    gp = go("same_lost_p", d2d2, tr, prep=drop("20261117.log"), extra=[x for p in logs for x in ("--printed", p)])
+    info = [ln for ln in gp["so"].splitlines() if ln.startswith("Information")]
+    chk("review6 FV5-RH5-2-SAME-SETTINGS-RESTART: the same with the Mac's Experts logs: the restart's D2 flagged naming the Experts log, the first "
+        "start's 'a verifier' settled, no 'remplace' information, no separate anomaly for the first start's trades",
+        lambda: (gp["rc"] == 0 and any("D2" in a and "onglet Experts" in a for a in gp["an"]) and not any("a verifier" in a for a in gp["an"])
+                 and not any("remplace" in ln for ln in info) and not any("trade(s) reel(s)" in a for a in gp["an"]), (gp["an"][:4], info)))
+    gr = go("replaced", [{"at": S0, "to": srv("2026-11-16 22:00"), "deinit": 9, "risk": D2}, {"at": srv("2026-11-17 08:00"), "to": END}], tr)
+    info = [ln for ln in gr["so"].splitlines() if ln.startswith("Information")]
+    chk("review6 control FV5-RH5-2-SAME-SETTINGS-RESTART: a D2 start replaced by an S7 start (other settings): the 'remplace' information and "
+        "the anomaly naming the first start's real trades are still there",
+        lambda: (gr["rc"] == 0 and any("demarrage 1" in ln and "D2" in ln and "remplace par le demarrage 2" in ln for ln in info)
+                 and any("trade(s) reel(s) faits par le demarrage 1 remplace" in a for a in gr["an"]), (gr["an"][:3], info)))
+    # FV5-RH5-7-LOST-FILE-COST: Tuesday's file lost, with two trades that lost money in it
+    b_px, e_px = A5_PX["BTCUSD"], A5_PX["ETHUSD"]
+    lost_tr = tr[:2] + [story_trade("BKB", srv("2026-11-17 09:00"), 70009603, xpx=b_px * 0.995, close=b_px * 0.995),
+                        story_trade("BKE", srv("2026-11-17 14:00"), 70009604, side=-1, xpx=e_px * 1.006, close=e_px * 1.006)]
+    gm = go("lost_cost", [{"at": S0, "to": END}], lost_tr, prep=drop("20261117.log"))
+    sl = line(gm, "Solde")
+    chk("review6 FV5-RH5-7-LOST-FILE-COST: one daily file lost (two losing trades inside, no position without an exit price): the money line says "
+        "an unexplained difference between the balance and the trades with the missing day, never costs ('frais hors des prix', 'cout de')",
+        lambda: (gm["rc"] == 0 and "difference non expliquee" in sl and "journal manquant" in sl and "frais hors des prix" not in sl
+                 and "cout de" not in sl and not ((gm["r"].get("fills") or {}).get("money_estimate") or {}).get("positions_exit_unknown"), sl))
+    gk = go("lost_cost_all", [{"at": S0, "to": END}], lost_tr)
+    chk("review6 control FV5-RH5-7-LOST-FILE-COST: the same journal with every file: a complete estimate, said as costs ('frais hors des prix')",
+        lambda: (gk["rc"] == 0 and "frais hors des prix" in line(gk, "Solde") and "difference non expliquee" not in line(gk, "Solde"),
+                 line(gk, "Solde")))
+    # FV5-COPIE-MIDNIGHT: the Wednesday copy, the robot running; --copie given a few minutes after the server's midnight (23:00 in Paris)
+    gc = go("copie_2305", [{"at": S0, "to": None}], tr, extra=("--copie", "2026-11-18 23:05"))
+    chk("review6 FV5-COPIE-MIDNIGHT: --copie at 23:05 (Paris, five minutes after the server's midnight) on a journal that reaches Wednesday: no "
+        "missing file, an information line saying that nothing is missing if the files were zipped before 23:00",
+        lambda: (gc["rc"] == 0 and gc["an"] == [] and any(ln.startswith("Information") and "zippes avant 23:00" in ln and "20261119.log" in ln
+                                                         for ln in gc["so"].splitlines()), (gc["an"][:2], gc["so"][-700:])))
+    gc1 = go("copie_2230", [{"at": S0, "to": None}], tr, extra=("--copie", "2026-11-18 22:30"))
+    gc2 = go("copie_0130", [{"at": S0, "to": None}], tr, extra=("--copie", "2026-11-19 01:30"))
+    chk("review6 control FV5-COPIE-MIDNIGHT: --copie at 22:30 (before midnight): nothing abnormal; at 01:30 the next night (beyond the hour): "
+        "20261119.log named as missing",
+        lambda: (gc1["rc"] == 0 and gc1["an"] == [] and gc2["rc"] == 0 and any("20261119.log" in a for a in gc2["an"]), (gc1["an"][:2], gc2["an"][:2])))
+    # FV5-START-NUMBERING: the numbers the reader sees are the starts that ran
+    g1 = go("num_refused", [{"at": S0 - 240, "refused": [ERR_COMMA]}, {"at": S0, "to": END}], tr)
+    g2 = go("num_refused2", [{"at": S0 - 600, "refused": [ERR_COMMA]}, {"at": S0 - 300, "refused": list(ERR_K1T)}, {"at": S0, "to": END}], tr)
+    g3 = go("num_d2_refused_s7", [{"at": S0 - 600, "to": S0 - 65, "deinit": 5, "risk": D2, "k1t": ""}, {"at": S0 - 60, "refused": [ERR_COMMA]},
+                                  {"at": S0 + 180, "to": END}], tr)
+    chk("review6 FV5-START-NUMBERING: after refused starts the start in force is numbered among the starts that ran (1 after one or two refused "
+        "starts; 2 after a D2 start, a refused one and the S7 one, which replaced 'demarrage 1'), as the headline counts them",
+        lambda: (g1["rc"] == g2["rc"] == g3["rc"] == 0 and "1 demarrage(s)" in line(g1, "Journal") and "Reglages en vigueur (demarrage 1," in g1["so"]
+                 and "Reglages en vigueur (demarrage 1," in g2["so"] and "2 demarrage(s)" in line(g3, "Journal")
+                 and "Reglages en vigueur (demarrage 2," in g3["so"] and "remplace par le demarrage 2" in g3["so"]
+                 and "Demarrages : 2 (redemarrages : 1) ; demarrage(s) refuse(s) par le robot : 1" in g3["rtxt"],
+                 (line(g1, "Reglages"), line(g2, "Reglages"), line(g3, "Reglages"), line(g3, "Journal"))))
+    segs_r = [{"at": S0, "to": srv("2026-11-17 15:00"), "deinit": 1}, {"at": srv("2026-11-17 15:12"), "to": END, "risk": D2}]
+    jr = os.path.join(base_dir, "j_num_day_src", "ClaudeRobot")
+    story_journal(jr, segs_r, tr)
+    logs_r = printed_files(os.path.join(base_dir, "logs_num_day"), jr)
+    gx = go("num_experts_restart", segs_r, tr, prep=drop("20261117.log"), extra=[x for p in logs_r for x in ("--printed", p)])
+    chk("review6 FV5-START-NUMBERING: a restart seen only in the Experts tab (its day's file lost) counts in the headline and in report_fr.txt's "
+        "restarts, with the number 'Reglages en vigueur' gives it",
+        lambda: (gx["rc"] == 0 and "2 demarrage(s)" in line(gx, "Journal") and "Reglages en vigueur (demarrage 2," in gx["so"]
+                 and "Demarrages : 2 (redemarrages : 1)" in gx["rtxt"], (line(gx, "Journal"), line(gx, "Reglages"),
+                                                                         [ln for ln in gx["rtxt"].splitlines() if ln.startswith("Demarrages")])))
+    jsrc = os.path.join(base_dir, "j_num_fill_src", "ClaudeRobot")
+    md_journal(jsrc, ("restart_d2",))
+    logs_f = printed_files(os.path.join(base_dir, "logs_num_fill"), jsrc)
+    jf = os.path.join(base_dir, "j_num_fill", "ClaudeRobot")
+    md_journal(jf, ("restart_d2",))
+    os.remove(os.path.join(jf, "20211122.log"))
+    gf = go("num_fill", jdir=jf, extra=[x for p in logs_f for x in ("--printed", p)])
+    chk("review6 FV5-START-NUMBERING: a restart whose INIT line the files lost, given by the Experts tab: its build shown in the headline (no "
+        "'build ?'), and report_fr.txt counts the restart",
+        lambda: (gf["rc"] == 0 and "2 demarrage(s)" in line(gf, "Journal") and "build ?" not in line(gf, "Journal")
+                 and "Demarrages : 2 (redemarrages : 1)" in gf["rtxt"], (line(gf, "Journal"),
+                                                                         [ln for ln in gf["rtxt"].splitlines() if ln.startswith("Demarrages")])))
+    chk("review6 control: no account word in any check_demo output of these cases (the journals plant none; a guard)",
+        lambda: (all(not leak_free(x["txt"]) for x in (g, gl, gp, gr, gm, gk, gc, gc1, gc2, g1, g2, g3, gx, gf)), None))
+
+
+SECOND_ERR = "another copy of ClaudeRobot runs on this terminal"     # dist/ClaudeRobot.mq5 OnInit: GrdLockTake failed, INIT_FAILED
+
+
+def second_pair(u):
+    """the two lines of a second copy MetaTrader refused (OnInit: ERROR 'another copy', INIT_FAILED; OnDeinit: the stop line deinit=8, rebuilds=0)"""
+    return [jl(u, "ERROR", "-", ("what", SECOND_ERR)),
+            jl(u, "INIT", "-", ("deinit", 8), ("lines", 1), ("bars_fed", 0), ("rebuilds", 0), ("masked_XAUUSD", 0), ("masked_US100", 0),
+               ("masked_BTCUSD", 0), ("masked_ETHUSD", 0))]
+
+
+def insert_printed(path, hhmmss, lines, src="ClaudeRobot (US100.r,M1)"):
+    """robot lines put into one of MetaTrader's Experts logs (printed_files' UTF-16 format) at the local time hhmmss, after the source of
+    another chart: what the Experts tab shows of a copy the daily file never holds (a second copy refused while the first one runs)"""
+    rows = open(path, "rb").read().decode("utf-16").splitlines()
+    new = [f"GH\t0\t{hhmmss}.{500 + k:03d}\t{src}\t{ln}" for k, ln in enumerate(lines)]
+    at = next((k for k, r in enumerate(rows) if r.split("\t")[2] > hhmmss + ".500"), len(rows))
+    rows = rows[:at] + new + rows[at:]
+    with open(path, "wb") as f:
+        f.write(b"\xff\xfe" + ("\r\n".join(rows) + "\r\n").encode("utf-16-le"))
+
+
+def test_review6b_start(lit):
+    """review6b (the sixth round's second pass), check_start.py: FV6-START-MISSED-GLUED-DIGITS (the login typed right after a MISSED line whose
+    reason is 'refused_<rc>' or 'code<k>' was printed with the reason), FV6-START-LONE-SECOND-COPY (a paste holding only the second copy's lines
+    told the user to remove the robot that runs and said it had not started), FV6-START-SEMICOLON-CUT (a risk table typed with the ';' the robot
+    accepts at its end glued the user's next chat line onto the PLAN line), FV6-START-PROSE-CR-PIPE ('CR|' in the user's own words read as a cut
+    robot line)"""
+    del lit
+    base_dir = os.path.join(SCRATCH, "rv6bs")
+    os.makedirs(base_dir, exist_ok=True)
+    full = start_lines()
+    init, selftest, plan_src, plan = full[:4]
+
+    def ep(ls):
+        return experts_paste(ls, account=False)
+    # FV6-START-MISSED-GLUED-DIGITS: MISSED is written by FolMissedTxt with the reason as the line's last field (refused_<rc>, FolIntentStep;
+    # code<k>, SizSkipName): the login typed right after the line, without a space, lands in the reason
+    mu = START_U + 600
+    m_ref = jl(mu, "MISSED", "BKB", ("oid", (START_U - 3600) * 100 + C.SLEEVE_ID["BKB"]), ("stamp", START_U - 3600), ("reason", "refused_10006"))
+    m_code = jl(mu, "MISSED", "ORX", ("oid", (START_U - 3600) * 100 + C.SLEEVE_ID["ORX"]), ("stamp", START_U - 3600), ("reason", "code19"))
+    gm = {"refused_glued": start_go(base_dir, "missed6b_refused_glued", ep(full + [m_ref + FAKE_LOGIN])),
+          "code_glued": start_go(base_dir, "missed6b_code_glued", ep(full + [m_code + FAKE_LOGIN])),
+          "refused_glued_bare": start_go(base_dir, "missed6b_refused_glued_bare", "\n".join(full + [m_ref + FAKE_LOGIN]) + "\n")}
+    bad = {k: (g["rc"], g["diff"][-2:], g["leak"]) for k, g in gm.items()
+           if g["rc"] != 1 or g["leak"] or re.search(r"refused_10006\d|code19\d", g["so"])
+           or not any("MISSED" in x and "recopier" in x for x in g["diff"])}
+    chk("review6b FV6-START-MISSED-GLUED-DIGITS: the right start, then a MISSED line (reason refused_10006 or code19) with the login glued right "
+        "after it: the login never printed (nor any digit glued to the reason), the MISSED line to be copied again, exit code 1",
+        lambda: (not bad, bad))
+    gc = {"alone": start_go(base_dir, "missed6b_refused_alone", ep(full + [m_ref])),
+          "login_next": start_go(base_dir, "missed6b_refused_login_next", ep(full + [m_ref]) + FAKE_LOGIN + "\n")}
+    gsp = start_go(base_dir, "missed6b_refused_login_space", ep(full + [m_ref + " " + FAKE_LOGIN]))
+    chk("review6b control FV6-START-MISSED-GLUED-DIGITS: the MISSED refused_10006 line alone or with the login on the next line: 'MISSED BKB "
+        "reason=refused_10006' said (a broker refusal: exit code 1); the login after a space: the line unreadable, to be copied again; the login "
+        "never printed",
+        lambda: (all(g["rc"] == 1 and not g["leak"] and any("MISSED BKB reason=refused_10006" in x for x in g["diff"]) for g in gc.values())
+                 and gsp["rc"] == 1 and not gsp["leak"] and any("MISSED" in x and "recopier" in x for x in gsp["diff"]),
+                 ({k: (g["rc"], g["diff"][-1:], g["leak"]) for k, g in gc.items()}, gsp["diff"][-1:])))
+
+    # FV6-START-LONE-SECOND-COPY: GrdLockTake refuses only a lock another copy refreshed less than 10 s ago (CR_GRD_LOCK_STALE_MS): 'another
+    # copy' means a copy runs on this terminal; OnInit returns INIT_FAILED and MetaTrader unloads the new copy (MQL5 documentation, OnInit)
+    su = START_U + 900
+    later = [jl(su - 60, "MISSED", "BKB", ("oid", (START_U - 3600) * 100 + C.SLEEVE_ID["BKB"]), ("stamp", START_U - 3600), ("reason", "late")),
+             jl(su - 30, "NOTREADY", "XAUUSD", ("why", "holes"), ("bars", 1000), ("raw", 1000), ("first", su - 86400), ("last", su - 60), ("masked", 0),
+                ("holes", 1))]
+    after = [jl(su + 60, "READY", "XAUUSD", ("bars", 1000), ("raw", 1000), ("first", su - 86400), ("last", su), ("masked", 0), ("holes", 0),
+                ("depth_days", C.DEPTH_DAYS["XAUUSD"]))]
+    lone = {"pair": start_go(base_dir, "lone6b_pair", ep(second_pair(su))),
+            "error_only": start_go(base_dir, "lone6b_error_only", ep(second_pair(su)[:1])),
+            "running_lines_before": start_go(base_dir, "lone6b_running_before", ep(later + second_pair(su))),
+            "running_lines_after": start_go(base_dir, "lone6b_running_after", ep(second_pair(su) + after))}
+
+    def lone_bad(g):
+        so = g["so"]
+        return (g["rc"] != 1 or "n'a pas demarre" in so or "l'enlever de l'autre graphique" in so or "relance le robot" in so
+                or not ("ne rien enlever" in so or "ne pas relancer" in so) or "INIT" not in g["verdict"] or "qui tourne" not in g["verdict"])
+    bad = {k: (g["rc"], g["diff"][:2], g["verdict"]) for k, g in lone.items() if lone_bad(g)}
+    chk("review6b FV6-START-LONE-SECOND-COPY: a paste holding only the refused second copy's lines (ERROR 'another copy' and its stop line deinit=8, "
+        "or the ERROR alone, or with lines of the copy that runs before or after them but not its INIT line): never 'le robot n'a pas demarre' "
+        "nor 'l'enlever de l'autre graphique'; the copy that runs is left alone ('ne rien enlever' or 'ne pas relancer') and the verdict asks for "
+        "the INIT line of the copy that runs; exit code 1 (nothing checked)", lambda: (not bad, bad))
+    gb = start_go(base_dir, "lone6b_before_relaunch", ep(second_pair(START_U - 120) + full))
+    gs = start_go(base_dir, "lone6b_after_start", ep(full + second_pair(START_U + 300)))
+    chk("review6b control FV6-START-LONE-SECOND-COPY: a copy refused for another copy, then the right start (the old copy removed, the robot "
+        "relaunched): exit code 0; the right start then a second copy refused: exit code 0 with 'deuxieme copie'",
+        lambda: (gb["rc"] == 0 and not gb["diff"] and gs["rc"] == 0 and "deuxieme copie" in gs["so"], (gb["diff"][:2], gs["diff"][:2])))
+
+    # FV6-START-SEMICOLON-CUT: SizParseTable accepts one ';' at the end of InpRiskTable and MainInitLine and MainWait write the table back as typed
+    s7s = S7 + ";"
+    semi = start_lines(risk=s7s)
+    up_plan = semi[:4]
+    gsemi = {k: start_go(base_dir, "semi6b_" + k, ep(up_plan) + t + "\n") for k, t in (("time", "17:43"), ("login", FAKE_LOGIN), ("zero", "0"))}
+    bad = {k: (g["rc"], g["diff"][:2], g["leak"]) for k, g in gsemi.items()
+           if g["rc"] != 0 or g["diff"] or g["leak"] or "recollee" in g["so"] or "OK : PLAN state=ok" not in g["so"]}
+    chk("review6b FV6-START-SEMICOLON-CUT: a start whose risk table was typed with the ';' the robot accepts at its end (INIT and PLAN write it "
+        "back), up to PLAN, then a time, the login or '0' alone on the next line: never glued onto the PLAN line, every check OK, exit code 0, the "
+        "login never printed", lambda: (not bad, bad))
+    pre = "2026.11.15 10:02:14.111\tClaudeRobot (XAUUSD.r,M1)\t"
+    cut_at = plan.index("20000:0.7")
+    gw = start_go(base_dir, "semi6b_wrap_after_semicolon", ep(full[:3]) + pre + plan[:cut_at] + "\n" + plan[cut_at:] + "\n")
+    gall = start_go(base_dir, "semi6b_whole_start", ep(semi) + "merci\n")
+    chk("review6b control FV6-START-SEMICOLON-CUT: a PLAN line the chat wrapped right after a ';' of its table ('...10000:1.4;' then "
+        "'20000:0.7'): put back together, exit code 0; the whole start with the trailing ';' then 'merci': exit code 0",
+        lambda: (gw["rc"] == 0 and not gw["diff"] and "recollee" in gw["so"] and gall["rc"] == 0 and not gall["diff"],
+                 (gw["diff"][:2], gall["diff"][:2])))
+
+    # FV6-START-PROSE-CR-PIPE: the guide itself says 'Les lignes du robot commencent par CR|'
+    prose = {"before": start_go(base_dir, "prose6b_before", "Voici les lignes qui commencent par CR| :\n" + ep(full)),
+             "after": start_go(base_dir, "prose6b_after", ep(full) + "J'ai bien les lignes CR| et les 4 READY\n"),
+             "backticks": start_go(base_dir, "prose6b_backticks", "Les lignes `CR|` :\n" + ep(full)),
+             "end_of_line": start_go(base_dir, "prose6b_end_of_line", "les lignes CR|\n" + ep(full))}
+    bad = {k: (g["rc"], g["diff"][:2]) for k, g in prose.items() if g["rc"] != 0 or g["diff"] or "OK : READY ETHUSD" not in g["so"]}
+    chk("review6b FV6-START-PROSE-CR-PIPE: the right start with one line of the user's own words holding 'CR|' (before, after, in backticks, at "
+        "the end of the line): read as other text, every check OK, exit code 0", lambda: (not bad, bad))
+    gcut = start_go(base_dir, "prose6b_control_cut", ep(full) + pre + full[5][:30] + "\n")
+    gsplit = start_go(base_dir, "prose6b_control_split", ep(full[:5]) + pre + "CR|\n" + full[5][3:] + "\n" + ep(full[6:]))
+    gfrag = start_go(base_dir, "prose6b_control_fragment", ep(full) + pre + "CR|\n" + full[5][3:40] + "|holes=0|depth_days=120\n")
+    chk("review6b control FV6-START-PROSE-CR-PIPE: a robot line cut short ('CR|<stamp>|READY|...') is still 'ligne coupee' (exit code 1); a robot "
+        "line split right after 'CR|' is put back together (exit code 0); a piece of a robot line after a lone 'CR|' is still flagged (exit code 1)",
+        lambda: (gcut["rc"] == 1 and any("ligne coupee" in x for x in gcut["diff"]) and gsplit["rc"] == 0 and not gsplit["diff"]
+                 and gfrag["rc"] == 1 and any("recopier" in x for x in gfrag["diff"]),
+                 (gcut["diff"][:1], gsplit["diff"][:1], gfrag["diff"][:1])))
+    chk("review6b: no account word in any check_start output of these cases",
+        lambda: (all(not g["leak"] for g in list(gm.values()) + list(gc.values()) + list(lone.values()) + list(gsemi.values())
+                     + list(prose.values()) + [gsp, gb, gs, gw, gall, gcut, gsplit, gfrag]), None))
+
+
+def test_review6b_journal(lit):
+    """review6b, check_demo on story_journal's November 2026 journals: FV6-DEMO-UNKNOWN-RESTART-ADVICE (D2 on Saturday, a restart on Tuesday
+    inside the lost daily file, S7 from Wednesday: the anomaly asked for the running robot's INIT line, which says nothing of that restart, and
+    the Mac's Experts logs did not settle it), FV6-DEMO-PRINTED-SECOND-COPY (a second copy refused while the robot runs, seen in the Experts
+    logs only: 'lignes imprimees differentes'; in a lost day's Experts log its stop line read as a stop of the robot)"""
+    del lit
+    base_dir = os.path.join(SCRATCH, "rv6bj")
+
+    def go(name, jdir, extra=()):
+        out = os.path.join(base_dir, "out_" + name)
+        rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(jdir), "--out", out] + list(extra))
+        rp = os.path.join(out, "report.json")
+        r = json.load(open(rp)) if rc == 0 and os.path.exists(rp) else {}
+        rt = os.path.join(out, "report_fr.txt")
+        return {"rc": rc, "so": so, "se": se, "r": r, "an": r.get("anomalies", []),
+                "info": [ln for ln in so.splitlines() if ln.startswith("Information")],
+                "rtxt": open(rt, encoding="utf-8").read() if rc == 0 and os.path.exists(rt) else "",
+                "txt": (outputs_text(out) if rc == 0 else "") + so + se}
+
+    def journal(name, segs, lost=(), logs=False):
+        """the journal folder (its lost files removed) and, with logs=True, the Mac's Experts logs written from the whole journal"""
+        src = os.path.join(base_dir, "src_" + name, "ClaudeRobot")
+        story_journal(src, segs, tr)
+        pl = printed_files(os.path.join(base_dir, "logs_" + name), src) if logs else []
+        jdir = os.path.join(base_dir, "j_" + name, "ClaudeRobot")
+        shutil.copytree(src, jdir)
+        for n in lost:
+            os.remove(os.path.join(jdir, n))
+        return jdir, pl
+    tr = story_trades()
+    S0, END = STORY_START, STORY_END
+    MON22, TUE08, WED08 = srv("2026-11-16 22:00"), srv("2026-11-17 08:00"), srv("2026-11-18 08:00")
+    # FV6-DEMO-UNKNOWN-RESTART-ADVICE: D2, a MetaTrader restart on Tuesday inside the lost 20261117.log (D2 kept), the user's F7 to S7 on Wednesday
+    segs = [{"at": S0, "to": MON22, "deinit": 9, "risk": D2}, {"at": TUE08, "to": WED08 - 60, "deinit": 5, "risk": D2}, {"at": WED08, "to": END}]
+    j2, logs2 = journal("lost_restart", segs, lost=("20261117.log",), logs=True)
+    g = go("lost_restart", j2)
+    a1 = next((a for a in g["an"] if "demarrage 1" in a and "D2" in a and "inconnus" in a), "")
+    chk("review6b FV6-DEMO-UNKNOWN-RESTART-ADVICE: D2 on Saturday, a restart inside the lost Tuesday file, S7 in force from Wednesday: the anomaly "
+        "on the first start's D2 asks for the Mac's Experts logs of that day (MQL5/Logs, --printed), never for the INIT line of the robot that runs "
+        "(it is the S7 start, which says nothing of the lost restart); the D2 start's real trades are named",
+        lambda: (g["rc"] == 0 and a1 != "" and "robot qui tourne" not in a1 and "--printed" in a1
+                 and any("trade(s) reel(s)" in a and "demarrage 1" in a for a in g["an"]), (g["an"][:4])))
+    gp = go("lost_restart_p", j2, [x for p in logs2 for x in ("--printed", p)])
+    chk("review6b FV6-DEMO-UNKNOWN-RESTART-ADVICE: the same with the Mac's Experts logs (the restart's INIT line, D2, is in Tuesday's log): the "
+        "restart's settings are known, no 'reglages du redemarrage inconnus' nor 'a verifier' left (the missing-file anomaly reads the same with "
+        "and without the logs, review5); the D2 run of starts 1 and 2 is replaced by the S7 start 3 (information) and its real trades are an anomaly",
+        lambda: (gp["rc"] == 0 and not any("redemarrage inconnus" in a or "a verifier" in a for a in gp["an"])
+                 and any("demarrages 1 et 2" in x and "remplaces par le demarrage 3" in x for x in gp["info"])
+                 and any("trade(s) reel(s)" in a and "demarrages 1 et 2" in a for a in gp["an"]), (gp["an"][:4], gp["info"])))
+    segs_b = [{"at": S0, "to": MON22, "deinit": 9, "risk": D2}, {"at": TUE08, "to": WED08 - 60, "deinit": 5}, {"at": WED08, "to": END}]
+    j2b, logs2b = journal("lost_restart_s7", segs_b, lost=("20261117.log",), logs=True)
+    gb = go("lost_restart_s7_p", j2b, [x for p in logs2b for x in ("--printed", p)])
+    chk("review6b FV6-DEMO-UNKNOWN-RESTART-ADVICE: the restart in the lost file was the S7 one (the Experts logs give its INIT line): start 1's "
+        "D2 is replaced by start 2 (information), no 'reglages du redemarrage inconnus' nor 'a verifier' left, start 1's real trades named",
+        lambda: (gb["rc"] == 0 and not any("redemarrage inconnus" in a or "a verifier" in a for a in gb["an"])
+                 and any("demarrage 1" in x and "remplace par le demarrage 2" in x for x in gb["info"])
+                 and any("trade(s) reel(s)" in a and "demarrage 1" in a for a in gb["an"]), (gb["an"][:4], gb["info"])))
+    jl10, _ = journal("lost_restart_in_force", [{"at": S0, "to": MON22, "deinit": 9, "risk": D2}, {"at": TUE08, "to": END}],
+                      lost=("20261117.log",))
+    gf = go("lost_restart_in_force", jl10)
+    chk("review6b control FV6-DEMO-UNKNOWN-RESTART-ADVICE: the restart in the lost file is the start in force (no later start): the anomaly still "
+        "asks for the INIT line of the robot that runs ('a verifier')",
+        lambda: (gf["rc"] == 0 and any("demarrage 1" in a and "inconnus" in a and "robot qui tourne" in a for a in gf["an"]), gf["an"][:3]))
+
+    # FV6-DEMO-PRINTED-SECOND-COPY: the second copy's lines never reach the daily file (the first copy holds it, FILE_SHARE_READ): Experts only
+    jc, logs_c = journal("second", [{"at": S0, "to": END}], logs=True)
+    g0 = go("second_control", jc, [x for p in logs_c for x in ("--printed", p)])
+    insert_printed(next(p for p in logs_c if p.endswith("20261116.log")), "10:00:00", second_pair(C.srv_to_utc(srv("2026-11-16 11:00"))))
+    gs = go("second", jc, [x for p in logs_c for x in ("--printed", p)])
+    chk("review6b FV6-DEMO-PRINTED-SECOND-COPY: a clean S7 demo whose Monday Experts log holds a second copy MetaTrader refused (ERROR 'another "
+        "copy', then its stop line deinit=8, from a US100 chart): no 'lignes imprimees differentes' anomaly, the refused copy said as information "
+        "on stdout and in report_fr.txt",
+        lambda: (gs["rc"] == 0 and not any("lignes imprimees" in a for a in gs["an"]) and any("deuxieme copie" in x for x in gs["info"])
+                 and "deuxieme copie" in gs["rtxt"], (gs["an"][:3], gs["info"])))
+    jd, logs_d = journal("second_lost", [{"at": S0, "to": END}], lost=("20261117.log",), logs=True)
+    insert_printed(next(p for p in logs_d if p.endswith("20261117.log")), "10:00:00", second_pair(C.srv_to_utc(srv("2026-11-17 11:00"))))
+    gd = go("second_lost", jd, [x for p in logs_d for x in ("--printed", p)])
+    chk("review6b FV6-DEMO-PRINTED-SECOND-COPY: the same pair in the Experts log of a lost day: never 'montre un arret' of the robot that day (its "
+        "stop line is the refused copy's), the refused copy said as information",
+        lambda: (gd["rc"] == 0 and not any("montre un arret" in x for x in gd["info"]) and any("deuxieme copie" in x for x in gd["info"]), gd["info"]))
+    chk("review6b control FV6-DEMO-PRINTED-SECOND-COPY: the same demo and Experts logs without the refused copy: nothing abnormal in the printed "
+        "lines, no 'deuxieme copie'",
+        lambda: (g0["rc"] == 0 and not any("lignes imprimees" in a for a in g0["an"]) and "deuxieme copie" not in g0["so"], (g0["an"][:2])))
+    chk("review6b control: no account word in any check_demo output of these cases (the journals plant none; a guard)",
+        lambda: (all(not leak_free(x["txt"]) for x in (g, gp, gb, gf, g0, gs, gd)), None))
+
+
 def test_review5_journal(lit):
     """review5, journal and files cases: FV4b-1 (the Mac's Experts logs cut by the Mac's local date with a lost daily file: a middle day, the
     restart day, two days, the last file with and without --bars; across the weeks when Paris and New York change clocks on different dates),
@@ -4581,56 +5079,1208 @@ def test_review5_replay(lit):
     print(f"   (review5 replay tests {time.time() - t0:.0f} s)")
 
 
+# ---------------------------------------------------------------------------------------------- review7: the account's deals (ReleveFP 1.11)
+MOCK_DEAL_COLS = ["ticket", "order", "position", "time", "time_msc", "symbol", "type", "entry", "reason", "magic", "volume", "price", "sl", "tp",
+                  "commission", "swap", "fee", "profit", "comment", "external_id"]
+MOCK_POS_COLS = ["ticket", "identifier", "time", "time_msc", "symbol", "type", "magic", "volume", "price_open", "sl", "tp", "price_current",
+                 "swap", "profit", "comment", "external_id"]
+DEALS_SYMS_EXTRA = "XAUUSD.r:2:0.01,US100.r:2:0.1,BTCUSD.r:2:0.01,ETHUSD.r:2:0.01"   # the harness's .r names, as FP's terminal knows them
+REL7 = {}
+# ReleveFP 1.11's names and headers kept here too (not read from demo_common), so that this file runs against the tools as they were before
+# review7 (the before/after comparison): there the deals tests fail, the controls pass
+T_DEALS, T_POSITIONS = "deals.csv", "positions.csv"
+T_DEALS_HEADER = "time,time_msc,ticket,order,position,symbol,type,entry,reason,magic,volume,price,sl,tp,commission,swap,fee,profit"
+T_POSITIONS_HEADER = "ticket,identifier,time,time_msc,symbol,type,magic,volume,price_open,sl,tp,price_current,swap,profit"
+T_DEAL_TYPES = ("DEAL_TYPE_BUY", "DEAL_TYPE_SELL", "DEAL_TYPE_BALANCE", "DEAL_TYPE_CREDIT", "DEAL_TYPE_CHARGE", "DEAL_TYPE_CORRECTION",
+                "DEAL_TYPE_BONUS", "DEAL_TYPE_COMMISSION", "DEAL_TYPE_COMMISSION_DAILY", "DEAL_TYPE_COMMISSION_MONTHLY",
+                "DEAL_TYPE_COMMISSION_AGENT_DAILY", "DEAL_TYPE_COMMISSION_AGENT_MONTHLY", "DEAL_TYPE_INTEREST", "DEAL_TYPE_BUY_CANCELED",
+                "DEAL_TYPE_SELL_CANCELED", "DEAL_DIVIDEND", "DEAL_DIVIDEND_FRANKED", "DEAL_TAX")
+T_DEAL_REASONS = ("DEAL_REASON_CLIENT", "DEAL_REASON_MOBILE", "DEAL_REASON_WEB", "DEAL_REASON_EXPERT", "DEAL_REASON_SL", "DEAL_REASON_TP",
+                  "DEAL_REASON_SO", "DEAL_REASON_ROLLOVER", "DEAL_REASON_VMARGIN", "DEAL_REASON_SPLIT", "DEAL_REASON_CORPORATE_ACTION")
+
+
+def t_base(sym):
+    """the robot's market of a broker symbol (XAUUSD.r -> XAUUSD), None for another"""
+    return next((b for b in C.ROBOT_BASES if str(sym or "").startswith(b)), None)
+
+
+def t_read(path):
+    """a file's text, '' when it does not exist (ReleveFP 1.10 writes no deals.csv)"""
+    try:
+        return open(path, errors="replace").read()
+    except OSError:
+        return ""
+
+
+def t_rows(path):
+    """deals.csv or positions.csv as dicts of strings ([] without the file): the tests read ReleveFP's files on their own"""
+    import csv
+    try:
+        with open(path, newline="") as f:
+            return list(csv.DictReader(f))
+    except OSError:
+        return []
+
+
+def guarded(fn, *args):
+    """a group of tests that never stops the run: an exception (the tools before review7 lack its functions) is one FAIL with its name"""
+    try:
+        fn(*args)
+    except Exception as e:                                              # noqa: BLE001
+        check(f"deals: {fn.__name__} stopped ({e.__class__.__name__}: tools without review7?)", False, str(e)[:300])
+
+
+def mock_deal(ticket, order, position, t, sym, typ, entry, reason, magic, vol, px, sl=0.0, tp=0.0, comm=0.0, swap=0.0, fee=0.0, profit=0.0,
+              comment="", ext="", msc=None):
+    """one deal of the MetaTrader imitation's account (releve_mock MOCK_DEALS_FILE): type, entry and reason are the positions of the
+    documentation's lists (demo_common.DEAL_TYPES ...)"""
+    return {"ticket": ticket, "order": order, "position": position, "time": int(t), "time_msc": int(t) * 1000 if msc is None else msc,
+            "symbol": sym, "type": typ, "entry": entry, "reason": reason, "magic": magic, "volume": vol, "price": px, "sl": sl, "tp": tp,
+            "commission": comm, "swap": swap, "fee": fee, "profit": profit, "comment": comment.replace(",", " "), "external_id": ext.replace(",", " ")}
+
+
+def mock_csv(path, rows, cols):
+    with open(path, "w") as f:
+        f.write(",".join(cols) + "\n")
+        for r in rows:
+            f.write(",".join(repr(r[c]) if isinstance(r[c], float) else str(r[c]) for c in cols) + "\n")
+
+
+def releve_binary():
+    """ReleveFP.mq5 translated by lab/live_ai/check/to_cpp.py and built against the demo copy of the MT5 imitation (releve_mock), once"""
+    if "exe" in REL7:
+        return REL7["exe"]
+    d = os.path.join(SCRATCH, "rv7_build")
+    os.makedirs(d, exist_ok=True)
+    cpp = os.path.join(d, "releve.cpp")
+    r = subprocess.run([sys.executable, "-I", os.path.join(C.LAB, "live_ai", "check", "to_cpp.py"), os.path.join(MQL5, "ReleveFP.mq5"), cpp],
+                       capture_output=True, text=True)
+    with open(os.path.join(d, "run.cpp"), "w") as f:
+        f.write('#include "mock_mt5.h"\n#include "releve.cpp"\nint main() { OnStart(); return 0; }\n')
+    b = subprocess.run(["g++", "-std=c++17", "-O1", "-w", "-I", os.path.join(HERE, "releve_mock"), "-I", d, os.path.join(d, "run.cpp"), "-o",
+                        os.path.join(d, "run")], capture_output=True, text=True)
+    REL7["exe"] = os.path.join(d, "run") if (r.returncode == 0 and b.returncode == 0) else None
+    REL7["err"] = (r.stderr[-300:], b.stderr[-800:])
+    return REL7["exe"]
+
+
+def releve_run_deals(name, deals, positions, now_srv, env=None, exe=None):
+    """ReleveFP 1.11 itself run on an account whose deals and open positions are given (releve_mock MOCK_DEALS_FILE, MOCK_POSITIONS_FILE):
+    the folder claude/releve it wrote (its deals.csv, positions.csv and fini.txt; its m1, r1 and fiches files are the imitation's own); exe:
+    another build (review8: the first 1.11 rebuilt)"""
+    exe = exe or releve_binary()
+    d = os.path.join(SCRATCH, name)
+    if os.path.isdir(d):
+        shutil.rmtree(d)
+    os.makedirs(os.path.join(d, "F"))
+    mock_csv(os.path.join(d, "mk_deals.csv"), deals, MOCK_DEAL_COLS)
+    mock_csv(os.path.join(d, "mk_positions.csv"), positions, MOCK_POS_COLS)
+    e = dict(os.environ, MOCK_FILES=os.path.join(d, "F"), MOCK_NOW=str(now_srv), MOCK_DEALS_FILE=os.path.join(d, "mk_deals.csv"),
+             MOCK_POSITIONS_FILE=os.path.join(d, "mk_positions.csv"), MOCK_SYMS_EXTRA=DEALS_SYMS_EXTRA, **{k: str(v) for k, v in (env or {}).items()})
+    if exe:
+        subprocess.run([exe], env=e, capture_output=True, text=True, timeout=600)
+    return os.path.join(d, "F", "claude", "releve")
+
+
+FINI_DEALS_KEYS = ("positions", "positions_heure", "deals", "deals_du", "deals_au", "erreur_deals")
+
+
+def merge_deals(rel_dir, run_dir, out_dir):
+    """a releve folder of the tests (releve_replay, make_releve) with what ReleveFP 1.11 wrote about the account (run_dir): deals.csv,
+    positions.csv and fini.txt's six new keys; version=1.11 and no server line, as 1.11 writes fini.txt"""
+    if os.path.isdir(out_dir):
+        shutil.rmtree(out_dir)
+    shutil.copytree(rel_dir, out_dir)
+    for f in (T_DEALS, T_POSITIONS):
+        if os.path.exists(os.path.join(run_dir, f)):
+            shutil.copy(os.path.join(run_dir, f), os.path.join(out_dir, f))
+    run_fini = dict(ln.split("=", 1) for ln in open(os.path.join(run_dir, "fini.txt")).read().splitlines() if "=" in ln) \
+        if os.path.exists(os.path.join(run_dir, "fini.txt")) else {}
+    lines = [ln for ln in open(os.path.join(out_dir, "fini.txt")).read().splitlines() if not ln.startswith("server=")]
+    lines = ["version=1.11" if ln.startswith("version=") else ln for ln in lines]
+    k = next((i for i, ln in enumerate(lines) if ln.startswith("stopped=")), len(lines))
+    lines[k:k] = [f"{key}={run_fini[key]}" for key in FINI_DEALS_KEYS if key in run_fini]
+    write(os.path.join(out_dir, "fini.txt"), "\n".join(lines) + "\n")
+    return out_dir
+
+
+def harness_history(files, deposit=None, deposit_srv=None, hand_magic=777, plant=True, end_srv=None):
+    """the harness's own account as MetaTrader's history holds it (check/mock_replay.h keeps it in _mock/deals.csv and state.txt): every deal
+    with its time, price, commission, swap and profit; a deposit first, as a demo account's history starts (the harness starts from
+    MOCK_BALANCE without one); each deal's stop (DEAL_SL: the order's stop for an opening deal, the position's stop at its close, from the
+    journal's FILL and SLMOD lines); the harness's hand trades (magic 777) with MetaTrader's magic 0; the positions open at the end (state.txt,
+    current price from the last bar); comments and external ids holding the account's planted server, name and login (ReleveFP must drop them)"""
+    import pandas as pd
+    deals = pd.read_csv(os.path.join(files, "_mock", "deals.csv"), keep_default_na=False, float_precision="round_trip")
+    rows, _ = C.read_journal_files(C.journal_paths(files))
+    lv = C.live(rows)
+    fill_sl = {r["ticket"]: r["sl"] for r in lv if r["ev"] == "FILL" and r.get("ticket")}
+    slm = {}
+    for r in lv:
+        if r["ev"] == "SLMOD" and r.get("ok") == 1 and r.get("ticket"):
+            slm.setdefault(r["ticket"], []).append((C.utc_to_srv(r["utc"]), r["to"]))
+
+    def stop_at(pos, t_srv):
+        last = fill_sl.get(pos, 0.0)
+        for u, lvl in slm.get(pos, []):
+            if u <= t_srv:
+                last = lvl
+        return last
+    out = []
+    if deposit:
+        out.append(mock_deal(39000001, 0, 0, deposit_srv, "", 2, 0, 0, 0, 0.0, 0.0, profit=float(deposit),
+                             comment=("Depot " + FAKE_NAME) if plant else "", ext=FAKE_LOGIN if plant else ""))
+    for r in deals.itertuples():
+        typ, pos = int(r.type), int(r.position)
+        magic = 0 if int(r.magic) == hand_magic else int(r.magic)
+        sl = 0.0
+        if typ in (0, 1) and pos:
+            sl = fill_sl.get(pos, 0.0) if int(r.entry) == 0 else stop_at(pos, int(r.time))
+        out.append(mock_deal(int(r.deal), int(r.order), pos, int(r.time), str(r.symbol), typ, int(r.entry), int(r.reason), magic, float(r.volume),
+                             float(r.price), sl=sl, comm=float(r.commission), swap=float(r.swap), profit=float(r.profit),
+                             comment=f"{FAKE_SERVER} {r.comment}" if plant else "", ext=f"X{FAKE_LOGIN}" if plant else ""))
+    poss = []
+    st = open(os.path.join(files, "_mock", "state.txt")).read().splitlines()
+    bars = {}
+    for ln in st:
+        if not ln.startswith("pos "):
+            continue
+        p = ln.split()
+        tk, sym, typ, vol, po, sl, tp, mg, tm = int(p[1]), p[2], int(p[3]), float(p[4]), float(p[5]), float(p[6]), float(p[7]), int(p[8]), int(p[9])
+        b = t_base(sym)
+        cur = po
+        bf = os.path.join(os.path.dirname(files), "bars", f"{sym}.bin")
+        if b and os.path.exists(bf):
+            if sym not in bars:
+                bars[sym] = read_bin(bf)
+            dg, rec = bars[sym]
+            rr = rec[rec["t"] <= (end_srv or int(rec["t"][-1]))]
+            if len(rr):
+                cur = (int(rr["c"][-1]) + (int(rr["s"][-1]) if typ == 1 else 0)) / 10 ** dg
+        units = 100.0 if b == "XAUUSD" else 1.0
+        poss.append({"ticket": tk, "identifier": tk, "time": tm, "time_msc": tm * 1000 + 1, "symbol": sym, "type": typ, "magic": 0 if mg == hand_magic else mg,
+                     "volume": vol, "price_open": po, "sl": sl, "tp": tp, "price_current": cur, "swap": 0.0,
+                     "profit": round((1 if typ == 0 else -1) * (cur - po) * vol * units * 0.89, 2),
+                     "comment": FAKE_NAME if plant else "", "external_id": FAKE_LOGIN if plant else ""})
+    return out, poss
+
+
+def shift_balances(jdir, from_srv, delta):
+    """a journal copy whose balance moved by delta EUR at server time from_srv (a deal added or changed in the account's history): every DAY
+    line stamped after it gets delta on its balance and equity"""
+    for f in sorted(os.listdir(jdir)):
+        p = os.path.join(jdir, f)
+
+        def fn(lines):
+            out = []
+            for ln in lines:
+                if "|DAY|" in ln and C.utc_to_srv(int(ln.split("|")[1])) > from_srv:
+                    ln = re.sub(r"\|balance=([-0-9.e+]+)", lambda m: f"|balance={float(m.group(1)) + delta!r}", ln)
+                    ln = re.sub(r"\|equity=([-0-9.e+]+)", lambda m: f"|equity={float(m.group(1)) + delta!r}", ln)
+                out.append(ln)
+            return out
+        edit_lines(p, fn)
+
+
+def story_history(trades, balance0=1000.0, opened=STORY_OPENED, plant=True):
+    """the account's history of a story_journal demo: the opening deposit, then each trade's opening deal at its FILL line (a + 1 s) and its
+    closing deal at its CLOSE line (or the broker's stop of 'booked'), with the commission the story's balance books (gold: h a side) and the
+    result of its prices; positions of 'open_at_copy' trades stay open (no closing deal)"""
+    out = [mock_deal(1000001, 0, 0, opened, "", 2, 0, 0, 0, 0.0, 0.0, profit=balance0, comment=("Depot " + FAKE_NAME) if plant else "")]
+    n = 1000002
+    for t in trades:
+        b = C.SYM_OF_CODE[t["code"]]
+        kk, h = MINI_K[b], MINI_H[b]
+        side, lots, tk = t["side"], t["lots"], t["ticket"]
+        magic = 20261200 + C.SLEEVE_ID[t["code"]]
+        out.append(mock_deal(n, tk, tk, t["at"] + 1, b + ".r", 0 if side > 0 else 1, 0, 3, magic, lots, t["fill"], sl=t["stop"],
+                             comm=-round(h * lots * kk, 2) or 0.0, comment=f"CR {t['code']} {FAKE_LOGIN}" if plant else ""))
+        n += 1
+        if t.get("open_at_copy"):
+            continue
+        if t.get("booked"):
+            tb, px = t["booked"]
+            reason = 4
+        else:
+            tb, px = t["at"] + t["hold"] + 2 + 60 * t.get("refused_closes", (0, 0))[0], t["close"]
+            reason = 3
+        out.append(mock_deal(n, tk + 1, tk, tb, b + ".r", 1 if side > 0 else 0, 1, reason, magic, lots, px, sl=t["stop"],
+                             comm=-round(h * lots * kk, 2) or 0.0, profit=round(side * (px - t["fill"]) * lots * kk, 2),
+                             comment=f"[sl] {FAKE_SERVER}" if plant else ""))
+        n += 1
+    return out
+
+
+def story_deals_case(name, trades=None, segs=None, copy=STORY_COPY, deals_fn=None, journal_fn=None, positions=None, extra_deals=(),
+                     shifts=(), env=None, tool1=False, lit=None, args=()):
+    """a story_journal demo (review5b) and its account's history written by ReleveFP 1.11 itself (releve_mock): deals_fn(deals) changes the
+    history, extra_deals are added, shifts = [(server time, EUR)] move the DAY balances as those deals move the balance, journal_fn(jdir)
+    edits the journal; then check_demo journal-only with --deals (and tool 1 on a releve folder holding the same deals when tool1)"""
+    trades = story_trades() if trades is None else trades
+    segs = [{"at": STORY_START, "to": STORY_END}] if segs is None else segs
+    base = os.path.join(SCRATCH, "rv7_" + name)
+    if os.path.isdir(base):
+        shutil.rmtree(base)
+    jdir = os.path.join(base, "j", "ClaudeRobot")
+    story_journal(jdir, segs, trades, copy=copy)
+    deals = story_history(trades) + list(extra_deals)
+    if deals_fn:
+        deals = deals_fn(deals)
+    for t_srv, delta in shifts:
+        shift_balances(jdir, t_srv, delta)
+    if journal_fn:
+        journal_fn(jdir)
+    rel = releve_run_deals("rv7_rel_" + name, deals, positions or [], copy, env)
+    out = os.path.join(base, "out")
+    dpath = os.path.join(rel, T_DEALS)
+    rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(jdir), "--deals", dpath, "--out", out] + list(args))
+    r = json.load(open(os.path.join(out, "report.json"))) if rc == 0 and os.path.exists(os.path.join(out, "report.json")) else {}
+    g = {"rc": rc, "so": so, "se": se, "r": r, "an": " | ".join(r.get("anomalies", [])), "d": (r.get("deals") or {}), "rel": rel, "out": out,
+         "jdir": jdir, "txt": outputs_text(out) + so if rc == 0 else so + se,
+         "pos": {p["ticket"]: p for p in (r.get("fills") or {}).get("positions", [])}, "m": (r.get("fills") or {}).get("money_estimate") or {}}
+    if tool1 and lit is not None:
+        g["t1"] = tool1_on_deals(base, rel, lit)
+    return g
+
+
+def tool1_on_deals(base, rel, lit, fini_edit_fn=None, drop=()):
+    """read_mac_files on a releve folder of the tests (make_releve, ReleveFP 1.10's files) holding ReleveFP 1.11's deals.csv, positions.csv
+    and fini keys from rel (merge_deals); drop: files left out"""
+    src = os.path.join(base, "rel110")
+    if not os.path.isdir(src):
+        make_releve(src, lit, "good")
+    folder = merge_deals(src, rel, os.path.join(base, "rel111"))
+    for f in drop:
+        if os.path.exists(os.path.join(folder, f)):
+            os.remove(os.path.join(folder, f))
+    if fini_edit_fn:
+        lines = t_read(os.path.join(folder, "fini.txt")).splitlines()
+        write(os.path.join(folder, "fini.txt"), "\n".join(fini_edit_fn(lines)) + "\n")
+    out = os.path.join(base, "t1out")
+    rc, so, se = run_tool("read_mac_files.py", [folder, "--out", out])
+    s = json.load(open(os.path.join(out, "summary.json"))) if rc == 0 else {"checks": []}
+    return {"rc": rc, "so": so, "se": se, "s": s, "ck": {(c["market"], c["item"]): c for c in s["checks"]}, "txt": (outputs_text(out) + so) if rc == 0 else se}
+
+
+def test_review7_deals_quick(lit):
+    """review7 (ReleveFP 1.11's deals.csv and positions.csv, the tools' reading of them) without the robot build: ReleveFP.mq5 itself through
+    releve_mock on story_journal demos whose account history agrees with the journal by construction (story_history), then check_demo
+    journal-only --deals and read_mac_files on the same history; faults: a trade by hand, a deposit, a robot position the journal does not
+    know, a CLOSE line lost whose deal exists, a position still open at the run (and missing from positions.csv), the gold commission twice
+    the lab's, a triple swap charged on a Wednesday (BTC, the lab triples Friday; gold, the lab triples Wednesday: no anomaly), a row that is not
+    ReleveFP's (an extra field holding the holder's name), the account's planted words, a 1.10 folder without deals (behaviour unchanged)"""
+    if not releve_binary():
+        check("deals RELEVE-111: ReleveFP.mq5 1.11 translates and builds against releve_mock", False, REL7.get("err"))
+        return
+    src = lit["releve_src"]
+    chk("deals RELEVE-111: ReleveFP.mq5 is version 1.11 (#property version, fini.txt version=1.11) and writes deals.csv and positions.csv "
+        "with the documented header, never the server's name nor a comment or external id",
+        lambda: (re.search(r'#property version\s+"1\.11"', src) is not None and '"version=1.11\\n"' in src and T_DEALS_HEADER in src
+                 and T_POSITIONS_HEADER in src and "ACCOUNT_SERVER" not in src
+                 and not any(p_ in "\n".join(ln.split("//")[0] for ln in src.splitlines()) for p_ in ("DEAL_COMMENT", "DEAL_EXTERNAL_ID",
+                                                                                                         "POSITION_COMMENT", "POSITION_EXTERNAL_ID")),
+                 re.search(r'#property version[^\n]*', src).group(0)))
+    g = story_deals_case("clean", tool1=True, lit=lit)
+    raw = t_read(os.path.join(g["rel"], T_DEALS))
+    fini = dict(ln.split("=", 1) for ln in t_read(os.path.join(g["rel"], "fini.txt")).splitlines() if "=" in ln)
+    chk("deals RELEVE-111: ReleveFP 1.11 (releve_mock) writes the story account's 9 deals oldest first with the 1.11 keys in fini.txt "
+        "(deals=9, deals_du/deals_au, positions=0, erreur_deals=0) and no server line",
+        lambda: (raw.splitlines()[:1] == [T_DEALS_HEADER] and len(raw.splitlines()) == 10 and fini.get("deals") == "9" and fini.get("positions") == "0"
+                 and fini.get("erreur_deals") == "0" and fini.get("deals_du") == str(STORY_OPENED) and "server" not in fini
+                 and fini.get("version") == "1.11", (raw.splitlines()[:3], fini)))
+    chk("deals RELEVE-111: ReleveFP 1.11 writes the deals whose comments and external ids hold the holder's name, login and server: none of "
+        "them in any file it writes", lambda: (len(raw.splitlines()) == 10 and os.path.exists(os.path.join(g["rel"], T_POSITIONS))
+                                   and not any(w in open(os.path.join(g["rel"], f), errors="replace").read() for f in os.listdir(g["rel"])
+                                   for w in ACCOUNT_WORDS), [f for f in os.listdir(g["rel"]) for w in ACCOUNT_WORDS
+                                                             if w in open(os.path.join(g["rel"], f), errors="replace").read()]))
+    chk("deals TOOL2: a clean story demo with its account history (--deals): every robot position matched, prices equal, the balance explained "
+        "deal by deal ('le solde suit l'historique'), nothing abnormal",
+        lambda: (g["rc"] == 0 and g["d"].get("matched") == 4 and not g["d"].get("price_disagreements") and g["m"].get("deals", {}).get("exact")
+                 and g["r"].get("anomalies") == [] and "le solde suit l'historique au centime pres" in g["so"] and "Rien d'anormal" in g["so"],
+                 (g["an"][:600], g["d"], g["se"][-500:])))
+    t1 = g.get("t1") or {"ck": {}, "rc": 1, "txt": ""}
+    st1 = lambda m_, i_: t1["ck"].get((m_, i_), {}).get("status")      # noqa: E731
+    chk("deals TOOL1: read_mac_files reads deals.csv (period, robot positions per sleeve, the opening deposit as information) and the gold "
+        "commission from the deals agrees with the lab's 6 points round trip; US100, BTC, ETH none",
+        lambda: (t1["rc"] == 0 and st1("compte", "deals_file") == "OK" and st1("compte", "deals_robot") == "OK"
+                 and "ORX 1" in str(t1["ck"].get(("compte", "deals_robot"), {}).get("broker")) and st1("compte", "deals_balance") == "INFO"
+                 and st1("XAUUSD", "deals_commission") == "OK" and all(st1(b, "deals_commission") == "OK" for b in ("US100", "BTCUSD", "ETHUSD")),
+                 ({k: v.get("status") for k, v in t1["ck"].items() if "deal" in k[1] or "position" in k[1]}, t1.get("se", "")[-300:])))
+    # a trade by hand on BTC, a deposit during the demo, a robot position the journal does not know
+    hand = [mock_deal(1000101, 9001, 9001, srv("2026-11-17 15:00"), "BTCUSD.r", 0, 0, 0, 0, 0.1, 57100.0, comment=FAKE_NAME),
+            mock_deal(1000102, 9002, 9001, srv("2026-11-17 16:00"), "BTCUSD.r", 1, 1, 0, 0, 0.1, 57300.0, profit=17.2, comment=FAKE_SERVER)]
+    g = story_deals_case("hand", extra_deals=hand, shifts=[(srv("2026-11-17 16:00"), 17.2)], tool1=True, lit=lit)
+    chk("deals TOOL2: a trade by hand (magic 0) read from the history: an anomaly with its market, side, lots, times and result; the balance "
+        "still explained (the hand trade is in the history)",
+        lambda: (g["rc"] == 0 and "trade(s) a la main" in g["an"] and "BTCUSD.r achat de 0,10 lot" in g["an"] and "+17,20 EUR" in g["an"]
+                 and g["m"].get("deals", {}).get("exact") and g["m"].get("deals", {}).get("hand_eur") == 17.2, (g["an"][:600], g["m"].get("deals"))))
+    t1 = g["t1"]
+    chk("deals TOOL1: the trade by hand is DIFFERENT with its result", lambda: (t1["ck"].get(("compte", "deals_hand"), {}).get("status") == "DIFFERENT"
+                                                                              and "+17,20 EUR" in str(t1["ck"].get(("compte", "deals_hand"), {}).get("broker")),
+                                                                              t1["ck"].get(("compte", "deals_hand"))))
+    dep = [mock_deal(1000201, 0, 0, srv("2026-11-17 12:00"), "", 2, 0, 0, 0, 0.0, 0.0, profit=500.0, comment="Depot " + FAKE_NAME)]
+    g = story_deals_case("deposit", extra_deals=dep, shifts=[(srv("2026-11-17 12:00"), 500.0)], tool1=True, lit=lit)
+    chk("deals TOOL2: a deposit during the demo read from the history: an anomaly 'versement de 500,00 EUR' with its time, the balance explained",
+        lambda: (g["rc"] == 0 and "versement de 500,00 EUR le 2026-11-17" in g["an"] and g["m"].get("deals", {}).get("exact")
+                 and g["m"].get("deals", {}).get("payments_eur") == 500.0, (g["an"][:600], g["m"].get("deals"))))
+    chk("deals TOOL1: a deposit after the robot's first trade is DIFFERENT (the opening deposit alone is information)",
+        lambda: (g["t1"]["ck"].get(("compte", "deals_balance"), {}).get("status") == "DIFFERENT", g["t1"]["ck"].get(("compte", "deals_balance"))))
+    unk = [mock_deal(1000301, 9101, 9101, srv("2026-11-17 11:00"), "BTCUSD.r", 0, 0, 3, 20261203, 0.05, 57000.0, sl=56430.0),
+           mock_deal(1000302, 9102, 9101, srv("2026-11-17 11:30"), "BTCUSD.r", 1, 1, 3, 20261203, 0.05, 57116.28, profit=5.0)]
+    g = story_deals_case("unknown", extra_deals=unk, shifts=[(srv("2026-11-17 11:30"), 5.0)])
+    chk("deals TOOL2: a robot position of the history the journal does not know (no FILL or ADOPT of its ticket): named, with its sleeve and times",
+        lambda: (g["rc"] == 0 and "position(s) du robot dans l'historique du compte que le journal ne connait pas" in g["an"] and "BKB" in g["an"]
+                 and g["d"].get("unknown_to_journal") == 1, (g["an"][:600], g["d"].get("unknown_to_journal"))))
+    # a CLOSE line lost whose deal exists
+    lost = lambda jd: [edit_lines(os.path.join(jd, f), lambda ls: [ln for ln in ls if not ("|CLOSE|ORX|" in ln)]) for f in os.listdir(jd)]   # noqa: E731
+    g = story_deals_case("closelost", journal_fn=lost)
+    p0 = g["pos"].get(70009001, {})
+    chk("deals TOOL2: a position whose CLOSE line is lost but whose deal exists: its exit is known from the history (price, the robot's close), "
+        "the anomaly says what the journal lacked, and the money is explained (complete)",
+        lambda: (g["rc"] == 0 and p0.get("exit_kind") == "ea_close_deal" and abs((p0.get("exit_real") or 0) - 1863.75) < 1e-6
+                 and "connue par l'historique du compte" in g["an"] and "fermee par le robot le" in g["an"] and g["m"].get("complete") is True
+                 and g["m"].get("deals", {}).get("exact"), (p0.get("exit_kind"), p0.get("exit_real"), g["an"][:500], g["m"].get("incomplete_why"))))
+    # a position still open when ReleveFP ran: in positions.csv (normal), then missing from it (an anomaly)
+    tr = story_trades() + [story_trade("N30", srv("2026-11-18 10:00"), 70009005, side=1, open_at_copy=True)]
+    segs = [{"at": STORY_START, "to": None}]
+    opn = {"ticket": 70009005, "identifier": 70009005, "time": srv("2026-11-18 10:00") + 1, "time_msc": (srv("2026-11-18 10:00") + 1) * 1000,
+           "symbol": "US100.r", "type": 0, "magic": 20261201, "volume": 1.0, "price_open": 16300.0, "sl": 16137.0, "tp": 0.0,
+           "price_current": 16310.0, "swap": 0.0, "profit": 8.6, "comment": FAKE_NAME, "external_id": FAKE_LOGIN}
+    g = story_deals_case("open", trades=tr, segs=segs, positions=[opn])
+    chk("deals TOOL2: a position still open when ReleveFP ran, listed in positions.csv: matched, no anomaly about it",
+        lambda: (g["rc"] == 0 and g["pos"].get(70009005, {}).get("open_at_releve") and "positions.csv" not in g["an"]
+                 and (g["d"].get("open_at_releve") or {}).get("journal_matched") == 1, (g["an"][:500], g["d"].get("open_at_releve"))))
+    g = story_deals_case("open_missing", trades=tr, segs=segs, positions=[])
+    chk("deals TOOL2: a position open at the run by the journal and the history but missing from positions.csv: an anomaly naming it",
+        lambda: (g["rc"] == 0 and "absente(s) de positions.csv" in g["an"] and "N30 ticket 70009005" in g["an"], g["an"][:600]))
+    # the gold commission twice the lab's (each side 0.26 EUR for 0.05 lot instead of 0.13)
+    def comm2(ds):
+        return [dict(d, commission=d["commission"] * 2) if d["symbol"] == "XAUUSD.r" else d for d in ds]
+    t_in, t_out = srv("2026-11-16 10:00") + 1, srv("2026-11-16 11:00") + 2
+    g = story_deals_case("comm2x", deals_fn=comm2, shifts=[(t_in, -0.13), (t_out, -0.13)], tool1=True, lit=lit)
+    chk("deals TOOL2: a gold commission twice the lab's: an anomaly for XAUUSD (per lot and side against the model), the balance still explained",
+        lambda: (g["rc"] == 0 and "commission XAUUSD au-dela du modele" in g["an"] and g["m"].get("deals", {}).get("exact"), g["an"][:600]))
+    chk("deals TOOL1: the gold commission of the deals twice the lab's is DIFFERENT (12 points round trip against 6)",
+        lambda: (g["t1"]["ck"].get(("XAUUSD", "deals_commission"), {}).get("status") == "DIFFERENT"
+                 and "12" in str(g["t1"]["ck"].get(("XAUUSD", "deals_commission"), {}).get("broker")), g["t1"]["ck"].get(("XAUUSD", "deals_commission"))))
+    # a triple swap charged on a Wednesday night: BTC (the lab triples Friday: an anomaly), gold (the lab triples Wednesday: no anomaly)
+    copy2 = srv("2026-11-20 23:00")
+    segs2 = [{"at": STORY_START, "to": srv("2026-11-20 22:30")}]
+    tw_b = story_trade("BKB", srv("2026-11-18 20:00"), 70009006, hold=6 * 3600)
+    tw_g = story_trade("ORX", srv("2026-11-18 21:00"), 70009007, hold=5 * 3600)
+    day_b = 0.2 * tw_b["fill"] * tw_b["lots"] * MINI_K["BTCUSD"] / 360.0
+    day_g = 0.055 * tw_g["fill"] * tw_g["lots"] * MINI_K["XAUUSD"] / 360.0
+
+    def swap3(ds, which):
+        out = []
+        for d in ds:
+            if d["position"] == which["ticket"] and d["entry"] == 1:
+                d = dict(d, swap=-round(3 * (day_b if which is tw_b else day_g), 2))
+            out.append(d)
+        return out
+    tc_b = tw_b["at"] + tw_b["hold"] + 2
+    g = story_deals_case("swap3_btc", trades=story_trades() + [tw_b], segs=segs2, copy=copy2, deals_fn=lambda ds: swap3(ds, tw_b),
+                         shifts=[(tc_b, -round(3 * day_b, 2))], tool1=True, lit=lit)
+    chk("deals TOOL2: a triple swap charged on a Wednesday night on BTC (the lab triples on Friday): an anomaly 'swaps BTCUSD plus chers' naming "
+        "the position and its one night at the lab's count",
+        lambda: (g["rc"] == 0 and "swaps BTCUSD plus chers que 1,5 fois ceux du labo" in g["an"] and "70009006" in g["an"] and "1 nuit(s)" in g["an"],
+                 (g["an"][:700], (g["d"].get("costs") or {}).get("BTCUSD"))))
+    chk("deals TOOL1: the BTC swaps of the deals beyond 1.5 x the lab's are DIFFERENT",
+        lambda: (g["t1"]["ck"].get(("BTCUSD", "deals_swap"), {}).get("status") == "DIFFERENT", g["t1"]["ck"].get(("BTCUSD", "deals_swap"))))
+    tc_g = tw_g["at"] + tw_g["hold"] + 2
+    g = story_deals_case("swap3_gold", trades=story_trades() + [tw_g], segs=segs2, copy=copy2, deals_fn=lambda ds: swap3(ds, tw_g),
+                         shifts=[(tc_g, -round(3 * day_g, 2))], tool1=True, lit=lit)
+    chk("deals TOOL2: a triple swap charged on a Wednesday night on gold (the lab's own triple day): no swap anomaly, 3 nights at the lab's count",
+        lambda: (g["rc"] == 0 and "swaps XAUUSD" not in g["an"] and not (g["d"].get("costs") or {}).get("XAUUSD", {}).get("swap_beyond")
+                 and (g["d"].get("costs") or {}).get("XAUUSD", {}).get("swap_nights") == 3, (g["an"][:400], (g["d"].get("costs") or {}).get("XAUUSD"))))
+    # a row that is not ReleveFP's (an extra field holding the holder's name) and the account's words planted around: never in any output
+    g = story_deals_case("tamper")
+    p_ = os.path.join(g["rel"], T_DEALS)
+    rows_ = t_read(p_).splitlines() or ["", "", ""]
+    rows_.insert(3, rows_[2] + f",{FAKE_NAME} login: {FAKE_LOGIN}")
+    write(p_, "\n".join(rows_) + "\n")
+    out = os.path.join(SCRATCH, "rv7_tamper", "out2")
+    rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(g["jdir"]), "--deals", p_, "--out", out])
+    rr = json.load(open(os.path.join(out, "report.json"))) if rc == 0 else {}
+    txt = (outputs_text(out) + so) if rc == 0 else se
+    chk("deals TOOL2: a deals.csv row with an extra field (the holder's name and login glued) is counted and located, its text never kept",
+        lambda: (rc == 0 and "1 ligne(s) illisible(s)" in " ".join(rr.get("anomalies", [])) and "lignes 4" in " ".join(rr.get("anomalies", []))
+                 and not any(w in txt for w in ACCOUNT_WORDS), (rr.get("anomalies"), [w for w in ACCOUNT_WORDS if w in txt])))
+    t1 = tool1_on_deals(os.path.join(SCRATCH, "rv7_tamper"), g["rel"], lit)
+    chk("deals TOOL1: the same row is counted and located (DIFFERENT), no account word in tool 1's outputs",
+        lambda: (t1["rc"] == 0 and t1["ck"].get(("compte", "deals_file"), {}).get("status") == "DIFFERENT"
+                 and "lignes 4" in str(t1["ck"].get(("compte", "deals_file"), {}).get("broker")) and not any(w in t1["txt"] for w in ACCOUNT_WORDS),
+                 (t1["ck"].get(("compte", "deals_file")), [w for w in ACCOUNT_WORDS if w in t1["txt"]])))
+    # tool 1: a 1.11 folder without deals.csv, erreur_deals, an empty history; a 1.10 folder (nothing said: control)
+    base = os.path.join(SCRATCH, "rv7_t1")
+    os.makedirs(base, exist_ok=True)
+    gc = story_deals_case("t1src")
+    t1 = tool1_on_deals(base, gc["rel"], lit, drop=(T_DEALS,))
+    chk("deals TOOL1: version=1.11 without deals.csv is DIFFERENT ('deals.csv absent : recopier le dossier claude/releve en entier')",
+        lambda: (t1["ck"].get(("compte", "deals_file"), {}).get("status") == "DIFFERENT" and "absent" in str(t1["ck"].get(("compte", "deals_file"), {}).get("broker")),
+                 t1["ck"].get(("compte", "deals_file"))))
+    t1 = tool1_on_deals(base, gc["rel"], lit, fini_edit_fn=lambda ls: [("erreur_deals=4401" if ln.startswith("erreur_deals=") else ln) for ln in ls])
+    chk("deals TOOL1: erreur_deals != 0 in fini.txt is DIFFERENT", lambda: (t1["ck"].get(("compte", "deals_error"), {}).get("status") == "DIFFERENT",
+                                                                         t1["ck"].get(("compte", "deals_error"))))
+    ge = releve_run_deals("rv7_rel_empty", [], [], STORY_COPY)
+    t1 = tool1_on_deals(os.path.join(SCRATCH, "rv7_t1e"), ge, lit)
+    chk("deals TOOL1: an empty history (deals=0: not even the opening deposit) is DIFFERENT, with the advice to run ReleveFP again",
+        lambda: (t1["ck"].get(("compte", "deals_file"), {}).get("status") == "DIFFERENT" and "relancer ReleveFP" in str(t1["ck"].get(("compte", "deals_file"), {}).get("note")),
+                 t1["ck"].get(("compte", "deals_file"))))
+    f110 = os.path.join(SCRATCH, "rv7_t1_110")
+    make_releve(f110, lit, "good")
+    out = os.path.join(SCRATCH, "rv7_t1_110_out")
+    rc, so, se = run_tool("read_mac_files.py", [f110, "--out", out])
+    s110 = json.load(open(os.path.join(out, "summary.json"))) if rc == 0 else {"checks": [{"item": "?"}]}
+    chk("deals control: a ReleveFP 1.10 folder (no deals.csv, no positions.csv): tool 1 says nothing about deals (behaviour unchanged)",
+        lambda: (rc == 0 and not any("deal" in c["item"] or "position" in c["item"] for c in s110["checks"]) and "deals" not in s110, se[-300:]))
+    # check_demo with a 1.10 releve beside --bars and no --deals: no history section, the same anomalies as with the old tools (control)
+    gd = story_deals_case("noargs")
+    out = os.path.join(SCRATCH, "rv7_nodeals_out")
+    rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(gd["jdir"]), "--bars", f110, "--no-replay", "--out", out])
+    rn = json.load(open(os.path.join(out, "report.json"))) if rc == 0 else {"deals": 1}
+    chk("deals control: check_demo with a 1.10 releve folder (no deals.csv beside --bars): no history section, nothing about deals",
+        lambda: (rc == 0 and "deals" not in rn and "deals" not in rn.get("fills", {}) and "Historique du compte" not in so
+                 and "historique du compte" not in " ".join(rn.get("anomalies", [])), (so[-400:], se[-300:])))
+
+
+def test_review7_deals_replay(lit):
+    """review7 with the harness's own account (the robot's release file replayed as review4's 1,000 EUR S7 demo, GO4 to END4, ReleveFP at RUN4):
+    ReleveFP.mq5 1.11 itself (releve_mock) writes deals.csv and positions.csv from the harness's deals and open positions (harness_history),
+    so the journal's FILL and CLOSE lines and the deals agree by construction; check_demo with deals.csv beside --bars. Faults: the broker's
+    stops slipping 1x (no alarm), 3x and 10x the lab's (MOCK_SLIP_STOP_BPS), the gold commission twice the lab's (MOCK_COMM), a triple swap
+    charged on a Wednesday night (BTC or ETH), a trade by hand (MOCK_FAULTS hand_open, MetaTrader's magic 0), a deposit (MOCK_PAYMENTS), a
+    deal the journal does not know, a CLOSE line lost whose deal exists, a position still open at the run (and missing from positions.csv), a
+    1.10 folder without deals (behaviour unchanged), the account's words planted in the deals' comments and external ids"""
+    t0 = time.time()
+    if not releve_binary():
+        check("deals RELEVE-111: ReleveFP.mq5 1.11 builds against releve_mock (harness account)", False, REL7.get("err"))
+        return
+    demo_env = {"MOCK_INPUT_InpTrade": "true", "MOCK_INPUT_InpPlanStart": str(GO4), "MOCK_BALANCE": "1000"}
+    rel100 = releve_replay("rel7_100", lit, RUN4)
+    outs = []
+
+    def with_deals(name, files, mutate=None, positions_fn=None):
+        deals, poss = harness_history(files, deposit=1000.0, deposit_srv=GO4 - 86400, end_srv=END4)
+        if mutate:
+            deals = mutate(deals)
+        if positions_fn:
+            poss = positions_fn(poss)
+        run = releve_run_deals("rel7_run_" + name, deals, poss, RUN4)
+        return merge_deals(rel100, run, os.path.join(SCRATCH, "rel7_" + name)), deals, poss
+
+    def cd(name, jfiles, bars, extra=("--no-replay",)):
+        out = os.path.join(SCRATCH, "out7_" + name)
+        outs.append(out)
+        rc, so, se = run_tool("check_demo.py", ["--journals", jfiles, "--bars", bars, "--out", out] + list(extra))
+        r = json.load(open(os.path.join(out, "report.json"))) if rc == 0 else {}
+        outs.append(("so", so))
+        return {"rc": rc, "so": so, "se": se, "r": r, "an": " | ".join(r.get("anomalies", [])), "d": r.get("deals") or {},
+                "m": (r.get("fills") or {}).get("money_estimate") or {}, "pos": {p["ticket"]: p for p in (r.get("fills") or {}).get("positions", [])}}
+    clean, _, _ = harness_live("live7_clean", HIST4, demo_env, frm=GO4, to=END4)
+    relc, deals_c, poss_c = with_deals("clean", clean)
+    import pandas as pd
+    hd = pd.read_csv(os.path.join(clean, "_mock", "deals.csv"), keep_default_na=False, float_precision="round_trip")
+    got = t_rows(os.path.join(relc, T_DEALS))
+    raw = t_read(os.path.join(relc, T_DEALS))
+
+    def same_vals():
+        by_t = {int(d["ticket"]): d for d in got}
+        for r_ in hd.itertuples():
+            d = by_t.get(int(r_.deal))
+            if d is None or abs(float(d["price"]) - round(float(r_.price), 2)) > 1e-9 or abs(float(d["commission"]) - round(float(r_.commission), 2)) > 1e-9 \
+                    or abs(float(d["profit"]) - round(float(r_.profit), 2)) > 1e-9 or d["type"] != T_DEAL_TYPES[int(r_.type)] \
+                    or d["reason"] != T_DEAL_REASONS[int(r_.reason)]:
+                return False
+        return True
+    chk("deals RELEVE-111 (harness): ReleveFP 1.11 writes the harness account's every deal (and the opening deposit) oldest first, prices and money "
+        "rounded to the digits, types and reasons by name, volumes with the step's digits (US100 one decimal)",
+        lambda: (raw.splitlines()[:1] == [T_DEALS_HEADER] and len(got) == len(hd) + 1 and same_vals()
+                 and [int(d["time"]) for d in got] == sorted(int(d["time"]) for d in got) and ",US100.r,DEAL_TYPE_" in raw
+                 and re.search(r",US100\.r,DEAL_TYPE_\w+,DEAL_ENTRY_\w+,DEAL_REASON_\w+,\d+,\d+\.\d,", raw) is not None,
+                 (len(got), len(hd), raw.splitlines()[:3])))
+    chk("deals RELEVE-111 (harness): positions.csv lists the robot positions still open at the run; the planted server, login and name "
+        "(comments, external ids) are in no file ReleveFP writes",
+        lambda: (len(t_read(os.path.join(relc, T_POSITIONS)).splitlines()) == len(poss_c) + 1 and len(poss_c) >= 1
+                 and not any(w in open(os.path.join(relc, f), errors="replace").read() for f in os.listdir(relc) for w in ACCOUNT_WORDS),
+                 (poss_c[:1], [f for f in os.listdir(relc) for w in ACCOUNT_WORDS if w in open(os.path.join(relc, f), errors="replace").read()])))
+    g = cd("clean", clean, relc, extra=())
+    stops = g["d"].get("stops") or {}
+    est = [p for p in g["pos"].values() if p.get("exit_kind_journal") in ("broker_stop_estimated", "broker_stop_race", "broker_stop_seen")]
+    hdo = hd[(hd.entry == 1) & (hd.reason == 4)].set_index("position")
+    chk("deals TOOL2: the clean demo with its account history (replay included): every position matched, entries and closes equal, the "
+        "broker's stops at their real price (the harness's), slipping 1x the lab's: in the margin; balance explained; 'Rien d'anormal.'",
+        lambda: (g["rc"] == 0 and g["d"].get("matched") == len(g["pos"]) > 30 and not g["d"].get("price_disagreements") and len(est) > 5
+                 and all(p["exit_kind"] == "broker_stop_deal" and abs(p["exit_real"] - round(float(hdo.loc[p["ticket"], "price"]), 2)) < 1e-9 for p in est)
+                 and all(v.get("n_vs_paper", 0) >= 3 and not v.get("beyond") for v in stops.values()) and len(stops) == 4
+                 and g["m"].get("deals", {}).get("exact") and g["r"].get("anomalies") == [] and "Rien d'anormal." in g["so"],
+                 ({k: (v.get("n_vs_paper"), v.get("beyond_paper_bp_mean")) for k, v in stops.items()}, g["an"][:600], g["se"][-400:])))
+    chk("deals TOOL2: the broker's stop exits now enter the euros and the headline ('stops courtier au prix reel'), their slippage given per market "
+        "in points, bp and EUR against the lab's",
+        lambda: (g["rc"] == 0 and "stops courtier au prix reel" in g["so"] and "glissement au niveau du stop" in g["so"]
+                 and g["r"]["fills"]["per_sleeve"]["TOTAL"].get("stop_exit_diff_eur_sum") is not None
+                 and "sortie(s) par stop courtier, prix inconnu" not in g["so"], g["so"][:900]))
+    # review8 RELEVE111-CRLF on the harness account: every row of ReleveFP's files ends in CR LF and deals= counts them all
+    chk("deals2 RELEVE111-CRLF (harness): ReleveFP 1.11's deals.csv and positions.csv of the harness account end every row in CR LF (the "
+        "documented FileWriteString of releve_mock), deals= and positions= count them all",
+        lambda: (crlf_rows(os.path.join(relc, T_DEALS)) == len(got) and fini_of(relc).get("deals") == str(len(got))
+                 and crlf_rows(os.path.join(relc, T_POSITIONS)) == len(poss_c) and fini_of(relc).get("positions") == str(len(poss_c)),
+                 (crlf_rows(os.path.join(relc, T_DEALS)), len(got), fini_of(relc).get("deals"))))
+    # review8 MONEY-AU-CENTIME-CLAIM on the harness account: one closing deal of the second week edited by +0.20 EUR, the journal untouched
+    tgt = next((d for d in sorted(deals_c, key=lambda d: d["time"]) if d["entry"] == 1 and d["magic"] in C.CODE_OF_MAGIC
+                and d["time"] > srv("2021-11-03 00:00")), None)
+    ge = cd("edit020", clean, with_deals("edit020", clean, mutate=lambda ds: [dict(d, profit=round(d["profit"] + 0.20, 2)) if d["ticket"] == tgt["ticket"]
+                                                                              else d for d in ds])[0]) if tgt else {"rc": 1, "an": "", "m": {}}
+    chk("deals2 MONEY-AU-CENTIME-CLAIM (harness): one closing deal of the harness account's second week edited by +0.20 EUR (about 100 deals): the "
+        "balance no longer follows the history (an anomaly), while the clean run agrees line by line",
+        lambda: (bool(tgt) and ge["rc"] == 0 and "ne suit pas l'historique du compte" in ge["an"] and not (ge["m"].get("deals") or {}).get("exact")
+                 and g["m"].get("deals", {}).get("exact"), (ge["an"][:500], tgt and tgt["ticket"], (ge["m"].get("deals") or {}).get("tolerance_max_eur"))))
+    open_t = [q["ticket"] for q in poss_c if q["magic"] in C.CODE_OF_MAGIC]
+    chk("deals TOOL2: the robot position still open when ReleveFP ran is in positions.csv and matched with the journal (no anomaly)",
+        lambda: (bool(open_t) and all(g["pos"].get(t_, {}).get("open_at_releve") for t_ in open_t), (open_t, g["d"].get("open_at_releve"))))
+    gp = cd("open_missing", clean, with_deals("open_missing", clean, positions_fn=lambda ps: [q for q in ps if q["magic"] not in C.CODE_OF_MAGIC])[0])
+    chk("deals TOOL2: the same position missing from positions.csv: an anomaly naming it",
+        lambda: (gp["rc"] == 0 and "absente(s) de positions.csv" in gp["an"] and str(open_t[0]) in gp["an"], gp["an"][:500]))
+    # the broker's stops slipping 3x and 10x the lab's (the market orders stay at the lab's)
+    for mult in (3, 10):
+        env = dict(demo_env, **{f"MOCK_SLIP_STOP_BPS_{b}.r": repr(mult * C.SLIP_BPS[b][1]) for b in C.ROBOT_BASES})
+        jd, _, _ = harness_live(f"live7_stop{mult}", HIST4, env, frm=GO4, to=END4)
+        gs = cd(f"stop{mult}", jd, with_deals(f"stop{mult}", jd)[0])
+        st_ = gs["d"].get("stops") or {}
+        chk(f"deals TOOL2: the broker's stops slipping {mult}x the lab's (MOCK_SLIP_STOP_BPS): judged beyond 1.5 x the lab's on every market with "
+            f"3 stops or more ('glissement des stops courtier ... au-dela'), the real slippage about {mult} x the lab's",
+            lambda: (gs["rc"] == 0 and st_ and all(v.get("beyond") for v in st_.values() if v.get("n_vs_paper", 0) >= 3)
+                     and sum(1 for v in st_.values() if v.get("n_vs_paper", 0) >= 3) >= 3 and gs["an"].count("glissement des stops courtier") >= 3
+                     and all(abs(v["slip_bp_mean"] / v["lab_stop_bp"] - mult) < 0.5 for v in st_.values() if v.get("slip_bp_mean")),
+                     ({k: (v.get("n_vs_paper"), v.get("beyond"), v.get("slip_bp_mean")) for k, v in st_.items()}, gs["an"][:500])))
+    # review8 DEALS-WORDING: the execution cost line says what it judges and gives the broker's stops' verdict beside it (gs: the 10x run)
+    chk("deals2 DEALS-WORDING (harness): with the broker's stops 10x the lab's, stdout's execution cost line names what it judges ('Frais "
+        "d'execution des ordres au marche') and gives the stops' verdict beside it ('stops courtier (historique du compte) : AU-DELA')",
+        lambda: (gs["rc"] == 0 and "Frais d'execution des ordres au marche" in gs["so"] and "stops courtier (historique du compte) : AU-DELA" in gs["so"],
+                 [ln for ln in gs["so"].splitlines() if ln.startswith("Frais")]))
+    # the gold commission twice the lab's
+    jd, _, _ = harness_live("live7_comm2", HIST4, dict(demo_env, **{"MOCK_COMM_XAUUSD.r": repr(2 * 3.0 * 0.89)}), frm=GO4, to=END4)
+    gc = cd("comm2", jd, with_deals("comm2", jd)[0])
+    chk("deals TOOL2: the gold commission twice the lab's (MOCK_COMM): 'commission XAUUSD au-dela du modele', the balance still explained",
+        lambda: (gc["rc"] == 0 and "commission XAUUSD au-dela du modele du labo" in gc["an"] and gc["m"].get("deals", {}).get("exact"),
+                 (gc["an"][:500], (gc["d"].get("costs") or {}).get("XAUUSD"))))
+    # a triple swap charged on a Wednesday night on a crypto position (the lab triples on Friday)
+    # the robot's crypto positions of the harness's history held over a Wednesday night (server days)
+    wed = None
+    for pid_, grp in hd[(hd.position > 0) & hd.type.isin([0, 1])].groupby("position"):
+        ins, outs_ = grp[grp.entry == 0], grp[grp.entry == 1]
+        if len(ins) != 1 or len(outs_) != 1 or int(ins.magic.iloc[0]) not in C.CODE_OF_MAGIC or t_base(ins.symbol.iloc[0]) not in ("BTCUSD", "ETHUSD"):
+            continue
+        a_, z_ = int(ins.time.iloc[0]), int(outs_.time.iloc[0])
+        if any(C.dow(t_ - 86400) == 3 for t_ in range(a_ - a_ % 86400 + 86400, z_ + 1, 86400)):
+            wed = {"position": int(pid_), "price_in": float(ins.price.iloc[0]), "vol_in": float(ins.volume.iloc[0]), "time_out": z_,
+                   "side": 1 if int(ins.type.iloc[0]) == 0 else -1, "out_ticket": int(outs_.deal.iloc[0])}
+            break
+    if wed:
+        k_ = 0.89
+        daily = 0.2 * wed["price_in"] * wed["vol_in"] * k_ / 360.0 if wed["side"] > 0 else 0.02 * wed["price_in"] * wed["vol_in"] * k_ / 360.0
+        sw = -round(3 * daily, 2)
+        jcopy = os.path.join(SCRATCH, "live7_swap", "files")
+        if os.path.isdir(os.path.dirname(jcopy)):
+            shutil.rmtree(os.path.dirname(jcopy))
+        shutil.copytree(clean, jcopy)
+        shift_balances(os.path.join(jcopy, "ClaudeRobot"), wed["time_out"], sw)
+        gw = cd("swap3", jcopy, with_deals("swap3", clean, mutate=lambda ds: [dict(d, swap=sw) if d["ticket"] == wed["out_ticket"] else d
+                                                                            for d in ds])[0])
+    chk("deals TOOL2: a triple swap charged on a Wednesday night on a crypto position (the lab triples on Friday): 'swaps ... plus chers' naming it",
+        lambda: (wed is not None and gw["rc"] == 0 and f"ticket {wed['position']}" in gw["an"] and "plus chers que 1,5 fois ceux du labo" in gw["an"]
+                 and gw["m"].get("deals", {}).get("exact"), (wed and wed["position"], gw["an"][:600] if wed else None)))
+    # a trade by hand (MOCK_FAULTS hand_open: MetaTrader's magic 0 in the history) and a deposit (MOCK_PAYMENTS)
+    world = os.path.join(SCRATCH, "world7_hand.txt")
+    with open(world, "w") as fh:
+        fh.write(f"{srv('2021-11-03 15:00')} hand_open XAUUSD.r 1 0.05\n{srv('2021-11-05 18:00')} hand_close\n")
+    jd, _, _ = harness_live("live7_hand", HIST4, dict(demo_env, MOCK_FAULTS=world), frm=GO4, to=END4)
+    gh = cd("hand", jd, with_deals("hand", jd)[0])
+    chk("deals TOOL2: a trade by hand read from the history (magic 0): an anomaly with its market, side, lots, times and result; the balance "
+        "explained (no 'le solde a bouge' guess)",
+        lambda: (gh["rc"] == 0 and "trade(s) a la main sur le compte" in gh["an"] and "XAUUSD.r achat de 0,05 lot" in gh["an"]
+                 and gh["m"].get("deals", {}).get("exact") and "le solde a bouge pour une autre raison que les trades du robot :" not in gh["an"],
+                 gh["an"][:700]))
+    pay = os.path.join(SCRATCH, "pay7.csv")
+    with open(pay, "w") as fh:
+        fh.write(f"{srv('2021-11-04 12:00')},250.0\n")
+    jd, _, _ = harness_live("live7_pay", HIST4, dict(demo_env, MOCK_PAYMENTS=pay), frm=GO4, to=END4)
+    gd = cd("pay", jd, with_deals("pay", jd)[0])
+    chk("deals TOOL2: a deposit read from the history (DEAL_TYPE_BALANCE): 'versement de 250,00 EUR le 2021-11-04', the balance explained",
+        lambda: (gd["rc"] == 0 and "versement de 250,00 EUR le 2021-11-04" in gd["an"] and gd["m"].get("deals", {}).get("exact")
+                 and gd["an"].count("versement") == 1, gd["an"][:600]))
+    # a robot position of the history the journal does not know (a second copy's trade?), the balance moved by it
+    tx = srv("2021-11-09 10:00")
+    extra = [mock_deal(41900001, 41900001, 41900001, tx, "BTCUSD.r", 0, 0, 3, 20261203, 0.01, 65000.0, sl=64000.0, comment=FAKE_NAME),
+             mock_deal(41900002, 41900002, 41900001, tx + 1800, "BTCUSD.r", 1, 1, 3, 20261203, 0.01, 65100.0, profit=0.89, comment=FAKE_SERVER)]
+    jcopy = os.path.join(SCRATCH, "live7_unknown", "files")
+    if os.path.isdir(os.path.dirname(jcopy)):
+        shutil.rmtree(os.path.dirname(jcopy))
+    shutil.copytree(clean, jcopy)
+    shift_balances(os.path.join(jcopy, "ClaudeRobot"), tx + 1800, 0.89)
+    gu = cd("unknown", jcopy, with_deals("unknown", clean, mutate=lambda ds: ds + extra)[0])
+    chk("deals TOOL2: a robot deal the journal does not know (BKB, no FILL): named with its sleeve and times, the balance still explained",
+        lambda: (gu["rc"] == 0 and "que le journal ne connait pas" in gu["an"] and "BKB" in gu["an"] and gu["m"].get("deals", {}).get("exact"),
+                 gu["an"][:600]))
+    # a CLOSE line lost whose deal exists
+    jcopy = os.path.join(SCRATCH, "live7_closelost", "files")
+    if os.path.isdir(os.path.dirname(jcopy)):
+        shutil.rmtree(os.path.dirname(jcopy))
+    shutil.copytree(clean, jcopy)
+    ea = next(p for p in sorted(g["pos"].values(), key=lambda p: p.get("exit_utc") or 0) if p["exit_kind"] == "ea_close" and not p.get("exit_apart"))
+    for f in sorted(os.listdir(os.path.join(jcopy, "ClaudeRobot"))):
+        edit_lines(os.path.join(jcopy, "ClaudeRobot", f), lambda ls: [ln for ln in ls if not ("|CLOSE|" in ln and f"|ticket={ea['ticket']}|" in ln)])
+    gl = cd("closelost", jcopy, relc)
+    pl = gl["pos"].get(ea["ticket"], {})
+    chk("deals TOOL2: a position whose CLOSE line is lost but whose deal exists: the exit is the deal's (the robot's close, its price), the anomaly "
+        "says the journal lacked it, the money is complete",
+        lambda: (gl["rc"] == 0 and pl.get("exit_kind") == "ea_close_deal" and abs((pl.get("exit_real") or 0) - (ea.get("exit_real") or -1)) < 0.006
+                 and "connue par l'historique du compte" in gl["an"] and gl["m"].get("complete") is True,
+                 (pl.get("exit_kind"), pl.get("exit_real"), ea.get("exit_real"), gl["an"][:500], gl["m"].get("incomplete_why"))))
+    # the Mac asleep over a night and a weekend (review4b ADV5-2's harness copy with MOCK_SLEEP): the DAY lines of the sleep are written at the
+    # wake, with the deals made meanwhile in their balance
+    exe_s = os.path.join(SCRATCH, "harness_sleep", "robot", "build", "sleep_release", "replay")
+    if not os.path.exists(exe_s):
+        try:
+            exe_s = sleep_harness_exe(os.path.join(SCRATCH, "harness_sleep"))
+        except Exception:                                               # noqa: BLE001
+            exe_s = None
+    gz = {"rc": 1, "m": {}, "r": {}, "an": ""}
+    if exe_s:
+        env = dict(demo_env, MOCK_SLEEP=f"{SLEEP_NIGHT[0]}-{SLEEP_NIGHT[1]},{SLEEP_WEEKEND[0]}-{SLEEP_WEEKEND[1]}")
+        for b in C.ROBOT_BASES:
+            env[f"MOCK_HOLE_{b}.r"] = f"{SLEEP_NIGHT[0]}-{SLEEP_NIGHT[1]}@{SLEEP_NIGHT[1] + 90}"
+        jd, _, _ = harness_live("live7_sleep", HIST4, env, frm=GO4, to=END4, exe=exe_s)
+        gz = cd("sleep", jd, with_deals("sleep", jd)[0])
+    chk("deals TOOL2: the Mac asleep over a night and a weekend (DAY lines written at the wake, deals made meanwhile): the balance still follows "
+        "the history line by line, nothing abnormal",
+        lambda: (bool(exe_s) and gz["rc"] == 0 and (gz["m"].get("deals") or {}).get("exact") and (gz["m"].get("deals") or {}).get("days_checked", 0) >= 10
+                 and gz["r"].get("anomalies") == [], (gz["an"][:500], gz["m"].get("deals"))))
+    g0 = cd("v110", clean, rel100)
+    chk("deals control: the same demo with ReleveFP 1.10's files (no deals.csv): nothing about the account's history, 'Rien d'anormal.' as before",
+        lambda: (g0["rc"] == 0 and not g0["d"] and "Historique du compte" not in g0["so"] and g0["r"].get("anomalies") == []
+                 and "Rien d'anormal" in g0["so"], (g0["an"][:300], g0["so"][-300:])))
+    leaks = [o for o in outs if isinstance(o, str) and any(w in outputs_text(o) for w in ACCOUNT_WORDS)]
+    leaks += ["stdout" for o in outs if isinstance(o, tuple) and any(w in o[1] for w in ACCOUNT_WORDS)]
+    chk("deals privacy: the account's server, login and name planted in the deals' comments and external ids are in no output of check_demo "
+        "(which read the deals: the clean run's history section)", lambda: (not leaks and bool(g["d"].get("used")), (leaks[:3], g["d"].get("used"))))
+    print(f"   (review7 deals replay tests {time.time() - t0:.0f} s)")
+
+
+# ---------------------------------------------------------------------------------------------- review8: the deals stage's second pass
+PROBE7 = r'''#include "mock_mt5.h"
+int main()
+  {
+   FolderCreate("p");
+   int h = FileOpen("p\\t.txt", FILE_WRITE | FILE_TXT | FILE_ANSI);
+   uint n_txt = FileWriteString(h, "ab\ncd\r\n");
+   FileClose(h);
+   h = FileOpen("p\\c.csv", FILE_WRITE | FILE_CSV | FILE_ANSI);
+   uint n_csv = FileWriteString(h, "x\n");
+   FileClose(h);
+   h = FileOpen("p\\b.bin", FILE_WRITE | FILE_BIN);
+   uint n_bin = FileWriteString(h, "ab\n");
+   FileClose(h);
+   ResetLastError();
+   int ho = FileOpen("p\\no.txt", FILE_WRITE | FILE_TXT | FILE_ANSI);
+   int e_open = GetLastError();
+   h = FileOpen("p\\w.txt", FILE_WRITE | FILE_TXT | FILE_ANSI);
+   ResetLastError();
+   uint n_fail = FileWriteString(h, "abc\r\n");
+   int e_fail = GetLastError();
+   FileClose(h);
+   HistorySelect(0, 100);
+   long out_list = HistoryDealGetInteger(1000001, DEAL_TIME);
+   HistorySelect(0, TimeTradeServer() + 86400);
+   long in_list = HistoryDealGetInteger(1000001, DEAL_TIME);
+   long dg = -1;
+   ResetLastError();
+   bool sel = SymbolInfoInteger("XAUUSD.r", SYMBOL_DIGITS, dg);
+   int e_sel = GetLastError();
+   printf("txt=%u\ncsv=%u\nbin=%u\nopen=%d\nopen_err=%d\nfail=%u\nfail_err=%d\nout_list=%ld\nin_list=%ld\nsel=%d\nsel_err=%d\nserver=%s\n"
+          "company=%s\nname=%s\nlogin=%ld\ncurrency=%s\n", n_txt, n_csv, n_bin, ho, e_open, n_fail, e_fail, out_list, in_list, (int)sel, e_sel,
+          AccountInfoString(ACCOUNT_SERVER).c_str(), AccountInfoString(ACCOUNT_COMPANY).c_str(), AccountInfoString(ACCOUNT_NAME).c_str(),
+          AccountInfoInteger(ACCOUNT_LOGIN), AccountInfoString(ACCOUNT_CURRENCY).c_str());
+   return 0;
+  }
+'''
+
+
+def build_against_releve_mock(name, cpp_text=None, mq5_text=None):
+    """a C++ program built against releve_mock: cpp_text as it is, or an .mq5 text translated by to_cpp.py (review8); the binary, None when the
+    build failed (its error in REL7[name])"""
+    d = os.path.join(SCRATCH, "rv8_build_" + name)
+    os.makedirs(d, exist_ok=True)
+    if mq5_text is not None:
+        with open(os.path.join(d, "R.mq5"), "w", encoding="ascii") as f:
+            f.write(mq5_text)
+        r = subprocess.run([sys.executable, "-I", os.path.join(C.LAB, "live_ai", "check", "to_cpp.py"), os.path.join(d, "R.mq5"),
+                            os.path.join(d, "releve.cpp")], capture_output=True, text=True)
+        if r.returncode != 0:
+            REL7[name] = r.stderr[-400:]
+            return None
+        cpp_text = '#include "mock_mt5.h"\n#include "releve.cpp"\nint main() { OnStart(); return 0; }\n'
+    with open(os.path.join(d, "run.cpp"), "w") as f:
+        f.write(cpp_text)
+    b = subprocess.run(["g++", "-std=c++17", "-O1", "-w", "-I", os.path.join(HERE, "releve_mock"), "-I", d, os.path.join(d, "run.cpp"), "-o",
+                        os.path.join(d, "run")], capture_output=True, text=True)
+    if b.returncode != 0:
+        REL7[name] = b.stderr[-800:]
+        return None
+    return os.path.join(d, "run")
+
+
+def fini_of(folder):
+    """fini.txt of a releve folder as a dict of strings ({} without it)"""
+    return dict(ln.split("=", 1) for ln in t_read(os.path.join(folder, "fini.txt")).splitlines() if "=" in ln)
+
+
+def crlf_rows(path):
+    """the data rows of a file whose every line ends in CR LF (header excluded); None when a line ends otherwise or the file is absent"""
+    try:
+        raw = open(path, "rb").read()
+    except OSError:
+        return None
+    parts = raw.split(b"\r\n")
+    if not raw.endswith(b"\r\n") or parts[-1] != b"" or any(b"\n" in p or b"\r" in p for p in parts):
+        return None
+    return len(parts) - 2
+
+
+def cd_deals(name, jdir, dpath, extra=()):
+    """check_demo journal-only with --deals (or --bars when dpath is a folder), as story_deals_case runs it"""
+    out = os.path.join(SCRATCH, "rv8_out_" + name)
+    arg = ["--bars", dpath, "--no-replay"] if os.path.isdir(dpath) else ["--deals", dpath]
+    rc, so, se = run_tool("check_demo.py", ["--journals", os.path.dirname(jdir)] + arg + ["--out", out] + list(extra))
+    r = json.load(open(os.path.join(out, "report.json"))) if rc == 0 and os.path.exists(os.path.join(out, "report.json")) else {}
+    return {"rc": rc, "so": so, "se": se, "r": r, "an": " | ".join(r.get("anomalies", [])), "d": (r.get("deals") or {}), "out": out,
+            "txt": outputs_text(out) + so if rc == 0 else so + se, "rep_fr": t_read(os.path.join(out, "report_fr.txt")),
+            "pos": {p["ticket"]: p for p in (r.get("fills") or {}).get("positions", [])}, "m": (r.get("fills") or {}).get("money_estimate") or {}}
+
+
+def open_story():
+    """the stories' clean week with an N30 position still open when the files are copied (and when ReleveFP runs): trades, starts, the open
+    position as positions.csv lists it"""
+    tr = story_trades() + [story_trade("N30", srv("2026-11-18 10:00"), 70009005, side=1, open_at_copy=True)]
+    opn = {"ticket": 70009005, "identifier": 70009005, "time": srv("2026-11-18 10:00") + 1, "time_msc": (srv("2026-11-18 10:00") + 1) * 1000,
+           "symbol": "US100.r", "type": 0, "magic": 20261201, "volume": 1.0, "price_open": 16300.0, "sl": 16137.0, "tp": 0.0,
+           "price_current": 16310.0, "swap": 0.0, "profit": 8.6, "comment": FAKE_NAME, "external_id": FAKE_LOGIN}
+    return tr, [{"at": STORY_START, "to": None}], opn
+
+
+def test_review8_deals2_quick(lit):
+    """review8, the deals stage's second pass (the verifiers' ids), without the robot build: ReleveFP 1.11 through releve_mock now as the
+    documentation describes MetaTrader (FileWriteString adds a CR before a bare LF of a TXT file and returns the bytes written; the deal getters
+    answer for the listed deals; a symbol may be not selected; the account plants a server, company, holder's name and login): RELEVE111-CRLF
+    (every row written, ending in CR LF, counted), IMIT-CRLF (a probe of releve_mock; the first 1.11 rebuilt -- rows ending in a bare LF, WriteRow
+    with == -- fails as the documentation predicts and both tools say so plainly), OPEN-FAIL-UNTESTED (deals.csv or positions.csv that cannot be
+    opened), LASTERR-STALE (a failed write without a code of its own after an unknown symbol), IMIT-LOOSE (the planted account in no file);
+    tool 1: TOOL1-WITHDRAWAL-WORD, TOOL1-PREDEMO-TRADES, TOOL1-DEPOSIT-BEFORE-FIRST-TRADE, TOOL1-VERSION-EXPECTS-110, TOOL1-HAND-CLOSE-UNSEEN;
+    check_demo: TOOL2-FINI-COUNTS-IGNORED (positions=-1, a cut deals.csv), TOOL2-UNKNOWN-POSITIONS-WORDING (a DUP line, a lost daily file),
+    TOOL2-LATECOPY-SILENT (ReleveFP run the day before the copy), MONEY-AU-CENTIME-CLAIM (one deal edited by 0.20 EUR after 40 trades);
+    PERIOD-FROM-FILE-ORDER (deals.csv reversed), DEALS-WORDING (no 'du le', no negative zero), SERVER-CLAIM (control: the scrubber's sources
+    from 1.11 on), SELFTEST-JSON (every info JSON-safe); the account's words in no output"""
+    if not releve_binary():
+        check("deals2 RELEVE111-CRLF: ReleveFP.mq5 builds against releve_mock", False, REL7.get("err"))
+        return
+    t0 = time.time()
+    outs = []
+    # RELEVE111-CRLF: every deals.csv and positions.csv row written and counted, each line ending in CR LF
+    tr, segs, opn = open_story()
+    deals_open = story_history(tr)
+    g = story_deals_case("d2_crlf", trades=tr, segs=segs, positions=[opn], tool1=True, lit=lit)
+    outs += [g["out"], ("so", g["so"])]
+    fo = fini_of(g["rel"])
+    chk("deals2 RELEVE111-CRLF: ReleveFP 1.11 under the documented FileWriteString (releve_mock adds the CR before a bare LF and returns the bytes "
+        "written) writes every row of deals.csv and positions.csv, each line ending in CR LF, counted by fini.txt (deals=, positions=), erreur_deals=0",
+        lambda: (crlf_rows(os.path.join(g["rel"], T_DEALS)) == len(deals_open) and crlf_rows(os.path.join(g["rel"], T_POSITIONS)) == 1
+                 and fo.get("deals") == str(len(deals_open)) and fo.get("positions") == "1" and fo.get("erreur_deals") == "0",
+                 (crlf_rows(os.path.join(g["rel"], T_DEALS)), len(deals_open), fo)))
+    t1 = g.get("t1") or {"ck": {}, "rc": 1}
+    chk("deals2 control RELEVE111-CRLF: both tools read the CR LF files: check_demo matches the open position and explains the balance, tool 1's history, "
+        "robot and positions items are not DIFFERENT",
+        lambda: (g["rc"] == 0 and (g["d"].get("open_at_releve") or {}).get("journal_matched") == 1 and g["m"].get("deals", {}).get("exact")
+                 and not [a_ for a_ in g["r"].get("anomalies", []) if "deals.csv" in a_ or "positions.csv" in a_ or "historique du compte" in a_]
+                 and t1["rc"] == 0 and t1["ck"].get(("compte", "deals_file"), {}).get("status") == "OK"
+                 and t1["ck"].get(("compte", "deals_robot"), {}).get("status") == "OK"
+                 and t1["ck"].get(("compte", "positions_file"), {}).get("status") == "INFO",
+                 (g["an"][:400], {"/".join(k): v.get("status") for k, v in t1["ck"].items() if "deal" in k[1] or "position" in k[1]})))
+    # IMIT-CRLF and IMIT-LOOSE: a probe of releve_mock itself
+    pexe = build_against_releve_mock("probe", cpp_text=PROBE7)
+    kv, pdir = {}, os.path.join(SCRATCH, "rv8_probe_files")
+    if pexe:
+        os.makedirs(pdir, exist_ok=True)
+        dfile = os.path.join(SCRATCH, "rv8_probe_deals.csv")
+        mock_csv(dfile, story_history(story_trades()), MOCK_DEAL_COLS)
+        po = subprocess.run([pexe], env=dict(os.environ, MOCK_FILES=pdir, MOCK_NOW=str(STORY_COPY), MOCK_DEALS_FILE=dfile, MOCK_OPEN_FAIL="no.txt",
+                                             MOCK_WRITE_FAIL="w.txt:1:0", MOCK_SYM_NOT_SELECTED="XAUUSD.r", MOCK_SYMS_EXTRA=DEALS_SYMS_EXTRA),
+                            capture_output=True, text=True, timeout=60).stdout
+        kv = dict(ln.split("=", 1) for ln in po.splitlines() if "=" in ln)
+    pb = lambda n: open(os.path.join(pdir, "p", n), "rb").read() if os.path.exists(os.path.join(pdir, "p", n)) else None   # noqa: E731
+    chk("deals2 IMIT-CRLF: releve_mock's FileWriteString follows the documentation: a TXT or CSV file gets the CR before a bare LF and the count "
+        "includes it (8 bytes for 'ab\\ncd\\r\\n'), a BIN file gets the text as it is; FileOpen fails on demand (5004), FileWriteString too, without "
+        "a code of its own",
+        lambda: (kv.get("txt") == "8" and pb("t.txt") == b"ab\r\ncd\r\n" and kv.get("csv") == "3" and pb("c.csv") == b"x\r\n" and kv.get("bin") == "3"
+                 and pb("b.bin") == b"ab\n" and kv.get("open") == "-1" and kv.get("open_err") == "5004" and kv.get("fail") == "0"
+                 and kv.get("fail_err") == "0", (kv, REL7.get("probe"))))
+    chk("deals2 IMIT-LOOSE: releve_mock answers the deal getters for the deals HistorySelect listed only, fails SymbolInfoInteger with 4302 for a "
+        "symbol not selected in Market Watch, and its account has a planted server, company, holder's name and login",
+        lambda: (kv.get("out_list") == "0" and kv.get("in_list") == str(STORY_OPENED) and kv.get("sel") == "0" and kv.get("sel_err") == "4302"
+                 and kv.get("server") == "FPMarketsSC-Demo7" and kv.get("company") == "First Prudential Markets Ltd"
+                 and kv.get("name") == FAKE_NAME and kv.get("login") == FAKE_LOGIN and kv.get("currency") == "EUR", kv))
+    planted = [w for w in (kv.get("server"), kv.get("company"), kv.get("name"), kv.get("login")) if w]
+    chk("deals2 IMIT-LOOSE: none of the imitation's planted server, company, holder's name and login in any file ReleveFP 1.11 writes (fini.txt "
+        "included)", lambda: (len(planted) == 4 and not [f for f in os.listdir(g["rel"]) for w in planted
+                                                      if w in open(os.path.join(g["rel"], f), errors="replace").read()],
+                              [f for f in os.listdir(g["rel"]) for w in planted if w in open(os.path.join(g["rel"], f), errors="replace").read()]))
+    # IMIT-CRLF: the first 1.11 rebuilt (rows ending in a bare LF, WriteRow with ==): under the documented behaviour every write of those files
+    # 'fails'; both tools then say plainly that ReleveFP could not write the history (TOOL2-FINI-COUNTS-IGNORED: no 'historique d'un autre
+    # compte', no 'absente(s) de positions.csv')
+    src = lit["releve_src"]
+    mut = src.replace('\\r\\n";', '\\n";').replace('\\r\\n"))', '\\n"))').replace("return n >= (uint)StringLen(s);", "return n == (uint)StringLen(s);")
+    mexe = build_against_releve_mock("mutant", mq5_text=mut) if mut != src else None
+    rel_m = releve_run_deals("rv8_rel_mutant", deals_open, [opn], STORY_COPY, exe=mexe) if mexe else None
+    fm = fini_of(rel_m) if rel_m else {}
+    chk("deals2 IMIT-CRLF: the first 1.11 rebuilt (bare LF, WriteRow with ==) fails under releve_mock as the documentation predicts: deals=-1, "
+        "positions=-1, erreur_deals=-1, deals.csv holds its header only",
+        lambda: (bool(rel_m) and fm.get("deals") == "-1" and fm.get("positions") == "-1" and fm.get("erreur_deals") == "-1"
+                 and t_read(os.path.join(rel_m, T_DEALS)).splitlines() == [T_DEALS_HEADER], (fm, REL7.get("mutant"))))
+    gm = cd_deals("mutant", g["jdir"], os.path.join(rel_m, T_DEALS)) if rel_m else {"rc": 1, "an": "", "r": {}, "d": {}, "txt": ""}
+    outs += [gm.get("out"), ("so", gm.get("so", ""))]
+    chk("deals2 TOOL2-FINI-COUNTS-IGNORED: what that ReleveFP writes (deals=-1, positions=-1, headers only) is one anomaly 'relancer ReleveFP' "
+        "saying the history was not used; never 'historique d'un autre compte' nor 'absente(s) de positions.csv'",
+        lambda: (gm["rc"] == 0 and len([a_ for a_ in gm["r"].get("anomalies", []) if "deals.csv" in a_ or "positions.csv" in a_
+                                         or "historique du compte" in a_]) == 1
+                 and "deals=-1" in gm["an"] and "relancer ReleveFP" in gm["an"]
+                 and "non utilise" in gm["an"] and "positions.csv incomplet" in gm["an"] and "historique d'un autre compte" not in gm["an"]
+                 and "absente(s) de positions.csv" not in gm["an"] and gm["d"].get("used") is False, gm["an"][:700]))
+    t1m = tool1_on_deals(os.path.join(SCRATCH, "rv8_t1_mutant"), rel_m, lit) if rel_m else {"ck": {}, "rc": 1}
+    chk("deals2 TOOL1: the same files in tool 1: erreur_deals, the history and positions.csv DIFFERENT ('deals=-1'), nothing called OK",
+        lambda: (t1m["rc"] == 0 and t1m["ck"].get(("compte", "deals_error"), {}).get("status") == "DIFFERENT"
+                 and t1m["ck"].get(("compte", "deals_file"), {}).get("status") == "DIFFERENT"
+                 and "deals=-1" in str(t1m["ck"].get(("compte", "deals_file"), {}).get("broker"))
+                 and t1m["ck"].get(("compte", "positions_file"), {}).get("status") == "DIFFERENT",
+                 {"/".join(k): (v.get("status"), str(v.get("broker"))[:120]) for k, v in t1m["ck"].items() if "deal" in k[1] or "position" in k[1]}))
+    # FV7-T1-POSITIONS-COUNT-WORDING (final review of the deals stage): tool 1's positions.csv line says why it is DIFFERENT and what to ask
+    pf_m = t1m["ck"].get(("compte", "positions_file"), {})
+    chk("deals2 FV7-T1-POSITIONS-COUNT-WORDING: fini.txt says positions=-1: tool 1's positions.csv line names it and says 'relancer ReleveFP'",
+        lambda: (t1m["rc"] == 0 and pf_m.get("status") == "DIFFERENT" and "positions=-1" in str(pf_m.get("broker"))
+                 and "relancer ReleveFP" in str(pf_m.get("note")), pf_m))
+    t1c = tool1_on_deals(os.path.join(SCRATCH, "rv8_t1_poscut"), g["rel"], lit,
+                         fini_edit_fn=lambda ls: [re.sub(r"\bpositions=\d+", "positions=2", l_) for l_ in ls])
+    pf_c = t1c["ck"].get(("compte", "positions_file"), {})
+    chk("deals2 FV7-T1-POSITIONS-COUNT-WORDING: positions.csv one row short of fini.txt: the line gives the count ('1 ligne(s) lue(s) pour "
+        "positions=2 dans fini.txt') and asks to copy the claude/releve folder again",
+        lambda: (t1c["rc"] == 0 and pf_c.get("status") == "DIFFERENT" and "1 ligne(s) lue(s) pour positions=2 dans fini.txt" in str(pf_c.get("broker"))
+                 and "recopier le dossier claude/releve" in str(pf_c.get("note")), pf_c))
+    # OPEN-FAIL-UNTESTED: deals.csv, then positions.csv, that ReleveFP cannot open
+    rel_od = releve_run_deals("rv8_rel_openfail_d", deals_open, [opn], STORY_COPY, env={"MOCK_OPEN_FAIL": T_DEALS})
+    fod = fini_of(rel_od)
+    chk("deals2 OPEN-FAIL-UNTESTED: deals.csv cannot be opened (MOCK_OPEN_FAIL): deals=-1, deals_du=0, erreur_deals=5004, no deals.csv; positions.csv "
+        "written (positions=1)", lambda: (fod.get("deals") == "-1" and fod.get("deals_du") == "0" and fod.get("erreur_deals") == "5004"
+                                          and not os.path.exists(os.path.join(rel_od, T_DEALS)) and fod.get("positions") == "1"
+                                          and crlf_rows(os.path.join(rel_od, T_POSITIONS)) == 1, fod))
+    god = cd_deals("openfail_d", g["jdir"], rel_od)
+    outs += [god["out"], ("so", god["so"])]
+    chk("deals2 OPEN-FAIL-UNTESTED: check_demo --bars on that folder says deals.csv is missing beside ReleveFP 1.11's fini.txt (deals=-1, erreur 5004): "
+        "relancer ReleveFP", lambda: (god["rc"] == 0 and "deals.csv absent de --bars" in god["an"] and "erreur_deals=5004" in god["an"]
+                                      and "relancer ReleveFP" in god["an"], god["an"][:600]))
+    t1od = tool1_on_deals(os.path.join(SCRATCH, "rv8_t1_openfail_d"), rel_od, lit)
+    chk("deals2 OPEN-FAIL-UNTESTED: tool 1 on it: deals.csv absent and erreur_deals DIFFERENT",
+        lambda: (t1od["ck"].get(("compte", "deals_file"), {}).get("status") == "DIFFERENT" and "absent" in str(t1od["ck"].get(("compte", "deals_file"), {}).get("broker"))
+                 and t1od["ck"].get(("compte", "deals_error"), {}).get("status") == "DIFFERENT", t1od["ck"].get(("compte", "deals_file"))))
+    rel_op = releve_run_deals("rv8_rel_openfail_p", deals_open, [opn], STORY_COPY, env={"MOCK_OPEN_FAIL": T_POSITIONS})
+    fop = fini_of(rel_op)
+    gop = cd_deals("openfail_p", g["jdir"], os.path.join(rel_op, T_DEALS))
+    outs += [gop["out"], ("so", gop["so"])]
+    chk("deals2 OPEN-FAIL-UNTESTED: positions.csv cannot be opened: positions=-1, erreur_deals=5004, deals.csv whole; check_demo keeps the history "
+        "(matched, balance explained) and says positions.csv was not compared (positions=-1), never that deals.csv is short",
+        lambda: (fop.get("positions") == "-1" and fop.get("erreur_deals") == "5004" and fop.get("deals") == str(len(deals_open))
+                 and not os.path.exists(os.path.join(rel_op, T_POSITIONS)) and gop["rc"] == 0 and gop["d"].get("matched") == 5
+                 and gop["m"].get("deals", {}).get("exact") and "positions.csv incomplet" in gop["an"] and "positions=-1" in gop["an"]
+                 and "deals.csv incomplet" not in gop["an"], (fop, gop["an"][:600])))
+    # LASTERR-STALE: a deal on a symbol the terminal no longer knows (SymbolInfoInteger leaves 4301), then its row's write fails without a code
+    old = mock_deal(1000050, 9050, 9050, STORY_OPENED + 60, "OLD.SYM", 0, 0, 1, 0, 1.0, 1.5)
+    rel_st = releve_run_deals("rv8_rel_stale", story_history(story_trades()) + [old], [], STORY_COPY, env={"MOCK_WRITE_FAIL": "deals.csv:3:0"})
+    fst = fini_of(rel_st)
+    chk("deals2 LASTERR-STALE: a write into deals.csv that fails without a code of its own right after an unknown symbol's 4301: erreur_deals=-1 "
+        "(no code), not 4301; the rows before it kept (deals=1)",
+        lambda: (fst.get("erreur_deals") == "-1" and fst.get("deals") == "1" and len(t_read(os.path.join(rel_st, T_DEALS)).splitlines()) == 2, fst))
+    # TOOL1-WITHDRAWAL-WORD: a withdrawal after the robot's first trade
+    wd = [mock_deal(1000202, 0, 0, srv("2026-11-17 12:00"), "", 2, 0, 0, 0, 0.0, 0.0, profit=-300.0, comment="Retrait " + FAKE_NAME)]
+    g2 = story_deals_case("d2_withdraw", extra_deals=wd, shifts=[(srv("2026-11-17 12:00"), -300.0)], tool1=True, lit=lit)
+    outs += [g2["out"], ("so", g2["so"])]
+    b2 = str(g2["t1"]["ck"].get(("compte", "deals_balance"), {}).get("broker"))
+    chk("deals2 TOOL1-WITHDRAWAL-WORD: a withdrawal of 300 EUR is a 'retrait -300,00 EUR' in tool 1 (DIFFERENT), never a 'versement'; check_demo "
+        "says 'retrait de 300,00 EUR'", lambda: (g2["t1"]["ck"].get(("compte", "deals_balance"), {}).get("status") == "DIFFERENT"
+                                                 and "retrait -300,00 EUR" in b2 and "versement -300" not in b2 and "retrait de 300,00 EUR" in g2["an"],
+                                                 (b2[:300], g2["an"][:300])))
+    # TOOL1-PREDEMO-TRADES: a trade by hand and a SondeFP round trip closed before the robot's start (and first trade)
+    pre = [mock_deal(1000401, 9401, 9401, srv("2026-11-14 15:40"), "BTCUSD.r", 0, 0, 0, 0, 0.01, 57100.0, comment=FAKE_NAME),
+           mock_deal(1000402, 9402, 9401, srv("2026-11-14 15:45"), "BTCUSD.r", 1, 1, 0, 0, 0.01, 57080.0, profit=-0.17),
+           mock_deal(1000403, 9403, 9403, srv("2026-11-14 15:46"), "BTCUSD.r", 0, 0, 3, 20261112, 0.01, 57090.0, comment="CM sonde"),
+           mock_deal(1000404, 9404, 9403, srv("2026-11-14 15:47"), "BTCUSD.r", 1, 1, 3, 20261112, 0.01, 57070.0, profit=-0.17)]
+    g3 = story_deals_case("d2_prehand", extra_deals=pre, shifts=[(srv("2026-11-14 15:45"), -0.17), (srv("2026-11-14 15:47"), -0.17)], tool1=True, lit=lit)
+    outs += [g3["out"], ("so", g3["so"])]
+    ck3 = g3["t1"]["ck"]
+    chk("deals2 TOOL1-PREDEMO-TRADES: a trade by hand and a SondeFP trade closed before the robot's first trade are INFO 'avant le premier trade du "
+        "robot' in tool 1 (not DIFFERENT), as check_demo says 'avant la demo' without an anomaly",
+        lambda: (ck3.get(("compte", "deals_hand_before"), {}).get("status") == "INFO" and ck3.get(("compte", "deals_other_before"), {}).get("status") == "INFO"
+                 and ("compte", "deals_hand") not in ck3 and ("compte", "deals_other") not in ck3 and g3["rc"] == 0 and g3["r"].get("anomalies") == []
+                 and "avant la demo" in t_read(os.path.join(g3["out"], "report_fr.txt")),
+                 ({"/".join(k): v.get("status") for k, v in ck3.items() if "deal" in k[1]}, g3["an"][:300])))
+    # TOOL1-DEPOSIT-BEFORE-FIRST-TRADE: 500 EUR paid in on the Sunday, after the start, before the first trade
+    dep = [mock_deal(1000501, 0, 0, srv("2026-11-15 12:00"), "", 2, 0, 0, 0, 0.0, 0.0, profit=500.0, comment="Depot " + FAKE_NAME)]
+    g4 = story_deals_case("d2_sundep", extra_deals=dep, shifts=[(srv("2026-11-15 12:00"), 500.0)], tool1=True, lit=lit)
+    outs += [g4["out"], ("so", g4["so"])]
+    c4 = g4["t1"]["ck"].get(("compte", "deals_balance"), {})
+    chk("deals2 TOOL1-DEPOSIT-BEFORE-FIRST-TRADE: a deposit after the opening one but before the robot's first trade is DIFFERENT in tool 1 (with "
+        "the reminder that check_demo dates it against the start), as check_demo flags it",
+        lambda: (c4.get("status") == "DIFFERENT" and "versement +500,00 EUR" in str(c4.get("broker")) and "check_demo" in str(c4.get("note"))
+                 and "versement de 500,00 EUR le 2026-11-15" in g4["an"], (c4, g4["an"][:300])))
+    # TOOL1-VERSION-EXPECTS-110: 1.11 expected; a 1.10 folder (the old .ex5) DIFFERENT
+    g0 = story_deals_case("d2_clean", tool1=True, lit=lit)
+    outs += [g0["out"], ("so", g0["so"])]
+    v11 = g0["t1"]["ck"].get(("compte", "releve_version"), {})
+    f110 = os.path.join(SCRATCH, "rv8_v110")
+    make_releve(f110, lit, "good")
+    o110 = os.path.join(SCRATCH, "rv8_v110_out")
+    rc110, _, _ = run_tool("read_mac_files.py", [f110, "--out", o110])
+    s110 = json.load(open(os.path.join(o110, "summary.json"))) if rc110 == 0 else {"checks": []}
+    v10 = next((c for c in s110["checks"] if c["market"] == "compte" and c["item"] == "releve_version"), {})
+    chk("deals2 TOOL1-VERSION-EXPECTS-110: tool 1 expects ReleveFP 1.11 (OK for 1.11, '1.11' in the expected column); a 1.10 folder is DIFFERENT "
+        "'ancien script : recompiler ReleveFP 1.11 (F7)'", lambda: (v11.get("status") == "OK" and str(v11.get("assumed")) == "1.11"
+                                                                     and v10.get("status") == "DIFFERENT" and "ancien script" in str(v10.get("note"))
+                                                                     and "1.11" in str(v10.get("note")) and "F7" in str(v10.get("note")), (v11, v10)))
+    # TOOL1-HAND-CLOSE-UNSEEN: the robot's gold position closed by hand on the phone (closing deal DEAL_REASON_MOBILE, magic 0)
+    hc = lambda ds: [dict(d, reason=1, magic=0) if (d["position"] == 70009001 and d["entry"] == 1) else d for d in ds]   # noqa: E731
+    g5 = story_deals_case("d2_handclose", deals_fn=hc, tool1=True, lit=lit)
+    outs += [g5["out"], ("so", g5["so"])]
+    c5 = g5["t1"]["ck"].get(("compte", "deals_robot_hand_close"), {})
+    chk("deals2 TOOL1-HAND-CLOSE-UNSEEN: a robot position closed by hand (closing deal DEAL_REASON_MOBILE, magic 0) is DIFFERENT in tool 1, named "
+        "with its sleeve and 'a la main (telephone)'", lambda: (c5.get("status") == "DIFFERENT" and "ORX" in str(c5.get("broker"))
+                                                                  and "a la main (telephone)" in str(c5.get("broker")), c5))
+    # TOOL2-FINI-COUNTS-IGNORED: positions=-1 with positions.csv holding its header only, a journal position open at the releve
+    gp = story_deals_case("d2_posfail", trades=tr, segs=segs, positions=[opn])
+    write(os.path.join(gp["rel"], T_POSITIONS), T_POSITIONS_HEADER + "\n", crlf=True)
+    fl = [("positions=-1" if ln.startswith("positions=") else ("erreur_deals=-1" if ln.startswith("erreur_deals=") else ln))
+          for ln in t_read(os.path.join(gp["rel"], "fini.txt")).splitlines()]
+    write(os.path.join(gp["rel"], "fini.txt"), "\n".join(fl) + "\n", crlf=True)
+    gp2 = cd_deals("posfail", gp["jdir"], os.path.join(gp["rel"], T_DEALS))
+    outs += [gp2["out"], ("so", gp2["so"])]
+    chk("deals2 TOOL2-FINI-COUNTS-IGNORED: positions.csv with its header only and positions=-1 in fini.txt: 'positions.csv incomplet ... non "
+        "comparees', never 'absente(s) de positions.csv' for the journal's open position",
+        lambda: (gp2["rc"] == 0 and "positions.csv incomplet" in gp2["an"] and "positions=-1" in gp2["an"] and "absente(s) de positions.csv" not in gp2["an"]
+                 and (gp2["d"].get("open_at_releve") or {}).get("skipped"), gp2["an"][:600]))
+    # TOOL2-FINI-COUNTS-IGNORED: deals.csv cut after 4 of its 9 rows (a copy that stopped on a line end), deals=9 in fini.txt
+    gc = story_deals_case("d2_cut")
+    raw = open(os.path.join(gc["rel"], T_DEALS), "rb").read().split(b"\r\n")
+    n_all = len(raw) - 2
+    with open(os.path.join(gc["rel"], T_DEALS), "wb") as f:
+        f.write(b"\r\n".join(raw[:5]) + b"\r\n")
+    gc2 = cd_deals("cut", gc["jdir"], os.path.join(gc["rel"], T_DEALS))
+    outs += [gc2["out"], ("so", gc2["so"])]
+    chk("deals2 TOOL2-FINI-COUNTS-IGNORED: deals.csv cut after 4 of its 9 rows: one anomaly 'deals.csv incomplet (4 lignes lues pour deals=9)', "
+        "the history used up to its last row: no 'sans aucune transaction', no 'historique d'un autre compte', no 'encore ouverte(s)'",
+        lambda: (gc2["rc"] == 0 and n_all == 9 and "deals.csv incomplet (4 lignes lues pour deals=9 dans fini.txt)" in gc2["an"]
+                 and "sans aucune transaction" not in gc2["an"] and "historique d'un autre compte" not in gc2["an"]
+                 and "encore ouverte(s) dans l'historique" not in gc2["an"] and gc2["d"].get("journal_after_cut") == 2, (n_all, gc2["an"][:700],
+                                                                                                                        gc2["d"].get("journal_after_cut"))))
+    # TOOL2-UNKNOWN-POSITIONS-WORDING: a duplicate gold position the robot closed (DUP and CLOSE lines name its ticket) and its deals
+    o_tr = story_trades()[0]
+    dupd = [mock_deal(1000601, 9601, 70009101, o_tr["at"] + 1, "XAUUSD.r", 0, 0, 3, 20261210, 0.05, o_tr["fill"], sl=o_tr["stop"]),
+            mock_deal(1000602, 9602, 70009101, o_tr["at"] + 70, "XAUUSD.r", 1, 1, 3, 20261210, 0.05, o_tr["fill"])]
+
+    def add_dup(jd):
+        p_ = os.path.join(jd, time.strftime("%Y%m%d", time.gmtime(o_tr["at"])) + ".log")
+        u = C.srv_to_utc(o_tr["at"])
+        add = [jl(u + 65, "DUP", "ORX", ("ticket", 70009101), ("kept", 70009001)),
+               jl(u + 69, "CLOSE", "ORX", ("ticket", 70009101), ("magic", 20261210), ("px", o_tr["fill"]), ("why", "dup"), ("rc", 10009), ("ok", 1))]
+
+        def ins(ls):
+            k = next(i for i, ln in enumerate(ls) if "|FILL|ORX|" in ln)
+            return ls[:k + 1] + add + ls[k + 1:]
+        edit_lines(p_, ins)
+    g6 = story_deals_case("d2_dup", extra_deals=dupd, journal_fn=add_dup)
+    outs += [g6["out"], ("so", g6["so"])]
+    chk("deals2 TOOL2-UNKNOWN-POSITIONS-WORDING: the duplicate the robot closed (its DUP and CLOSE lines name the ticket) is known to the journal: "
+        "never 'que le journal ne connait pas'", lambda: (g6["rc"] == 0 and "que le journal ne connait pas" not in g6["an"]
+                                                         and "ORX ticket 70009101" in str(g6["d"].get("known_by_other_lines")), (g6["an"][:500],
+                                                                                                                                 g6["d"].get("known_by_other_lines"))))
+    # TOOL2-UNKNOWN-POSITIONS-WORDING: the daily file of Tuesday 17 lost (BKB's and BKE's lines were in it)
+    g7 = story_deals_case("d2_lost", journal_fn=lambda jd: os.remove(os.path.join(jd, "20261117.log")))
+    outs += [g7["out"], ("so", g7["so"])]
+    chk("deals2 TOOL2-UNKNOWN-POSITIONS-WORDING: the positions of a lost daily file are listed with that file ('leurs lignes etaient dedans', on "
+        "stdout too), never 'que le journal ne connait pas'", lambda: (g7["rc"] == 0 and "que le journal ne connait pas" not in g7["an"]
+                                                                       and g7["d"].get("in_lost_files") == {"20261117.log": 2}
+                                                                       and "positions des fichiers du jour manquants connues par l'historique" in g7["so"]
+                                                                       and "20261117.log" in g7["an"], (g7["an"][:500], g7["d"].get("in_lost_files"))))
+    # TOOL2-LATECOPY-SILENT: ReleveFP run on Tuesday 17:30 server, the files copied on Wednesday 23:00 (one DAY line after the releve, a gold
+    # trade closed after it)
+    rel_t = srv("2026-11-17 17:30")
+    trl = story_trades() + [story_trade("ORX", srv("2026-11-17 19:00"), 70009008)]
+    bl = os.path.join(SCRATCH, "rv8_late")
+    if os.path.isdir(bl):
+        shutil.rmtree(bl)
+    jl_dir = os.path.join(bl, "j", "ClaudeRobot")
+    story_journal(jl_dir, [{"at": STORY_START, "to": STORY_END}], trl)
+    rel_l = releve_run_deals("rv8_rel_late", [d for d in story_history(trl) if d["time"] <= rel_t], [], rel_t)
+    g8 = cd_deals("late", jl_dir, os.path.join(rel_l, T_DEALS))
+    outs += [g8["out"], ("so", g8["so"])]
+    md8 = g8["m"].get("deals") or {}
+    chk("deals2 TOOL2-LATECOPY-SILENT: the journal goes on after the releve: the DAY lines up to it are explained by the history ('historique du compte "
+        "jusqu'au releve'), the rest estimated from the balance and said so ('apres le releve ... (estimation d'apres le solde)'), never silently",
+        lambda: (g8["rc"] == 0 and md8.get("partial") and md8.get("exact") and "historique du compte jusqu'au releve" in g8["so"]
+                 and "apres le releve" in g8["so"] and "(estimation d'apres le solde)" in g8["so"] and (g8["m"].get("after_history") or {}).get("positions") == 3
+                 and "historique du compte jusqu'au releve" in g8["rep_fr"], (md8, g8["so"][-900:])))
+    # MONEY-AU-CENTIME-CLAIM: 36 more trades on Monday (their rounded cents made the old tolerance grow past 0.20 EUR by Tuesday), then BKB's closing
+    # deal on Tuesday edited by +0.20 EUR (the journal's balance keeps the true one)
+    many = story_trades()
+    for k in range(36):
+        many.append(story_trade(["ORX", "N30", "BKB", "BKE"][k % 4], srv("2026-11-16 00:20") + 900 * k, 70009200 + k, hold=600, side=1 if k % 2 == 0 else -1))
+    edit = lambda ds: [dict(d, profit=round(d["profit"] + 0.20, 2)) if (d["position"] == 70009003 and d["entry"] == 1) else d for d in ds]   # noqa: E731
+    gmc = story_deals_case("d2_many", trades=many)
+    gme = story_deals_case("d2_many_edit", trades=many, deals_fn=edit)
+    outs += [gmc["out"], ("so", gmc["so"]), gme["out"], ("so", gme["so"])]
+    chk("deals2 MONEY-AU-CENTIME-CLAIM: 40 trades agree with the history line by line (exact, the gap said as it is), and one closing deal edited "
+        "by 0.20 EUR the next day breaks it on its day ('ne suit pas l'historique ... le 2026-11-17'): the tolerance no longer grows over the demo",
+        lambda: (gmc["rc"] == 0 and gmc["m"].get("deals", {}).get("exact") and gmc["r"].get("anomalies") == []
+                 and gme["rc"] == 0 and "ne suit pas l'historique du compte" in gme["an"] and "le 2026-11-17" in gme["an"]
+                 and not gme["m"].get("deals", {}).get("exact"), (gmc["m"].get("deals", {}).get("max_gap_eur"), gme["an"][:500])))
+    chk("deals2 MONEY-AU-CENTIME-CLAIM: 'au centime pres' is said only when the largest gap seen is a cent at most, else 'a X EUR pres'",
+        lambda: (all(("au centime pres" in x["so"]) == ((x["m"].get("deals") or {}).get("max_gap_eur", 1) <= 0.011)
+                     for x in (g0, gmc) if (x["m"].get("deals") or {}).get("exact")), [(x["m"].get("deals") or {}).get("max_gap_eur") for x in (g0, gmc)]))
+    # PERIOD-FROM-FILE-ORDER: the same history with its rows reversed
+    rev = os.path.join(SCRATCH, "rv8_rel_reversed")
+    if os.path.isdir(rev):
+        shutil.rmtree(rev)
+    shutil.copytree(g0["rel"], rev)
+    rr_ = open(os.path.join(rev, T_DEALS), "rb").read().split(b"\r\n")
+    with open(os.path.join(rev, T_DEALS), "wb") as f:
+        f.write(b"\r\n".join([rr_[0]] + list(reversed(rr_[1:-1]))) + b"\r\n")
+    g9 = cd_deals("reversed", g0["jdir"], os.path.join(rev, T_DEALS))
+    t19 = tool1_on_deals(os.path.join(SCRATCH, "rv8_t1_reversed"), rev, lit)
+    outs += [g9["out"], ("so", g9["so"])]
+    b9 = str(t19["ck"].get(("compte", "deals_file"), {}).get("broker"))
+    chk("deals2 PERIOD-FROM-FILE-ORDER: a deals.csv whose rows are in reverse order: both tools give the period from the earliest to the latest deal",
+        lambda: (g9["rc"] == 0 and g9["d"].get("from_srv") == STORY_OPENED and g9["d"].get("from_srv") < g9["d"].get("to_srv")
+                 and "du 14/11/2026 a 14:30" in b9 and "transactions du 2026-11-14" in g9["rep_fr"], (g9["d"].get("from_srv"), b9[:200])))
+    # DEALS-WORDING (tool 1): no 'du le', no negative zero
+    tx0 = (g0["t1"] or {}).get("txt", "")
+    chk("deals2 DEALS-WORDING: tool 1 says 'du 14/11/2026 ... au ...' (never 'du le'), and no negative zero ('-0 EUR', '-0 points') on the markets "
+        "without commission", lambda: (bool(tx0) and "du le " not in tx0 and "au le " not in tx0 and "-0 EUR" not in tx0 and "-0 points" not in tx0
+                                       and "0 EUR par lot et par cote = 0 points" in tx0, [ln for ln in tx0.splitlines() if "commission des trades" in ln][:2]))
+    # SERVER-CLAIM (control): 1.11's fini.txt names no server; sonde.csv still does, and tool 1 masks it everywhere
+    rel111 = os.path.join(SCRATCH, "rv7_d2_clean", "rel111")
+    chk("deals2 control SERVER-CLAIM: a 1.11 folder (no server line in fini.txt) with SondeFP's sonde.csv naming the server: tool 1 learns it there "
+        "and masks it in every output", lambda: ("server=" not in t_read(os.path.join(rel111, "fini.txt")) and FAKE_SERVER in t_read(os.path.join(rel111, "sonde.csv"))
+                                                 and bool(tx0) and FAKE_SERVER not in tx0, t_read(os.path.join(rel111, "fini.txt"))[:200]))
+    # SELFTEST-JSON: every info so far is JSON (the review7 check whose info was keyed by (market, item) tuples included)
+    r7 = next((r for r in RESULTS if r["test"].startswith("deals TOOL1: read_mac_files reads deals.csv")), None)
+    chk("deals2 SELFTEST-JSON: every check's info can be written to the results file as plain JSON (no default), the review7 check keyed by "
+        "(market, item) tuples included", lambda: (bool(json.dumps(RESULTS)) and (r7 is None or all(isinstance(k, str) for k in (r7["info"] or [{}])[0])),
+                                                   r7 and str(r7["info"])[:200]))
+    leaks = [o for o in outs if isinstance(o, str) and os.path.isdir(o) and any(w in outputs_text(o) for w in ACCOUNT_WORDS)]
+    leaks += ["stdout" for o in outs if isinstance(o, tuple) and any(w in o[1] for w in ACCOUNT_WORDS)]
+    leaks += ["tool 1" for x in (g, g2, g3, g4, g0, g5) for t_ in [x.get("t1") or {}] if any(w in t_.get("txt", "") for w in ACCOUNT_WORDS)]
+    leaks += ["tool 1" for t_ in (t1m, t1od, t19) if any(w in t_.get("txt", "") for w in ACCOUNT_WORDS)]
+    chk("deals2 privacy: the account's server, login and name (planted in the deals' comments, external ids, the imitation's account and the "
+        "sonde) are in no output of these cases", lambda: (not leaks, leaks[:3]))
+    print(f"   (review8 deals2 quick tests {time.time() - t0:.0f} s)")
+
+
+# the scratch folders a later group reuses (review4b and review5 take live4_clean and rel4_100 from review4, review7 the sleeping harness of
+# review4b, review7's and review8's groups the ReleveFP build): kept when a replay group's own folders are deleted (pruned)
+KEEP_ACROSS_GROUPS = frozenset({"live4_clean", "rel4_100", "harness_sleep", "rv7_build"})
+PRUNE = {"on": True}
+
+
+def prune_scratch(keep=frozenset()):
+    """delete the scratch's folders and files except keep and KEEP_ACROSS_GROUPS (nothing with --keep)"""
+    if not PRUNE["on"]:
+        return
+    for n in sorted(set(os.listdir(SCRATCH)) - set(keep) - KEEP_ACROSS_GROUPS):
+        p = os.path.join(SCRATCH, n)
+        if os.path.isdir(p) and not os.path.islink(p):
+            shutil.rmtree(p, ignore_errors=True)
+        else:
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+
+
+def pruned(fn, *args):
+    """a replay group whose scratch folders and files are deleted when it ends (review8: the full run held about 4 GB of scratch at its end, more
+    than the disk the session keeps free allows), except those a later group reuses (KEEP_ACROSS_GROUPS); --keep keeps everything"""
+    before = set(os.listdir(SCRATCH))
+    try:
+        fn(*args)
+    finally:
+        prune_scratch(keep=before)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--keep", action="store_true")
     a = ap.parse_args(argv)
+    PRUNE["on"] = not a.keep
     if os.path.isdir(SCRATCH):
         shutil.rmtree(SCRATCH)
     os.makedirs(SCRATCH)
-    lit = literal_lines()
     t0 = time.time()
-    test_tool1(lit)
-    test_review_tool1(lit)
-    test_review2_tool1(lit)
-    test_tool2_journal(lit)
-    test_review_journal(lit)
-    test_review2_journal(lit)
-    test_review3_tool1(lit)
-    test_review3_journal(lit)
-    test_review3_releve(lit)
-    test_review4_releve(lit)
-    test_review4_tool1(lit)
-    test_review4_journal(lit)
-    test_review4b_tool1(lit)
-    test_review4b_journal(lit)
-    test_review5_start(lit)
-    test_review5_journal(lit)
-    test_review5b_start(lit)
-    test_review5b_journal(lit)
-    test_review5b_fills(lit)
-    if not a.quick:
-        test_tool2_replay(lit)
-        test_review4_replay(lit)
-        test_review4b_replay(lit)
-        test_review5_replay(lit)
-    n_fail = sum(1 for r in RESULTS if not r["pass"])
-    r2 = [r for r in RESULTS if r["test"].startswith("review2")]
-    r3 = [r for r in RESULTS if r["test"].startswith("review3")]
-    r4 = [r for r in RESULTS if r["test"].startswith("review4 ")]
-    r4b = [r for r in RESULTS if r["test"].startswith("review4b ")]
-    r5 = [r for r in RESULTS if r["test"].startswith("review5 ")]
-    r5b = [r for r in RESULTS if r["test"].startswith("review5b ")]
-    print(f"\n{len(RESULTS) - n_fail}/{len(RESULTS)} checks passed in {time.time() - t0:.0f} s "
-          f"(review2: {sum(r['pass'] for r in r2)}/{len(r2)}, review3: {sum(r['pass'] for r in r3)}/{len(r3)}, "
-          f"review4: {sum(r['pass'] for r in r4)}/{len(r4)}, review4b: {sum(r['pass'] for r in r4b)}/{len(r4b)}, "
-          f"review5: {sum(r['pass'] for r in r5)}/{len(r5)}, review5b: {sum(r['pass'] for r in r5b)}/{len(r5b)})")
-    with open(RESULTS_FILE, "w") as f:
-        json.dump(RESULTS, f, indent=1, default=str)
-    if not a.keep:
-        shutil.rmtree(SCRATCH, ignore_errors=True)
-    return 0 if n_fail == 0 else 1
+    n_fail = 0
+    try:
+        lit = literal_lines()
+        test_tool1(lit)
+        test_review_tool1(lit)
+        test_review2_tool1(lit)
+        test_tool2_journal(lit)
+        test_review_journal(lit)
+        test_review2_journal(lit)
+        test_review3_tool1(lit)
+        test_review3_journal(lit)
+        test_review3_releve(lit)
+        test_review4_releve(lit)
+        test_review4_tool1(lit)
+        test_review4_journal(lit)
+        test_review4b_tool1(lit)
+        test_review4b_journal(lit)
+        test_review5_start(lit)
+        test_review5_journal(lit)
+        test_review5b_start(lit)
+        test_review5b_journal(lit)
+        test_review5b_fills(lit)
+        test_review6_start(lit)
+        test_review6_journal(lit)
+        test_review6b_start(lit)
+        test_review6b_journal(lit)
+        guarded(test_review7_deals_quick, lit)
+        guarded(test_review8_deals2_quick, lit)
+        if not a.quick:
+            prune_scratch()                     # the quick groups' folders (about 1.2 GB): no replay group reads them
+            pruned(test_tool2_replay, lit)
+            pruned(test_review4_replay, lit)
+            pruned(test_review4b_replay, lit)
+            pruned(test_review5_replay, lit)
+            pruned(guarded, test_review7_deals_replay, lit)
+        n_fail = sum(1 for r in RESULTS if not r["pass"])
+        groups = [(k, [r for r in RESULTS if r["test"].startswith(p)]) for k, p in
+                  (("review2", "review2"), ("review3", "review3"), ("review4", "review4 "), ("review4b", "review4b "), ("review5", "review5 "),
+                   ("review5b", "review5b "), ("review6", "review6 "), ("review6b", "review6b "), ("deals", "deals "), ("deals2", "deals2 "))]
+        print(f"\n{len(RESULTS) - n_fail}/{len(RESULTS)} checks passed in {time.time() - t0:.0f} s ("
+              + ", ".join(f"{k}: {sum(r['pass'] for r in rs)}/{len(rs)}" for k, rs in groups) + ")")
+    finally:
+        # review8 SELFTEST-JSON: the results file is written even when a group stopped the run, as JSON whatever the checks' infos hold (check()
+        # makes them JSON-safe; default=str is a second lock), and the scratch is deleted in any case unless --keep
+        try:
+            with open(RESULTS_FILE, "w") as f:
+                json.dump(jsonable(RESULTS), f, indent=1, default=str)
+        finally:
+            if not a.keep:
+                shutil.rmtree(SCRATCH, ignore_errors=True)
+    return 0 if n_fail == 0 and RESULTS else 1
 
 
 if __name__ == "__main__":

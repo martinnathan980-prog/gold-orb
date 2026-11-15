@@ -194,12 +194,12 @@ CR|…|READY|ETHUSD|…
 
 **Une ligne `ERROR` ?** Lis la fin de la ligne. S'il y a deux lignes ERROR, lis les deux.
 
+- Elle dit `another copy` : le robot tourne déjà sur un autre graphique, et MetaTrader a refusé cette nouvelle copie. N'enlève rien et ne relance rien : copie-moi la ligne INIT (avec `build=`) du robot qui tourne.
 - Elle parle de `InpRiskTable`, de `InpK1T` ou de `rule BKE` : faute de frappe dans une des 2 valeurs.
 - Elle dit `symbol … not found` : en bas à droite, MetaTrader doit être connecté à ton compte démo FP Markets. Attends une minute. Si ça revient après la relance : capture.
-- Elle dit `another copy` : le robot tourne aussi sur un autre graphique. Enlève-le de l'autre graphique.
 - Autre chose : envoie-moi une capture.
 
-Puis regarde le coin du graphique. Le nom ClaudeRobot a disparu : relance le robot (étape 6, avec les 2 valeurs). Il est toujours là : ne le relance pas, envoie-moi une capture.
+Sauf pour `another copy`, regarde ensuite le coin du graphique. Le nom ClaudeRobot a disparu : relance le robot (étape 6, avec les 2 valeurs). Il est toujours là : ne le relance pas, envoie-moi une capture.
 
 **Envoie-moi :**
 
@@ -312,7 +312,7 @@ Le dossier ClaudeRobot est là. Il contient un fichier par jour, par exemple `20
 
 **À la fin de la démo :**
 
-1. Avant la fin, je t'envoie la nouvelle version de ReleveFP, avec ses étapes. Je te dirai aussi quand lancer SondeFP, et comment enregistrer l'historique de tes trades (prix et frais de chacun). Les fichiers de ReleveFP et SondeFP iront dans Files → claude → releve.
+1. Avant la fin, je t'envoie la nouvelle version de ReleveFP, avec ses étapes. Elle enregistre aussi l'historique de tes trades (prix et frais de chacun). Ses fichiers iront dans Files → claude → releve.
 2. Ensuite, dans le Finder : Aller → Aller au dossier… Colle cette ligne, puis Entrée :
 
    ```
