@@ -6,7 +6,7 @@ mechanism). Numbers are never reused. Each idea needs at least 4 years of in-sam
 
 | N | Idea | Data | Sketch of the rule | Why it may hold, why it is unusual | Status |
 |---|---|---|---|---|---|
-| 001 | Crypto weekend move, then Monday at FP | Binance 1h klines BTC, ETH (2017-2021) | FP's crypto CFDs are shut from Friday 23:55 to Sunday 24:00 server while crypto trades. Does the weekend move continue or revert during Monday's CFD session? Enter at the CFD's reopening, exit the same day | Specific to a broker closing a 24/7 market; retail flow reacts at the reopening | ouverte |
+| 001 | Crypto weekend move, then Monday at FP | Binance 1h klines BTC, ETH (2017-2021) | FP's crypto CFDs are shut from Friday 23:55 to Sunday 24:00 server while crypto trades. Does the weekend move continue or revert during Monday's CFD session? Enter at the CFD's reopening, exit the same day | Specific to a broker closing a 24/7 market; retail flow reacts at the reopening | fermee |
 | 002 | World news tone shock | GDELT 2.0 events (2015-2021), Dukascopy H1 | Daily average tone of world events: a shock (z-score of the day against 60 days) predicts risk-off for 1-5 days (long gold or JPY, short US500 or GER40) | Machine-read news tone, rarely used by retail rules | ouverte |
 | 003 | Conflict event spikes | GDELT 2.0 events, CAMEO root codes 18-20 (2015-2021) | A spike in the count of violent events predicts gold, oil and USDJPY over 1-5 days | Geopolitical risk measured from raw event counts | ouverte |
 | 004 | Policy uncertainty jumps | FRED USEPUINDXD (daily, since 1985) | A jump in the daily economic policy uncertainty index predicts next-week index and gold moves | Text-based uncertainty index, slow and seldom traded | ouverte |

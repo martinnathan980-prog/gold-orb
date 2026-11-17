@@ -87,8 +87,9 @@ does not pass.
 - VAL (rule 5): PF >= 1.06, expectancy > 0, every-signal expectancy > 0, positive in at least 3 of the 4 years.
 
 ## What a run does
-1. `git fetch origin lab && git checkout lab && git pull --ff-only` (or clone the repository if it is not here: see the
-   scheduled task's prompt). Read this file, LEDGER.md, IDEAS.md.
+1. The repository is checked out on branch `lab`; `git pull --ff-only`, then check you can push
+   (`git push --dry-run origin HEAD:lab`): if not, stop at once and say so. Read this file, LEDGER.md, IDEAS.md.
+   Push your declaration as soon as it is committed, so that nothing is lost if the run stops.
 2. Take the idea marked `en cours` if there is one, else the first `ouverte` one in IDEAS.md, or a better new idea of
    your own (add it to IDEAS.md first, with why it is unusual and its mechanism). Check in LEDGER.md and the closed
    families below that it was not tried.
