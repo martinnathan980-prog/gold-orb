@@ -1,0 +1,32 @@
+{
+  "idea": "002 World news tone shock",
+  "date_declared": "2026-11-17",
+  "hypothesis": "A day whose machine-read world news tone (GDELT) is abnormally negative against its own recent past is followed by 1-5 days of risk-off: gold and the yen up, US and German equity indices down.",
+  "mechanism": "News flow is absorbed slowly by retail and systematic flows; a broad deterioration of tone (wars, attacks, crises) precedes hedging demand. The data is a raw text-based measure rarely used by retail rules.",
+  "data": {
+    "news": "GDELT 1.0 daily event files https://data.gdeltproject.org/events/YYYYMMDD.export.CSV.zip, 2013-04-01..2021-12-31 (8.75 in-sample years). File of day D = events added on D, published about 06:00 UTC on D+1. Daily tone T_D = sum(AvgTone*NumMentions)/sum(NumMentions) over all rows of the file (columns 34 and 31).",
+    "prices": "Dukascopy hourly BID candles XAUUSD, USDJPY, USA500IDXUSD, DEUIDXEUR, 2013-2021, cut at 2021-12-31.",
+    "nothing_after": "2021-12-31"
+  },
+  "rule_main": {
+    "signal": "z_D = (T_D - mean(T over the 60 previous calendar days D-60..D-1)) / std(same window), needing >= 50 valid days; shock if z_D <= -2.0",
+    "entry": "market order at the open of the first H1 bar whose open time >= D+1 07:00 UTC, for each leg",
+    "legs": "basket of four, one rule: long XAUUSD, short USDJPY, short USA500 (us500), short DEUIDXEUR (ger40)",
+    "exit": "market order at the open of the first H1 bar whose open time >= entry time + 3 business days (pandas BDay(3))",
+    "overlap": "a signal while that leg is still open is skipped for that leg",
+    "R": "signed price change / D20, D20 = mean of the daily (UTC) high-low range over the 20 completed days before entry (equal risk per leg)"
+  },
+  "configurations": [
+    {"id": "01_main", "z": -2.0, "window": 60, "hold_bdays": 3, "tone": "mention_weighted"},
+    {"id": "02_z15", "z": -1.5, "window": 60, "hold_bdays": 3, "tone": "mention_weighted"},
+    {"id": "03_z25", "z": -2.5, "window": 60, "hold_bdays": 3, "tone": "mention_weighted"},
+    {"id": "04_w30", "z": -2.0, "window": 30, "hold_bdays": 3, "tone": "mention_weighted"},
+    {"id": "05_w120", "z": -2.0, "window": 120, "hold_bdays": 3, "tone": "mention_weighted"},
+    {"id": "06_h1", "z": -2.0, "window": 60, "hold_bdays": 1, "tone": "mention_weighted"},
+    {"id": "07_h5", "z": -2.0, "window": 60, "hold_bdays": 5, "tone": "mention_weighted"},
+    {"id": "08_unweighted", "z": -2.0, "window": 60, "hold_bdays": 3, "tone": "plain mean of AvgTone"}
+  ],
+  "costs": "lab/r2/fp_costs.json: spread in bp of spread_ref_price (absolute for usdjpy) applied at entry price, slip_mkt_bps per side, swaps (annual fraction of notional / 360 per night crossing 22:00 UTC, x3 on the triple day) for the side held; reported gross, net, net with costs x1.5.",
+  "bars": "PROTOCOL_V3 basket bars on the main configuration: t on daily sums of R >= 2.5, pooled PF >= 1.12 and >= 1.04 at costs x1.5, >= 60 % of years positive, >= 65 % of markets positive, no market above 25 % of the profit, random-entry null (2000 draws of the same number of random signal days, same legs, hold and overlap rule) >= 97.5th percentile of pooled net mean R, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days; weekly correlation with the sum of the ten <= 0.30 (2014-2021, convention of round6 correlation.py); deflated Sharpe probability >= 0.95 given the running total of configurations.",
+  "split": "IS only (to 2021-12-31). VAL only if every bar passes and an independent re-implementation agrees."
+}
