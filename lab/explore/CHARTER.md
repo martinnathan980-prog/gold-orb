@@ -3,6 +3,9 @@
 You are one run of a continuous search that a scheduled task starts every few hours, day and night. Each run tests ONE idea,
 writes its result, commits, pushes and stops. Read this whole file first; then LEDGER.md (what was already tried) and
 IDEAS.md (the queue).
+**Where the prompt that started your run and this charter differ, this charter wins**, in particular on how to choose
+the idea: the prompt's short "take the one marked en cours" is replaced by step 2 of "What a run does" below (several
+runs may work at the same time; an idea marked `en cours` usually belongs to a run that is still working).
 
 ## The goal (the user's, a French retail trader)
 - He trades an FP Markets Raw account (EUR, 1:500, hedging; CFDs with the `.r` suffix: FX majors and crosses, US and
