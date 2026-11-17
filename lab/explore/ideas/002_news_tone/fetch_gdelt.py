@@ -3,7 +3,7 @@
 Columns (0-based, 58-col format): 28 EventRootCode, 31 NumMentions, 34 AvgTone. The file of day D holds the events
 ADDED on D (published about 06:00 UTC on D+1)."""
 import io, json, os, sys, time, zipfile, csv, urllib.request, datetime as dt
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor as ThreadPoolExecutor
 OUT = os.path.expanduser("~/explore_data/gdelt")
 END = dt.date(2021, 12, 31)
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
@@ -42,8 +42,8 @@ def one(d):
 
 if __name__ == "__main__":
     days = [dt.date(2013, 4, 1) + dt.timedelta(i) for i in range((END - dt.date(2013, 4, 1)).days + 1)]
-    with ThreadPoolExecutor(4) as ex:
-        for i, _ in enumerate(ex.map(one, days)):
+    with ThreadPoolExecutor(8) as ex:
+        for i, _ in enumerate(ex.map(one, days, chunksize=4)):
             if i % 200 == 0:
                 print(i, flush=True)
     print("DONE", flush=True)
