@@ -1,6 +1,6 @@
 # Open search for new trading rules: charter of each run
 
-You are one run of a slow, continuous search that a scheduled task starts three times a day. Each run tests ONE idea,
+You are one run of a continuous search that a scheduled task starts every few hours, day and night. Each run tests ONE idea,
 writes its result, commits, pushes and stops. Read this whole file first; then LEDGER.md (what was already tried) and
 IDEAS.md (the queue).
 
@@ -10,9 +10,14 @@ IDEAS.md (the queue).
 - He wants to grow 2,000-5,000 EUR to 10,000 EUR fast, then grow more calmly. Speed comes mostly from risk; what
   research can add is **new rules with a high return per unit of drawdown that do not lose at the same time as the
   ten**. That is the target: independence first, then return per unit of drawdown.
-- He asked for paths nobody takes: unusual data (news tone, positioning, funding, macro, volumes, on-chain), unusual
-  clocks and horizons, unusual combinations. **Avoid well-known textbook strategies** (plain moving-average crosses,
-  RSI 30/70, MACD, Bollinger touches, classic pivots, turtle breakouts): they are crowded, and the lab tested many.
+- He asked for everything (2026-11-17: "known and unknown, very different and not different, never stop"): paths
+  nobody takes first (unusual data: news tone, positioning, funding, macro, volumes, on-chain, weather, flows;
+  unusual clocks, horizons and combinations), but also well-known or published effects, as long as the lab has not
+  tested them yet (LEDGER.md and the closed families at the end). Vary the families: do not take an idea of the same
+  family as the last ledger line while another family is open.
+- Markets that can be judged net of costs today (`lab/r2/fp_costs.json`): xauusd, xagusd, us100, us500, us30, ger40,
+  btcusd, ethusd, eurusd, gbpusd, usdjpy, audusd, usdcad, usdchf, nzdusd, eurjpy. An idea that needs another market
+  (oil, gas, other crosses ...) is marked `attend les frais FP` in IDEAS.md and left for the lead.
 - "Nothing works" is an acceptable and honest result. Never dress up a weak result.
 
 ## Hard rules (break none)
@@ -78,6 +83,12 @@ does not pass.
   percentile. A slower rule with fewer trades may pool several markets as a **basket** (one rule, same parameters):
   t on daily sums of R >= 2.5, pooled PF >= 1.12 and >= 1.04 at costs x1.5, >= 60 % of years positive, >= 65 % of
   markets positive, no market above 25 % of the profit, null on pooled trades.
+  **Small baskets** (amendment of 2026-11-17, written before any result of this search, for ideas declared after it):
+  with 2 to 4 markets the 25 % bar cannot be met by construction, so it becomes: no market above 50 % of the profit
+  (4 markets), 60 % (3 markets), 75 % (2 markets); every other basket bar is unchanged.
+- **Power first:** before declaring, count the signals of the main configuration from the signal data alone (no
+  price, no return): if n >= 250 on one market, or the basket bars, cannot be reached in sample, close the idea as
+  `donnees insuffisantes` without running it.
 - **Independence:** weekly correlation of the main configuration's R with the sum of the ten <= 0.30 (2014-2021).
 - **Selection:** the search tests many ideas, so luck finds winners. Log every configuration in the idea's
   `trials.jsonl`, keep the running total in LEDGER.md, and report the deflated Sharpe ratio (Bailey and Lopez de
@@ -90,9 +101,13 @@ does not pass.
 1. The repository is checked out on branch `lab`; `git pull --ff-only`, then check you can push
    (`git push --dry-run origin HEAD:lab`): if not, stop at once and say so. Read this file, LEDGER.md, IDEAS.md.
    Push your declaration as soon as it is committed, so that nothing is lost if the run stops.
-2. Take the idea marked `en cours` if there is one, else the first `ouverte` one in IDEAS.md, or a better new idea of
-   your own (add it to IDEAS.md first, with why it is unusual and its mechanism). Check in LEDGER.md and the closed
-   families below that it was not tried.
+2. Choose the idea: one marked `en cours` whose run stopped (its claim time, or, if none is written, the last
+   commit under its folder, `git log -1 --format=%cI -- lab/explore/ideas/<NNN>_*`, is more than 3 hours old), else
+   the first `ouverte` one in IDEAS.md that is not of the last ledger line's family, or a better new idea of your own
+   (add it to IDEAS.md first, with its mechanism and why it is worth a run). Check in LEDGER.md and the closed
+   families below that it was not tried. **Claim it at once:** set its status to `en cours (AAAA-MM-JJ HH:MM UTC)`
+   in IDEAS.md, commit and push; if the push is refused, `git pull --rebase origin lab` and check that no other run
+   claimed it meanwhile (else choose another). Two runs may overlap: never work on an idea another run holds.
 3. Check that its data exists and covers enough in-sample history (at least 4 years; say how many). If not, close it
    as `donnees insuffisantes` and take the next one (at most two such skips per run).
 4. Declare (rule 4), fetch, build, run the IS test, the neighbours, costs x1.5, the null, the correlation, the
