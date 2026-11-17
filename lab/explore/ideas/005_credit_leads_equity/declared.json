@@ -1,0 +1,37 @@
+{
+  "idea": "005 Credit leads equity",
+  "date_declared": "2026-11-17",
+  "hypothesis": "When high-yield credit under-performs what the S&P 500's own move implies over the last days (credit spread widening not matched by equities), US500 falls over the next days; when credit out-performs, US500 rises.",
+  "mechanism": "Credit investors are better informed about default risk and react first; equity catches up with a delay of days. Slow, cross-asset information, not a chart pattern.",
+  "data_note": "The declared source FRED BAMLH0A0HYM2 was unreachable from this environment on 2026-11-17 (every FRED request closed by the remote end), so the credit signal uses the HYG ETF (iShares iBoxx high-yield, dividend-adjusted close) from the Yahoo chart API, which tracks the same spread daily.",
+  "data": {
+    "signal": "Yahoo daily HYG and SPY adjusted closes 2007-04-11..2021-12-31 (IEF for one neighbour), cut at 2021-12-31",
+    "prices": "Yahoo daily ^GSPC open/high/low/close 1997..2021-12-31 (us500 CFD proxy)",
+    "in_sample_years": "signals from 2008-07 to 2021-12 (13.5 years)",
+    "nothing_after": "2021-12-31"
+  },
+  "rule_main": {
+    "residual": "r_t = HYG daily return - beta_{t-1} * SPY daily return, beta = rolling 60-day OLS slope of HYG on SPY returns (known at t-1)",
+    "signal": "C_t = sum of r over the last W=5 days; lo/hi = 20th/80th percentiles of C over the 250 previous days (to t-1). C_t <= lo -> short US500; C_t >= hi -> long US500",
+    "entry": "open of ^GSPC on the next trading day t+1",
+    "exit": "open of ^GSPC on trading day t+1+H, H=3",
+    "overlap": "signals while a trade is open are skipped",
+    "R": "signed price change / D20, D20 = mean daily high-low range of ^GSPC over the 20 days before entry"
+  },
+  "configurations": [
+    {"id": "01_main", "W": 5, "p": 0.2, "H": 3, "side": "both", "beta_win": 60, "credit": "HYG"},
+    {"id": "02_W3", "W": 3, "p": 0.2, "H": 3, "side": "both", "beta_win": 60, "credit": "HYG"},
+    {"id": "03_W10", "W": 10, "p": 0.2, "H": 3, "side": "both", "beta_win": 60, "credit": "HYG"},
+    {"id": "04_p10", "W": 5, "p": 0.1, "H": 3, "side": "both", "beta_win": 60, "credit": "HYG"},
+    {"id": "05_p30", "W": 5, "p": 0.3, "H": 3, "side": "both", "beta_win": 60, "credit": "HYG"},
+    {"id": "06_H1", "W": 5, "p": 0.2, "H": 1, "side": "both", "beta_win": 60, "credit": "HYG"},
+    {"id": "07_H5", "W": 5, "p": 0.2, "H": 5, "side": "both", "beta_win": 60, "credit": "HYG"},
+    {"id": "08_long_only", "W": 5, "p": 0.2, "H": 3, "side": "long", "beta_win": 60, "credit": "HYG"},
+    {"id": "09_short_only", "W": 5, "p": 0.2, "H": 3, "side": "short", "beta_win": 60, "credit": "HYG"},
+    {"id": "10_hyg_minus_ief", "W": 5, "p": 0.2, "H": 3, "side": "both", "beta_win": 60, "credit": "HYG minus IEF return (duration-hedged)"}
+  ],
+  "costs": "lab/r2/fp_costs.json us500: spread 0.4 at 7377 as bp of price at entry, slip_mkt_bps 0.2 per side, swap_long 5.5 %/yr /360 per calendar night held (covers the triple day), swap_short 0; gross, net, net with costs x1.5.",
+  "power_check": "signal-only count of the main (no price of US500, no forward return): 463 non-overlapping signals 2008-07..2021-12 (n >= 250 reachable).",
+  "bars": "PROTOCOL_V3 one-market bars on the main: n >= 250, PF net >= 1.12, t >= 2.5, >= 60 % of years positive, PF >= 1.04 at costs x1.5, neighbours' median PF >= 1.06, every-signal expectancy > 0 (every signal day, overlaps included), hold <= 5 days, random-entry null (2000 draws, same number of trades and same long/short count on random days) >= 97.5th percentile of net mean R; weekly correlation with the sum of the ten <= 0.30 (2014-2021, round6 correlation.py convention); deflated Sharpe probability >= 0.95 given the running total of configurations; sizing on 1,000-5,000 EUR (min lot 0.1, 1:200).",
+  "split": "IS only (to 2021-12-31). VAL only if every bar passes and an independent re-implementation agrees."
+}
