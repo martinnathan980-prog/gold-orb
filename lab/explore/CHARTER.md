@@ -163,6 +163,14 @@ does not pass.
   without, in the kit's tests); the independent attack; the single look at four untouched years; the lead's own
   verification, with the number of VAL looks this search has taken in view; the 2026 holdout, which stays closed.
 - VAL (rule 5): PF >= 1.06, expectancy > 0, every-signal expectancy > 0, positive in at least 3 of the 4 years.
+- **Slow track (amendment of 2026-11-18, written before any slow idea was run):** an idea declared `slow` may hold up
+  to 40 trading days instead of 5 (`judge.verdict(..., max_hold_tdays=40)`); every other bar is unchanged, swaps are
+  charged every night, the null and the basket bars apply. Reason: the twelve ideas run so far, all held a few days,
+  show no gross edge, and the best documented premium this lab never tested (trend following over weeks) lives at
+  slower holds. The user asked on 2026-11-18 for a change of direction if the ideas were poor.
+- **New markets and provisional costs (2026-11-18):** US share CFDs, oil and later markets are judged with the
+  costs of `kit/extra_costs.json`, marked PROVISIONAL (the broker's own figures are not read yet). A pass on
+  provisional costs is reported as such and re-judged on the real costs before anything else.
 - **Rulings of the lead (2026-11-18):** (a) a hedged pair (two legs of equal notional) is ONE synthetic market, and
   several pairs form a basket of pairs: the basket bars are read across pairs, never across the two legs of a hedge
   (the scout's ideas 1, 3 and 4 are run as ONE basket of seven pairs, idea 015; not both ways);
@@ -200,6 +208,12 @@ does not pass.
    - `A VERIFIER : idee NNN (<titre>) passe en echantillon, validation a faire : <chiffres>`
    (a weak pass is also `A VERIFIER` or `TROUVE`, with the words `faible face a la selection` in the next line)
    Then at most three short lines. No jargon in the first line.
+
+## Direction 2 (2026-11-18)
+After 17 ideas without a find, the lead changed the direction of the search: company earnings on US share CFDs, slow
+rules (the slow track above), and the families that work on new markets. The plan and the full brief of each new
+idea are in `lab/explore/lead/DIRECTION2.md`. The daily batch of 8 ideas is run by the lead
+(`lab/explore/LEAD_ROUTINE.md`); the scheduled runs are paused meanwhile.
 
 ## The ten rules of the robot (do not redo, and be independent of them)
 noise30 and ocm4 (us100 opening momentum); brk72_24h_wd and F1_brk_ridge_filter (BTC and ETH channel breakouts);

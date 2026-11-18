@@ -1,0 +1,388 @@
+{
+ "rows": [
+  {
+   "id": "i001",
+   "type": "idee",
+   "n": "001",
+   "date": "2026-11-17",
+   "idee": "Mouvement du week-end sur les cryptos, puis lundi",
+   "famille": "Crypto",
+   "marche": "Pas testée",
+   "gain": "—",
+   "pourquoi": "Pas assez de lundis dans l'historique. Reprise avec un historique plus long (voir À faire)."
+  },
+  {
+   "id": "i005",
+   "type": "idee",
+   "n": "005",
+   "date": "2026-11-17",
+   "idee": "Le marché du crédit en avance sur les actions",
+   "famille": "Signaux inhabituels",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Petit gain, impossible à distinguer du hasard."
+  },
+  {
+   "id": "i002",
+   "type": "idee",
+   "n": "002",
+   "date": "2026-11-18",
+   "idee": "Ton des actualités mondiales",
+   "famille": "Signaux inhabituels",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Perd de l'argent avant même les frais."
+  },
+  {
+   "id": "i009",
+   "type": "idee",
+   "n": "009",
+   "date": "2026-11-18",
+   "idee": "Difficulté de minage du Bitcoin",
+   "famille": "Crypto",
+   "marche": "Pas testée",
+   "gain": "—",
+   "pourquoi": "Trop peu de signaux pour conclure."
+  },
+  {
+   "id": "i010",
+   "type": "idee",
+   "n": "010",
+   "date": "2026-11-18",
+   "idee": "Émission de stablecoins, puis achat de Bitcoin",
+   "famille": "Crypto",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Ne fait pas mieux que la hausse normale du Bitcoin."
+  },
+  {
+   "id": "i016",
+   "type": "idee",
+   "n": "016",
+   "date": "2026-11-18",
+   "idee": "Aller contre les achats récents des gros spéculateurs",
+   "famille": "Signaux inhabituels",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Ni gain ni perte avant frais, sur 12 marchés."
+  },
+  {
+   "id": "i022",
+   "type": "idee",
+   "n": "022",
+   "date": "2026-11-18",
+   "idee": "Aller contre les positions extrêmes des spéculateurs",
+   "famille": "Signaux inhabituels",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Ni gain ni perte avant frais."
+  },
+  {
+   "id": "i019",
+   "type": "idee",
+   "n": "019",
+   "date": "2026-11-18",
+   "idee": "Dollar-yen autour des adjudications du Trésor américain",
+   "famille": "Signaux inhabituels",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Perd de l'argent."
+  },
+  {
+   "id": "i020",
+   "type": "idee",
+   "n": "020",
+   "date": "2026-11-18",
+   "idee": "Ventes à découvert sur les fonds or",
+   "famille": "Signaux inhabituels",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Gain trop faible, indistinguable du hasard."
+  },
+  {
+   "id": "i025",
+   "type": "idee",
+   "n": "025",
+   "date": "2026-11-18",
+   "idee": "Acheter les indices la semaine d'expiration des options",
+   "famille": "Calendrier",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "La plus proche : gagnante 7 années sur 9, mais trop irrégulière, et perdante en 2020 et 2021."
+  },
+  {
+   "id": "i030",
+   "type": "idee",
+   "n": "030",
+   "date": "2026-11-18",
+   "idee": "Retournement hebdomadaire entre devises",
+   "famille": "Devises",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Aucun gain, même avant frais."
+  },
+  {
+   "id": "i036",
+   "type": "idee",
+   "n": "036",
+   "date": "2026-11-18",
+   "idee": "Acheter le S&P quand la peur du marché (VIX) est trop élevée",
+   "famille": "Signaux inhabituels",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Perd de l'argent avant frais."
+  },
+  {
+   "id": "i015",
+   "type": "idee",
+   "n": "015",
+   "date": "2026-11-18",
+   "idee": "Sept paires qui reviennent vers leur moyenne (devises, or contre argent, indices)",
+   "famille": "Paires",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Perd avant même les frais ; 1 année positive sur 9."
+  },
+  {
+   "id": "i026",
+   "type": "idee",
+   "n": "026",
+   "date": "2026-11-18",
+   "idee": "Dow contre Nasdaq après un choc sur les taux",
+   "famille": "Paires",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Gain minuscule, effacé par les frais."
+  },
+  {
+   "id": "i038",
+   "type": "idee",
+   "n": "038",
+   "date": "2026-11-18",
+   "idee": "Nasdaq contre S&P selon l'écart de peur",
+   "famille": "Paires",
+   "marche": "Pas testée",
+   "gain": "—",
+   "pourquoi": "Trop peu de signaux (114 pour 250 nécessaires)."
+  },
+  {
+   "id": "i011",
+   "type": "idee",
+   "n": "011",
+   "date": "2026-11-18",
+   "idee": "Ether contre Bitcoin",
+   "famille": "Paires",
+   "marche": "Pas testée",
+   "gain": "—",
+   "pourquoi": "Trop peu de signaux (72 pour 250 nécessaires)."
+  },
+  {
+   "id": "i024",
+   "type": "idee",
+   "n": "024",
+   "date": "2026-11-18",
+   "idee": "Pics d'attention sur Wikipédia",
+   "famille": "Signaux inhabituels",
+   "marche": "Pas testée",
+   "gain": "—",
+   "pourquoi": "Wikipédia a refusé nos téléchargements. À refaire plus lentement (voir À faire)."
+  },
+  {
+   "id": "a01",
+   "type": "afaire",
+   "ordre": 1,
+   "idee": "Résultats d'entreprises : suivre le sens du saut après la publication",
+   "famille": "Actions américaines",
+   "quand": "Jeudi 19 nov."
+  },
+  {
+   "id": "a02",
+   "type": "afaire",
+   "ordre": 2,
+   "idee": "Résultats d'entreprises : acheter quelques jours avant la publication",
+   "famille": "Actions américaines",
+   "quand": "Jeudi 19 nov."
+  },
+  {
+   "id": "a03",
+   "type": "afaire",
+   "ordre": 3,
+   "idee": "Résultats d'entreprises : le lendemain de la publication",
+   "famille": "Actions américaines",
+   "quand": "Jeudi 19 nov."
+  },
+  {
+   "id": "a04",
+   "type": "afaire",
+   "ordre": 4,
+   "idee": "Suivre les grandes tendances sur plusieurs semaines (panier de marchés)",
+   "famille": "Tendance lente",
+   "quand": "Jeudi 19 nov."
+  },
+  {
+   "id": "a05",
+   "type": "afaire",
+   "ordre": 5,
+   "idee": "Cassures de prix sur le pétrole (la règle qui marche déjà sur l'or)",
+   "famille": "Nouveaux marchés",
+   "quand": "Jeudi 19 nov."
+  },
+  {
+   "id": "a06",
+   "type": "afaire",
+   "ordre": 6,
+   "idee": "Pétrole : suivre le mouvement après le rapport hebdomadaire sur les stocks américains",
+   "famille": "Nouveaux marchés",
+   "quand": "Jeudi 19 nov."
+  },
+  {
+   "id": "a07",
+   "type": "afaire",
+   "ordre": 7,
+   "idee": "Week-end du Bitcoin, puis lundi, avec un historique long",
+   "famille": "Crypto",
+   "quand": "Jeudi 19 nov."
+  },
+  {
+   "id": "a08",
+   "type": "afaire",
+   "ordre": 8,
+   "idee": "Bitcoin plus cher sur la bourse américaine qu'ailleurs",
+   "famille": "Crypto",
+   "quand": "Jeudi 19 nov."
+  },
+  {
+   "id": "a09",
+   "type": "afaire",
+   "ordre": 9,
+   "idee": "Résultats d'entreprises : effet sur les concurrents",
+   "famille": "Actions américaines",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a10",
+   "type": "afaire",
+   "ordre": 10,
+   "idee": "Achats agressifs absorbés sur les cryptos",
+   "famille": "Crypto",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a11",
+   "type": "afaire",
+   "ordre": 11,
+   "idee": "Cassures de prix sur l'argent et le Nikkei",
+   "famille": "Nouveaux marchés",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a12",
+   "type": "afaire",
+   "ordre": 12,
+   "idee": "Nombres ronds sur les devises",
+   "famille": "Devises",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a13",
+   "type": "afaire",
+   "ordre": 13,
+   "idee": "L'or avant l'expiration de ses options",
+   "famille": "Calendrier",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a14",
+   "type": "afaire",
+   "ordre": 14,
+   "idee": "Jours où la nouvelle dette américaine est réglée",
+   "famille": "Calendrier",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a15",
+   "type": "afaire",
+   "ordre": 15,
+   "idee": "Écart de taux États-Unis / Japon que la devise n'a pas suivi",
+   "famille": "Devises",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a16",
+   "type": "afaire",
+   "ordre": 16,
+   "idee": "Pics d'attention sur Wikipédia (à refaire lentement)",
+   "famille": "Signaux inhabituels",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "s01",
+   "type": "stop",
+   "ordre": 1,
+   "famille": "Signaux inhabituels à quelques jours (actualités, positions des spéculateurs, VIX, fonds or)",
+   "pourquoi": "8 idées testées cette semaine, aucun gain avant frais."
+  },
+  {
+   "id": "s02",
+   "type": "stop",
+   "ordre": 2,
+   "famille": "Paires qui reviennent vers leur moyenne",
+   "pourquoi": "Testée sur 7 paires : perdante."
+  },
+  {
+   "id": "s03",
+   "type": "stop",
+   "ordre": 3,
+   "famille": "Météo, lune, pollution, tempêtes solaires",
+   "pourquoi": "Chances très faibles : mises de côté sans test."
+  },
+  {
+   "id": "s04",
+   "type": "stop",
+   "ordre": 4,
+   "famille": "Or en journée, indices américains en journée, DAX",
+   "pourquoi": "Déjà fouillés lors des recherches précédentes ; ce qui marchait est dans le robot."
+  },
+  {
+   "id": "s05",
+   "type": "stop",
+   "ordre": 5,
+   "famille": "Cryptos à très court terme",
+   "pourquoi": "118 variantes testées avant : rien de plus que les règles du robot."
+  },
+  {
+   "id": "s06",
+   "type": "stop",
+   "ordre": 6,
+   "famille": "Jours d'annonces économiques, nuit, jours du calendrier",
+   "pourquoi": "Testés avant : rien de solide."
+  },
+  {
+   "id": "s07",
+   "type": "stop",
+   "ordre": 7,
+   "famille": "Devises majeures (tendance ou retournement à court terme)",
+   "pourquoi": "Testées avant et cette semaine : rien."
+  },
+  {
+   "id": "s08",
+   "type": "stop",
+   "ordre": 8,
+   "famille": "Vendre de la volatilité, cibles de gain, mises variables",
+   "pourquoi": "Testés avant : n'améliorent pas le robot."
+  },
+  {
+   "id": "jour",
+   "type": "jour",
+   "date": "2026-11-18",
+   "texte": "Aucune des idées testées cette semaine ne gagne de l'argent, et presque toutes ne gagnent rien avant même les frais. Ce type d'idées ne donne rien : je change de direction à partir de jeudi.",
+   "direction": "Trois nouvelles pistes : les résultats d'entreprises sur les actions américaines, les grandes tendances sur plusieurs semaines, et les règles qui marchent déjà dans le robot appliquées à de nouveaux marchés (pétrole, Nikkei).",
+   "rythme": "8 idées par jour, en un lot lancé chaque jour vers 13 h 30. Cette feuille est mise à jour juste après."
+  },
+  {
+   "id": "robot",
+   "type": "robot",
+   "texte": "Le robot actuel (10 règles) est prêt. La démo n'est pas encore lancée : c'est la prochaine étape de ton côté, avec le guide déjà envoyé."
+  }
+ ]
+}

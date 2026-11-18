@@ -1,0 +1,142 @@
+<meta name="dash-one-writer">
+<style>
+/* Layout: one narrow column read top to bottom; four figures, then three plain tables. */
+.syn { display: flex; flex-direction: column; gap: var(--cds-gap-xl); max-width: 62rem; container-type: inline-size; }
+.syn-sec { display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-width: 0; }
+.syn h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+.syn h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; text-wrap: balance; }
+.syn p { margin: 0; max-width: 68ch; line-height: 1.5; }
+.syn-lead { font-size: var(--cds-font-size-heading); }
+.syn-muted { color: var(--color-fg-muted); }
+.syn-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: var(--cds-gap-md); }
+.syn-tile { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: flex; flex-direction: column; gap: var(--cds-gap-xs); min-width: 0; }
+.syn-tile b { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 2.4rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.syn-tile span { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.syn-scroll { overflow-x: auto; }
+.syn-table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-body); }
+.syn-table th { text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: 0.4rem 0.7rem 0.4rem 0; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.syn-table td { padding: 0.55rem 0.7rem 0.55rem 0; border-bottom: 1px solid var(--color-border-line); vertical-align: top; line-height: 1.4; }
+.syn-table td.syn-d { white-space: nowrap; color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+.syn-table td.syn-w { color: var(--color-fg-muted); min-width: 14rem; }
+.syn-table td.syn-i { min-width: 13rem; }
+.syn-pill { display: inline-block; padding: 0.05rem 0.6rem; border-radius: 999px; font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); border: 1px solid currentColor; white-space: nowrap; }
+.syn-oui { color: var(--color-ok); }
+.syn-non { color: var(--color-bad); }
+.syn-na { color: var(--color-fg-muted); }
+/* Narrow (a phone, or beside a chat): each row becomes a small block, nothing scrolls sideways. */
+@container (max-width: 640px) {
+  .syn-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .syn-table, .syn-table tbody, .syn-table tr, .syn-table td { display: block; }
+  .syn-table tr { padding: 0.65rem 0; border-bottom: 1px solid var(--color-border-line); }
+  .syn-table td { border: 0; padding: 0.12rem 0; min-width: 0; }
+  .syn-table td.syn-i { font-weight: var(--cds-font-weight-medium); }
+  .syn-table td.syn-p { display: inline-block; margin-right: 0.9rem; padding-block: 0.25rem; }
+  .syn-table td.syn-p::before { content: attr(data-label) " "; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .syn-table td.syn-d { font-size: var(--cds-font-size-caption); }
+}
+</style>
+<div class="syn">
+  <header class="syn-sec">
+    <h1 id="titre">Recherche de stratégies</h1>
+    <p class="syn-lead">Au <span data-draw="date" data-source="synthese" data-field="date" data-where="id=jour">—</span> : <b data-draw="c-trouvees" data-source="trouvees">—</b> stratégie trouvée, sur <b data-draw="c-testees" data-source="testees">—</b> idées testées jusqu'au bout.</p>
+  </header>
+
+  <section class="syn-tiles" id="chiffres" aria-label="Chiffres clés">
+    <div class="syn-tile"><b data-draw="c-trouvees" data-source="trouvees">—</b><span>stratégies trouvées</span></div>
+    <div class="syn-tile"><b data-draw="c-testees" data-source="testees">—</b><span>idées testées jusqu'au bout</span></div>
+    <div class="syn-tile"><b data-draw="c-ecartees" data-source="ecartees">—</b><span>idées écartées sans test</span></div>
+    <div class="syn-tile"><b data-draw="c-afaire" data-source="afaire">—</b><span>idées prévues</span></div>
+  </section>
+
+  <section class="syn-sec" id="ou-on-en-est">
+    <h2>Où on en est</h2>
+    <p data-draw="jour-texte" data-source="synthese" data-field="texte" data-where="id=jour">—</p>
+    <p data-draw="jour-direction" data-source="synthese" data-field="direction" data-where="id=jour">—</p>
+    <p class="syn-muted" data-draw="jour-rythme" data-source="synthese" data-field="rythme" data-where="id=jour">—</p>
+  </section>
+
+  <section class="syn-sec" id="a-faire">
+    <h2>À faire</h2>
+    <div class="syn-scroll">
+      <table class="syn-table" data-source="synthese" data-row-key="id">
+        <thead><tr><th data-field="quand">Quand</th><th data-field="idee">Idée</th><th data-field="famille">Famille</th></tr></thead>
+        <tbody data-draw="tb-afaire"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="syn-sec" id="historique">
+    <h2>Idées déjà traitées</h2>
+    <p class="syn-muted">« Ça marche ? » : l'idée a-t-elle passé tous les tests. « Gain espéré ? » : peut-on en attendre de l'argent après frais.</p>
+    <div class="syn-scroll">
+      <table class="syn-table" data-source="synthese" data-row-key="id">
+        <thead><tr><th data-field="date">Date</th><th data-field="idee">Idée</th><th data-field="marche">Ça marche ?</th><th data-field="gain">Gain espéré ?</th><th data-field="pourquoi">Pourquoi</th></tr></thead>
+        <tbody data-draw="tb-idees"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="syn-sec" id="a-ne-plus-refaire">
+    <h2>À ne plus refaire</h2>
+    <div class="syn-scroll">
+      <table class="syn-table" data-source="synthese" data-row-key="id">
+        <thead><tr><th data-field="famille">Famille d'idées</th><th data-field="pourquoi">Pourquoi</th></tr></thead>
+        <tbody data-draw="tb-stop"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="syn-sec" id="robot">
+    <h2>Le robot actuel</h2>
+    <p data-draw="robot-texte" data-source="synthese" data-field="texte" data-where="id=robot">—</p>
+  </section>
+</div>
+<script>
+dash.calc('trouvees', {inputs: ['synthese'], title: 'Stratégies trouvées',
+  description: 'Nombre d\'idées dont la colonne « Ça marche ? » vaut Oui.',
+  fn: (synthese) => synthese.filter((ligne) => ligne.type === 'idee' && ligne.marche === 'Oui').length});
+dash.calc('testees', {inputs: ['synthese'], title: 'Idées testées jusqu\'au bout',
+  description: 'Nombre d\'idées dont la colonne « Ça marche ? » vaut Oui ou Non.',
+  fn: (synthese) => synthese.filter((ligne) => ligne.type === 'idee' && (ligne.marche === 'Oui' || ligne.marche === 'Non')).length});
+dash.calc('ecartees', {inputs: ['synthese'], title: 'Idées écartées sans test',
+  description: 'Nombre d\'idées marquées « Pas testée » (trop peu de signaux ou données refusées).',
+  fn: (synthese) => synthese.filter((ligne) => ligne.type === 'idee' && ligne.marche === 'Pas testée').length});
+dash.calc('afaire', {inputs: ['synthese'], title: 'Idées prévues',
+  description: 'Nombre de lignes de la liste « À faire ».',
+  fn: (synthese) => synthese.filter((ligne) => ligne.type === 'afaire').length});
+
+const SYN_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const SYN_MOIS_C = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+function synRows(type) { const g = dash.data('synthese'); return g.status === 'ok' ? g.data.filter((r) => r.type === type) : null; }
+function synOne(id) { const g = dash.data('synthese'); return g.status === 'ok' ? (g.data.find((r) => r.id === id) || null) : null; }
+function synDate(s, court) { const p = String(s).split('-'); if (p.length !== 3) return String(s); return (+p[2]) + ' ' + (court ? SYN_MOIS_C : SYN_MOIS)[+p[1] - 1] + (court ? '' : ' ' + p[0]); }
+function synCell(content, cls, label) { const c = document.createElement('td'); if (cls) c.className = cls; if (label) c.dataset.label = label; if (content instanceof Node) c.appendChild(content); else c.textContent = content == null ? '' : String(content); return c; }
+function synPill(v) { const s = document.createElement('span'); s.className = 'syn-pill ' + (v === 'Oui' ? 'syn-oui' : v === 'Non' ? 'syn-non' : 'syn-na'); s.textContent = v == null ? '—' : String(v); return s; }
+function synRow(r, cells) { const tr = document.createElement('tr'); tr.dataset.key = r.id; tr.append(...cells); return tr; }
+
+dash.draw('date', (el) => { const r = synOne('jour'); el.textContent = r ? synDate(r.date, false) : '—'; });
+['trouvees', 'testees', 'ecartees', 'afaire'].forEach((id) => {
+  dash.draw('c-' + id, (el) => { const g = dash.data(id); el.textContent = g.status === 'ok' && g.data != null ? String(g.data) : '—'; });
+});
+[['jour-texte', 'jour', 'texte'], ['jour-direction', 'jour', 'direction'], ['jour-rythme', 'jour', 'rythme'], ['robot-texte', 'robot', 'texte']].forEach(([name, id, field]) => {
+  dash.draw(name, (el) => { const r = synOne(id); el.textContent = r && r[field] ? String(r[field]) : '—'; });
+});
+dash.draw('tb-idees', (el) => {
+  const rs = synRows('idee');
+  if (!rs) { el.replaceChildren(); return; }
+  rs.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : (a.n < b.n ? -1 : 1)));
+  el.replaceChildren(...rs.map((r) => synRow(r, [synCell(synDate(r.date, true), 'syn-d'), synCell(r.idee, 'syn-i'), synCell(synPill(r.marche), 'syn-p', 'Ça marche ?'), synCell(synPill(r.gain), 'syn-p', 'Gain espéré ?'), synCell(r.pourquoi, 'syn-w')])));
+});
+dash.draw('tb-afaire', (el) => {
+  const rs = synRows('afaire');
+  if (!rs) { el.replaceChildren(); return; }
+  rs.sort((a, b) => a.ordre - b.ordre);
+  el.replaceChildren(...rs.map((r) => synRow(r, [synCell(r.quand, 'syn-d'), synCell(r.idee, 'syn-i'), synCell(r.famille, 'syn-w')])));
+});
+dash.draw('tb-stop', (el) => {
+  const rs = synRows('stop');
+  if (!rs) { el.replaceChildren(); return; }
+  rs.sort((a, b) => a.ordre - b.ordre);
+  el.replaceChildren(...rs.map((r) => synRow(r, [synCell(r.famille, 'syn-i'), synCell(r.pourquoi, 'syn-w')])));
+});
+</script>
