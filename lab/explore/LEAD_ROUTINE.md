@@ -15,7 +15,8 @@ are the costly part; the idea agents are cheap.
    `git clean -fdq lab/explore`), then launch the batch: `Workflow({scriptPath: "<scratchpad>/wf/ideas2.js", args:
    {ideas: [...]}})`. Each entry: `{num, slug, scout: k}` for a scout idea (row k of scout/ideas.md), or `{num, slug,
    custom: "<the full brief: the row of DIRECTION2.md or of IDEAS.md>"}`; `note` adds a remark. If the script is gone
-   (the scratchpad was cleaned), rebuild it from the prompt kept in `lab/explore/lead/batch_prompt.md`.
+   (the scratchpad was cleaned), copy it back from `lab/explore/lead/batch_ideas.js` (its paths name the scratchpad
+   folders: recreate the worktree with `git worktree add --detach <scratchpad>/explore_wt <head>`).
    The agents work in the worktree, use prepared bars in `~/explore_data/h1` (built from the lab's minute files by
    `lab/explore/lead/build_h1_from_lab.py`, in sample only), never run git and never take a validation look.
 4. When the batch reports: read each verdict; copy the idea folders into `lab/explore/ideas/`; for each judged idea
