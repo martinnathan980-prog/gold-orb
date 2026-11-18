@@ -54,6 +54,12 @@ runs may work at the same time; an idea marked `en cours` usually belongs to a r
    system instructions give.
 
 ## Data you can fetch (checked from this environment on 2026-11-16)
+**Notice of 2026-11-18 01:40 UTC: Dukascopy (`datafeed.dukascopy.com`) resets every connection from the cloud since the
+evening of 17 November (too many downloads in one day). Until this notice is removed: probe it with ONE request; if it
+is refused, do not retry and do not start an idea that needs Dukascopy prices. Take an idea whose traded market is
+crypto (prices from Binance, which works: ideas 009, 010 and the crypto ideas of IDEAS.md), or close your run with
+`EN COURS : serveur de prix indisponible`. The lead runs the ideas that need FX, metal and index prices from the lab's
+own bars meanwhile.**
 Cache folder: `~/explore_data` (outside the repository; it may survive between runs, or not).
 - **Dukascopy hourly candles (FX, metals, indices, oil, some crypto)**, works:
   `https://datafeed.dukascopy.com/datafeed/<SYMBOL>/<YYYY>/<MM>/BID_candles_hour_1.bi5` (and `ASK_...`), where
