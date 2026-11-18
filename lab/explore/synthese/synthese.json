@@ -193,129 +193,169 @@
    "texte": "Le robot actuel (10 règles) est prêt. La démo n'est pas encore lancée : c'est la prochaine étape de ton côté, avec le guide déjà envoyé."
   },
   {
+   "id": "i052",
+   "type": "idee",
+   "n": "052",
+   "date": "2026-11-18",
+   "idee": "Résultats d'entreprises : suivre le sens du saut pendant quelques jours",
+   "famille": "Actions américaines",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Le mouvement continue un peu, mais pas assez pour payer les frais. Seuls les très gros chocs (plus de 8 %) semblent payer : c'est la piste que je creuse."
+  },
+  {
+   "id": "i053",
+   "type": "idee",
+   "n": "053",
+   "date": "2026-11-18",
+   "idee": "Résultats d'entreprises : acheter quelques jours avant la date attendue",
+   "famille": "Actions américaines",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Gagne un peu avant frais, mais pas plus qu'en achetant un jour quelconque pendant ces années de hausse."
+  },
+  {
+   "id": "i054",
+   "type": "idee",
+   "n": "054",
+   "date": "2026-11-18",
+   "idee": "Résultats d'entreprises : suivre le mouvement le jour même",
+   "famille": "Actions américaines",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Le mouvement ne continue pas dans la journée : perdant même avant les frais."
+  },
+  {
+   "id": "i055",
+   "type": "idee",
+   "n": "055",
+   "date": "2026-11-18",
+   "idee": "Suivre les grandes tendances sur plusieurs semaines (devises, or, indices)",
+   "famille": "Tendance lente",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Presque nul avant frais sur neuf ans ; les frais de nuit le rendent perdant."
+  },
+  {
+   "id": "i056",
+   "type": "idee",
+   "n": "056",
+   "date": "2026-11-18",
+   "idee": "Cassures de prix sur le pétrole (la règle qui marche déjà sur l'or)",
+   "famille": "Nouveaux marchés",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Gagne un peu (7 années sur 9), mais seulement grâce aux ventes pendant trois chutes du pétrole : trop irrégulier pour être distingué du hasard."
+  },
+  {
+   "id": "i057",
+   "type": "idee",
+   "n": "057",
+   "date": "2026-11-18",
+   "idee": "Pétrole : suivre le mouvement après le rapport hebdomadaire sur les stocks américains",
+   "famille": "Nouveaux marchés",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Petit effet réel avant frais, entièrement mangé par l'écart entre prix d'achat et de vente."
+  },
+  {
+   "id": "i058",
+   "type": "idee",
+   "n": "058",
+   "date": "2026-11-18",
+   "idee": "Suivre les grandes tendances sur plusieurs semaines (actions américaines)",
+   "famille": "Tendance lente",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Les achats gagnent seulement parce que ces actions ont monté, et moins qu'en achetant n'importe quel jour."
+  },
+  {
+   "id": "i051",
+   "type": "idee",
+   "n": "051",
+   "date": "2026-11-18",
+   "idee": "Week-end du Bitcoin, puis lundi, avec un historique long",
+   "famille": "Crypto",
+   "marche": "Pas testée",
+   "gain": "—",
+   "pourquoi": "Seulement 226 week-ends avec un mouvement suffisant en neuf ans : trop peu pour juger."
+  },
+  {
    "id": "a01",
    "type": "afaire",
    "ordre": 1,
-   "idee": "Résultats d'entreprises : suivre le sens du saut pendant quelques jours",
+   "idee": "Très gros chocs après les résultats d'entreprises (plus de 8 %), sur plusieurs centaines d'actions au lieu de 40",
    "famille": "Actions américaines",
-   "quand": "Aujourd'hui"
+   "quand": "Demain"
   },
   {
    "id": "a02",
    "type": "afaire",
    "ordre": 2,
-   "idee": "Résultats d'entreprises : acheter quelques jours avant la date attendue",
+   "idee": "La même piste en gardant la position plusieurs semaines",
    "famille": "Actions américaines",
-   "quand": "Aujourd'hui"
+   "quand": "Demain"
   },
   {
    "id": "a03",
    "type": "afaire",
    "ordre": 3,
-   "idee": "Résultats d'entreprises : suivre le mouvement le jour même",
-   "famille": "Actions américaines",
-   "quand": "Aujourd'hui"
-  },
-  {
-   "id": "a04",
-   "type": "afaire",
-   "ordre": 4,
-   "idee": "Suivre les grandes tendances sur plusieurs semaines (devises, or, indices)",
-   "famille": "Tendance lente",
-   "quand": "Aujourd'hui"
-  },
-  {
-   "id": "a05",
-   "type": "afaire",
-   "ordre": 5,
-   "idee": "Suivre les grandes tendances sur plusieurs semaines (actions américaines)",
-   "famille": "Tendance lente",
-   "quand": "Aujourd'hui"
-  },
-  {
-   "id": "a06",
-   "type": "afaire",
-   "ordre": 6,
-   "idee": "Cassures de prix sur le pétrole (la règle qui marche déjà sur l'or)",
-   "famille": "Nouveaux marchés",
-   "quand": "Aujourd'hui"
-  },
-  {
-   "id": "a07",
-   "type": "afaire",
-   "ordre": 7,
-   "idee": "Pétrole : suivre le mouvement après le rapport hebdomadaire sur les stocks américains",
-   "famille": "Nouveaux marchés",
-   "quand": "Aujourd'hui"
-  },
-  {
-   "id": "a08",
-   "type": "afaire",
-   "ordre": 8,
-   "idee": "Week-end du Bitcoin, puis lundi, avec un historique long",
-   "famille": "Crypto",
-   "quand": "Aujourd'hui"
-  },
-  {
-   "id": "a09",
-   "type": "afaire",
-   "ordre": 9,
    "idee": "Bitcoin plus cher sur la bourse américaine qu'ailleurs",
    "famille": "Crypto",
    "quand": "Demain"
   },
   {
-   "id": "a10",
+   "id": "a04",
    "type": "afaire",
-   "ordre": 10,
-   "idee": "Résultats d'entreprises : effet sur les concurrents qui publient après",
-   "famille": "Actions américaines",
-   "quand": "Demain"
-  },
-  {
-   "id": "a11",
-   "type": "afaire",
-   "ordre": 11,
+   "ordre": 4,
    "idee": "Achats agressifs absorbés sur les cryptos",
    "famille": "Crypto",
    "quand": "Demain"
   },
   {
-   "id": "a12",
+   "id": "a05",
    "type": "afaire",
-   "ordre": 12,
+   "ordre": 5,
+   "idee": "Résultats d'entreprises : effet sur les concurrents qui publient après",
+   "famille": "Actions américaines",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a06",
+   "type": "afaire",
+   "ordre": 6,
    "idee": "Nombres ronds sur les devises",
    "famille": "Devises",
    "quand": "Ensuite"
   },
   {
-   "id": "a13",
+   "id": "a07",
    "type": "afaire",
-   "ordre": 13,
+   "ordre": 7,
    "idee": "L'or avant l'expiration de ses options",
    "famille": "Calendrier",
    "quand": "Ensuite"
   },
   {
-   "id": "a14",
+   "id": "a08",
    "type": "afaire",
-   "ordre": 14,
+   "ordre": 8,
    "idee": "Jours où la nouvelle dette américaine est réglée",
    "famille": "Calendrier",
    "quand": "Ensuite"
   },
   {
-   "id": "a15",
+   "id": "a09",
    "type": "afaire",
-   "ordre": 15,
+   "ordre": 9,
    "idee": "Écart de taux États-Unis / Japon que la devise n'a pas suivi",
    "famille": "Devises",
    "quand": "Ensuite"
   },
   {
-   "id": "a16",
+   "id": "a10",
    "type": "afaire",
-   "ordre": 16,
+   "ordre": 10,
    "idee": "Pics d'attention sur Wikipédia (à refaire lentement)",
    "famille": "Signaux inhabituels",
    "quand": "Ensuite"
@@ -324,69 +364,83 @@
    "id": "s01",
    "type": "stop",
    "ordre": 1,
-   "famille": "Signaux inhabituels à quelques jours (actualités, positions des spéculateurs, VIX, fonds or)",
-   "pourquoi": "8 idées testées cette semaine, aucun gain avant frais."
+   "famille": "Tendances lentes sur plusieurs semaines (devises, or, indices, actions)",
+   "pourquoi": "Testé aujourd'hui sur 14 marchés et 40 actions : rien avant frais."
   },
   {
    "id": "s02",
    "type": "stop",
    "ordre": 2,
-   "famille": "Paires qui reviennent vers leur moyenne",
-   "pourquoi": "Testée sur 7 paires : perdante."
+   "famille": "Résultats d'entreprises sur les 40 plus grosses actions : acheter avant, ou suivre le jour même",
+   "pourquoi": "Testé aujourd'hui : rien de plus que la hausse générale."
   },
   {
    "id": "s03",
    "type": "stop",
    "ordre": 3,
-   "famille": "Les règles du robot recopiées telles quelles sur d'autres marchés (indices, devises, argent, Nikkei)",
-   "pourquoi": "Déjà fait avant : 126 essais, les deux meilleurs ont échoué à la vérification. Seul le pétrole n'avait pas pu être testé."
+   "famille": "Signaux inhabituels à quelques jours (actualités, positions des spéculateurs, VIX, fonds or)",
+   "pourquoi": "8 idées testées cette semaine, aucun gain avant frais."
   },
   {
    "id": "s04",
    "type": "stop",
    "ordre": 4,
-   "famille": "Actions américaines en journée (achat et vente le même jour)",
-   "pourquoi": "Déjà testé avant : petit gain avant frais, mais les frais sont cinq fois plus gros."
+   "famille": "Paires qui reviennent vers leur moyenne",
+   "pourquoi": "Testée sur 7 paires : perdante."
   },
   {
    "id": "s05",
    "type": "stop",
    "ordre": 5,
-   "famille": "Météo, lune, pollution, tempêtes solaires",
-   "pourquoi": "Chances très faibles : mises de côté sans test."
+   "famille": "Les règles du robot recopiées telles quelles sur d'autres marchés (indices, devises, argent, Nikkei, pétrole)",
+   "pourquoi": "Déjà fait avant (126 essais, les deux meilleurs ont échoué à la vérification) ; le pétrole, testé aujourd'hui, est trop irrégulier."
   },
   {
    "id": "s06",
    "type": "stop",
    "ordre": 6,
-   "famille": "Or en journée, indices américains en journée, DAX",
-   "pourquoi": "Déjà fouillés lors des recherches précédentes ; ce qui marchait est dans le robot."
+   "famille": "Actions américaines en journée (achat et vente le même jour)",
+   "pourquoi": "Déjà testé avant : petit gain avant frais, mais les frais sont cinq fois plus gros."
   },
   {
    "id": "s07",
    "type": "stop",
    "ordre": 7,
-   "famille": "Cryptos à très court terme",
-   "pourquoi": "118 variantes testées avant : rien de plus que les règles du robot."
+   "famille": "Météo, lune, pollution, tempêtes solaires",
+   "pourquoi": "Chances très faibles : mises de côté sans test."
   },
   {
    "id": "s08",
    "type": "stop",
    "ordre": 8,
-   "famille": "Jours d'annonces économiques, nuit, jours du calendrier",
-   "pourquoi": "Testés avant : rien de solide."
+   "famille": "Or en journée, indices américains en journée, DAX",
+   "pourquoi": "Déjà fouillés lors des recherches précédentes ; ce qui marchait est dans le robot."
   },
   {
    "id": "s09",
    "type": "stop",
    "ordre": 9,
-   "famille": "Devises majeures (tendance ou retournement à court terme)",
-   "pourquoi": "Testées avant et cette semaine : rien."
+   "famille": "Cryptos à très court terme",
+   "pourquoi": "118 variantes testées avant : rien de plus que les règles du robot."
   },
   {
    "id": "s10",
    "type": "stop",
    "ordre": 10,
+   "famille": "Jours d'annonces économiques, nuit, jours du calendrier",
+   "pourquoi": "Testés avant : rien de solide."
+  },
+  {
+   "id": "s11",
+   "type": "stop",
+   "ordre": 11,
+   "famille": "Devises majeures (tendance ou retournement à court terme)",
+   "pourquoi": "Testées avant et cette semaine : rien."
+  },
+  {
+   "id": "s12",
+   "type": "stop",
+   "ordre": 12,
    "famille": "Vendre de la volatilité, cibles de gain, mises variables",
    "pourquoi": "Testés avant : n'améliorent pas le robot."
   },
@@ -394,9 +448,9 @@
    "id": "jour",
    "type": "jour",
    "date": "2026-11-18",
-   "texte": "Aucune des 17 idées testées cette semaine ne gagne de l'argent, et presque toutes ne gagnent rien avant même les frais. Ce type d'idées ne donne rien : je change de direction dès le lot d'aujourd'hui (résultats ce soir sur cette feuille).",
-   "direction": "Trois nouvelles pistes : les résultats d'entreprises sur les actions américaines, les grandes tendances sur plusieurs semaines, et le pétrole. Ce sont des terrains que les recherches précédentes n'avaient pas pu tester.",
-   "rythme": "8 idées par jour, en un lot lancé chaque jour vers 13 h 30. Cette feuille est mise à jour juste après."
+   "texte": "8 idées testées aujourd'hui, aucune ne passe : 25 idées depuis lundi, toujours rien de trouvé. Mais pour la première fois deux pistes montrent un vrai gain avant frais : les résultats d'entreprises (surtout quand l'action bouge de plus de 8 % le jour de la publication) et le pétrole. Les tendances lentes, elles, ne donnent rien.",
+   "direction": "Je creuse la piste des très gros chocs après résultats : sur 40 actions il y a trop peu de cas pour conclure (80 en cinq ans), donc je prépare le même test sur plusieurs centaines d'actions américaines. Résultat demain.",
+   "rythme": "8 idées par jour au plus, en un lot lancé chaque jour vers 13 h 30. Cette feuille est mise à jour juste après."
   }
  ]
 }
