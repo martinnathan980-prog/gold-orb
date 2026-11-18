@@ -1880,6 +1880,9 @@ def _xsp(key, price, t, close=False):
     bp = e.get("spread_bps_by_year", {}).get(yr, e["spread_bps"]) * 1e-4
     if tn.hour == 9 and not close and "spread_bps_by_year_h09" in e:     # kit v2.1 fix 2 (KF-5): the 09:30 open's level
         bp = e["spread_bps_by_year_h09"].get(yr, e.get("spread_bps_h09", e["spread_bps"])) * 1e-4
+    if close and "spread_bps_by_year_c15" in e:                           # kit v2.1 fix 3 (R3-5): the close levels
+        g = "c09" if tn.hour == 9 else "c15" if tn.hour == 15 else "c10_14"
+        bp = e[f"spread_bps_by_year_{g}"].get(yr, e.get(f"spread_bps_{g}", e["spread_bps"])) * 1e-4
     return bp * price * XS["shape_close" if close else "shape"][key][_how(t)]
 
 
@@ -2561,6 +2564,8 @@ def test_v21_review2_fixes():
             # duka_on: 1 / 2 = the contract Dukascopy's 14:30 mid is closer to (0 = a tie, empty = no price that day);
             # the vendor's price itself is NOT in the repository (it sits beside the prepared bars, oil_mid_1430.csv)
             on = ox.duka_on.to_numpy(float)
+            flick = {pd.Timestamp(d) for d in XC["oil"].get("rolls_vendor_flicker", {})}   # fix 3 (R3-4)
+            on = np.where(np.isin(ox.index, list(flick)), np.nan, on) if flick else on
             g = np.log(ox.c2 / ox.c1).to_numpy() * 1e4
             dev, contra, checked = [], [], 0
             for r, q in rolls.items():
@@ -2736,8 +2741,9 @@ def test_v21_review2_fixes():
         c9 = float(costs.spread("jpm", 100.0, t9, at="close")[0]) / 100 * 1e4 / XS["shape_close"]["jpm"][_how(t9[0])]
         full = all(set(XC[k].get("spread_bps_by_year_h09", {})) == set(XC[k]["spread_bps_by_year"]) and "spread_bps_h09" in XC[k]
                    for k in costs.EXTRA if k != "oil")
+        c9_want = e.get("spread_bps_by_year_c09", e["spread_bps_by_year"])["2017"]   # fix 3 (R3-5): its own close level
         return (abs(s9 - e["spread_bps_by_year_h09"]["2017"]) < 1e-9 and abs(s10 - e["spread_bps_by_year"]["2017"]) < 1e-9
-                and abs(c9 - e["spread_bps_by_year"]["2017"]) < 1e-9 and abs(s9 - s10) > 0.3 and full,
+                and abs(c9 - c9_want) < 1e-9 and abs(s9 - s10) > 0.3 and full,
                 f"jpm 2017 level at the 09 open {s9:.3f} bp, at 10:00 {s10:.3f} bp, at the 09 bar's close {c9:.3f} bp")
     _try("KF-5: a share has two spread levels per year, each calibrated on its own minutes: the 09 bar's open (09:30) and "
          "the 10-15 bars' opens (and every close)", kf5)
@@ -2790,6 +2796,264 @@ def test_v21_review2_fixes():
             "costs.py header and extra_costs.json source notes"
     _try("KF-9: the costs.py header no longer says the 2 USD minimum is reported only, and the spread-level note says "
          "'calibrated to the bar-open minutes' as extra_costs.json does", kf9)
+
+
+def _tick_oil(h1, start, end, jumps, seed=5, base=60.0):
+    """Raw synthetic oil bars quoted in CENTS (as the vendor's): a random walk of whole cents, each bar's open within a
+    cent of the previous close, the vendor's raw jump at each roll of `jumps` (prices from it on x the ratio, rounded to
+    the cent again). Written to h1/oil.parquet."""
+    ix = _hourly_ix(start, end)
+    ix = ix[ix.tz_convert("America/New_York").dayofweek < 5]
+    rng = np.random.default_rng(seed)
+    n = len(ix)
+    c = np.round(base * 100 + np.cumsum(rng.integers(-4, 5, n))).astype(float)
+    o = np.r_[c[0], c[:-1]] + rng.integers(-1, 2, n)
+    m = np.ones(n)
+    for r, q in jumps.items():
+        m[ix >= r] *= q
+    o, c = np.round(o * m) / 100, np.round(c * m) / 100
+    raw = pd.DataFrame({"open": o, "high": np.maximum(o, c) + 0.01, "low": np.minimum(o, c) - 0.01, "close": c,
+                        "volume": 60.0}, index=ix)
+    raw.index.name = "time"
+    raw.to_parquet(os.path.join(h1, "oil.parquet"))
+    return raw
+
+
+def test_v21_review3_fixes():
+    """Kit v2.1 fix 3 (2026-11-18): one check per verifier issue R3-1..R3-9 of the third review; each fails on the kit
+    before this fix (scratch kit_v21/fix3/kit_before)."""
+    h1 = os.path.join(TMP, "h1_fix3")
+    os.makedirs(h1, exist_ok=True)
+    real = data.http_get
+
+    def no_net(url, **kw):
+        raise AssertionError("a local-only market made a request: " + url)
+    data.http_get = no_net
+    os.environ["EXPLORE_H1_DIR"] = h1
+    rolls = {pd.Timestamp(k): float(v) for k, v in XC["oil"].get("rolls", {}).items()}
+    H = pd.Timedelta(hours=1)
+    S_ = lambda x, mk="oil": pd.DataFrame({"known_at": x.index + H, "side": 1, "market": mk})  # noqa: E731
+    try:
+        data.lock()
+        span = {r: q for r, q in rolls.items() if U("2016-01-01") <= r < U("2018-01-01")}
+        _tick_oil(h1, "2016-01-01", "2018-01-01", span)
+        o = data.load_bars("oil", 2016)
+        lvl = float(o.close.median())
+
+        # ---------------- R3-1: exact re-basing (a power of two): tie-prone honest rules pass, level rules still fail
+        def r31():
+            def tie(d):                                          # close-open > open-previous close (price differences)
+                b = d["oil"]
+                return S_(b[(b.close - b.open) > (b.open - b.close.shift())])
+
+            def rng2(d):                                         # range > the two previous ranges summed
+                b = d["oil"]
+                r_ = b.high - b.low
+                return S_(b[r_ > r_.shift() + r_.shift(2)])
+
+            def level(d):
+                c = d["oil"].close
+                return S_(c[(c > lvl) & (c.shift() <= lvl)])
+            a = checks.truncation_test(tie, {"oil": o})
+            b = checks.truncation_test(rng2, {"oil": o})
+            c = checks.truncation_test(level, {"oil": o}, n_signal_cuts=30, n_random_cuts=30)
+            with data.asof(U("2016-06-01")):
+                q = data._asof_q("oil") if hasattr(data, "_asof_q") else None
+            return (a["pass"] and b["pass"] and not c["pass"] and a["n_signals"] > 1000 and q in (0.25, 0.5, 2.0, 4.0),
+                    f"close-open > open-prevclose: pass {a['pass']} ({a['n_failed_cuts']}/{len(a['cuts'])} failed, "
+                    f"{a['n_signals']} signals); range rule: pass {b['pass']} ({b['n_failed_cuts']} failed); level rule: "
+                    f"pass {c['pass']} ({c['n_failed_cuts']} failed); re-basing factor at 2016-06-01: {q}")
+        _try("R3-1: the truncation test re-bases back-adjusted bars by an exact power of two (data._asof_q), so an honest "
+             "rule comparing price differences on cent-quoted oil cannot flip on a floating-point tie (passes) while a "
+             "rule on adjusted levels still fails", r31)
+
+        # ---------------- R3-2: derived inputs are re-based (daily_bars keeps attrs, any Series name, wide frames)
+        def r32():
+            dd = data.daily_bars(o)
+            dd = dd.set_index(pd.DatetimeIndex(dd.known_at))
+            ld = float(dd.close.median())
+
+            def daily_level(d):
+                x = d["od"]
+                m = (x.close > ld) & (x.close.shift() <= ld)
+                return pd.DataFrame({"known_at": x.index[m], "side": 1, "market": "oil"})
+            px = o.close.rename("px")
+
+            def renamed(d):
+                c = d["p"]
+                return S_(c[(c > lvl) & (c.shift() <= lvl)])
+            wide = pd.DataFrame({"oil": o.close})
+
+            def wide_level(d):
+                c = d["w"]["oil"]
+                return S_(c[(c > lvl) & (c.shift() <= lvl)])
+
+            def daily_ret(d):                                    # honest: computed inside build
+                x = d["od"]
+                r_ = x.close / x.close.shift() - 1
+                return pd.DataFrame({"known_at": x.index[r_ > 0.004], "side": 1, "market": "oil"})
+            kw = dict(n_signal_cuts=30, n_random_cuts=30)
+            a = checks.truncation_test(daily_level, {"od": dd}, row_len=pd.Timedelta(0), **kw)
+            b = checks.truncation_test(renamed, {"p": px}, **kw)
+            c = checks.truncation_test(wide_level, {"w": wide}, **kw)
+            e = checks.truncation_test(daily_ret, {"od": dd}, row_len=pd.Timedelta(0), **kw)
+            return (dd.attrs.get("market") == "oil" and not a["pass"] and not b["pass"] and not c["pass"] and e["pass"]
+                    and min(a["n_signals"], b["n_signals"], c["n_signals"]) > 3,
+                    f"level rule on daily_bars: pass {a['pass']} (attrs market {dd.attrs.get('market')}); on a close "
+                    f"renamed 'px': pass {b['pass']}; on a wide frame column 'oil': pass {c['pass']}; honest daily return "
+                    f"rule on daily_bars: pass {e['pass']}")
+        _try("R3-2: data.daily_bars keeps attrs['market'], and the truncation test re-bases any input carrying an adjusted "
+             "market's attrs whatever its name, and wide-frame columns named after an adjusted market: a level rule on "
+             "each fails", r32)
+
+        # ---------------- R3-3: precomputed returns with the market's attrs are refused, not falsely failed
+        th = float(o.close.pct_change().quantile(0.98))           # a fixed threshold (2 % of hourly returns exceed it)
+
+        def r33():
+            def thr(d, k="r"):
+                x = d[k]
+                return S_(x[x > th])
+            out = []
+            for name, item in (("pct_change", o.close.pct_change()),
+                               ("log-return frame", np.log(o[["open", "high", "low", "close"]]).diff())):
+                try:
+                    checks.truncation_test(lambda d: thr({"r": d["r"] if isinstance(d["r"], pd.Series) else d["r"].close}),
+                                           {"r": item}, n_signal_cuts=5, n_random_cuts=5)
+                    out.append(f"{name}: not refused")
+                except ValueError as ex:
+                    out.append("refused" if "INSIDE build" in str(ex) else f"{name}: other error {ex}")
+
+            def inside(d):
+                r_ = d["oil"].close.pct_change()
+                return S_(r_[r_ > th])
+            ok_in = checks.truncation_test(inside, {"oil": o}, n_signal_cuts=30, n_random_cuts=30)
+            return (out == ["refused", "refused"] and ok_in["pass"] and ok_in["n_signals"] > 10,
+                    f"precomputed: {out}; the same return rule computed inside build: pass {ok_in['pass']} "
+                    f"({ok_in['n_signals']} signals)")
+        _try("R3-3: a return series or frame computed outside build that keeps an adjusted market's attrs is REFUSED by "
+             "the truncation test (ValueError: compute features inside build) instead of being re-based into a false "
+             "failure; the same rule computed inside build passes", r33)
+
+        # ---------------- R3-9: bars of an earlier load whose measured roll ratios changed are refused by sim.Book
+        def r39():
+            sp = costs.EXTRA["oil"]
+            saved = {k: sp[k] for k in ("rolls", "rolls_vendor_gap", "rolls_checked_to")}
+            meas = {k: dict(v) for k, v in data._ROLLS_MEASURED.items()}
+            try:
+                sp["rolls"] = {k: v for k, v in saved["rolls"].items() if pd.Timestamp(k) < U("2021-01-01")}
+                sp["rolls_vendor_gap"] = {k: v for k, v in saved["rolls_vendor_gap"].items() if pd.Timestamp(k) < U("2021-01-01")}
+                sp["rolls_checked_to"] = "2020-12-31"                # 2021 plays the validation years (in memory)
+                rule = [r for r in data.roll_times("oil") if r >= U("2021-01-01")]
+                jl = {pd.Timestamp(k): v for k, v in sp["rolls"].items() if pd.Timestamp(k) >= U("2020-06-01")}
+                p1 = {r: 1.0 + 0.003 * (i % 4) - 0.004 for i, r in enumerate(rule)}
+                _oil_world(h1, "2020-06-01", "2022-01-01", {**jl, **p1}, vol=0.001)
+                b_old = data.load_bars("oil", 2020)
+                sim.Book(b_old, "oil")
+                _oil_world(h1, "2020-06-01", "2022-01-01", {**jl, **{r: q * 1.003 for r, q in p1.items()}}, vol=0.001)
+                b_new = data.load_bars("oil", 2020)
+                try:
+                    sim.Book(b_old, "oil")
+                    stale = False
+                except data.DataGap:
+                    stale = True
+                sim.Book(b_new, "oil")
+                sim.Book(b_new[b_new.index >= U("2021-03-01")], "oil")   # a slice of the new load is fine
+                return stale and len(rule) == 12, f"Book on bars of the earlier load after a reload: DataGap {stale}"
+            finally:
+                sp.update(saved)
+                data._ROLLS_MEASURED.clear()
+                data._ROLLS_MEASURED.update(meas)
+        _try("R3-9: sim.Book refuses (DataGap) bars of an earlier load_bars whose measured roll ratios (validation years) "
+             "differ from this process's current ones (attrs carry a digest, not the ratios)", r39)
+    finally:
+        data.http_get = real
+        os.environ.pop("EXPLORE_H1_DIR", None)
+        data.lock()
+
+    # ---------------- R3-4: the March 2014 oil roll at the vendor's switch (2014-03-18 22:00)
+    def r34():
+        ox = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "oil_outside.csv"), index_col=0)
+        want = float(ox.loc["2014-03-18", "c2"] / ox.loc["2014-03-18", "c1"])
+        q = rolls.get(U("2014-03-18 22:00"))
+        return (q is not None and abs(q / want - 1) < 1e-9 and U("2014-03-19 22:00") not in rolls and len(rolls) == 108
+                and "2014-03-19" in XC["oil"].get("rolls_vendor_flicker", {}),
+                f"roll 2014-03-18 22:00 ratio {q} (C2/C1 settled 2014-03-18: {want:.12f}); 2014-03-19 22:00 listed: "
+                f"{U('2014-03-19 22:00') in rolls}")
+    _try("R3-4: the March 2014 oil roll is listed where the vendor switched (2014-03-18 22:00, raw gap -111 bp) with C2/C1 "
+         "settled 2014-03-18 (-82.6 bp), not at 2014-03-19 22:00 (raw gap +1 bp); the 03-19/03-20 flicker is recorded", r34)
+
+    # ---------------- R3-5: share spread at a bar's close, three calibrated levels per year
+    def r35():
+        e = XC["tsla"]
+        out = {}
+        for g, hh in (("c09", 9), ("c10_14", 12), ("c15", 15)):
+            t = pd.DatetimeIndex([pd.Timestamp(f"2017-06-14 {hh:02d}:00", tz="America/New_York").tz_convert("UTC")])
+            out[g] = float(costs.spread("tsla", 100.0, t, at="close")[0]) / 100 * 1e4 / XS["shape_close"]["tsla"][_how(t[0])]
+        good = all(abs(out[g] - e[f"spread_bps_by_year_{g}"]["2017"]) < 1e-9 for g in out)
+        full = all(set(XC[k].get(f"spread_bps_by_year_{g}", {})) == set(XC[k]["spread_bps_by_year"]) and f"spread_bps_{g}" in XC[k]
+                   for k in costs.EXTRA if k != "oil" for g in ("c09", "c10_14", "c15"))
+        t15 = pd.DatetimeIndex([pd.Timestamp("2017-06-14 15:00", tz="America/New_York").tz_convert("UTC")])
+        op = float(costs.spread("tsla", 100.0, t15, at="open")[0]) / 100 * 1e4 / XS["shape"]["tsla"][_how(t15[0])]
+        return (good and full and out["c15"] < 0.6 * e["spread_bps_by_year"]["2017"] and abs(op - e["spread_bps_by_year"]["2017"]) < 1e-9,
+                f"tsla 2017 close levels {json.dumps({k: round(v, 3) for k, v in out.items()})} bp; 10-15 open level "
+                f"{e['spread_bps_by_year']['2017']} bp")
+    _try("R3-5: a share's spread at a bar's CLOSE uses its own calibrated level per year (09 bar, 10-14 bars, 15 bar "
+         "before the closure: kit_v21/fix3/s/k5c_levels.py), for every share and year listed", r35)
+
+    # ---------------- R3-6: dividend_report covers a hedged pair's share legs
+    def r36():
+        exd = [k for k in XC["xom"]["dividends"] if "2019-03-05" <= k < "2019-09-01"]
+        bx, bj = flat_share(80.0, "2019-03-01", "2019-09-15"), flat_share(110.0, "2019-03-01", "2019-09-15")
+        costs.register_pair("xom/jpm", "xom", "jpm")
+        pb = sim.pair_book("xom/jpm", "xom", "jpm", bx, bj)
+        kas = [pd.Timestamp(d + " 09:00", tz="America/New_York").tz_convert("UTC") - pd.Timedelta(hours=20) for d in exd]
+        sig = pd.DataFrame({"known_at": pd.DatetimeIndex(kas), "side": 1, "market": "xom/jpm"})
+        res, keep = {}, costs.EXTRA["xom"]["dividend_credit_long"]
+        try:
+            for cr in (0.0, 1.0, keep):
+                costs.EXTRA["xom"]["dividend_credit_long"] = cr
+                res[cr] = sim.simulate(sig, {"xom/jpm": pb}, exit=("bdays", 3), stop=("bps", 300))
+        finally:
+            costs.EXTRA["xom"]["dividend_credit_long"] = keep
+        rep = judge.dividend_report(res[keep])
+        m = rep["by_market"].get("xom/jpm", {})
+        return (m.get("long_trades_across_ex_dates", 0) >= 1 and "xom" in m.get("legs", {}) and
+                abs(rep["mean_R_net_credit_0"] - float(res[0.0].R.mean())) < 1e-9 and
+                abs(rep["mean_R_net_credit_1"] - float(res[1.0].R.mean())) < 1e-9 and
+                rep["mean_R_net_credit_0"] < rep["mean_R_net"] < rep["mean_R_net_credit_1"],
+                f"pair xom/jpm long across {len(exd)} xom ex-dates ({len(res[keep])} trades; report {json.dumps(m)}): "
+                f"report mean R at 0 / 0.7 / 1 "
+                f"{rep.get('mean_R_net_credit_0', float('nan')):.5f} / {rep.get('mean_R_net', float('nan')):.5f} / "
+                f"{rep.get('mean_R_net_credit_1', float('nan')):.5f}; re-simulated at 0 / 1 {float(res[0.0].R.mean()):.5f} / "
+                f"{float(res[1.0].R.mean()):.5f}")
+    _try("R3-6: judge.dividend_report covers a hedged pair's share legs: its credit-0 / credit-1 figures equal the pair "
+         "re-simulated with the long credit at 0 and 1", r36)
+
+    # ---------------- R3-7: an empty main is judged 'fail' (no crash), results.json and the ledger line are written
+    def r37():
+        idea = os.path.join(TMP, "ideas", "984_fix3_empty")
+        os.makedirs(idea, exist_ok=True)
+        led = os.path.join(TMP, "LEDGER_fix3.md")
+        shutil.copy(judge.LEDGER, led)
+        main = sim.simulate(pd.DataFrame({"known_at": pd.DatetimeIndex([], tz="UTC"), "side": pd.Series([], dtype=int)}),
+                            flat("eurusd"), market="eurusd", exit=("hours", 5), stop=("d20", 1.5))
+        r = judge.verdict(idea, main, corr="compute", ten=TEN, ledger=led)
+        n0 = judge.ledger_total(led)
+        judge.ledger_add(1, r["ledger_line"], path=led)
+        return (len(main) == 0 and r["verdict"] == "fail" and os.path.isfile(os.path.join(idea, "results.json")) and
+                judge.ledger_total(led) == n0 + 1, f"verdict {r['verdict']}; ledger total {n0} -> {judge.ledger_total(led)}")
+    _try("R3-7: judge.verdict with corr='compute' on a main with no trades returns 'fail' (stats.corr_with_ten gives None) "
+         "and writes results.json and a ledger line", r37)
+
+    # ---------------- R3-8: data.asof nests (an inner, later cut never widens what the outer one hides)
+    def r38():
+        with data.asof(U("2016-01-01")):
+            with data.asof(U("2018-01-01")):
+                inner = data.known_end()
+            outer = data.known_end()
+        return inner == U("2016-01-01") and outer == U("2016-01-01") and data._ASOF[0] is None, \
+            f"inner known_end {inner}, after the inner exits {outer}"
+    _try("R3-8: an inner data.asof(t2) with t2 after the outer cut keeps the outer cut", r38)
 
 
 def test_v21_real_bars():
@@ -2859,6 +3123,37 @@ def test_v21_real_bars():
               inside >= 0.99 and len(j) > 2000 and flag_ok and gaps_ok and len(vg) == 108 and kept < 1e-9,
               f"days {len(j)}, inside {inside:.4f}, flag matches {flag_ok}; vendor gaps match {gaps_ok}; "
               f"max |adjusted move - gap / ratio| {kept:.2e}")
+        # kit v2.1 fix 3 (R3-4): no listed roll of |ratio| >= 60 bp sits where the raw reopen gap misses the ratio by more
+        # than 50 % while another bar within 48 h has a raw gap within 50 % of it (the 2014-03 roll was such a case)
+        rg = np.log(raw.open / raw.close.shift()).to_numpy() * 1e4
+        sus, n60 = [], 0
+        for k_, q_ in XC["oil"]["rolls"].items():
+            r_, lq = pd.Timestamp(k_), float(np.log(q_) * 1e4)
+            if abs(lq) < 60:
+                continue
+            n60 += 1
+            gl = rg[int(raw.index.searchsorted(r_))]
+            w = np.where((raw.index >= r_ - pd.Timedelta(hours=48)) & (raw.index <= r_ + pd.Timedelta(hours=48)))[0]
+            if abs(gl - lq) > 0.5 * abs(lq) and (np.abs(rg[w] - lq) <= 0.5 * abs(lq)).any():
+                sus.append(k_)
+        check("real bars (R3-4): every listed oil roll of |ratio| >= 60 bp is at the vendor's switch (its raw reopen gap "
+              "within 50 % of the ratio, or no bar within 48 h with a raw gap within 50 % of it)", not sus and n60 > 30,
+              f"{n60} rolls checked; misdated: {sus}")
+        # kit v2.1 fix 3 (R3-1): on the real oil bars an honest rule comparing price differences passes the default
+        # truncation test (power-of-two re-basing, no floating-point tie flips) and a rule on adjusted levels fails
+        o13 = data.load_bars("oil", 2013)
+        lv = float(o13.close.median())
+        H_ = pd.Timedelta(hours=1)
+        tie = checks.truncation_test(lambda d: pd.DataFrame({"known_at": d["oil"].index[((d["oil"].close - d["oil"].open) > (
+            d["oil"].open - d["oil"].close.shift())).to_numpy()] + H_, "side": 1, "market": "oil"}), {"oil": o13})
+        lvr = checks.truncation_test(lambda d: pd.DataFrame({"known_at": d["oil"].index[((d["oil"].close > lv) & (
+            d["oil"].close.shift() <= lv)).to_numpy()] + H_, "side": 1, "market": "oil"}), {"oil": o13},
+            n_signal_cuts=30, n_random_cuts=30)
+        check("real bars (R3-1): on the real oil bars 2013-2021 'close-open > open-previous close' passes the default "
+              "truncation test (200 cuts) and a rule on the adjusted level fails",
+              tie["pass"] and tie["n_signals"] > 10000 and not lvr["pass"],
+              f"tie rule: pass {tie['pass']}, {tie['n_failed_cuts']}/{len(tie['cuts'])} failed, {tie['n_signals']} signals; "
+              f"level rule: pass {lvr['pass']} ({lvr['n_failed_cuts']} failed)")
     finally:
         os.environ.pop("EXPLORE_H1_DIR", None)
 
@@ -2874,7 +3169,7 @@ if __name__ == "__main__":
              test_event_lookahead, test_event_null_noise, test_crypto_venues,
              test_fix_v1_suppression, test_fix_v2_v4_judge_binding, test_fix_v3_venue_holes, test_lead_joint_null,
              test_v21_costs_by_hand, test_v21_local_markets, test_v21_share_traps, test_v21_slow_track_and_provisional,
-             test_v21_small_fixes, test_v21_review_fixes, test_v21_review2_fixes]
+             test_v21_small_fixes, test_v21_review_fixes, test_v21_review2_fixes, test_v21_review3_fixes]
     if "--review" in sys.argv:
         tests = [t for t in tests if t.__name__.startswith("test_review")]
     if "--only" in sys.argv:                 # --only <substring of a test name>

@@ -559,3 +559,91 @@ Limits that remain: the validation-year rolls are measured on the bars (night mo
 months where C1 and C2 differ by less than 12 bp are dated by Dukascopy's usual reopen (error below 12 bp); the
 truncation guard sees only bars that keep their attrs; the exit-side minimum commission at the exit price; the 0.70
 dividend credit and every other PROVISIONAL figure are to be read at FP.
+
+## Kit v2.1 fix 3 (2026-11-18, after the verifier's third review R3-1 to R3-9)
+
+What changed, issue by issue. Every fix has one check in `test_v21_review3_fixes` (test_kit.py), which fails on the kit
+before this fix and passes after: 9/9 on the repaired kit, 0/9 on the kit before (`kit_v21/fix3/kit_before`, run log
+`kit_v21/fix3/new_tests_on_old_kit.log`). `--real-bars` adds two checks on the real bars (R3-1, R3-4). The verifier's
+scripts re-run on the repaired kit: `kit_v21/fix3/*_after.txt` (adapted copies in `kit_v21/fix3/s/`). Nothing changed
+for the 16 FP markets: the verifier's r7_same.py gives the same 13,027 trades before and after this fix, every column
+difference 0.0 (`kit_v21/fix3/r7_same_fix3.txt`).
+
+- **The truncation test re-bases by an exact power of two (R3-1, blocking).** Fix 2 multiplied each cut copy of
+  back-adjusted bars by k = adjustment known at the cut / adjustment known at the period end (0.665 for oil in 2018).
+  Multiplying by such a k is not exact in floating point: two price differences that are equal in real arithmetic
+  (common with cent-quoted prices) came out unequal by about 1e-15, in opposite directions in the full and the cut
+  build, so an honest rule like 'close - open > open - previous close' FAILED on oil (199 of 200 cuts). Now the factor
+  is `data._asof_q` = 2 ** round(log2 k) (2 or 1/2 when that rounds to 1, 1 only when k = 1). Multiplying by a power
+  of two is exact, so every sum, difference, ratio and comparison is bit-identical in the full and the cut build, while
+  every absolute level still moves (by a factor of at least 2): a rule on levels still fails. `data.load_bars`,
+  `price_factor` and `split_factor` inside `data.asof(t)` give the same re-basing (the factor known at the period end
+  x _asof_q), so a build that reads them stays consistent with the cut copies; `roll_times` and the split list still
+  ignore rolls and splits at or after t. Real oil 2013-2021 (`kit_v21/fix3/r2_tie2_after.txt`, verifier's r2_tie2.py,
+  200 cuts): 'close-open > open-prevclose' 0/200 failed cuts (199/200 before), 'range > the two previous ranges' 0
+  (199), 'close crosses the mid of the 24-bar range' 0 (135), 'move > 2 x ATR24' 0 (7); the same rules on aapl, nvda,
+  tsla, ge and eurusd still pass; level rules still fail (r2_guard_after.txt: 90 failed cuts of 90). Time of 200 cuts on
+  the 40 shares and oil: 36 s (30 s before this fix, 21 s before fix 2; a shared machine).
+- **Derived inputs are re-based or refused (R3-2, R3-3).** Which inputs of a truncation test are re-based is now
+  decided by `checks._plan_item`, once, before the first build: (a) any frame or Series whose attrs `market` is an
+  adjusted market (oil, a share with a `splits` entry), WHATEVER the column or Series name: `data.daily_bars` now keeps
+  the bars' attrs, a close renamed 'px' keeps them, a slice keeps them; (b) in a frame without such attrs, the columns
+  named after an adjusted market (a wide frame of closes `pd.DataFrame({'aapl': a.close, 'nvda': n.close})`) and, in a
+  long frame with a `market` column, the open / high / low / close of an adjusted market's rows. Every such float
+  column (but `volume`, `n_bars`) must be at the market's price level: >= 99 % of its values within [0.5 x lowest low,
+  2 x highest high] of the adjusted bars (`attrs['price_range']`, set by `data.load_bars`). If it is not (a return, a
+  price difference, an ATR, a z-score), the test REFUSES the input with a ValueError: such a feature cannot be re-based
+  correctly (a price difference must be, a return must not), so the test would fail an honest rule (R3-3: a
+  `pct_change` passed in data failed 89 of 90 cuts) or pass a level rule. Compute features INSIDE `build`, from the bars
+  passed in `data`. Verifier's r2_guard.py on the repaired kit: the level rule on `daily_bars` fails (86 failed cuts;
+  passed before), on a renamed Series fails (90; passed), on the aapl / nvda wide frame fails (43; passed); the
+  pct_change Series and the log-return frame are refused; the honest rules computed inside build pass.
+- **The March 2014 oil roll moved to the vendor's switch (R3-4).** It was listed at 2014-03-19 22:00 (raw reopen gap
+  +1.1 bp) because the 14:30 price of 03-19 was taken during a vendor flicker; the vendor switched at 2014-03-18 22:00
+  (raw gap -111.2 bp). Now listed there with C2 / C1 settled on 2014-03-18 (98.88 / 99.70 = 0.991775, -82.6 bp); the
+  adjusted reopen move at 2014-03-18 22:00 is -28.6 bp (the real night move) and at 03-19 22:00 +1.1 bp (it carried two
+  fake moves of -111 and +121 bp). `oil.rolls_vendor_flicker` records 2014-03-19 and 03-20 (spikes to the April
+  contract's price remain in the bars, a vendor-data limit); the KF-1 day-state check ignores those two days. Scan of
+  every listed roll of |ratio| >= 60 bp (`kit_v21/fix3/s/r4_rolldate.py`): the listed bar is now the vendor's switch
+  for all 44 (one suspect before: 2014-03); `--real-bars` repeats the scan. Product of the ratios: 2.501008 (2.491599 before).
+- **Share spreads at a bar's CLOSE calibrated per year (R3-5).** Three close levels per share and New York year, each
+  calibrated on its own close minutes as fix 2 did for the opens: `spread_bps_by_year_c09` (the 09 bar's close, 09:59),
+  `_c10_14` (10:59 to 14:59), `_c15` (15:59, an exit before the closure); `spread_bps_c09 / _c10_14 / _c15` for the
+  years not listed (max of the 2021 level and the mean). `spread_bps_by_year` now prices the opens of the 10-15 bars
+  only. Before, every close used that open level x the whole-period close shape: kit / data 0.56-3.10 at 15:59 (tsla
+  2017 3.10, nflx 2021 0.56). Verifier's r3_spread.py now (five shares, 2017-2021): 0.999-1.000 at every one of the four
+  points (`kit_v21/fix3/r3_spread_after.txt`; scripts `kit_v21/fix3/s/k5c_levels.py`, `k5c_install.py`).
+- **Dividend report for pairs (R3-6).** `judge.dividend_report` now covers each share leg of a hedged pair (the leg's
+  side = pair side x the leg's sign; its dividend is a fraction of its notional, R moves by its change / stop_frac):
+  `by_market[pair]` gives the legs and their totals, the PF and mean R at credits 0 and 1 include the pairs, and the
+  ledger line and the 'LONG RESULT NEEDS THE DIVIDEND CREDIT' flag work for a pair. The verifier's xom/jpm case: credit
+  0 / 0.7 / 1 mean R -0.34198 / -0.11452 / -0.01703 from the report, identical to the re-simulations.
+- **An empty main no longer crashes the chain (R3-7).** `stats.corr_with_ten` returns None for a table without trades
+  (the correlation bar fails as missing); `judge.verdict` returns 'fail' and writes results.json and the ledger line,
+  so the configurations count in N_all.
+- **data.asof nests (R3-8).** An inner `asof(t2)` keeps the earlier of t2 and the outer cut.
+- **Stale measured rolls refused (R3-9).** Bars whose roll ratios were measured (validation years) carry
+  `attrs['rolls_measured_sha']` = (first bar, sha256 of the measured ratios that apply to them): a digest, no roll's
+  time or size. `sim.Book` raises `DataGap` when the process's current measured ratios differ (the vendor file changed
+  and was reloaded since): reload the bars. Verifier's r1_val.py (5): DataGap now (an 8.1 % spread error before).
+
+Amended existing checks (they asserted the behaviour these fixes change): KF-5 (the 09 bar's close now has its own
+level), KF-1 (the day-state check skips the recorded flicker days) and the hand spread helper `_xsp` (close levels).
+
+Limits that remain:
+- The truncation guard sees only inputs it can classify: a feature passed as a numpy array, a Series of another name
+  without the attrs, or a frame built from such pieces, is not seen. Rule: pass the bars of `data.load_bars` (or
+  `data.daily_bars` of them) and compute every feature inside `build`.
+- The price-level check is a range test: a derived feature that happens to lie within half to twice the price range (a
+  moving average, a channel bound) is treated as a price and re-based, which is right for those; a non-price feature in
+  that range (rare) would be re-based too.
+- A rule that compares DIFFERENCES OF LOGS of prices (log c - log o) is not bit-identical under the re-basing (log 2 is
+  added to each term): a tie between two such differences could still flip; ratios (c / o) are exact.
+- Early 2013 the vendor's oil data had no reopen gap: a roll can fall INSIDE the listed bar (2013-01-22 21:00: raw gap
+  0.0, intrabar +44.6 bp), which leaves a fake gap of minus the ratio (about -45 bp) at that bar's open. The verifier's
+  other large adjusted night moves (2015-02-19 -299 bp, 2020-03-18, 2020-04-19, Monday reopens of 60-85 bp) were
+  judged real by eye, not proven; 2015-02-19 stays as listed (its raw gap -170 bp; no bar within 48 h has a raw gap
+  within 50 % of the +130 bp ratio).
+- The vendor's flicker on 2014-03-19 / 03-20 leaves spikes of about +120 bp in the bars.
+- The close levels are calibrated on the mean quoted spread of each group of close minutes; the hour-of-week close
+  shape inside a group stays the whole-period one.

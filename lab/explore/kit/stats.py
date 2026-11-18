@@ -242,6 +242,8 @@ def corr_with_ten(trades, ten=None, ten_dir=None):
     assert len(WEEKS) == 418
     ten = ten if ten is not None else ten_trades(ten_dir)
     tot = sum(weekly(v) for v in ten.values())
+    if not len(trades):                  # kit v2.1 fix 3 (R3-7): an empty main (exit_time of dtype object) has no
+        return None                      # weekly series: the correlation is undefined (the bar fails as missing)
     t = trades[pd.DatetimeIndex(trades.exit_time) < IS_END]
     r = float(np.corrcoef(weekly(t).to_numpy(), tot.to_numpy())[0, 1])
     return None if np.isnan(r) else r

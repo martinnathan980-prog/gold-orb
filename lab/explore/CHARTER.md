@@ -82,7 +82,7 @@ Cache folder: `~/explore_data` (outside the repository; it may survive between r
 - `lab/explore/fetch.py` is the first runs' helper; the kit's `data.py` replaces it.
 
 ## The kit (`lab/explore/kit`): use it; do not rewrite fetch, backtest or statistics
-Built and attacked on 2026-11-17/18 (README.md in the folder; v2.1: 157 self-tests). It holds the period lock, FP
+Built and attacked on 2026-11-17/18 (README.md in the folder; v2.1 after three adversarial reviews: 166 self-tests). It holds the period lock, FP
 costs in the lab's conventions, an hourly simulator, hedged pairs, exits on a condition, every bar below, the
 random-entry null (same-day for baskets), the correlation with the ten, the deflated Sharpe, the guards against
 look-ahead and, since v2.1, US shares and oil with provisional costs and the slow track (paragraphs under "The bars").
@@ -97,7 +97,10 @@ look-ahead and, since v2.1, US shares and oil with provisional costs and the slo
    any other source; join with `asof_join`. **`lab/explore/scout/sources.md` gives, for 29 other sources, tested fetch
    code and WHEN each value is known (and what is blocked): read your source's section before declaring.**
 4. `build(data)` returns the WHOLE signal table (`known_at` UTC, `side`, optional `market`); a value computed from a
-   bar's close is known at the bar's END. `checks.truncation_test(build, data, cuts, row_len={every item: ...})` must
+   bar's close is known at the bar's END. Pass `truncation_test` the bars of `data.load_bars` (or `data.daily_bars` of
+   them) and compute EVERY feature (returns, ranges, averages, ranks) INSIDE `build`: for shares and oil the test
+   refuses an input that carries the market's mark but is not at its price level, and a feature handed over as a bare
+   array is not seen by the guard at all. `checks.truncation_test(build, data, cuts, row_len={every item: ...})` must
    pass; simulate exactly `build(data)`; then the neighbours, `mode="every"`, `stats.null_test(..., n_draws=2000)`,
    `judge.verdict(folder, main, neighbours, every, null, truncation=tr, n_configs=N)` (writes results.json and
    trials.jsonl) and only then `judge.ledger_add(N, res["ledger_line"])`.
@@ -181,8 +184,8 @@ does not pass.
     split-adjusts the bars and drops bars of fewer than 5 minutes (the closing minute of a half day).
   - Prices: use ratios of prices, never absolute levels (the levels are adjusted for later splits). The truncation
     test catches a rule on levels only when the signals are built from the bars passed to it (their attrs kept).
-  - Costs, PROVISIONAL: the data's quoted spread, calibrated by year, one level for an order at the 09:30 open and one
-    for the other bars, times its hour-of-week shape; a commission of max(0.03 USD a share, 2 USD an order) at a
+  - Costs, PROVISIONAL: the data's quoted spread, calibrated by year (one level for an order at the 09:30 open, one
+    for the other opens, three for exits at a bar's close: the 15:59 close is wider), times its hour-of-week shape; a commission of max(0.03 USD a share, 2 USD an order) at a
     stake of 5,000 EUR / 6 positions at 1:5 (above about 72 USD a share the minimum binds: 4.2 bp a side; a 1,000 EUR
     account pays about 33 bp more a round trip, reported in `res["sizing"]`); swaps 7 % long and 3 % short a year.
   - Dividends, PROVISIONAL: a short open at an ex-date's 09:30 open pays the dividend; a long is credited 70 % of it

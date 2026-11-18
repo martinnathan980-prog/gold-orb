@@ -79,6 +79,7 @@ class Book:
         sp = C.spec(key)
         if "splits" in sp or "rolls" in sp:                              # shares / oil: adjusted bars only (load_bars)
             _data.check_adjusted(key, bars)
+            _data.check_roll_source(key, bars)                           # kit v2.1 fix 3 (R3-9): stale measured rolls
         adj = _data.price_factor(key, idx)                               # split or roll adjustment of each bar
         self.s = C.spread(key, o, idx, adj=adj)                          # base modelled spread per bar (net scenario)
         self.s_close = C.spread(key, c, idx, at="close", adj=adj)        # at the bar's close (exits before a closure)

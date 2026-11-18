@@ -55,6 +55,10 @@
   * Shares: dividends: a SHORT open at an ex-date's first bar pays dividend / previous close x its fill (in swap();
     a long is credited dividend_credit_long x that, 0 = credits ignored as for swaps).
   * Oil: spread_abs = a constant 0.05 USD per barrel (x the roll adjustment of the bar, data.price_factor), not bp.
+- Kit v2.1 fix 3 (2026-11-18, verifier R3-5): a share's spread at a bar's CLOSE has its own levels per year, in three
+  groups calibrated on their own close minutes: spread_bps_by_year_c09 (09:59), _c10_14 (hh:59, 10-14), _c15 (15:59,
+  an exit before the closure); spread_bps_c09 / _c10_14 / _c15 for the years not listed. spread_bps_by_year now prices
+  the OPENS of the 10-15 bars only. (Before: every close used the 10-15 open level, off by 0.56-3.10 at the 15:59 close.)
 """
 import json
 import os
@@ -227,7 +231,9 @@ def shape(key, times, at="open"):
 def _year_bps(s, times, at="open"):
     """spread_bps of each time: spread_bps_by_year of its New York calendar year, else spread_bps (kit v2.1 fix, V21-4);
     for an order at the OPEN of a share's 09:00-labelled bar (its 09:30 first minute), spread_bps_by_year_h09 / spread_bps_h09
-    (kit v2.1 fix 2, KF-5). A scalar without times or without a table, else one value per time."""
+    (kit v2.1 fix 2, KF-5); at a bar's CLOSE (at='close'), the share's close level of the bar's group and year:
+    spread_bps_by_year_c09 (09 bar), _c10_14 (10-14 bars), _c15 (15 bar, before the closure), else spread_bps_c09 /
+    _c10_14 / _c15 (kit v2.1 fix 3, R3-5). A scalar without times or without a table, else one value per time."""
     by = s.get("spread_bps_by_year")
     if not by or times is None:
         return float(s["spread_bps"])
@@ -236,6 +242,15 @@ def _year_bps(s, times, at="open"):
     out = np.full(len(yr), float(s["spread_bps"]))
     for y, v in by.items():
         out[yr == int(y)] = float(v)
+    if at == "close" and s.get("spread_bps_by_year_c15"):   # kit v2.1 fix 3 (R3-5): a share's close levels by bar hour
+        hr = nyt.hour.to_numpy()
+        for g, m in (("c09", hr == 9), ("c10_14", (hr >= 10) & (hr <= 14)), ("c15", hr == 15)):
+            if m.any():
+                cg = np.full(len(yr), float(s.get(f"spread_bps_{g}", s["spread_bps"])))
+                for y, v in s.get(f"spread_bps_by_year_{g}", {}).items():
+                    cg[yr == int(y)] = float(v)
+                out = np.where(m, cg, out)
+        return out
     b9 = s.get("spread_bps_by_year_h09")
     if b9 and at == "open":
         h9 = nyt.hour.to_numpy() == 9

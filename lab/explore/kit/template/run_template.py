@@ -7,7 +7,10 @@ order: hash -> truncation -> run -> verdict. run.py never writes declared.json: 
 Kit v2 (README 'Pairs', 'Exit on a condition', 'Crypto venues'): a pair is one market, bk = {name: sim.pair_book(name,
 key_a, key_b, bars_a, bars_b, kind)}; an exit on a condition is exit=sim.event_exit(build_events(d), ("bdays", 5)) with
 tre = checks.truncation_test(build_events, d, ...) passed as judge.verdict(..., event_truncation=tre); bitcoin before
-2017-08: data.load_bars("btcusd", 2013, venue="bitstamp") (the declaration names the venue)."""
+2017-08: data.load_bars("btcusd", 2013, venue="bitstamp") (the declaration names the venue).
+Kit v2.1 fix 3 (README): pass the truncation test the bars of data.load_bars (or data.daily_bars of them) and compute
+EVERY feature (returns, ATR, z-scores) inside build: an input that carries a share's or oil's attrs but is not at the
+price level is refused (ValueError), and a feature passed as a bare array or a renamed copy without attrs is not seen."""
 import hashlib, json, os, sys, tempfile
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 import numpy as np, pandas as pd

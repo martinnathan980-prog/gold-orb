@@ -12,35 +12,141 @@ from . import stats as S
 _PRICE_COLS = ("open", "high", "low", "close")
 
 
-def _asof_prices(x, c):
-    """Kit v2.1 fix 2 (KF-2): the cut copy of back-adjusted bars (attrs 'market' = a share with splits or oil with
-    rolls, as data.load_bars returns them) as they would have been adjusted at the cut c: every price is divided by the
-    factor of the rolls / splits at or after c (constant over the copy), so an ABSOLUTE level differs between the full
-    and the cut build (a rule on levels then fails the test) while ratios are unchanged; attrs 'splits_applied' keeps
-    the splits before c only. Frames without that attrs are returned as they are (the guard cannot see them)."""
-    key = getattr(x, "attrs", {}).get("market")
-    if not key or not len(x) or not isinstance(key, str):
-        return x
+_SCALE_FREE = ("volume", "n_bars")       # columns of data.load_bars / daily_bars that are not prices
+
+
+def _adj_key(k):
+    if not isinstance(k, str):
+        return False
     try:
-        if not _data.has_adjustment(key):
-            return x
+        return bool(_data.has_adjustment(k))
     except KeyError:
+        return False
+
+
+def _ref_range(key, x, refs):
+    """(low, high) of the market's adjusted prices: attrs['price_range'] (data.load_bars sets it; pandas keeps it on
+    derived frames), else the item's own low / high columns, else the bars data.load_bars(key) gives."""
+    at = getattr(x, "attrs", {})
+    if at.get("market") == key and at.get("price_range"):
+        return tuple(at["price_range"])
+    if isinstance(x, pd.DataFrame) and at.get("market") == key and {"low", "high"} <= set(x.columns) and len(x):
+        return float(x["low"].min()), float(x["high"].max())
+    if key not in refs:
+        try:
+            b = _data.load_bars(key)
+            refs[key] = (float(b.low.min()), float(b.high.max()))
+        except Exception as e:      # noqa: BLE001
+            refs[key] = e
+    if isinstance(refs[key], Exception):
+        raise ValueError(f"truncation_test: an input carries the adjusted market '{key}' but its price level cannot be "
+                         f"checked ({refs[key]!r}): pass the bars of data.load_bars and compute features inside build")
+    return refs[key]
+
+
+def _price_like(v, rng):
+    """True if >= 99 % of the finite values lie within [0.5 x low, 2 x high] of the market's adjusted prices."""
+    v = np.asarray(v, float)
+    v = v[np.isfinite(v)]
+    if not len(v):
+        return True
+    lo, hi = rng
+    return bool(np.mean((v >= 0.5 * lo) & (v <= 2.0 * hi)) >= 0.99)
+
+
+def _refuse(label, col, key):
+    raise ValueError(
+        f"truncation_test: input {label!r}{'' if col is None else f' column {col!r}'} carries the back-adjusted market "
+        f"'{key}' but is not at its price level (a return, a difference, a z-score...): it cannot be re-based to the "
+        "adjustment known at each cut (a price difference must be, a return must not), so the test could fail an honest "
+        "rule or pass a rule on adjusted levels. Compute features INSIDE build from the bars of data.load_bars passed in "
+        "`data` (kit v2.1 fix 3, R3-2/R3-3)")
+
+
+def _plan_item(x, label, refs):
+    """Kit v2.1 fix 3 (R3-2/R3-3): which values of one input of a truncation test are adjusted prices to re-base at each
+    cut: [(column or None for a Series, market key, row mask or None)]. Recognised: (a) a frame or Series whose attrs
+    'market' is a back-adjusted market (data.load_bars bars, data.daily_bars, a slice, a renamed close...): every float
+    column (but volume / n_bars) must be at the market's price level (re-based) or the input is REFUSED (ValueError);
+    (b) a frame without such attrs: columns named after an adjusted market (a wide frame of several shares' closes) and,
+    in a long frame with a 'market' column, the open / high / low / close of the rows of an adjusted market; each must be
+    at that market's price level or the input is refused; (c) a Series named after an adjusted market."""
+    plan = []
+    at = getattr(x, "attrs", {}) or {}
+    key = at.get("market")
+    if isinstance(x, pd.Series):
+        k = key if _adj_key(key) else (x.name if _adj_key(x.name) else None)
+        if k is None or not pd.api.types.is_float_dtype(x.dtype):
+            return plan
+        if not _price_like(x.to_numpy(), _ref_range(k, x, refs)):
+            _refuse(label, None, k)
+        return [(None, k, None)]
+    if not isinstance(x, pd.DataFrame):
+        return plan
+    if _adj_key(key):
+        rng = _ref_range(key, x, refs)
+        for col in x.columns:
+            if col in _SCALE_FREE or not pd.api.types.is_float_dtype(x[col].dtype):
+                continue
+            if not _price_like(x[col].to_numpy(), rng):
+                _refuse(label, col, key)
+            plan.append((col, key, None))
+        return plan
+    for col in x.columns:
+        if _adj_key(col) and pd.api.types.is_float_dtype(x[col].dtype):
+            if not _price_like(x[col].to_numpy(), _ref_range(col, x, refs)):
+                _refuse(label, col, col)
+            plan.append((col, col, None))
+    if "market" in x.columns:
+        mk = x["market"].to_numpy()
+        for k in pd.unique(mk):
+            if not _adj_key(k):
+                continue
+            m = mk == k
+            for col in _PRICE_COLS:
+                if col in x.columns and pd.api.types.is_float_dtype(x[col].dtype):
+                    if not _price_like(x[col].to_numpy()[m], _ref_range(k, x, refs)):
+                        _refuse(label, col, k)
+                    plan.append((col, k, m))
+    return plan
+
+
+def _scale_plan(data):
+    """{item name: plan} for a dict of inputs, or {None: plan} for a single input (see _plan_item)."""
+    refs = {}
+    if isinstance(data, dict):
+        return {k: _plan_item(v, k, refs) for k, v in data.items()}
+    return {None: _plan_item(data, "data", refs)}
+
+
+def _asof_prices(x, c, plan):
+    """Kit v2.1 fix 2/3 (KF-2, R3-1): the cut copy x of an input re-based to the adjustment known at the cut c: the
+    adjusted prices named by `plan` are multiplied by data._asof_q(market) inside asof(c), an exact power of two (so
+    sums, differences, ratios and comparisons stay bit-identical while absolute levels move); attrs 'splits_applied'
+    keeps the splits before c only. The plan's row masks are those of x's rows."""
+    if not plan or not len(x):
         return x
-    last = pd.DatetimeIndex(x.index[-1:])
-    full = float(_data.price_factor(key, last)[0])
     with _data.asof(c):
-        known = float(_data.price_factor(key, last)[0])
-    if full == known:
+        qs = {k: _data._asof_q(k) for k in {p[1] for p in plan}}
+    if all(q == 1.0 for q in qs.values()):
         return x
-    k = known / full
-    out = x.copy()
-    if isinstance(out, pd.DataFrame):
-        for col in _PRICE_COLS:
-            if col in out:
-                out[col] = out[col].to_numpy(float) * k
-    elif out.name in _PRICE_COLS:
-        out = out * k
+    if isinstance(x, pd.Series):
+        out = x * qs[plan[0][1]]
+    else:
+        out = x.copy()
+        for col, k, m in plan:
+            if qs[k] == 1.0:
+                continue
+            v = out[col].to_numpy(float).copy()
+            if m is None:
+                v = v * qs[k]
+            else:
+                v[m] = v[m] * qs[k]
+            out[col] = v
     out.attrs.update(x.attrs)
+    k0 = (x.attrs or {}).get("market")
+    if k0 in qs and out.attrs.get("price_range"):
+        out.attrs["price_range"] = tuple(float(v) * qs[k0] for v in x.attrs["price_range"])
     if "splits_applied" in out.attrs:
         cc = pd.Timestamp(c)
         out.attrs["splits_applied"] = {d: q for d, q in x.attrs["splits_applied"].items()
@@ -48,17 +154,24 @@ def _asof_prices(x, c):
     return out
 
 
-def _cut(data, c, lens):
+def _cut(data, c, lens, plan=None):
     if isinstance(data, dict):
         if isinstance(lens, dict):
             miss = [k for k in data if k not in lens]
             if miss:
                 raise ValueError(f"truncation_test: no row_len for {miss}: give each item's row length (1 h for hourly "
                                  "bars indexed by their open, 0 for a series indexed by the time its value is KNOWN)")
-            return {k: _cut(v, c, lens[k]) for k, v in data.items()}
-        return {k: _cut(v, c, lens) for k, v in data.items()}
-    idx = pd.DatetimeIndex(data.index)
-    return _asof_prices(data[idx + lens <= c], c)
+            return {k: _cut1(v, c, lens[k], (plan or {}).get(k)) for k, v in data.items()}
+        return {k: _cut1(v, c, lens, (plan or {}).get(k)) for k, v in data.items()}
+    return _cut1(data, c, lens, (plan or {}).get(None))
+
+
+def _cut1(x, c, lens, plan):
+    idx = pd.DatetimeIndex(x.index)
+    keep = np.asarray(idx + lens <= c)
+    if plan:
+        plan = [(col, k, None if m is None else m[keep]) for col, k, m in plan]
+    return _asof_prices(x[keep], c, plan)
 
 
 # Minimum cut density judge.verdict requires of a truncation report (verifier V1, 2026-11-18: a build that DROPS an
@@ -131,12 +244,21 @@ def truncation_test(build, data, cuts=(), row_len=pd.Timedelta(hours=1), cols=("
     condition is known to be true, optional market) is tested the same way; the report then carries `events_sha`
     (sim.events_sha of the full build, signals_sha None) and `events_by_key` (sha per market key, '*' for a table without
     market), and judge.verdict binds it to the events each simulated market used (pass it as event_truncation=).
-    BACK-ADJUSTED BARS (kit v2.1 fix 2, KF-2): share bars with splits and oil bars with rolls carry, before a roll or a
-    split, the factor of every later one. Each cut copy of such bars (attrs 'market' set, as data.load_bars returns them)
-    is re-based to the adjustment known at the cut, and each cut build runs inside data.asof(cut) (data.price_factor,
-    roll_times and split_factor then ignore later rolls / splits): a rule that reads an absolute adjusted level, or
-    price_factor, changes between the full and the cut build and fails. A series derived from the bars that lost its
-    attrs (e.g. a numpy array or a new Series) is not re-based: build signals from the bars passed in `data`."""
+    BACK-ADJUSTED BARS (kit v2.1 fix 2, KF-2; fix 3, R3-1..R3-3): share bars with splits and oil bars with rolls carry,
+    before a roll or a split, the factor of every later one. Each cut build runs inside data.asof(cut), and each cut copy
+    of such bars is re-based: multiplied by data._asof_q, an EXACT POWER OF TWO standing for the adjustment known at the
+    cut (2 ** round(log2 k), 2 or 1/2 when that rounds to 1); data.load_bars, price_factor and split_factor inside the
+    cut build give the same re-basing. Sums, differences, ratios and comparisons of prices are then bit-identical in the
+    full and the cut build (an honest rule cannot flip on a floating-point tie), while any absolute adjusted level
+    differs, so a rule on levels (or on price_factor) fails. Which inputs are re-based (_plan_item): any frame or Series
+    whose attrs 'market' names an adjusted market (data.load_bars, data.daily_bars, slices, a renamed close), whatever
+    the column or Series name; columns named after an adjusted market in a frame without attrs (a wide frame of closes);
+    open/high/low/close of an adjusted market's rows in a long frame with a 'market' column. Each such float column must
+    be at the market's price level (attrs 'price_range'), else the test REFUSES the input (ValueError): a return, a
+    price difference or a z-score cannot be re-based correctly, so compute features INSIDE build. A derived input that
+    carries none of these marks (a numpy array, a new unnamed Series of another name, a frame built from it) is not seen:
+    build signals from the bars passed in `data` (README 'limits')."""
+    plan = _scale_plan(data)                              # kit v2.1 fix 3: refuses unclassifiable adjusted inputs
     full = build(data)
     ends = _bar_ends(data, row_len)                       # also refuses a dict without a row_len for every item
     is_ev = "side" not in full
@@ -179,7 +301,7 @@ def truncation_test(build, data, cuts=(), row_len=pd.Timedelta(hours=1), cols=("
     fka = pd.DatetimeIndex(full.known_at)
     for c in cuts:
         c = c.tz_localize("UTC") if c.tz is None else c
-        cd = _cut(data, c, row_len)                       # re-based to the rolls / splits known at the cut (KF-2)
+        cd = _cut(data, c, row_len, plan)                 # re-based to the rolls / splits known at the cut (KF-2, R3-1)
         with _data.asof(c):                               # and the build sees them as known at the cut
             part = build(cd)
         a = full[fka <= c][keep].reset_index(drop=True)

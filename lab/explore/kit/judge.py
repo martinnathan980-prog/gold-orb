@@ -125,10 +125,12 @@ def sizing(main):
 
 
 def dividend_report(main):
-    """Kit v2.1 fix 2 (KF-4): the long result's dependence on the dividend credit. For each share market of the main
-    (pairs excluded), the long trades open at an ex-date's first bar and the dividends they were credited at the file's
-    dividend_credit_long (0.70), and the main's PF and mean R (net) recomputed with the long credit at 0 and at 1.
-    REPORTED: the verdict uses the file's credit; a pass that needs the credit (PF at 0 below 1) is flagged."""
+    """Kit v2.1 fix 2 (KF-4), fix 3 (R3-6): the long result's dependence on the dividend credit. For each share market of
+    the main, and each share LEG of a hedged pair (PairBook credits a long leg too: kit v2.1 fix 3), the long trades /
+    legs open at an ex-date's first bar and the dividends they were credited at the file's dividend_credit_long (0.70),
+    and the main's PF and mean R (net) recomputed with the long credit at 0 and at 1 (a pair leg's dividend is a fraction
+    of its notional, R moves by its change / stop_frac). REPORTED: the verdict uses the file's credit; a pass that needs
+    the credit (PF at 0 below 1) is flagged."""
     out = {"by_market": {}, "credit_long_used": None}
     if not len(main):
         return out
@@ -136,16 +138,45 @@ def dividend_report(main):
     any_div = False
     for mk, g in main.groupby("market"):
         sp = C.spec(mk)
-        if "pair" in sp or "dividends" not in sp:
+        et, xt = pd.DatetimeIndex(g.entry_time), pd.DatetimeIndex(g.exit_time)
+        pos = main.index.get_indexer(g.index)
+        if "pair" in sp:
+            legs = [(k, int(s_)) for k, s_ in zip(sp["pair"]["legs"], sp["pair"]["sides"]) if "dividends" in C.spec(k)]
+            if not legs:
+                continue
+            sdf = (g.stop_frac.to_numpy(float) if "stop_frac" in g else
+                   g.stop_dist.to_numpy(float) / g.entry_px.to_numpy(float))
+            one = np.ones(len(g))
+            rec = {"legs": {}, "long_trades_across_ex_dates": 0, "short_trades_across_ex_dates": 0,
+                   "long_credit_bp_total": 0.0}
+            for leg, ls in legs:
+                cl = float(C.spec(leg).get("dividend_credit_long", 0.0))
+                out["credit_long_used"] = cl
+                side = g.side.to_numpy() * ls
+                d_used = C.dividends(leg, side, one, et, xt)
+                d0 = C.dividends(leg, side, one, et, xt, credit_long=0.0)
+                d1 = C.dividends(leg, side, one, et, xt, credit_long=1.0)
+                R0[pos] += (d_used - d0) / sdf
+                R1[pos] += (d_used - d1) / sdf
+                lng = (side > 0) & (d0 == 0) & (d1 != 0)
+                any_div |= bool(lng.any())
+                lr = {"credit_long_used": cl, "long_trades_across_ex_dates": int(lng.sum()),
+                      "short_trades_across_ex_dates": int(((side < 0) & (d_used != 0)).sum()),
+                      "long_credit_bp_total": float((-d_used[lng] * 1e4).sum())}
+                rec["legs"][leg] = lr
+                for k_ in ("long_trades_across_ex_dates", "short_trades_across_ex_dates", "long_credit_bp_total"):
+                    rec[k_] += lr[k_]
+            rec["credit_long_used"] = out["credit_long_used"]
+            out["by_market"][mk] = rec
+            continue
+        if "dividends" not in sp:
             continue
         cl = float(sp.get("dividend_credit_long", 0.0))
         out["credit_long_used"] = cl
-        et, xt = pd.DatetimeIndex(g.entry_time), pd.DatetimeIndex(g.exit_time)
         side, px, sd = g.side.to_numpy(), g.entry_px.to_numpy(float), g.stop_dist.to_numpy(float)
         d_used = C.dividends(mk, side, px, et, xt)
         d0 = C.dividends(mk, side, px, et, xt, credit_long=0.0)
         d1 = C.dividends(mk, side, px, et, xt, credit_long=1.0)
-        pos = main.index.get_indexer(g.index)
         R0[pos] += (d_used - d0) / sd
         R1[pos] += (d_used - d1) / sd
         lng = (side > 0) & (d0 == 0) & (d1 != 0)

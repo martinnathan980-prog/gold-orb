@@ -30,6 +30,7 @@ Guarantees (tested in test_kit.py):
   1 s between Dukascopy requests (0.3 s for other hosts), growing waits on 429/503/network errors, 404 = no data.
 """
 import datetime as _dt
+import hashlib
 import io
 import json
 import lzma
@@ -822,6 +823,7 @@ def daily_bars(h1, boundary="ny17", bar=pd.Timedelta(hours=1)):
         d["volume"] = g["volume"].sum()
     d["known_at"] = pd.Series(h1.index, index=lab).groupby(level=0).max() + bar
     d.index.name = "day"
+    d.attrs.update(h1.attrs)          # kit v2.1 fix 3 (R3-2): keeps attrs['market'] (the truncation test re-bases them)
     return d
 
 
@@ -924,9 +926,23 @@ def load_bars(key, start_year=2013, venue=None, allow_holes=False):
             keep = b.volume.to_numpy() >= mbm
             nshort = int((~keep).sum())
             b = b[keep]
-        b = _adjust_splits(key, b)
-        b = _adjust_rolls(key, b)
+        with _full_knowledge():                # kit v2.1 fix 3 (R3-1): the full adjustment, then re-based inside asof
+            b = _adjust_splits(key, b)
+            b = _adjust_rolls(key, b)
+        q = _asof_q(key)
+        if q != 1.0:
+            b = b.copy()
+            for col in ("open", "high", "low", "close"):
+                b[col] = b[col].to_numpy(float) * q
+        if "splits_applied" in b.attrs:
+            kend = known_end()
+            b.attrs["splits_applied"] = {d: r for d, r in b.attrs["splits_applied"].items()
+                                         if pd.Timestamp(d).tz_localize(NY) < kend}
         b.attrs.update(price_is="bid", market=key, source=src)
+        if has_adjustment(key) and len(b):    # kit v2.1 fix 3 (R3-2/R3-3): the adjusted price range, with which
+            # checks.truncation_test tells a price level (re-based) from a derived feature (refused) among inputs
+            # that carry this market's attrs
+            b.attrs["price_range"] = (float(b.low.min()), float(b.high.max()))
         if mbm:
             b.attrs["short_bars_dropped"] = nshort
         return b
@@ -1012,15 +1028,37 @@ _ASOF = [None]      # kit v2.1 fix 2 (KF-2): the cut of checks.truncation_test w
 
 class asof:
     """Context: rolls and splits as they were known at time t (checks.truncation_test runs each cut build inside it):
-    roll_times, price_factor, split_factor and the cut copies of the bars then ignore every roll / split at or after
-    t, so a build that reads an absolute adjusted level, or data.price_factor, sees what it would have seen at t."""
+    roll_times and the split list ignore every roll / split at or after t, and price_factor, split_factor and
+    load_bars give the bars RE-BASED to that knowledge, so a build that reads an absolute adjusted level, or
+    data.price_factor, sees a different level than in the full build.
+    Kit v2.1 fix 3 (R3-1): the re-basing factor is an exact power of two (_asof_q: 2 ** round(log2 k) of the true
+    factor k = adjustment known at t / adjustment known at the period end, and 2 or 1/2 when that rounds to 1), so
+    every sum, difference, ratio and comparison of re-based prices is bit-identical to the full build's (an honest rule
+    that compares price differences can no longer flip on a floating-point tie) while every absolute level still moves.
+    Nested contexts keep the earliest cut (R3-8)."""
 
     def __init__(self, t):
         self.t = None if t is None else pd.Timestamp(t)
 
     def __enter__(self):
         self.prev = _ASOF[0]
-        _ASOF[0] = self.t
+        if self.t is not None and self.prev is not None:
+            _ASOF[0] = min(self.prev, self.t)       # an inner asof never widens what an outer one hides (R3-8)
+        elif self.t is not None:
+            _ASOF[0] = self.t
+        return self
+
+    def __exit__(self, *a):
+        _ASOF[0] = self.prev
+        return False
+
+
+class _full_knowledge:
+    """Internal: the adjustment as known at the period end, inside a cut build (for the power-of-two re-basing)."""
+
+    def __enter__(self):
+        self.prev = _ASOF[0]
+        _ASOF[0] = None
         return self
 
     def __exit__(self, *a):
@@ -1032,6 +1070,43 @@ def known_end():
     """End of what is known: the period end, or the cut of a truncation test's cut build (asof) if earlier."""
     a = _ASOF[0]
     return period_end() if a is None else min(period_end(), a)
+
+
+def _pow2(k):
+    """Kit v2.1 fix 3 (R3-1): the exact power of two that stands for the re-basing factor k (1.0 only when k == 1)."""
+    k = float(k)
+    if not np.isfinite(k) or k <= 0:
+        raise ValueError(f"re-basing factor {k} is not a positive number")
+    if k == 1.0:
+        return 1.0
+    e = int(round(np.log2(k)))
+    if e == 0:
+        e = 1 if k > 1 else -1
+    return float(2.0 ** e)
+
+
+def _asof_q(key):
+    """Kit v2.1 fix 3 (R3-1): the factor (an exact power of two) by which bars of an adjusted market are re-based inside
+    asof(t): _pow2 of (adjustment known at t / adjustment known at the period end) just before t; 1.0 outside asof, for
+    a market without adjustment, or when no roll / split lies at or after t."""
+    c = _ASOF[0]
+    if c is None or not has_adjustment(key):
+        return 1.0
+    ck = (key, c, period_end(), tuple(sorted(_ROLLS_MEASURED.get(key, {}).items())))
+    if ck in _Q_CACHE:
+        return _Q_CACHE[ck]
+    if len(_Q_CACHE) > 20000:
+        _Q_CACHE.clear()
+    t = pd.DatetimeIndex([c]).tz_localize("UTC") if c.tz is None else pd.DatetimeIndex([c]).tz_convert("UTC")
+    t = t - pd.Timedelta(1, "ns")
+    known = float(_price_factor_known(key, t)[0])
+    with _full_knowledge():
+        full = float(_price_factor_known(key, t)[0])
+    _Q_CACHE[ck] = _pow2(known / full)
+    return _Q_CACHE[ck]
+
+
+_Q_CACHE = {}
 
 
 def roll_times(key):
@@ -1106,8 +1181,10 @@ def _adjust_rolls(key, b):
     before the switch, EIA NYMEX WTI contract 1 / 2), so the real move of the roll night stays in the series. After
     rolls_checked_to (validation years) the ratio is measured on the bars at the rule's reopen (first open / previous
     close; it then includes that night's real move, README limits) and kept in a private table (merged across loads);
-    a reopen that comes after a hole longer than the normal break raises DataGap (list that roll first). Nothing about
-    the rolls is put in the bars or their attrs (a build could read a later roll from them)."""
+    a reopen that comes after a hole longer than the normal break raises DataGap (list that roll first). No roll time or
+    ratio is put in the bars or their attrs (a build could read a later roll from them): only, when measured ratios were
+    applied, attrs 'rolls_measured_sha' = (first bar, sha256 digest of those ratios), with which sim.Book refuses bars of
+    an earlier load whose ratios differ from this process's current ones (kit v2.1 fix 3, R3-9)."""
     sp = _C.spec(key)
     if "rolls" not in sp or not len(b):
         return b
@@ -1133,7 +1210,42 @@ def _adjust_rolls(key, b):
         for col in ("open", "high", "low", "close"):
             out[col] = out[col].to_numpy() * adj
     out.attrs.update(b.attrs)
+    ms = _measured_sha(key, t[0])
+    if ms is not None:                 # kit v2.1 fix 3 (R3-9): a digest (not the ratios) of the measured rolls applied
+        out.attrs["rolls_measured_sha"] = (str(t[0]), ms)
     return out
+
+
+def _measured_sha(key, since):
+    """Kit v2.1 fix 3 (R3-9): sha256 of the measured (validation-year) roll ratios that apply to bars starting at
+    `since` in this process, or None when none applies. A digest only: it gives no roll's time or size to a build."""
+    sp = _C.spec(key)
+    if "rolls" not in sp:
+        return None
+    since = pd.Timestamp(since)
+    listed = {pd.Timestamp(x) for x in sp["rolls"]}
+    meas = _ROLLS_MEASURED.get(key, {})
+    with _full_knowledge():
+        used = [(str(r), repr(float(meas[r]))) for r in roll_times(key) if r > since and r not in listed and r in meas]
+    if not used:
+        return None
+    return hashlib.sha256(json.dumps(used).encode()).hexdigest()
+
+
+def check_roll_source(key, bars):
+    """Kit v2.1 fix 3 (R3-9): raise DataGap when bars of an earlier data.load_bars were adjusted with measured roll ratios
+    (validation years) other than this process's current ones (the vendor file changed and was reloaded since): the
+    spread and commission (price_factor) would no longer match the bars' adjustment. Reload the bars."""
+    rec = bars.attrs.get("rolls_measured_sha")
+    if not rec:
+        return
+    since, want = rec
+    with _full_knowledge():
+        now = _measured_sha(key, since)
+    if now != want:
+        raise DataGap(f"{key}: these bars were adjusted with measured roll ratios that differ from this process's "
+                      "current ones (the data file was reloaded with other prices since): reload them with "
+                      f"data.load_bars('{key}')")
 
 
 def _roll_adj(index, applied):
@@ -1144,18 +1256,30 @@ def _roll_adj(index, applied):
     return adj
 
 
-def price_factor(key, index):
-    """Adjusted / raw price of each bar time: split_factor (shares) x the roll adjustment of a futures-based market (the
-    listed ratios in sample, the ratios load_bars measured in the validation years; DataGap if one is needed and was not
-    measured in this process). As known at known_end() (checks.truncation_test: at its cut). sim.Book scales the
-    per-unit commission and an absolute spread (oil's spread_abs) by it."""
+def _price_factor_known(key, index):
+    """price_factor with the rolls / splits known at known_end() and no re-basing (internal)."""
     idx = pd.DatetimeIndex(index)
-    f = split_factor(key, idx)
+    f = _split_factor_known(key, idx)
     if "rolls" in _C.spec(key) and len(idx):
         tab = _roll_table(key, since=idx.min())
         if tab:
             f = f * _roll_adj(idx, tab)
     return f
+
+
+def price_factor(key, index):
+    """Adjusted / raw price of each bar time: split_factor (shares) x the roll adjustment of a futures-based market (the
+    listed ratios in sample, the ratios load_bars measured in the validation years; DataGap if one is needed and was not
+    measured in this process). sim.Book scales the per-unit commission and an absolute spread (oil's spread_abs) by it.
+    Inside data.asof(t) (checks.truncation_test's cut builds): the factor known at the period end x _asof_q(key), an
+    exact power of two that re-bases the bars as load_bars and the truncation test's cut copies do (kit v2.1 fix 3)."""
+    idx = pd.DatetimeIndex(index)
+    if _ASOF[0] is None:
+        return _price_factor_known(key, idx)
+    q = _asof_q(key)
+    with _full_knowledge():
+        f = _price_factor_known(key, idx)
+    return f * q
 
 
 def has_adjustment(key):
@@ -1164,10 +1288,7 @@ def has_adjustment(key):
     return "splits" in sp or "rolls" in sp
 
 
-def split_factor(key, index):
-    """Adjusted / raw price of each bar time of a share with splits (1.0 for every other market): the product of 1 / ratio
-    over the splits whose ex-date (New York midnight) is after the bar and before the period end. sim.Book scales the
-    per-unit commission by it (one adjusted unit before a 4:1 split is a quarter of a real share)."""
+def _split_factor_known(key, index):
     idx = pd.DatetimeIndex(index)
     adj = np.ones(len(idx))
     if "splits" not in _C.spec(key):
@@ -1175,6 +1296,20 @@ def split_factor(key, index):
     for d, q in _listed_splits(key).items():
         adj[np.asarray(idx < d.tz_localize(NY))] /= q
     return adj
+
+
+def split_factor(key, index):
+    """Adjusted / raw price of each bar time of a share with splits (1.0 for every other market): the product of 1 / ratio
+    over the splits whose ex-date (New York midnight) is after the bar and before the period end. sim.Book scales the
+    per-unit commission by it (one adjusted unit before a 4:1 split is a quarter of a real share). Inside data.asof(t):
+    x _asof_q(key) for a share with splits, as price_factor (kit v2.1 fix 3)."""
+    idx = pd.DatetimeIndex(index)
+    if _ASOF[0] is None or "splits" not in _C.spec(key):
+        return _split_factor_known(key, idx)
+    q = _asof_q(key)
+    with _full_knowledge():
+        f = _split_factor_known(key, idx)
+    return f * q
 
 
 def check_adjusted(key, bars):

@@ -41,7 +41,7 @@
    "swap_triple": "Friday guessed (energy CFDs at several brokers); to read in MT5",
    "lots_leverage": "100 barrels per lot, 0.01 minimum and step, 1:100 (guesses; reported only)",
    "data": "prepared hourly bars of the lab's lightcmdusd one-minute BID (Dukascopy LIGHTCMDUSD), not split-adjusted (no splits)",
-   "rolls": "kit v2.1 fix 2 (verifier KF-1, KF-7): the data (Dukascopy LIGHT.CMD/USD) is the FRONT WTI future, switched once a month by the vendor to the next contract. Listed: one roll a month 2013-01 to 2021-12 (108): key = the first bar (UTC) on the new contract, value = ratio next / front. Both come from OUTSIDE settlements, not from the bars' reopen gap (which includes the real move of the night, or of a data hole): EIA daily NYMEX WTI settlements of contract 1 (front, until its last trading day) and contract 2 (RCLC1, RCLC2; rows before 2022 only) against Dukascopy's mid at 14:28-14:30 New York (the settlement window). Dating: Dukascopy is on contract 2 on a day when its price is closer to C2 than to C1 (days with |log(C2/C1)| < 12 bp say nothing); the roll is the reopen (first bar after a break of >= 1.75 h) between the last day on C1 and the first day of the final run on C2 before the expiry (after the expiry when Dukascopy is still on C1 that day); several reopens: Dukascopy's usual one (18:00 New York before trading day E in 2015-09..2019-12, before trading day E-1 otherwise), else the first after the expiry, else the one whose gap is closest to the outside spread. Ratio = C2 / C1 settled on the last day whose 14:30 settlement precedes the end of the last front-month bar, so the real move after the settlement and over the night stays in the series. Scripts: kit_v21/fix2/s/k1_level.py, k1_fetch_eia.py, k1_build.py (k1_build.json gives each month's case, interval and candidates), k1_compare.py. The outside data are kept in kit/oil_outside.csv for the real-bars check. rolls_vendor_gap = the vendor's raw reopen move at each listed roll (open / previous close of the raw bars), used by data.check_adjusted to refuse raw bars. After rolls_checked_to the kit applies the rule E-1 with the ratio measured on the bars (README limits: that ratio includes the night's real move; a reopen after a hole raises).",
+   "rolls": "kit v2.1 fix 2 (verifier KF-1, KF-7): the data (Dukascopy LIGHT.CMD/USD) is the FRONT WTI future, switched once a month by the vendor to the next contract. Listed: one roll a month 2013-01 to 2021-12 (108): key = the first bar (UTC) on the new contract, value = ratio next / front. Both come from OUTSIDE settlements, not from the bars' reopen gap (which includes the real move of the night, or of a data hole): EIA daily NYMEX WTI settlements of contract 1 (front, until its last trading day) and contract 2 (RCLC1, RCLC2; rows before 2022 only) against Dukascopy's mid at 14:28-14:30 New York (the settlement window). Dating: Dukascopy is on contract 2 on a day when its price is closer to C2 than to C1 (days with |log(C2/C1)| < 12 bp say nothing); the roll is the reopen (first bar after a break of >= 1.75 h) between the last day on C1 and the first day of the final run on C2 before the expiry (after the expiry when Dukascopy is still on C1 that day); several reopens: Dukascopy's usual one (18:00 New York before trading day E in 2015-09..2019-12, before trading day E-1 otherwise), else the first after the expiry, else the one whose gap is closest to the outside spread. Ratio = C2 / C1 settled on the last day whose 14:30 settlement precedes the end of the last front-month bar, so the real move after the settlement and over the night stays in the series. Scripts: kit_v21/fix2/s/k1_level.py, k1_fetch_eia.py, k1_build.py (k1_build.json gives each month's case, interval and candidates), k1_compare.py. The outside data are kept in kit/oil_outside.csv for the real-bars check. rolls_vendor_gap = the vendor's raw reopen move at each listed roll (open / previous close of the raw bars), used by data.check_adjusted to refuse raw bars. After rolls_checked_to the kit applies the rule E-1 with the ratio measured on the bars (README limits: that ratio includes the night's real move; a reopen after a hole raises). Kit v2.1 fix 3 (R3-4, third review): the March 2014 roll was listed at 2014-03-19 22:00 (ratio 0.988044, C2/C1 of 03-19), misled by a 14:30 price taken during a vendor flicker; the raw gap there is +1.1 bp while the raw gap at 2014-03-18 22:00 is -111.2 bp: moved to 2014-03-18 22:00 with C2/C1 settled 2014-03-18 (0.991775, -82.6 bp); the flicker days are in rolls_vendor_flicker. Early 2013 (no reopen gap in the vendor's data): a switch can fall INSIDE the listed bar (2013-01-22 21:00: raw gap 0.0, intrabar +44.6 bp), which leaves a fake gap of minus the ratio at that bar's open (README limits).",
    "contango": "with the rolled (back-adjusted) series, the futures carry (contango / backwardation) is IN THE PRICE path, as for a CFD on the future rolled by price adjustment; the swaps (6 % long, 4 % short, both a cost) are a financing guess ON TOP, so the carry is counted once through the price plus a pessimistic swap. If FP's XTIUSD is a spot CFD whose swap carries the contango, the real swap replaces the guess; read it in MT5 (symbol specification, swap long / short)."
   },
   "spread_abs": 0.05,
@@ -60,7 +60,7 @@
    "2013-12-19 23:00:00+00:00": 1.00273362357,
    "2014-01-21 23:00:00+00:00": 0.999789451521,
    "2014-02-18 23:00:00+00:00": 0.996778287611,
-   "2014-03-19 22:00:00+00:00": 0.988044236326,
+   "2014-03-18 22:00:00+00:00": 0.991775325978,
    "2014-04-21 00:00:00+00:00": 0.991083413231,
    "2014-05-20 22:00:00+00:00": 0.998926200703,
    "2014-06-22 22:00:00+00:00": 0.995991049786,
@@ -171,7 +171,7 @@
    "2013-12-19 23:00:00+00:00": 1.000710003956,
    "2014-01-21 23:00:00+00:00": 1.003246274163,
    "2014-02-18 23:00:00+00:00": 1.000575750183,
-   "2014-03-19 22:00:00+00:00": 1.000110991151,
+   "2014-03-18 22:00:00+00:00": 0.988941072575,
    "2014-04-21 00:00:00+00:00": 0.9910908655,
    "2014-05-20 22:00:00+00:00": 1.000612340111,
    "2014-06-22 22:00:00+00:00": 1.001588636576,
@@ -266,7 +266,11 @@
    "2021-11-15 23:00:00+00:00": 0.985485225813,
    "2021-12-16 23:00:00+00:00": 0.998330016561
   },
-  "rolls_outside_file": "oil_outside.csv"
+  "rolls_outside_file": "oil_outside.csv",
+  "rolls_vendor_flicker": {
+   "2014-03-19": "kit v2.1 fix 3 (R3-4): the vendor switched to the May contract at 2014-03-18 22:00 UTC (raw gap -111.2 bp; listed there, ratio C2/C1 settled 2014-03-18 = 98.88/99.70) and then FLICKERED between the two contracts on 03-19 and 03-20: spikes to the April (C1) price stay in the raw and adjusted bars (highs near 100.2-100.6 on 03-19 12:00-19:00 and 03-20 01:00-03:00 UTC, about +120 bp); the 14:30 mid of 03-19 is taken during a flicker (duka_on 1), so the day-state check ignores this date",
+   "2014-03-20": "see 2014-03-19"
+  }
  },
  "aapl": {
   "spread_bps": 1.514,
@@ -306,7 +310,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -347,7 +352,31 @@
    "2020": 1.538,
    "2021": 2.326
   },
-  "spread_bps_h09": 2.326
+  "spread_bps_h09": 2.326,
+  "spread_bps_by_year_c09": {
+   "2017": 0.946,
+   "2018": 1.742,
+   "2019": 1.702,
+   "2020": 1.676,
+   "2021": 1.343
+  },
+  "spread_bps_c09": 1.482,
+  "spread_bps_by_year_c10_14": {
+   "2017": 0.91,
+   "2018": 1.901,
+   "2019": 1.786,
+   "2020": 1.71,
+   "2021": 1.291
+  },
+  "spread_bps_c10_14": 1.52,
+  "spread_bps_by_year_c15": {
+   "2017": 0.587,
+   "2018": 1.109,
+   "2019": 1.261,
+   "2020": 2.26,
+   "2021": 2.15
+  },
+  "spread_bps_c15": 2.15
  },
  "adbe": {
   "spread_bps": 6.621,
@@ -385,7 +414,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -405,7 +435,31 @@
    "2020": 4.983,
    "2021": 4.595
   },
-  "spread_bps_h09": 5.071
+  "spread_bps_h09": 5.071,
+  "spread_bps_by_year_c09": {
+   "2017": 3.594,
+   "2018": 5.452,
+   "2019": 4.962,
+   "2020": 7.215,
+   "2021": 6.263
+  },
+  "spread_bps_c09": 6.263,
+  "spread_bps_by_year_c10_14": {
+   "2017": 3.258,
+   "2018": 5.915,
+   "2019": 4.622,
+   "2020": 7.853,
+   "2021": 7.029
+  },
+  "spread_bps_c10_14": 7.029,
+  "spread_bps_by_year_c15": {
+   "2017": 1.606,
+   "2018": 3.146,
+   "2019": 3.903,
+   "2020": 10.407,
+   "2021": 10.58
+  },
+  "spread_bps_c15": 10.58
  },
  "amd": {
   "spread_bps": 8.947,
@@ -443,7 +497,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -463,7 +518,31 @@
    "2020": 5.491,
    "2021": 3.155
   },
-  "spread_bps_h09": 4.758
+  "spread_bps_h09": 4.758,
+  "spread_bps_by_year_c09": {
+   "2017": 9.882,
+   "2018": 14.14,
+   "2019": 8.285,
+   "2020": 3.904,
+   "2021": 3.364
+  },
+  "spread_bps_c09": 7.915,
+  "spread_bps_by_year_c10_14": {
+   "2017": 11.872,
+   "2018": 16.654,
+   "2019": 9.66,
+   "2020": 3.326,
+   "2021": 2.796
+  },
+  "spread_bps_c10_14": 8.862,
+  "spread_bps_by_year_c15": {
+   "2017": 8.688,
+   "2018": 12.521,
+   "2019": 7.764,
+   "2020": 4.594,
+   "2021": 3.191
+  },
+  "spread_bps_c15": 7.352
  },
  "amzn": {
   "spread_bps": 4.166,
@@ -501,7 +580,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -521,7 +601,31 @@
    "2020": 4.384,
    "2021": 5.085
   },
-  "spread_bps_h09": 5.085
+  "spread_bps_h09": 5.085,
+  "spread_bps_by_year_c09": {
+   "2017": 2.827,
+   "2018": 3.733,
+   "2019": 2.901,
+   "2020": 5.432,
+   "2021": 5.046
+  },
+  "spread_bps_c09": 5.046,
+  "spread_bps_by_year_c10_14": {
+   "2017": 3.13,
+   "2018": 4.51,
+   "2019": 2.987,
+   "2020": 5.56,
+   "2021": 4.173
+  },
+  "spread_bps_c10_14": 4.173,
+  "spread_bps_by_year_c15": {
+   "2017": 1.624,
+   "2018": 3.013,
+   "2019": 2.755,
+   "2020": 6.786,
+   "2021": 6.467
+  },
+  "spread_bps_c15": 6.467
  },
  "avgo": {
   "spread_bps": 7.086,
@@ -559,7 +663,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -600,7 +705,31 @@
    "2020": 6.135,
    "2021": 4.456
   },
-  "spread_bps_h09": 5.643
+  "spread_bps_h09": 5.643,
+  "spread_bps_by_year_c09": {
+   "2017": 4.513,
+   "2018": 4.942,
+   "2019": 5.302,
+   "2020": 9.976,
+   "2021": 6.657
+  },
+  "spread_bps_c09": 6.657,
+  "spread_bps_by_year_c10_14": {
+   "2017": 4.319,
+   "2018": 5.796,
+   "2019": 5.007,
+   "2020": 9.75,
+   "2021": 7.454
+  },
+  "spread_bps_c10_14": 7.454,
+  "spread_bps_by_year_c15": {
+   "2017": 1.879,
+   "2018": 3.891,
+   "2019": 4.585,
+   "2020": 14.641,
+   "2021": 10.289
+  },
+  "spread_bps_c15": 10.289
  },
  "ba": {
   "spread_bps": 5.035,
@@ -638,7 +767,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -672,7 +802,31 @@
    "2020": 5.263,
    "2021": 4.575
   },
-  "spread_bps_h09": 4.575
+  "spread_bps_h09": 4.575,
+  "spread_bps_by_year_c09": {
+   "2017": 3.299,
+   "2018": 5.389,
+   "2019": 4.299,
+   "2020": 7.196,
+   "2021": 3.946
+  },
+  "spread_bps_c09": 4.826,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.566,
+   "2018": 5.755,
+   "2019": 4.352,
+   "2020": 8.58,
+   "2021": 4.19
+  },
+  "spread_bps_c10_14": 5.089,
+  "spread_bps_by_year_c15": {
+   "2017": 1.545,
+   "2018": 3.564,
+   "2019": 3.325,
+   "2020": 10.401,
+   "2021": 6.756
+  },
+  "spread_bps_c15": 6.756
  },
  "baba": {
   "spread_bps": 3.907,
@@ -710,7 +864,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -730,7 +885,31 @@
    "2020": 3.313,
    "2021": 4.358
   },
-  "spread_bps_h09": 4.358
+  "spread_bps_h09": 4.358,
+  "spread_bps_by_year_c09": {
+   "2017": 2.656,
+   "2018": 3.717,
+   "2019": 2.514,
+   "2020": 3.746,
+   "2021": 4.502
+  },
+  "spread_bps_c09": 4.502,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.525,
+   "2018": 4.182,
+   "2019": 2.928,
+   "2020": 3.764,
+   "2021": 4.235
+  },
+  "spread_bps_c10_14": 4.235,
+  "spread_bps_by_year_c15": {
+   "2017": 0.99,
+   "2018": 1.7,
+   "2019": 2.306,
+   "2020": 5.246,
+   "2021": 6.432
+  },
+  "spread_bps_c15": 6.432
  },
  "bac": {
   "spread_bps": 6.755,
@@ -768,7 +947,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -809,7 +989,31 @@
    "2020": 7.63,
    "2021": 7.632
   },
-  "spread_bps_h09": 7.632
+  "spread_bps_h09": 7.632,
+  "spread_bps_by_year_c09": {
+   "2017": 4.927,
+   "2018": 9.426,
+   "2019": 9.472,
+   "2020": 5.774,
+   "2021": 4.32
+  },
+  "spread_bps_c09": 6.784,
+  "spread_bps_by_year_c10_14": {
+   "2017": 5.036,
+   "2018": 9.668,
+   "2019": 9.532,
+   "2020": 5.806,
+   "2021": 4.085
+  },
+  "spread_bps_c10_14": 6.825,
+  "spread_bps_by_year_c15": {
+   "2017": 4.581,
+   "2018": 8.607,
+   "2019": 8.815,
+   "2020": 6.498,
+   "2021": 4.569
+  },
+  "spread_bps_c15": 6.614
  },
  "c": {
   "spread_bps": 3.305,
@@ -847,7 +1051,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -888,7 +1093,31 @@
    "2020": 4.298,
    "2021": 3.59
   },
-  "spread_bps_h09": 3.59
+  "spread_bps_h09": 3.59,
+  "spread_bps_by_year_c09": {
+   "2017": 1.851,
+   "2018": 3.563,
+   "2019": 3.805,
+   "2020": 4.067,
+   "2021": 2.851
+  },
+  "spread_bps_c09": 3.227,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.004,
+   "2018": 4.128,
+   "2019": 4.193,
+   "2020": 3.631,
+   "2021": 2.565
+  },
+  "spread_bps_c10_14": 3.304,
+  "spread_bps_by_year_c15": {
+   "2017": 1.56,
+   "2018": 3.365,
+   "2019": 3.498,
+   "2020": 5.976,
+   "2021": 3.027
+  },
+  "spread_bps_c15": 3.485
  },
  "cat": {
   "spread_bps": 5.016,
@@ -926,7 +1155,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -967,7 +1197,31 @@
    "2020": 5.821,
    "2021": 4.06
   },
-  "spread_bps_h09": 4.306
+  "spread_bps_h09": 4.306,
+  "spread_bps_by_year_c09": {
+   "2017": 2.276,
+   "2018": 4.842,
+   "2019": 4.015,
+   "2020": 6.845,
+   "2021": 5.369
+  },
+  "spread_bps_c09": 5.369,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.276,
+   "2018": 5.3,
+   "2019": 4.143,
+   "2020": 6.506,
+   "2021": 5.321
+  },
+  "spread_bps_c10_14": 5.321,
+  "spread_bps_by_year_c15": {
+   "2017": 1.497,
+   "2018": 3.328,
+   "2019": 3.702,
+   "2020": 8.384,
+   "2021": 7.006
+  },
+  "spread_bps_c15": 7.006
  },
  "crm": {
   "spread_bps": 4.418,
@@ -1005,7 +1259,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1025,7 +1280,31 @@
    "2020": 3.464,
    "2021": 3.351
   },
-  "spread_bps_h09": 3.94
+  "spread_bps_h09": 3.94,
+  "spread_bps_by_year_c09": {
+   "2017": 2.147,
+   "2018": 4.757,
+   "2019": 4.301,
+   "2020": 5.618,
+   "2021": 4.868
+  },
+  "spread_bps_c09": 4.868,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.426,
+   "2018": 5.213,
+   "2019": 4.053,
+   "2020": 5.465,
+   "2021": 4.852
+  },
+  "spread_bps_c10_14": 4.852,
+  "spread_bps_by_year_c15": {
+   "2017": 1.453,
+   "2018": 2.845,
+   "2019": 3.104,
+   "2020": 7.268,
+   "2021": 7.06
+  },
+  "spread_bps_c15": 7.06
  },
  "csco": {
   "spread_bps": 4.566,
@@ -1063,7 +1342,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1104,7 +1384,31 @@
    "2020": 5.043,
    "2021": 6.296
   },
-  "spread_bps_h09": 6.296
+  "spread_bps_h09": 6.296,
+  "spread_bps_by_year_c09": {
+   "2017": 3.781,
+   "2018": 6.464,
+   "2019": 5.334,
+   "2020": 3.667,
+   "2021": 3.488
+  },
+  "spread_bps_c09": 4.547,
+  "spread_bps_by_year_c10_14": {
+   "2017": 3.931,
+   "2018": 6.625,
+   "2019": 5.427,
+   "2020": 3.632,
+   "2021": 3.192
+  },
+  "spread_bps_c10_14": 4.561,
+  "spread_bps_by_year_c15": {
+   "2017": 3.24,
+   "2018": 5.304,
+   "2019": 4.56,
+   "2020": 4.456,
+   "2021": 4.239
+  },
+  "spread_bps_c15": 4.36
  },
  "cvx": {
   "spread_bps": 3.354,
@@ -1142,7 +1446,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1183,7 +1488,31 @@
    "2020": 4.031,
    "2021": 3.076
   },
-  "spread_bps_h09": 3.076
+  "spread_bps_h09": 3.076,
+  "spread_bps_by_year_c09": {
+   "2017": 1.503,
+   "2018": 4.378,
+   "2019": 3.242,
+   "2020": 5.959,
+   "2021": 2.179
+  },
+  "spread_bps_c09": 3.452,
+  "spread_bps_by_year_c10_14": {
+   "2017": 1.632,
+   "2018": 4.3,
+   "2019": 3.42,
+   "2020": 4.952,
+   "2021": 2.424
+  },
+  "spread_bps_c10_14": 3.346,
+  "spread_bps_by_year_c15": {
+   "2017": 1.194,
+   "2018": 2.431,
+   "2019": 2.532,
+   "2020": 6.551,
+   "2021": 3.953
+  },
+  "spread_bps_c15": 3.953
  },
  "dis": {
   "spread_bps": 2.913,
@@ -1221,7 +1550,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1248,7 +1578,31 @@
    "2020": 3.375,
    "2021": 1.974
   },
-  "spread_bps_h09": 2.71
+  "spread_bps_h09": 2.71,
+  "spread_bps_by_year_c09": {
+   "2017": 1.362,
+   "2018": 3.628,
+   "2019": 2.923,
+   "2020": 3.729,
+   "2021": 2.857
+  },
+  "spread_bps_c09": 2.9,
+  "spread_bps_by_year_c10_14": {
+   "2017": 1.461,
+   "2018": 3.856,
+   "2019": 3.092,
+   "2020": 3.602,
+   "2021": 2.737
+  },
+  "spread_bps_c10_14": 2.95,
+  "spread_bps_by_year_c15": {
+   "2017": 0.947,
+   "2018": 2.339,
+   "2019": 2.532,
+   "2020": 5.488,
+   "2021": 3.642
+  },
+  "spread_bps_c15": 3.642
  },
  "fb": {
   "spread_bps": 2.754,
@@ -1286,7 +1640,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP); Yahoo refused the ticker FB: Facebook paid no dividend 2017-2021, so none is listed",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1306,7 +1661,31 @@
    "2020": 3.658,
    "2021": 2.861
   },
-  "spread_bps_h09": 2.861
+  "spread_bps_h09": 2.861,
+  "spread_bps_by_year_c09": {
+   "2017": 1.106,
+   "2018": 2.123,
+   "2019": 2.394,
+   "2020": 3.303,
+   "2021": 3.264
+  },
+  "spread_bps_c09": 3.264,
+  "spread_bps_by_year_c10_14": {
+   "2017": 1.191,
+   "2018": 2.709,
+   "2019": 2.543,
+   "2020": 3.058,
+   "2021": 2.895
+  },
+  "spread_bps_c10_14": 2.895,
+  "spread_bps_by_year_c15": {
+   "2017": 0.686,
+   "2018": 1.553,
+   "2019": 1.994,
+   "2020": 4.922,
+   "2021": 3.631
+  },
+  "spread_bps_c15": 3.631
  },
  "ge": {
   "spread_bps": 16.762,
@@ -1346,7 +1725,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1387,7 +1767,31 @@
    "2020": 15.543,
    "2021": 14.362
   },
-  "spread_bps_h09": 14.362
+  "spread_bps_h09": 14.362,
+  "spread_bps_by_year_c09": {
+   "2017": 4.972,
+   "2018": 22.445,
+   "2019": 26.634,
+   "2020": 17.928,
+   "2021": 9.36
+  },
+  "spread_bps_c09": 16.268,
+  "spread_bps_by_year_c10_14": {
+   "2017": 5.259,
+   "2018": 23.591,
+   "2019": 28.083,
+   "2020": 18.786,
+   "2021": 7.533
+  },
+  "spread_bps_c10_14": 16.65,
+  "spread_bps_by_year_c15": {
+   "2017": 4.801,
+   "2018": 21.428,
+   "2019": 25.165,
+   "2020": 18.319,
+   "2021": 9.422
+  },
+  "spread_bps_c15": 15.827
  },
  "googl": {
   "spread_bps": 5.229,
@@ -1425,7 +1829,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1445,7 +1850,31 @@
    "2020": 7.232,
    "2021": 4.529
   },
-  "spread_bps_h09": 5.027
+  "spread_bps_h09": 5.027,
+  "spread_bps_by_year_c09": {
+   "2017": 3.818,
+   "2018": 4.927,
+   "2019": 4.438,
+   "2020": 6.732,
+   "2021": 5.575
+  },
+  "spread_bps_c09": 5.575,
+  "spread_bps_by_year_c10_14": {
+   "2017": 3.803,
+   "2018": 5.812,
+   "2019": 4.339,
+   "2020": 6.993,
+   "2021": 5.395
+  },
+  "spread_bps_c10_14": 5.395,
+  "spread_bps_by_year_c15": {
+   "2017": 2.097,
+   "2018": 3.59,
+   "2019": 3.593,
+   "2020": 10.002,
+   "2021": 7.731
+  },
+  "spread_bps_c15": 7.731
  },
  "gs": {
   "spread_bps": 6.146,
@@ -1483,7 +1912,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1524,7 +1954,31 @@
    "2020": 6.608,
    "2021": 3.958
   },
-  "spread_bps_h09": 4.867
+  "spread_bps_h09": 4.867,
+  "spread_bps_by_year_c09": {
+   "2017": 3.589,
+   "2018": 4.67,
+   "2019": 4.431,
+   "2020": 6.885,
+   "2021": 6.262
+  },
+  "spread_bps_c09": 6.262,
+  "spread_bps_by_year_c10_14": {
+   "2017": 3.416,
+   "2018": 4.937,
+   "2019": 4.724,
+   "2020": 6.817,
+   "2021": 6.557
+  },
+  "spread_bps_c10_14": 6.557,
+  "spread_bps_by_year_c15": {
+   "2017": 2.699,
+   "2018": 4.399,
+   "2019": 3.493,
+   "2020": 9.238,
+   "2021": 7.252
+  },
+  "spread_bps_c15": 7.252
  },
  "hd": {
   "spread_bps": 4.067,
@@ -1562,7 +2016,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1603,7 +2058,31 @@
    "2020": 2.896,
    "2021": 2.607
   },
-  "spread_bps_h09": 3.03
+  "spread_bps_h09": 3.03,
+  "spread_bps_by_year_c09": {
+   "2017": 1.842,
+   "2018": 3.402,
+   "2019": 3.241,
+   "2020": 5.315,
+   "2021": 4.313
+  },
+  "spread_bps_c09": 4.313,
+  "spread_bps_by_year_c10_14": {
+   "2017": 1.678,
+   "2018": 3.772,
+   "2019": 3.455,
+   "2020": 5.428,
+   "2021": 4.275
+  },
+  "spread_bps_c10_14": 4.275,
+  "spread_bps_by_year_c15": {
+   "2017": 1.131,
+   "2018": 2.35,
+   "2019": 2.576,
+   "2020": 7.188,
+   "2021": 6.03
+  },
+  "spread_bps_c15": 6.03
  },
  "intc": {
   "spread_bps": 4.215,
@@ -1641,7 +2120,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1682,7 +2162,31 @@
    "2020": 4.744,
    "2021": 4.129
   },
-  "spread_bps_h09": 4.129
+  "spread_bps_h09": 4.129,
+  "spread_bps_by_year_c09": {
+   "2017": 3.201,
+   "2018": 5.909,
+   "2019": 5.011,
+   "2020": 3.316,
+   "2021": 3.442
+  },
+  "spread_bps_c09": 4.176,
+  "spread_bps_by_year_c10_14": {
+   "2017": 3.429,
+   "2018": 6.285,
+   "2019": 5.397,
+   "2020": 3.082,
+   "2021": 3.071
+  },
+  "spread_bps_c10_14": 4.253,
+  "spread_bps_by_year_c15": {
+   "2017": 2.503,
+   "2018": 4.951,
+   "2019": 4.403,
+   "2020": 4.746,
+   "2021": 3.513
+  },
+  "spread_bps_c15": 4.023
  },
  "jnj": {
   "spread_bps": 2.686,
@@ -1720,7 +2224,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1761,7 +2266,31 @@
    "2020": 2.893,
    "2021": 2.258
   },
-  "spread_bps_h09": 2.404
+  "spread_bps_h09": 2.404,
+  "spread_bps_by_year_c09": {
+   "2017": 1.528,
+   "2018": 3.108,
+   "2019": 2.653,
+   "2020": 3.185,
+   "2021": 2.74
+  },
+  "spread_bps_c09": 2.74,
+  "spread_bps_by_year_c10_14": {
+   "2017": 1.51,
+   "2018": 3.553,
+   "2019": 2.955,
+   "2020": 3.269,
+   "2021": 2.224
+  },
+  "spread_bps_c10_14": 2.702,
+  "spread_bps_by_year_c15": {
+   "2017": 0.734,
+   "2018": 1.671,
+   "2019": 1.845,
+   "2020": 4.311,
+   "2021": 4.367
+  },
+  "spread_bps_c15": 4.367
  },
  "jpm": {
   "spread_bps": 2.447,
@@ -1799,7 +2328,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1840,7 +2370,31 @@
    "2020": 3.036,
    "2021": 2.251
   },
-  "spread_bps_h09": 2.278
+  "spread_bps_h09": 2.278,
+  "spread_bps_by_year_c09": {
+   "2017": 1.343,
+   "2018": 2.604,
+   "2019": 2.473,
+   "2020": 2.766,
+   "2021": 2.874
+  },
+  "spread_bps_c09": 2.874,
+  "spread_bps_by_year_c10_14": {
+   "2017": 1.665,
+   "2018": 3.064,
+   "2019": 2.798,
+   "2020": 2.554,
+   "2021": 2.146
+  },
+  "spread_bps_c10_14": 2.445,
+  "spread_bps_by_year_c15": {
+   "2017": 1.175,
+   "2018": 2.275,
+   "2019": 2.082,
+   "2020": 3.705,
+   "2021": 2.768
+  },
+  "spread_bps_c15": 2.768
  },
  "ma": {
   "spread_bps": 5.25,
@@ -1878,7 +2432,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1919,7 +2474,31 @@
    "2020": 3.865,
    "2021": 3.608
   },
-  "spread_bps_h09": 4.113
+  "spread_bps_h09": 4.113,
+  "spread_bps_by_year_c09": {
+   "2017": 2.739,
+   "2018": 4.48,
+   "2019": 3.754,
+   "2020": 6.026,
+   "2021": 5.784
+  },
+  "spread_bps_c09": 5.784,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.792,
+   "2018": 5.212,
+   "2019": 3.571,
+   "2020": 6.039,
+   "2021": 5.725
+  },
+  "spread_bps_c10_14": 5.725,
+  "spread_bps_by_year_c15": {
+   "2017": 1.61,
+   "2018": 3.473,
+   "2019": 3.107,
+   "2020": 8.505,
+   "2021": 7.292
+  },
+  "spread_bps_c15": 7.292
  },
  "mcd": {
   "spread_bps": 4.228,
@@ -1957,7 +2536,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -1998,7 +2578,31 @@
    "2020": 4.788,
    "2021": 4.643
   },
-  "spread_bps_h09": 4.643
+  "spread_bps_h09": 4.643,
+  "spread_bps_by_year_c09": {
+   "2017": 2.372,
+   "2018": 3.394,
+   "2019": 3.327,
+   "2020": 5.199,
+   "2021": 5.002
+  },
+  "spread_bps_c09": 5.002,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.133,
+   "2018": 3.974,
+   "2019": 3.492,
+   "2020": 5.565,
+   "2021": 4.416
+  },
+  "spread_bps_c10_14": 4.416,
+  "spread_bps_by_year_c15": {
+   "2017": 0.793,
+   "2018": 2.37,
+   "2019": 2.66,
+   "2020": 6.956,
+   "2021": 5.586
+  },
+  "spread_bps_c15": 5.586
  },
  "mrk": {
   "spread_bps": 3.255,
@@ -2036,7 +2640,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2077,7 +2682,31 @@
    "2020": 3.621,
    "2021": 2.725
   },
-  "spread_bps_h09": 3.187
+  "spread_bps_h09": 3.187,
+  "spread_bps_by_year_c09": {
+   "2017": 1.429,
+   "2018": 3.352,
+   "2019": 3.189,
+   "2020": 4.237,
+   "2021": 3.159
+  },
+  "spread_bps_c09": 3.159,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.215,
+   "2018": 4.437,
+   "2019": 3.595,
+   "2020": 3.561,
+   "2021": 2.693
+  },
+  "spread_bps_c10_14": 3.3,
+  "spread_bps_by_year_c15": {
+   "2017": 1.322,
+   "2018": 2.987,
+   "2019": 2.546,
+   "2020": 5.041,
+   "2021": 3.559
+  },
+  "spread_bps_c15": 3.559
  },
  "msft": {
   "spread_bps": 2.083,
@@ -2115,7 +2744,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2156,7 +2786,31 @@
    "2020": 2.281,
    "2021": 1.658
   },
-  "spread_bps_h09": 1.693
+  "spread_bps_h09": 1.693,
+  "spread_bps_by_year_c09": {
+   "2017": 1.354,
+   "2018": 2.318,
+   "2019": 1.966,
+   "2020": 2.345,
+   "2021": 1.627
+  },
+  "spread_bps_c09": 1.922,
+  "spread_bps_by_year_c10_14": {
+   "2017": 1.804,
+   "2018": 3.035,
+   "2019": 2.405,
+   "2020": 2.013,
+   "2021": 1.209
+  },
+  "spread_bps_c10_14": 2.093,
+  "spread_bps_by_year_c15": {
+   "2017": 0.727,
+   "2018": 1.549,
+   "2019": 1.213,
+   "2020": 3.094,
+   "2021": 2.201
+  },
+  "spread_bps_c15": 2.201
  },
  "mu": {
   "spread_bps": 4.723,
@@ -2194,7 +2848,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2217,7 +2872,31 @@
    "2020": 5.913,
    "2021": 4.179
   },
-  "spread_bps_h09": 4.179
+  "spread_bps_h09": 4.179,
+  "spread_bps_by_year_c09": {
+   "2017": 2.518,
+   "2018": 5.288,
+   "2019": 6.164,
+   "2020": 4.314,
+   "2021": 4.024
+  },
+  "spread_bps_c09": 4.462,
+  "spread_bps_by_year_c10_14": {
+   "2017": 3.197,
+   "2018": 6.225,
+   "2019": 7.08,
+   "2020": 4.004,
+   "2021": 3.477
+  },
+  "spread_bps_c10_14": 4.797,
+  "spread_bps_by_year_c15": {
+   "2017": 2.461,
+   "2018": 4.816,
+   "2019": 5.873,
+   "2020": 5.519,
+   "2021": 3.775
+  },
+  "spread_bps_c15": 4.489
  },
  "nflx": {
   "spread_bps": 5.31,
@@ -2255,7 +2934,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2275,7 +2955,31 @@
    "2020": 6.396,
    "2021": 5.46
   },
-  "spread_bps_h09": 5.46
+  "spread_bps_h09": 5.46,
+  "spread_bps_by_year_c09": {
+   "2017": 3.098,
+   "2018": 4.264,
+   "2019": 4.217,
+   "2020": 8.316,
+   "2021": 6.2
+  },
+  "spread_bps_c09": 6.2,
+  "spread_bps_by_year_c10_14": {
+   "2017": 3.15,
+   "2018": 5.855,
+   "2019": 4.366,
+   "2020": 7.888,
+   "2021": 5.474
+  },
+  "spread_bps_c10_14": 5.474,
+  "spread_bps_by_year_c15": {
+   "2017": 1.637,
+   "2018": 2.863,
+   "2019": 3.711,
+   "2020": 9.854,
+   "2021": 9.461
+  },
+  "spread_bps_c15": 9.461
  },
  "nke": {
   "spread_bps": 3.691,
@@ -2313,7 +3017,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2354,7 +3059,31 @@
    "2020": 4.21,
    "2021": 2.806
   },
-  "spread_bps_h09": 3.503
+  "spread_bps_h09": 3.503,
+  "spread_bps_by_year_c09": {
+   "2017": 1.808,
+   "2018": 3.563,
+   "2019": 3.4,
+   "2020": 5.38,
+   "2021": 3.811
+  },
+  "spread_bps_c09": 3.811,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.397,
+   "2018": 4.424,
+   "2019": 3.938,
+   "2020": 4.623,
+   "2021": 3.21
+  },
+  "spread_bps_c10_14": 3.718,
+  "spread_bps_by_year_c15": {
+   "2017": 1.592,
+   "2018": 2.672,
+   "2019": 3.146,
+   "2020": 5.345,
+   "2021": 4.415
+  },
+  "spread_bps_c15": 4.415
  },
  "nvda": {
   "spread_bps": 4.283,
@@ -2394,7 +3123,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2435,7 +3165,31 @@
    "2020": 5.398,
    "2021": 3.739
   },
-  "spread_bps_h09": 3.896
+  "spread_bps_h09": 3.896,
+  "spread_bps_by_year_c09": {
+   "2017": 2.898,
+   "2018": 3.563,
+   "2019": 4.225,
+   "2020": 5.296,
+   "2021": 4.355
+  },
+  "spread_bps_c09": 4.355,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.798,
+   "2018": 4.489,
+   "2019": 4.039,
+   "2020": 5.646,
+   "2021": 4.452
+  },
+  "spread_bps_c10_14": 4.452,
+  "spread_bps_by_year_c15": {
+   "2017": 1.554,
+   "2018": 2.621,
+   "2019": 3.089,
+   "2020": 6.33,
+   "2021": 7.416
+  },
+  "spread_bps_c15": 7.416
  },
  "orcl": {
   "spread_bps": 3.887,
@@ -2473,7 +3227,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2514,7 +3269,31 @@
    "2020": 4.344,
    "2021": 3.703
   },
-  "spread_bps_h09": 3.703
+  "spread_bps_h09": 3.703,
+  "spread_bps_by_year_c09": {
+   "2017": 1.976,
+   "2018": 4.126,
+   "2019": 3.718,
+   "2020": 3.251,
+   "2021": 4.813
+  },
+  "spread_bps_c09": 4.813,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.805,
+   "2018": 5.686,
+   "2019": 5.01,
+   "2020": 3.267,
+   "2021": 2.948
+  },
+  "spread_bps_c10_14": 3.943,
+  "spread_bps_by_year_c15": {
+   "2017": 1.719,
+   "2018": 3.872,
+   "2019": 3.64,
+   "2020": 4.365,
+   "2021": 3.995
+  },
+  "spread_bps_c15": 3.995
  },
  "pfe": {
   "spread_bps": 5.171,
@@ -2552,7 +3331,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2593,7 +3373,31 @@
    "2020": 5.383,
    "2021": 4.469
   },
-  "spread_bps_h09": 4.736
+  "spread_bps_h09": 4.736,
+  "spread_bps_by_year_c09": {
+   "2017": 3.58,
+   "2018": 6.936,
+   "2019": 6.453,
+   "2020": 4.265,
+   "2021": 4.545
+  },
+  "spread_bps_c09": 5.156,
+  "spread_bps_by_year_c10_14": {
+   "2017": 3.827,
+   "2018": 7.329,
+   "2019": 6.742,
+   "2020": 4.131,
+   "2021": 4.02
+  },
+  "spread_bps_c10_14": 5.21,
+  "spread_bps_by_year_c15": {
+   "2017": 2.882,
+   "2018": 5.363,
+   "2019": 5.298,
+   "2020": 5.696,
+   "2021": 5.364
+  },
+  "spread_bps_c15": 5.364
  },
  "pypl": {
   "spread_bps": 4.225,
@@ -2631,7 +3435,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2651,7 +3456,31 @@
    "2020": 5.057,
    "2021": 3.421
   },
-  "spread_bps_h09": 3.79
+  "spread_bps_h09": 3.79,
+  "spread_bps_by_year_c09": {
+   "2017": 2.362,
+   "2018": 3.698,
+   "2019": 3.729,
+   "2020": 6.461,
+   "2021": 4.309
+  },
+  "spread_bps_c09": 4.309,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.422,
+   "2018": 4.799,
+   "2019": 3.711,
+   "2020": 5.649,
+   "2021": 4.274
+  },
+  "spread_bps_c10_14": 4.274,
+  "spread_bps_by_year_c15": {
+   "2017": 1.271,
+   "2018": 2.8,
+   "2019": 2.928,
+   "2020": 8.36,
+   "2021": 4.286
+  },
+  "spread_bps_c15": 4.286
  },
  "qcom": {
   "spread_bps": 4.205,
@@ -2689,7 +3518,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2730,7 +3560,31 @@
    "2020": 4.991,
    "2021": 3.893
   },
-  "spread_bps_h09": 3.893
+  "spread_bps_h09": 3.893,
+  "spread_bps_by_year_c09": {
+   "2017": 1.73,
+   "2018": 3.565,
+   "2019": 4.334,
+   "2020": 6.826,
+   "2021": 3.707
+  },
+  "spread_bps_c09": 4.032,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.43,
+   "2018": 4.932,
+   "2019": 4.871,
+   "2020": 5.39,
+   "2021": 3.618
+  },
+  "spread_bps_c10_14": 4.248,
+  "spread_bps_by_year_c15": {
+   "2017": 1.17,
+   "2018": 2.685,
+   "2019": 2.739,
+   "2020": 8.336,
+   "2021": 5.115
+  },
+  "spread_bps_c15": 5.115
  },
  "tsla": {
   "spread_bps": 6.03,
@@ -2770,7 +3624,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2790,7 +3645,31 @@
    "2020": 6.842,
    "2021": 4.721
   },
-  "spread_bps_h09": 5.381
+  "spread_bps_h09": 5.381,
+  "spread_bps_by_year_c09": {
+   "2017": 4.589,
+   "2018": 5.535,
+   "2019": 5.663,
+   "2020": 8.16,
+   "2021": 5.078
+  },
+  "spread_bps_c09": 5.805,
+  "spread_bps_by_year_c10_14": {
+   "2017": 4.776,
+   "2018": 7.038,
+   "2019": 5.656,
+   "2020": 8.615,
+   "2021": 4.17
+  },
+  "spread_bps_c10_14": 6.051,
+  "spread_bps_by_year_c15": {
+   "2017": 1.561,
+   "2018": 3.113,
+   "2019": 5.532,
+   "2020": 12.516,
+   "2021": 6.238
+  },
+  "spread_bps_c15": 6.238
  },
  "unh": {
   "spread_bps": 5.139,
@@ -2828,7 +3707,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2869,7 +3749,31 @@
    "2020": 5.057,
    "2021": 4.098
   },
-  "spread_bps_h09": 4.897
+  "spread_bps_h09": 4.897,
+  "spread_bps_by_year_c09": {
+   "2017": 3.717,
+   "2018": 3.499,
+   "2019": 4.517,
+   "2020": 7.698,
+   "2021": 5.662
+  },
+  "spread_bps_c09": 5.662,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.638,
+   "2018": 4.16,
+   "2019": 4.162,
+   "2020": 8.596,
+   "2021": 5.503
+  },
+  "spread_bps_c10_14": 5.503,
+  "spread_bps_by_year_c15": {
+   "2017": 1.028,
+   "2018": 2.497,
+   "2019": 3.385,
+   "2020": 9.733,
+   "2021": 7.692
+  },
+  "spread_bps_c15": 7.692
  },
  "v": {
   "spread_bps": 3.237,
@@ -2907,7 +3811,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -2948,7 +3853,31 @@
    "2020": 2.744,
    "2021": 2.294
   },
-  "spread_bps_h09": 2.551
+  "spread_bps_h09": 2.551,
+  "spread_bps_by_year_c09": {
+   "2017": 1.447,
+   "2018": 2.853,
+   "2019": 2.572,
+   "2020": 3.597,
+   "2021": 3.959
+  },
+  "spread_bps_c09": 3.959,
+  "spread_bps_by_year_c10_14": {
+   "2017": 1.549,
+   "2018": 3.53,
+   "2019": 2.798,
+   "2020": 3.802,
+   "2021": 3.287
+  },
+  "spread_bps_c10_14": 3.287,
+  "spread_bps_by_year_c15": {
+   "2017": 0.952,
+   "2018": 1.503,
+   "2019": 1.826,
+   "2020": 5.262,
+   "2021": 5.554
+  },
+  "spread_bps_c15": 5.554
  },
  "wfc": {
   "spread_bps": 4.582,
@@ -2986,7 +3915,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -3027,7 +3957,31 @@
    "2020": 5.322,
    "2021": 5.809
   },
-  "spread_bps_h09": 5.809
+  "spread_bps_h09": 5.809,
+  "spread_bps_by_year_c09": {
+   "2017": 2.552,
+   "2018": 5.081,
+   "2019": 5.404,
+   "2020": 5.587,
+   "2021": 4.081
+  },
+  "spread_bps_c09": 4.541,
+  "spread_bps_by_year_c10_14": {
+   "2017": 2.692,
+   "2018": 5.148,
+   "2019": 5.665,
+   "2020": 5.328,
+   "2021": 3.866
+  },
+  "spread_bps_c10_14": 4.54,
+  "spread_bps_by_year_c15": {
+   "2017": 2.373,
+   "2018": 4.573,
+   "2019": 5.041,
+   "2020": 5.853,
+   "2021": 4.651
+  },
+  "spread_bps_c15": 4.651
  },
  "wmt": {
   "spread_bps": 3.033,
@@ -3065,7 +4019,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -3106,7 +4061,31 @@
    "2020": 3.332,
    "2021": 3.371
   },
-  "spread_bps_h09": 3.371
+  "spread_bps_h09": 3.371,
+  "spread_bps_by_year_c09": {
+   "2017": 1.244,
+   "2018": 3.059,
+   "2019": 2.918,
+   "2020": 4.174,
+   "2021": 3.301
+  },
+  "spread_bps_c09": 3.301,
+  "spread_bps_by_year_c10_14": {
+   "2017": 1.63,
+   "2018": 3.565,
+   "2019": 3.265,
+   "2020": 3.982,
+   "2021": 2.851
+  },
+  "spread_bps_c10_14": 3.059,
+  "spread_bps_by_year_c15": {
+   "2017": 0.913,
+   "2018": 2.404,
+   "2019": 2.572,
+   "2020": 4.76,
+   "2021": 4.013
+  },
+  "spread_bps_c15": 4.013
  },
  "xom": {
   "spread_bps": 3.284,
@@ -3144,7 +4123,8 @@
    "dividends": "Yahoo chart API events (period2 2021-12-31, only events dated before 2022 read), stored as dividend / previous session close, so no later split adjustment is kept; a SHORT open at the ex-date's first bar (09:30 New York) pays frac x its fill price; a long is credited dividend_credit_long x that (0: credits ignored, as swaps; to read at FP)",
    "commission_per_unit": "V21-8: 0.03 USD per share per side in net (DailyForex review, MT5: 0.03; FP's fees page snippet: 0.02), 0.045 in the stress, 0 in gross; the 2 USD minimum per side is MODELLED at the stake notional (V21-2, _stake)",
    "min_bar_minutes": "V21-7: a share bar with fewer than 5 one-minute rows (volume column) is dropped by data.load_bars: the one-minute 13:00 bar of a half day, partial hours of data holes",
-   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %"
+   "dividend_credit_long": "kit v2.1 fix 2 (KF-4): a LONG open at an ex-date's first bar is credited 70 % of the dividend (x its fill): share CFD brokers credit longs with the dividend, often net of the 30 % US withholding tax that applies without a treaty rate; 0.70 is the pessimistic end of the usual 70-100 % (decision not the fixer's: the pessimistic side is taken). To read in MetaTrader / FP's dividend policy. judge.verdict reports the long result at credits 0 and 1 as well (results.json 'dividends'). A short pays 100 %",
+   "spread_bps_by_year_close": "kit v2.1 fix 3 (R3-5): THREE levels per New York year for an order at a bar's CLOSE, each calibrated on its own close minutes: spread_bps_by_year_c09 (the 09 bar's close, the 09:59 minute), _c10_14 (the 10-14 bars' closes, hh:59), _c15 (the 15 bar's close, 15:59: an exit before the closure, wider in 2017-2019 and narrower in 2020-2021 than the 10-15 open level it used before). Each level makes the kit's mean spread at the close (level x the whole-period close shape of extra_shape.json) over that group's minutes of the year EQUAL the mean quoted (ask - bid) / mid at the minute's close of the lab's one-minute quotes (read with ts < 2022): kit_v21/fix3/s/k5c_levels.py, k5c_install.py. Years not listed: spread_bps_c09 / _c10_14 / _c15 = max(2021 level, mean of the years)"
   },
   "min_bar_minutes": 5,
   "spread_bps_by_year": {
@@ -3185,7 +4165,31 @@
    "2020": 4.783,
    "2021": 2.497
   },
-  "spread_bps_h09": 3.139
+  "spread_bps_h09": 3.139,
+  "spread_bps_by_year_c09": {
+   "2017": 1.729,
+   "2018": 3.711,
+   "2019": 3.902,
+   "2020": 4.112,
+   "2021": 2.936
+  },
+  "spread_bps_c09": 3.278,
+  "spread_bps_by_year_c10_14": {
+   "2017": 1.83,
+   "2018": 3.822,
+   "2019": 3.968,
+   "2020": 3.9,
+   "2021": 2.868
+  },
+  "spread_bps_c10_14": 3.278,
+  "spread_bps_by_year_c15": {
+   "2017": 1.559,
+   "2018": 3.074,
+   "2019": 3.361,
+   "2020": 5.184,
+   "2021": 3.34
+  },
+  "spread_bps_c15": 3.34
  },
  "_stake": {
   "account_eur": 5000.0,
