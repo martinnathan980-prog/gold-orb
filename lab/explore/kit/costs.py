@@ -59,6 +59,21 @@
   groups calibrated on their own close minutes: spread_bps_by_year_c09 (09:59), _c10_14 (hh:59, 10-14), _c15 (15:59,
   an exit before the closure); spread_bps_c09 / _c10_14 / _c15 for the years not listed. spread_bps_by_year now prices
   the OPENS of the 10-15 bars only. (Before: every close used the 10-15 open level, off by 0.56-3.10 at the 15:59 close.)
+- Kit v2.2 (2026-11-18): COST CLASSES. extra_costs.json '_classes' holds one entry per class of markets that share every
+  figure; class 'us_shares_d1' = every share of kit/universe_us.csv (the S&P 500 list minus the lab's 40, keyed by the
+  universe file's 'key'), on DAILY bars (bar 'session': one bar a session, open 09:30 New York, close known at 16:00 or
+  13:00). spec(key) of such a key is the class entry plus the share's own public facts (sector, in_universe_from, its
+  dividend fractions of universe_us_dividends.csv, its 2016-2021 splits of universe_us_splits.csv as
+  'commission_splits'). The keys are NOT in SPEC or EXTRA (those keep the 16 FP markets and the 41 v2.1 markets); a
+  universe key that is also a key of fp_costs.json or extra_costs.json raises at import. Fields of the class:
+  spread_bps_open (an order at a bar's OPEN, i.e. the session's open) and spread_bps_close (an order at a bar's close),
+  shape 'flat' (no hour-of-week shape), the 40 shares' commission, slippage, swaps and lots, dividends as the 40.
+  The prices are Yahoo's, adjusted for EVERY split up to the download (2026-11-18), so the kit never adjusts them; the
+  per-share commission needs the share count at the price traded THEN: commission per adjusted unit per side =
+  max(0.03 x adj, 2 USD x price / N) as for the 40 shares, with adj = data.price_factor = 1 / the product of the
+  2016-2021 split ratios after the bar (the splits after 2021 are not known: a later forward split makes the kit's
+  price lower than the real one, so the per-share rate binds more often than it should: pessimistic; a later REVERSE
+  split would make it cheaper than real: README 'Kit v2.2' limits).
 """
 import json
 import os
@@ -101,6 +116,82 @@ def _load_extra():
 
 SPEC = _load()
 EXTRA = _load_extra()
+
+
+def _load_classes():
+    """kit v2.2: extra_costs.json '_classes' {class name: entry}; each entry provisional with its source."""
+    p = os.environ.get("EXPLORE_EXTRA_COSTS", os.path.join(KIT, "extra_costs.json"))
+    if not os.path.isfile(p):
+        return {}
+    out = json.load(open(p)).get("_classes", {}) or {}
+    for k, v in out.items():
+        if "provisional" not in v or not v.get("source"):
+            raise CostError(f"extra_costs.json _classes {k}: every class says provisional and gives its source")
+    return out
+
+
+CLASSES = _load_classes()
+
+
+def _load_universe():
+    """{key: {'class', 'ticker', 'sector', 'in_universe_from'}} of every class with a universe_file (kit v2.2)."""
+    out = {}
+    for cname, c in CLASSES.items():
+        f = c.get("universe_file")
+        if not f or not os.path.isfile(os.path.join(KIT, f)):
+            continue
+        u = pd.read_csv(os.path.join(KIT, f), dtype=str)
+        for r in u.itertuples(index=False):
+            k = str(r.key)
+            if k in SPEC or k in EXTRA or k in out:
+                raise CostError(f"universe key '{k}' of class {cname} is already a market of fp_costs.json, "
+                                "extra_costs.json or another class: one key, one market")
+            out[k] = {"class": cname, "ticker": str(r.ticker), "sector": str(r.sector),
+                      "in_universe_from": str(r.in_universe_from)}
+    return out
+
+
+UNIVERSE = _load_universe()
+_CLASS_SPEC = {}
+_CLASS_FACTS = {}
+
+
+def _class_facts(cname, what):
+    """{key: {date: value}} of a class's dividends_file (fraction) or splits_file (ratio), read once."""
+    ck = (cname, what)
+    if ck not in _CLASS_FACTS:
+        f = CLASSES[cname].get(what)
+        tab = {}
+        if f and os.path.isfile(os.path.join(KIT, f)):
+            d = pd.read_csv(os.path.join(KIT, f), dtype={"key": str})
+            dcol, vcol = ("ex_date", "fraction") if what == "dividends_file" else ("date", "ratio")
+            for k, g in d.groupby("key", sort=True):
+                tab[str(k)] = {str(a): float(b) for a, b in zip(g[dcol], g[vcol])}
+        _CLASS_FACTS[ck] = tab
+    return _CLASS_FACTS[ck]
+
+
+def _class_spec(key):
+    """The cost entry of a key of a class universe: the class entry + the share's sector, in_universe_from, dividends
+    {ex-date: fraction} and commission_splits {date: ratio} (one dict per key, built once)."""
+    if key not in _CLASS_SPEC:
+        u = UNIVERSE[key]
+        c = dict(CLASSES[u["class"]])
+        c.update(market_class=u["class"], sector=u["sector"], in_universe_from=u["in_universe_from"],
+                 ticker=u["ticker"], dividends=_class_facts(u["class"], "dividends_file").get(key, {}),
+                 commission_splits=_class_facts(u["class"], "splits_file").get(key, {}))
+        _CLASS_SPEC[key] = c
+    return _CLASS_SPEC[key]
+
+
+def market_class(key):
+    """The cost class of a market (kit v2.2: 'us_shares_d1' for a share of kit/universe_us.csv), else None."""
+    return UNIVERSE[key]["class"] if isinstance(key, str) and key in UNIVERSE else None
+
+
+def bar_kind(key):
+    """'session' for a market whose bars are one session long (kit v2.2 daily shares), else 'hour'."""
+    return str(spec(key).get("bar", "hour"))
 _SJ = json.load(open(os.path.join(KIT, "spread_shape.json")))
 SHAPE = {k: np.asarray(v, float) for k, v in _SJ["shape"].items()}
 SHAPE_CLOSE = {k: np.asarray(v, float) for k, v in _SJ.get("shape_close", _SJ["shape"]).items()}
@@ -122,6 +213,8 @@ def spec(key):
         return EXTRA[key]
     if key in PAIRS:
         return PAIRS[key]
+    if key in UNIVERSE:                                     # kit v2.2: a share of a cost class
+        return _class_spec(key)
     raise CostError(f"no FP cost entry for '{key}' in lab/r2/fp_costs.json or kit/extra_costs.json: this market cannot "
                     "be judged net of costs")
 
@@ -181,7 +274,7 @@ def register_pair(name, key_a, key_b, kind="ratio"):
     night count for both legs). Registering the same name again with the same legs is harmless; other legs raise."""
     if kind not in ("ratio", "product"):
         raise ValueError("kind is 'ratio' or 'product'")
-    if name in SPEC or name in EXTRA:
+    if name in SPEC or name in EXTRA or name in UNIVERSE:
         raise CostError(f"'{name}' is a market of fp_costs.json or extra_costs.json: give the pair its own name (e.g. "
                         "'eurusd/gbpusd')")
     if key_a == key_b or key_a in PAIRS or key_b in PAIRS:
@@ -221,8 +314,10 @@ def how_ny(times):
 def shape(key, times, at="open"):
     """Hour-of-week spread shape at a bar's open (hh:00 minute) or close (hh:59 minute: the last bar before a closure,
     e.g. the Friday 16:59 New York close, is much wider than its open)."""
-    _not_pair(key)
+    s = _not_pair(key)
     tab = SHAPE if at == "open" else SHAPE_CLOSE
+    if key not in tab and s.get("shape") == "flat":        # kit v2.2: one bar a session, no hour-of-week shape
+        return np.ones(len(pd.DatetimeIndex(times)))
     if key not in tab:
         raise CostError(f"no spread shape for {key} in kit/spread_shape.json")
     return tab[key][how_ny(times)]
@@ -270,6 +365,9 @@ def base_spread(key, price, times=None, adj=1.0, at="open"):
     price = np.asarray(price, float)
     if "spread_abs" in s:                                   # kit v2.1 fix (V21-3): oil, a constant amount in USD
         return s["spread_abs"] * np.asarray(adj, float) * np.ones_like(price)
+    if "spread_bps_open" in s:                              # kit v2.2 daily shares: an order at a bar's open (the
+        bp = s["spread_bps_open"] if at == "open" else s["spread_bps_close"]    # session's open) or at its close
+        return float(bp) * 1e-4 * price
     if "spread_bps" in s:                                   # kit v2.1 markets: bp of the trade's price
         return np.asarray(_year_bps(s, times, at)) * 1e-4 * price
     if s.get("spread_ref_price"):
@@ -370,7 +468,7 @@ def swap(key, side, entry_price, entry_time, exit_time):
 def _default_adj(key, t):
     """data.price_factor at time t for a market with rolls or splits (kit v2.1 fix 2, KF-8), else 1.0."""
     s = spec(key)
-    if "rolls" not in s and "splits" not in s:
+    if "rolls" not in s and "splits" not in s and "commission_splits" not in s:
         return 1.0
     from . import data as _D                                    # lazy: data imports costs
     return float(_D.price_factor(key, pd.DatetimeIndex([pd.Timestamp(t)]))[0])

@@ -1,0 +1,383 @@
+key,ticker,sector,in_universe_from
+a,A,Health Care,2017-01-01
+abbv,ABBV,Health Care,2017-01-01
+abt,ABT,Health Care,2017-01-01
+acn,ACN,Information Technology,2017-01-01
+adi,ADI,Information Technology,2017-01-01
+adm,ADM,Consumer Staples,2017-01-01
+adp,ADP,Industrials,2017-01-01
+adsk,ADSK,Information Technology,2017-01-01
+aee,AEE,Utilities,2017-01-01
+aep,AEP,Utilities,2017-01-01
+aes,AES,Utilities,2017-01-01
+afl,AFL,Financials,2017-01-01
+aig,AIG,Financials,2017-01-01
+aiz,AIZ,Financials,2017-01-01
+ajg,AJG,Financials,2017-01-01
+akam,AKAM,Information Technology,2017-01-01
+alb,ALB,Materials,2017-01-01
+algn,ALGN,Health Care,2017-06-19
+all,ALL,Financials,2017-01-01
+alle,ALLE,Industrials,2017-01-01
+amat,AMAT,Information Technology,2017-01-01
+amcr,AMCR,Materials,2019-06-07
+ame,AME,Industrials,2017-01-01
+amgn,AMGN,Health Care,2017-01-01
+amp,AMP,Financials,2017-01-01
+amt,AMT,Real Estate,2017-01-01
+anet,ANET,Information Technology,2018-08-28
+aon,AON,Financials,2017-01-01
+aos,AOS,Industrials,2017-07-26
+apa,APA,Energy,2017-01-01
+apd,APD,Materials,2017-01-01
+aph,APH,Information Technology,2017-01-01
+aptv,APTV,Consumer Discretionary,2017-01-01
+are,ARE,Real Estate,2017-03-20
+ato,ATO,Utilities,2019-02-15
+avy,AVY,Materials,2017-01-01
+awk,AWK,Utilities,2017-01-01
+axp,AXP,Financials,2017-01-01
+azo,AZO,Consumer Discretionary,2017-01-01
+ball,BALL,Materials,2017-01-01
+bax,BAX,Health Care,2017-01-01
+bby,BBY,Consumer Discretionary,2017-01-01
+bdx,BDX,Health Care,2017-01-01
+ben,BEN,Financials,2017-01-01
+bfb,BF.B,Consumer Staples,2017-01-01
+biib,BIIB,Health Care,2017-01-01
+bkng,BKNG,Consumer Discretionary,2017-01-01
+bkr,BKR,Energy,2017-07-07
+blk,BLK,Financials,2017-01-01
+bmy,BMY,Health Care,2017-01-01
+bny,BNY,Financials,2017-01-01
+br,BR,Industrials,2018-06-18
+brkb,BRK.B,Financials,2017-01-01
+bro,BRO,Financials,2021-09-20
+bsx,BSX,Health Care,2017-01-01
+bxp,BXP,Real Estate,2017-01-01
+cah,CAH,Health Care,2017-01-01
+carr,CARR,Industrials,2020-04-03
+cb,CB,Financials,2017-01-01
+cboe,CBOE,Financials,2017-03-01
+cbre,CBRE,Real Estate,2017-01-01
+cci,CCI,Real Estate,2017-01-01
+ccl,CCL,Consumer Discretionary,2017-01-01
+cdns,CDNS,Information Technology,2017-09-18
+cdw,CDW,Information Technology,2019-09-23
+cf,CF,Materials,2017-01-01
+cfg,CFG,Financials,2017-01-01
+chd,CHD,Consumer Staples,2017-01-01
+chrw,CHRW,Industrials,2017-01-01
+chtr,CHTR,Communication Services,2017-01-01
+ci,CI,Health Care,2017-01-01
+cinf,CINF,Financials,2017-01-01
+cl,CL,Consumer Staples,2017-01-01
+clx,CLX,Consumer Staples,2017-01-01
+cmcsa,CMCSA,Communication Services,2017-01-01
+cme,CME,Financials,2017-01-01
+cmg,CMG,Consumer Discretionary,2017-01-01
+cmi,CMI,Industrials,2017-01-01
+cms,CMS,Utilities,2017-01-01
+cnc,CNC,Health Care,2017-01-01
+cnp,CNP,Utilities,2017-01-01
+cof,COF,Financials,2017-01-01
+coo,COO,Health Care,2017-01-01
+cop,COP,Energy,2017-01-01
+cor,COR,Health Care,2017-01-01
+cost,COST,Consumer Staples,2017-01-01
+cpay,CPAY,Financials,2018-06-20
+cprt,CPRT,Industrials,2018-07-02
+crl,CRL,Health Care,2021-05-14
+csx,CSX,Industrials,2017-01-01
+ctas,CTAS,Industrials,2017-01-01
+ctsh,CTSH,Information Technology,2017-01-01
+cvs,CVS,Health Care,2017-01-01
+d,D,Utilities,2017-01-01
+dal,DAL,Industrials,2017-01-01
+dd,DD,Industrials,2019-06-03
+de,DE,Industrials,2017-01-01
+dg,DG,Consumer Staples,2017-01-01
+dgx,DGX,Health Care,2017-01-01
+dhi,DHI,Consumer Discretionary,2017-01-01
+dhr,DHR,Health Care,2017-01-01
+dlr,DLR,Real Estate,2017-01-01
+dltr,DLTR,Consumer Staples,2017-01-01
+doc,DOC,Real Estate,2017-01-01
+dov,DOV,Industrials,2017-01-01
+dow,DOW,Materials,2019-04-01
+dpz,DPZ,Consumer Discretionary,2020-05-12
+dri,DRI,Consumer Discretionary,2017-01-01
+dte,DTE,Utilities,2017-01-01
+duk,DUK,Utilities,2017-01-01
+dva,DVA,Health Care,2017-01-01
+dvn,DVN,Energy,2017-01-01
+dxcm,DXCM,Health Care,2020-05-12
+ebay,EBAY,Consumer Discretionary,2017-01-01
+ecl,ECL,Materials,2017-01-01
+ed,ED,Utilities,2017-01-01
+efx,EFX,Industrials,2017-01-01
+eg,EG,Financials,2017-06-19
+eix,EIX,Utilities,2017-01-01
+el,EL,Consumer Staples,2017-01-01
+elv,ELV,Health Care,2017-01-01
+emr,EMR,Industrials,2017-01-01
+eog,EOG,Energy,2017-01-01
+eqix,EQIX,Real Estate,2017-01-01
+es,ES,Utilities,2017-01-01
+ess,ESS,Real Estate,2017-01-01
+etn,ETN,Industrials,2017-01-01
+etr,ETR,Utilities,2017-01-01
+evrg,EVRG,Utilities,2018-06-05
+ew,EW,Health Care,2017-01-01
+exc,EXC,Utilities,2017-01-01
+expd,EXPD,Industrials,2017-01-01
+expe,EXPE,Consumer Discretionary,2017-01-01
+exr,EXR,Real Estate,2017-01-01
+f,F,Consumer Discretionary,2017-01-01
+fang,FANG,Energy,2018-12-03
+fast,FAST,Industrials,2017-01-01
+fcx,FCX,Materials,2017-01-01
+fds,FDS,Financials,2021-12-20
+fdx,FDX,Industrials,2017-01-01
+fe,FE,Utilities,2017-01-01
+ffiv,FFIV,Information Technology,2017-01-01
+fis,FIS,Financials,2017-01-01
+fisv,FISV,Financials,2017-01-01
+fitb,FITB,Financials,2017-01-01
+foxa,FOXA,Communication Services,2019-03-19
+frt,FRT,Real Estate,2017-01-01
+ftnt,FTNT,Information Technology,2018-10-11
+ftv,FTV,Industrials,2017-01-01
+gd,GD,Industrials,2017-01-01
+gen,GEN,Information Technology,2017-01-01
+gild,GILD,Health Care,2017-01-01
+gis,GIS,Consumer Staples,2017-01-01
+gl,GL,Financials,2017-01-01
+glw,GLW,Information Technology,2017-01-01
+gm,GM,Consumer Discretionary,2017-01-01
+gnrc,GNRC,Industrials,2021-03-22
+gpc,GPC,Consumer Discretionary,2017-01-01
+gpn,GPN,Financials,2017-01-01
+grmn,GRMN,Consumer Discretionary,2017-01-01
+gww,GWW,Industrials,2017-01-01
+hal,HAL,Energy,2017-01-01
+has,HAS,Consumer Discretionary,2017-01-01
+hban,HBAN,Financials,2017-01-01
+hca,HCA,Health Care,2017-01-01
+hig,HIG,Financials,2017-01-01
+hii,HII,Industrials,2018-01-03
+hlt,HLT,Consumer Discretionary,2017-06-19
+hon,HON,Industrials,2017-01-01
+hpe,HPE,Information Technology,2017-01-01
+hpq,HPQ,Information Technology,2017-01-01
+hrl,HRL,Consumer Staples,2017-01-01
+hsic,HSIC,Health Care,2017-01-01
+hst,HST,Real Estate,2017-01-01
+hsy,HSY,Consumer Staples,2017-01-01
+hum,HUM,Health Care,2017-01-01
+hwm,HWM,Industrials,2017-01-01
+ibm,IBM,Information Technology,2017-01-01
+ice,ICE,Financials,2017-01-01
+idxx,IDXX,Health Care,2017-01-05
+iex,IEX,Industrials,2019-08-09
+iff,IFF,Materials,2017-01-01
+incy,INCY,Health Care,2017-02-28
+intu,INTU,Information Technology,2017-01-01
+ip,IP,Materials,2017-01-01
+iqv,IQV,Health Care,2017-08-29
+ir,IR,Industrials,2020-03-03
+irm,IRM,Real Estate,2017-01-01
+isrg,ISRG,Health Care,2017-01-01
+it,IT,Information Technology,2017-04-05
+itw,ITW,Industrials,2017-01-01
+ivz,IVZ,Financials,2017-01-01
+j,J,Industrials,2017-01-01
+jbht,JBHT,Industrials,2017-01-01
+jci,JCI,Industrials,2017-01-01
+jkhy,JKHY,Financials,2018-11-13
+key,KEY,Financials,2017-01-01
+keys,KEYS,Information Technology,2018-11-06
+khc,KHC,Consumer Staples,2017-01-01
+kim,KIM,Real Estate,2017-01-01
+klac,KLAC,Information Technology,2017-01-01
+kmb,KMB,Consumer Staples,2017-01-01
+kmi,KMI,Energy,2017-01-01
+ko,KO,Consumer Staples,2017-01-01
+kr,KR,Consumer Staples,2017-01-01
+l,L,Financials,2017-01-01
+ldos,LDOS,Industrials,2019-08-09
+len,LEN,Consumer Discretionary,2017-01-01
+lh,LH,Health Care,2017-01-01
+lhx,LHX,Industrials,2017-01-01
+lin,LIN,Materials,2017-01-01
+lly,LLY,Health Care,2017-01-01
+lmt,LMT,Industrials,2017-01-01
+lnt,LNT,Utilities,2017-01-01
+low,LOW,Consumer Discretionary,2017-01-01
+lrcx,LRCX,Information Technology,2017-01-01
+luv,LUV,Industrials,2017-01-01
+lvs,LVS,Consumer Discretionary,2019-10-03
+lyb,LYB,Materials,2017-01-01
+lyv,LYV,Communication Services,2019-12-23
+maa,MAA,Real Estate,2017-01-01
+mar,MAR,Consumer Discretionary,2017-01-01
+mas,MAS,Industrials,2017-01-01
+mchp,MCHP,Information Technology,2017-01-01
+mck,MCK,Health Care,2017-01-01
+mco,MCO,Financials,2017-01-01
+mdlz,MDLZ,Consumer Staples,2017-01-01
+mdt,MDT,Health Care,2017-01-01
+met,MET,Financials,2017-01-01
+mgm,MGM,Consumer Discretionary,2017-07-26
+mkc,MKC,Consumer Staples,2017-01-01
+mlm,MLM,Materials,2017-01-01
+mmm,MMM,Industrials,2017-01-01
+mnst,MNST,Consumer Staples,2017-01-01
+mo,MO,Consumer Staples,2017-01-01
+mos,MOS,Materials,2017-01-01
+mpc,MPC,Energy,2017-01-01
+mpwr,MPWR,Information Technology,2021-02-12
+mrna,MRNA,Health Care,2021-07-21
+mrsh,MRSH,Financials,2017-01-01
+ms,MS,Financials,2017-01-01
+msci,MSCI,Financials,2018-04-04
+msi,MSI,Information Technology,2017-01-01
+mtb,MTB,Financials,2017-01-01
+mtd,MTD,Health Care,2017-01-01
+nclh,NCLH,Consumer Discretionary,2017-10-13
+ndaq,NDAQ,Financials,2017-01-01
+nee,NEE,Utilities,2017-01-01
+nem,NEM,Materials,2017-01-01
+ni,NI,Utilities,2017-01-01
+noc,NOC,Industrials,2017-01-01
+now,NOW,Information Technology,2019-11-21
+nrg,NRG,Utilities,2017-01-01
+nsc,NSC,Industrials,2017-01-01
+ntap,NTAP,Information Technology,2017-01-01
+ntrs,NTRS,Financials,2017-01-01
+nue,NUE,Materials,2017-01-01
+nvr,NVR,Consumer Discretionary,2019-09-26
+nwsa,NWSA,Communication Services,2017-01-01
+nxpi,NXPI,Information Technology,2021-03-22
+o,O,Real Estate,2017-01-01
+odfl,ODFL,Industrials,2019-12-09
+oke,OKE,Energy,2017-01-01
+omc,OMC,Communication Services,2017-01-01
+orly,ORLY,Consumer Discretionary,2017-01-01
+otis,OTIS,Industrials,2020-04-03
+oxy,OXY,Energy,2017-01-01
+payx,PAYX,Industrials,2017-01-01
+pcar,PCAR,Industrials,2017-01-01
+peg,PEG,Utilities,2017-01-01
+pep,PEP,Consumer Staples,2017-01-01
+pfg,PFG,Financials,2017-01-01
+pg,PG,Consumer Staples,2017-01-01
+pgr,PGR,Financials,2017-01-01
+ph,PH,Industrials,2017-01-01
+phm,PHM,Consumer Discretionary,2017-01-01
+pkg,PKG,Materials,2017-07-26
+pld,PLD,Real Estate,2017-01-01
+pm,PM,Consumer Staples,2017-01-01
+pnc,PNC,Financials,2017-01-01
+pnr,PNR,Industrials,2017-01-01
+pnw,PNW,Utilities,2017-01-01
+ppg,PPG,Materials,2017-01-01
+ppl,PPL,Utilities,2017-01-01
+pru,PRU,Financials,2017-01-01
+psa,PSA,Real Estate,2017-01-01
+psx,PSX,Energy,2017-01-01
+ptc,PTC,Information Technology,2021-04-20
+pwr,PWR,Industrials,2017-01-01
+rcl,RCL,Consumer Discretionary,2017-01-01
+reg,REG,Real Estate,2017-03-02
+regn,REGN,Health Care,2017-01-01
+rf,RF,Financials,2017-01-01
+rjf,RJF,Financials,2017-03-20
+rl,RL,Consumer Discretionary,2017-01-01
+rmd,RMD,Health Care,2017-07-26
+rok,ROK,Industrials,2017-01-01
+rol,ROL,Industrials,2018-10-01
+rop,ROP,Information Technology,2017-01-01
+rost,ROST,Consumer Discretionary,2017-01-01
+rsg,RSG,Industrials,2017-01-01
+rtx,RTX,Industrials,2017-01-01
+rvty,RVTY,Health Care,2017-01-01
+sbac,SBAC,Real Estate,2017-09-01
+sbux,SBUX,Consumer Discretionary,2017-01-01
+schw,SCHW,Financials,2017-01-01
+shw,SHW,Materials,2017-01-01
+sjm,SJM,Consumer Staples,2017-01-01
+skyd,SKYD,Communication Services,2017-01-01
+slb,SLB,Energy,2017-01-01
+sna,SNA,Industrials,2017-01-01
+snps,SNPS,Information Technology,2017-03-16
+so,SO,Utilities,2017-01-01
+spg,SPG,Real Estate,2017-01-01
+spgi,SPGI,Financials,2017-01-01
+sre,SRE,Utilities,2017-03-17
+ste,STE,Health Care,2019-12-23
+stt,STT,Financials,2017-01-01
+stx,STX,Information Technology,2017-01-01
+stz,STZ,Consumer Staples,2017-01-01
+swk,SWK,Industrials,2017-01-01
+swks,SWKS,Information Technology,2017-01-01
+syf,SYF,Financials,2017-01-01
+syk,SYK,Health Care,2017-01-01
+syy,SYY,Consumer Staples,2017-01-01
+t,T,Communication Services,2017-01-01
+tdg,TDG,Industrials,2017-01-01
+tdy,TDY,Information Technology,2020-06-22
+tech,TECH,Health Care,2021-08-30
+tel,TEL,Information Technology,2017-01-01
+ter,TER,Information Technology,2020-09-21
+tfc,TFC,Financials,2017-01-01
+tgt,TGT,Consumer Staples,2017-01-01
+tjx,TJX,Consumer Discretionary,2017-01-01
+tmo,TMO,Health Care,2017-01-01
+tmus,TMUS,Communication Services,2019-07-15
+tpr,TPR,Consumer Discretionary,2017-01-01
+trmb,TRMB,Information Technology,2021-01-21
+trow,TROW,Financials,2019-07-29
+trv,TRV,Financials,2017-01-01
+tsco,TSCO,Consumer Discretionary,2017-01-01
+tsn,TSN,Consumer Staples,2017-01-01
+tt,TT,Industrials,2017-01-01
+ttwo,TTWO,Communication Services,2018-03-19
+txn,TXN,Information Technology,2017-01-01
+txt,TXT,Industrials,2017-01-01
+tyl,TYL,Information Technology,2020-06-22
+ual,UAL,Industrials,2017-01-01
+udr,UDR,Real Estate,2017-01-01
+uhs,UHS,Health Care,2017-01-01
+ulta,ULTA,Consumer Discretionary,2017-01-01
+unp,UNP,Industrials,2017-01-01
+ups,UPS,Industrials,2017-01-01
+uri,URI,Industrials,2017-01-01
+usb,USB,Financials,2017-01-01
+vlo,VLO,Energy,2017-01-01
+vmc,VMC,Materials,2017-01-01
+vmrk,VMRK,Real Estate,2017-01-01
+vrsk,VRSK,Industrials,2017-01-01
+vrsn,VRSN,Information Technology,2017-01-01
+vrtx,VRTX,Health Care,2017-01-01
+vtr,VTR,Real Estate,2017-01-01
+vtrs,VTRS,Health Care,2017-01-01
+vz,VZ,Communication Services,2017-01-01
+wab,WAB,Industrials,2019-02-27
+wat,WAT,Health Care,2017-01-01
+wdc,WDC,Information Technology,2017-01-01
+wec,WEC,Utilities,2017-01-01
+well,WELL,Real Estate,2017-01-01
+wm,WM,Industrials,2017-01-01
+wmb,WMB,Energy,2017-01-01
+wrb,WRB,Financials,2019-12-05
+wst,WST,Health Care,2020-05-22
+wtw,WTW,Financials,2017-01-01
+wy,WY,Real Estate,2017-01-01
+wynn,WYNN,Consumer Discretionary,2017-01-01
+xel,XEL,Utilities,2017-01-01
+xyl,XYL,Industrials,2017-01-01
+yum,YUM,Consumer Discretionary,2017-01-01
+zbh,ZBH,Health Care,2017-01-01
+zbra,ZBRA,Information Technology,2019-12-23
+zts,ZTS,Health Care,2017-01-01

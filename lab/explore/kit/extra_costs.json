@@ -4196,5 +4196,42 @@
   "positions": 6,
   "usd_per_eur": 1.15,
   "note": "kit v2.1 fix (V21-2): the notional of one trade at which the minimum commission per order is MODELLED: the charter's largest account (5,000 EUR) split over its 6 positions, at the market's leverage, in USD at 1.15 USD per EUR (judge.EUR_PER): 4,791.67 USD for a share at 1:5. The most favourable size the charter allows (a smaller account pays more: judge.sizing reports the extra cost at the 1,000 EUR account)."
+ },
+ "_classes": {
+  "us_shares_d1": {
+   "doc": "Kit v2.2 (2026-11-18): ONE cost class for every share of kit/universe_us.csv (the S&P 500 list minus the lab's 40, keyed by the universe file's 'key'), on DAILY bars (one bar a session: open 09:30 New York, close known at 16:00, 13:00 on half days). PROVISIONAL and heavier than the lab's 40 measured shares on purpose (lead/DIRECTION3.md); the open spread raised from the lead's 25 bp to 56 bp by the v2.2 review (V22-1, README 'Kit v2.2').",
+   "universe_file": "universe_us.csv",
+   "dividends_file": "universe_us_dividends.csv",
+   "splits_file": "universe_us_splits.csv",
+   "bar": "session",
+   "min_day_bars": 1,
+   "shape": "flat",
+   "spread_bps_open": 56.0,
+   "spread_bps_close": 12.0,
+   "commission_per_unit": 0.03,
+   "min_commission_per_side": 2.0,
+   "slip_mkt_bps": 1.0,
+   "slip_stop_bps": 2.0,
+   "swap_long": 0.07,
+   "swap_short": 0.03,
+   "swap_triple": "Fri",
+   "units_per_lot": 1,
+   "min_lot": 1,
+   "lot_step": 1,
+   "leverage": 5,
+   "quote": "USD",
+   "dividends_checked_to": "2021-12-31",
+   "dividend_credit_long": 0.7,
+   "splits_checked_to": "2021-12-31",
+   "price_is": "mid",
+   "provisional": true,
+   "source": {
+    "spread": "close: lead/DIRECTION3.md (2026-11-18), 12 bp of the price for an order at a bar's close, above the lab's 40 measured shares (kit model at the 15:00 bar's close 2017-2021: per-share medians P90 7.3 bp, max 21.2). Open: 56 bp, set by the kit v2.2 review (V22-1) in place of the lead's 25 bp, which was LIGHTER than the kit's own model of the 40 at the 09:30 first minute (2017-2021 per-share medians: median 36.8 bp, P75 46.9, P90 62.7, max 83.1 (orcl); the 40's median by year at most 46.6 bp, 2020): 56 bp is the smallest whole figure at or above their P75 and their worst year's median whose stress (x1.5 = 84 bp) covers the costliest of the 40; the universe's shares are smaller than the 40 (pessimistic side, a cost figure that is the lead's to confirm in MetaTrader). Flat over the week (one bar a session: no hour-of-week shape). Script: scratch kit_v22/fix/s/open_spread40.py",
+    "commission": "as the 40 shares (kit v2.1 fix, V21-2/V21-8): max(0.03 USD a share, 2 USD an order) per side at the stake notional costs.trade_notional = 4,791.67 USD; the share count from the price UNADJUSTED for the 2016-2021 splits of universe_us_splits.csv (Yahoo's levels carry every split to today; later splits are not known: README 'Kit v2.2')",
+    "slippage_swaps_lots": "the lab's STOCK_SPEC (lab/r2/tracks/stocks/transfer.py), as the 40 shares: 1 bp market, 2 bp stop, 7 % long / 3 % short a year (360 days, credits ignored), triple Friday, 1 share a lot, 1:5",
+    "dividends": "universe_us_dividends.csv: dividend / previous close of Yahoo's chart events (scout/prices_d1.py, ~/explore_data/d1/dividends.csv, 2016-2021; one row dropped: dhr 2016-07-05, Yahoo's record of the Fortive spin-off on a split day, the price did not drop by it); a short open at the ex-date's open pays it, a long is credited 70 % (costs.dividends, as the 40 shares)",
+    "prices": "Yahoo chart API daily quote prices (scout/prices_d1.py): adjusted for EVERY split up to the download (2026-11-18), splits after 2021 included; NOT adjusted for dividends. The kit never adjusts them again"
+   }
+  }
  }
 }

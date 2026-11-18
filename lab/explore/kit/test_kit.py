@@ -2,7 +2,8 @@
     PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py          (all offline tests)
     PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py --net    (+ one month of each source, decoded)
     PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py --net-venues   (+ the three crypto venues only)
-    PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py --real-bars    (+ oil and the 40 shares' prepared bars)
+    PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py --real-bars    (+ oil and the 40 shares' prepared bars,
+                                                                                   and the universe's daily bars, kit v2.2)
 """
 import io
 import json
@@ -3056,6 +3057,872 @@ def test_v21_review3_fixes():
     _try("R3-8: an inner data.asof(t2) with t2 after the outer cut keeps the outer cut", r38)
 
 
+# ------------------------------------------------------------------ kit v2.2: generic US shares on daily bars
+D1C = XC["_classes"]["us_shares_d1"]
+NYZ = "America/New_York"
+
+
+def _d1_folder(name):
+    d = os.path.join(TMP, name)
+    os.makedirs(d, exist_ok=True)
+    os.makedirs(d + "_val", exist_ok=True)
+    return d
+
+
+def _write_d1(folder, key, df):
+    f = df.copy()
+    f.index.name = "time"
+    f.to_parquet(os.path.join(folder, f"{key}.parquet"))
+
+
+def _flat_d1(price=40.0, start="2016-01-01", end="2021-12-31", rng_=1.0):
+    """Flat daily session bars on the rule calendar (data.us_sessions): open = close = price, high - low = rng_."""
+    cal = data.us_sessions(start, end)
+    return pd.DataFrame({"open": price, "high": price + rng_ / 2, "low": price - rng_ / 2, "close": price,
+                         "volume": cal.minutes.to_numpy(float), "shares": 1e6}, index=pd.DatetimeIndex(cal.open_utc))
+
+
+def _d1cm(mid, adj=1.0):
+    """Hand commission per adjusted unit per side of the class: max(0.03 x adj, 2 USD x mid / stake notional)."""
+    st = XC["_stake"]
+    n = st["account_eur"] / st["positions"] * D1C["leverage"] * st["usd_per_eur"]
+    return max(D1C["commission_per_unit"] * adj, D1C["min_commission_per_side"] * mid / n)
+
+
+def _ny_open(day):
+    return pd.Timestamp(day + " 09:30").tz_localize(NYZ).tz_convert("UTC")
+
+
+def _ny_at(day, hm):
+    return pd.Timestamp(f"{day} {hm}").tz_localize(NYZ).tz_convert("UTC")
+
+
+def test_v22_universe_and_costs():
+    """Kit v2.2 A: the share universe is one cost class (no hand entries), its kit files hold no price, and every new
+    cost path by hand on flat daily bars of a real universe key (afl) read through data.load_bars: entry at the next
+    session's open with the 56 bp level, exit at an open N sessions later (56 bp) and at a close (12 bp), the per-share
+    commission at the price unadjusted for the 2018 2:1 split, the Friday triple swap and a holiday, the ex-dividend
+    date long and short, a stop hit inside a day, a stop gapped through at the open, stop and target in one bar."""
+    u = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "universe_us.csv"), dtype=str)
+    dv = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "universe_us_dividends.csv"), dtype=str)
+    spl = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "universe_us_splits.csv"), dtype=str)
+    keys = sorted(costs.UNIVERSE)
+    check("v2.2 A: the 382 shares of the universe file are markets of ONE cost class (us_shares_d1), keyed by the file's "
+          "key, none a key of fp_costs.json or extra_costs.json; SPEC (16) and EXTRA (41) unchanged; every share "
+          "provisional; the kit files hold public facts only (no price column, nothing dated 2022+)",
+          len(keys) == 382 and list(u.columns) == ["key", "ticker", "sector", "in_universe_from"] and
+          sorted(u.key) == keys and u.sector.nunique() == 11 and not set(keys) & (set(costs.SPEC) | set(costs.EXTRA))
+          and len(costs.SPEC) == 16 and len(costs.EXTRA) == 41 and
+          all(costs.market_class(k) == "us_shares_d1" and costs.is_provisional(k) for k in keys) and
+          costs.market_class("jpm") is None and costs.bar_kind("afl") == "session" and costs.bar_kind("jpm") == "hour"
+          and list(dv.columns) == ["key", "ex_date", "fraction"] and dv.ex_date.max() < "2022-01-01" and
+          list(spl.columns) == ["key", "date", "ratio"] and spl.date.max() < "2022-01-01" and
+          u.in_universe_from.max() < "2022-01-01" and costs.spec("afl")["sector"] == "Financials" and
+          costs.spec("afl")["commission_splits"] == {"2018-03-19": 2.0} and costs.min_day_bars("afl") == 1,
+          f"{len(keys)} shares, {u.sector.nunique()} sectors, {len(dv)} dividends, {len(spl)} splits")
+    d1 = _d1_folder("d1_costs")
+    b = _flat_d1(40.0, "2017-01-01", "2019-12-31")
+    b.loc[b.index < U("2018-05-01"), ["open", "high", "low", "close"]] -= 20.0       # 20 USD (Yahoo level) before May 2018
+    _write_d1(d1, "afl", b)
+    os.environ["EXPLORE_D1_DIR"] = d1
+    out = {}
+    try:
+        data.lock()
+        ab = data.load_bars("afl")
+        bk = sim.Book(ab, "afl")
+        sm, ss = 1e-4, 2e-4
+        so, sc = D1C["spread_bps_open"] * 1e-4, D1C["spread_bps_close"] * 1e-4    # spread at an open (the session's:
+        # 56 bp since kit v2.2 fix V22-1, was 25) and at a close (12 bp)
+        f_div = float(dv[(dv.key == "afl") & (dv.ex_date == "2019-05-21")].fraction.iloc[0])
+        P = 40.0
+        c = _d1cm(P)                                            # 2019: after the split, 0.03 USD a share binds
+        # (1) long and short, signal at Friday 2019-05-17's close, in at Monday's open, out 2 sessions later (Wednesday
+        # open), across the ex-date Tuesday 2019-05-21: 2 nights
+        sig = pd.DataFrame({"known_at": [_ny_at("2019-05-17", "16:00")] * 2, "side": [1, -1]})
+        t = sim.simulate(sig, bk, market="afl", exit=("sessions", 2), stop=("bps", 900), mode="every")
+        fl = (P + so * P / 2 + c) * (1 + sm); xl = (P - so * P / 2 - c) * (1 - sm)
+        swl = D1C["swap_long"] / 360 * fl * 2 - 0.7 * f_div * fl
+        fs = (P - so * P / 2 - c) * (1 - sm); xs = (P + so * P / 2 + c) * (1 + sm)
+        sws = D1C["swap_short"] / 360 * fs * 2 + f_div * fs
+        want = {1: (fl, xl, (xl - fl - swl) / fl * 1e4, swl / fl * 1e4), -1: (fs, xs, (fs - xs - sws) / fs * 1e4, sws / fs * 1e4)}
+        ok1 = len(t) == 2 and all(
+            abs(r.entry_px - want[r.side][0]) < 1e-10 and abs(r.exit_px - want[r.side][1]) < 1e-10 and
+            abs(r.net_bp - want[r.side][2]) < 1e-8 and abs(r.swap_bp - want[r.side][3]) < 1e-8 and r.reason == "time" and
+            r.entry_time == _ny_open("2019-05-20") and r.exit_time == _ny_open("2019-05-22") and r.hold_tdays == 2
+            for r in t.itertuples())
+        rt = costs.round_trip("afl", 1, P, P, _ny_open("2019-05-20"), _ny_open("2019-05-22"))
+        ok1 &= abs(rt["cost"] - (fl - xl + swl)) < 1e-10 and abs(rt["commission_per_side"] - c) < 1e-15
+        out["(1)"] = f"long {t.net_bp[0]:.2f} bp, short {t.net_bp[1]:.2f} bp (dividend {f_div * 1e4:.1f} bp)"
+        check("v2.2 A1: a signal at a session's close enters at the NEXT session's open: spread 56 bp (half each side), "
+              "commission max(0.03 USD a share, 2 USD an order) on top, 1 bp slippage; out at the open 2 sessions later "
+              "(56 bp); swaps 7 % long / 3 % short x 2 nights; across the ex-date a short pays the dividend fraction x "
+              "its fill, a long is credited 70 % of it; costs.round_trip gives the same", ok1, out["(1)"])
+        # (2) across a Friday and a holiday (Memorial Day 2019-05-27): in Thursday 05-23, ('sessions', 2) out Tuesday
+        # 05-28 open: 5 nights (Thu 1, Fri 3, Mon 1), 2 sessions held; ('bdays', 2) = Monday 09:30, a holiday: done at
+        # Friday's close (12 bp) one session early, 1 night
+        sg = pd.DataFrame({"known_at": [_ny_at("2019-05-22", "16:00")], "side": [1]})
+        t2 = sim.simulate(sg, bk, market="afl", exit=("sessions", 2), stop=("bps", 900))
+        t3 = sim.simulate(sg, bk, market="afl", exit=("bdays", 2), stop=("bps", 900))
+        x3 = (P - sc * P / 2 - c) * (1 - sm)
+        ok2 = (t2.exit_time[0] == _ny_open("2019-05-28") and t2.hold_tdays[0] == 2 and
+               abs(t2.net_bp[0] - (xl - fl - D1C["swap_long"] / 360 * fl * 5) / fl * 1e4) < 1e-8 and
+               int(costs.swap_nights(pd.DatetimeIndex([t2.entry_time[0]]), pd.DatetimeIndex([t2.exit_time[0]]), "Fri")[0]) == 5
+               and t3.reason[0] == "time_close" and t3.exit_time[0] == _ny_at("2019-05-24", "16:00") and
+               abs(t3.exit_px[0] - x3) < 1e-10 and t3.hold_tdays[0] == 1 and
+               abs(t3.net_bp[0] - (x3 - fl - D1C["swap_long"] / 360 * fl * 1) / fl * 1e4) < 1e-8)
+        check("v2.2 A2: across Friday and a holiday: ('sessions', 2) leaves at the open 2 SESSIONS later (Tuesday after "
+              "Memorial Day), 5 swap nights (Friday triple), hold 2 sessions; ('bdays', 2) falls on the holiday and is "
+              "done at the close before (one session early, the 12 bp close spread, 1 night)", ok2,
+              f"sessions: out {t2.exit_time[0]}, {t2.net_bp[0]:.2f} bp; bdays: out {t3.exit_time[0]} {t3.reason[0]}, "
+              f"{t3.net_bp[0]:.2f} bp")
+        # (3) exit at a close: ('session_close', 0) the entry session's own close, ('session_close', 1) the next one
+        t4 = sim.simulate(pd.concat([sg, sg]).assign(side=[1, -1]), bk, market="afl", exit=("session_close", 0),
+                          stop=("bps", 900), mode="every")
+        t5 = sim.simulate(sg, bk, market="afl", exit=("session_close", 1), stop=("bps", 900))
+        xc_s = (P + sc * P / 2 + c) * (1 + sm)
+        ok3 = (list(t4.reason) == ["session_close"] * 2 and all(t4.exit_time == _ny_at("2019-05-23", "16:00")) and
+               abs(t4.net_bp[0] - (x3 - fl) / fl * 1e4) < 1e-8 and abs(t4.net_bp[1] - (fs - xc_s) / fs * 1e4) < 1e-8 and
+               (t4.hold_tdays == 0).all() and t5.exit_time[0] == _ny_at("2019-05-24", "16:00") and t5.hold_tdays[0] == 1
+               and abs(t5.net_bp[0] - (x3 - fl - D1C["swap_long"] / 360 * fl * 1) / fl * 1e4) < 1e-8)
+        check("v2.2 A3: an exit at a close (('session_close', N): the close of the session N sessions after the entry's) "
+              "pays the 12 bp close spread, no night for the same session, 1 night for the next", ok3,
+              f"same-day long {t4.net_bp[0]:.2f} bp, short {t4.net_bp[1]:.2f} bp; next day {t5.net_bp[0]:.2f} bp")
+        # (4) stops: entry Monday 2019-06-10 (signal Friday 06-07's close), D20 = 1.0 (flat ranges), stop 1.5 x D20
+        bb = b.copy()
+        d_in, d_hit = _ny_open("2019-06-11"), _ny_open("2019-06-18")
+        bb.loc[d_in, "low"] = 37.0                               # Tuesday: touched inside the day
+        bb.loc[d_hit, ["open", "high", "low", "close"]] = [37.0, 37.5, 36.5, 37.2]   # Tuesday 06-18: opens beyond the stop
+        bb.loc[_ny_open("2019-06-25"), ["high", "low"]] = [45.0, 35.0]                # stop and target in one bar
+        _write_d1(d1, "afl", bb)
+        bk2 = sim.Book(data.load_bars("afl"), "afl")
+        sa = pd.DataFrame({"known_at": [_ny_at("2019-06-07", "16:00")], "side": [1]})
+        t6 = sim.simulate(sa, bk2, market="afl", exit=("sessions", 5), stop=("d20", 1.5))
+        st6 = fl - 1.5
+        b_wed = (37.0 - so * 37.0 / 2 - _d1cm(37.0)) * (1 - ss)
+        t7 = sim.simulate(pd.DataFrame({"known_at": [_ny_at("2019-06-11", "08:00")], "side": [1]}), bk2, market="afl",
+                          exit=("sessions", 5), stop=("d20", 1.0))    # known before the open: in at Tuesday's open
+        t8 = sim.simulate(pd.DataFrame({"known_at": [_ny_at("2019-06-21", "16:00")], "side": [1]}), bk2, market="afl",
+                          exit=("sessions", 5), stop=("d20", 1.5), target=("d20", 2.0))
+        ok4 = (t6.reason[0] == "stop" and abs(t6.d20[0] - 1.0) < 1e-12 and abs(t6.exit_px[0] - st6 * (1 - ss)) < 1e-10
+               and t6.exit_time[0] == _ny_at("2019-06-11", "16:00") and t6.hold_tdays[0] == 1 and
+               t7.reason[0] == "stop" and t7.exit_time[0] == _ny_at("2019-06-11", "16:00") and
+               abs(t7.exit_px[0] - (fl - 1.0) * (1 - ss)) < 1e-10)
+        t9 = sim.simulate(pd.DataFrame({"known_at": [_ny_at("2019-06-14", "16:00")], "side": [1]}), bk2, market="afl",
+                          exit=("sessions", 5), stop=("d20", 1.5))
+        ok4 &= (t9.reason[0] == "stop_gap" and abs(t9.exit_px[0] - b_wed) < 1e-10 and
+                t9.exit_time[0] == _ny_at("2019-06-18", "16:00") and abs(t9.d20[0] - (19 * 1.0 + 3.5) / 20) < 1e-12)
+        ok4 &= t8.reason[0] == "stop" and t8.exit_time[0] == _ny_at("2019-06-25", "16:00")
+        check("v2.2 A4: a stop is checked on the day's high and low (from the entry session on): touched inside a day it "
+              "fills at the stop level minus 2 bp, at the session's close time; a session opening beyond it fills at its "
+              "(bid) open minus 2 bp ('stop_gap'); stop and target touched in one bar: the stop", ok4,
+              f"inside {t6.exit_px[0]:.4f} (stop {st6:.4f}); gap {t9.exit_px[0]:.4f}; both {t8.reason[0]}")
+        # (5) the per-share commission on split-adjusted prices: afl's 2:1 split of 2018-03-19; Yahoo's 20 USD of
+        # February 2018 was 40 USD traded then, so a real share is 2 adjusted units: 0.015 USD per adjusted unit; after
+        # the split 0.03; at 100 USD (Yahoo) the 2 USD minimum binds whatever the share count
+        _write_d1(d1, "afl", b)
+        bk3 = sim.Book(data.load_bars("afl"), "afl")
+        s5 = pd.DataFrame({"known_at": [_ny_at("2018-02-14", "16:00"), _ny_at("2018-04-10", "16:00")], "side": [1, 1]})
+        t10 = sim.simulate(s5, bk3, market="afl", exit=("sessions", 1), stop=("bps", 900), mode="every")
+        f_a = (20 + so * 20 / 2 + 0.015) * (1 + sm)
+        f_b = (20 + so * 20 / 2 + 0.03) * (1 + sm)
+        hi = costs.commission("afl", float(data.price_factor("afl", pd.DatetimeIndex([U("2018-02-15 14:30")]))[0]), 100.0)
+        ok5 = (abs(t10.entry_px[0] - f_a) < 1e-10 and abs(t10.entry_px[1] - f_b) < 1e-10 and
+               abs(_d1cm(20.0, 0.5) - 0.015) < 1e-15 and abs(float(hi) - 2 * 100 / costs.trade_notional("afl")) < 1e-15 and
+               abs(float(data.price_factor("afl", pd.DatetimeIndex([U("2018-03-16 14:30")]))[0]) - 0.5) < 1e-15 and
+               float(data.price_factor("afl", pd.DatetimeIndex([U("2018-03-19 13:30")]))[0]) == 1.0)
+        check("v2.2 A5: the per-share commission at the price traded then: before afl's 2:1 split (2018-03-19) a Yahoo "
+              "price of 20 USD is 40 USD a real share, so 0.03 USD per real share = 0.015 per adjusted unit; 0.03 after it; "
+              "the 2 USD minimum (at 100 USD: 4.17 bp a side) does not depend on the share count", ok5,
+              f"fills {t10.entry_px[0]:.5f} / {t10.entry_px[1]:.5f}; minimum at 100 USD {float(hi):.5f}")
+        # (6) stress and gross of one trade: spread, commission and slippage x1.5, swaps and dividends unchanged; gross 0
+        r_s = costs.round_trip("afl", 1, P, P, _ny_open("2019-05-20"), _ny_open("2019-05-22"), scenario="stress")
+        fl15 = (P + 1.5 * so * P / 2 + 1.5 * c) * (1 + 1.5 * sm); xl15 = (P - 1.5 * so * P / 2 - 1.5 * c) * (1 - 1.5 * sm)
+        sw15 = D1C["swap_long"] / 360 * fl15 * 2 - 0.7 * f_div * fl15
+        check("v2.2 A6: stress x1.5 (spread, commission, slippage; swaps and dividends as net) and gross 0 for the class",
+              abs(r_s["cost"] - (fl15 - xl15 + sw15)) < 1e-10 and abs(t.stress_bp[0] - (xl15 - fl15 - sw15) / fl15 * 1e4) < 1e-8
+              and t.gross_bp[0] == 0.0 and costs.round_trip("afl", 1, P, P, _ny_open("2019-05-20"), _ny_open("2019-05-22"),
+                                                           scenario="gross")["cost"] == 0.0,
+              f"stress {t.stress_bp[0]:.2f} bp")
+        rt_bp = costs.round_trip("afl", 1, P, P, _ny_open("2019-07-09"), _ny_open("2019-07-10"))["cost_bp"]
+        NUMBERS["d1_round_trip_bp_afl_40usd_1night"] = round(rt_bp, 2)
+    finally:
+        os.environ.pop("EXPLORE_D1_DIR", None)
+        data.lock()
+
+
+def test_v22_daily_data_and_sessions():
+    """Kit v2.2 A: data.load_bars of a universe share (prepared daily file, period lock, no row before in_universe_from,
+    known_at = the session's close, 13:00 on a half day, validation years refused until the splits are listed, a clear
+    error for a missing file); D20 of 20 sessions; the exchange calendar by rule; ('sessions', N) on the hourly share
+    bars (same clock N sessions later, holidays skipped); hours and clock exits refused on daily bars."""
+    d1 = _d1_folder("d1_data")
+    f = _flat_d1(30.0, "2016-01-01", "2021-12-31")
+    extra = pd.DataFrame({"open": 30.0, "high": 30.5, "low": 29.5, "close": 30.0, "volume": 390.0, "shares": 1e6},
+                         index=pd.DatetimeIndex([_ny_open("2022-01-03"), _ny_open("2022-01-04")]))
+    _write_d1(d1, "amcr", pd.concat([f, extra]))                 # holds 2022 rows on purpose
+    fv = pd.concat([extra, pd.DataFrame({"open": 30.0, "high": 30.5, "low": 29.5, "close": 30.0, "volume": 390.0,
+                                         "shares": 1e6}, index=pd.DatetimeIndex([_ny_open("2026-01-05")]))])
+    _write_d1(d1 + "_val", "amcr", fv)
+    os.environ["EXPLORE_D1_DIR"] = d1
+    real = data.http_get
+
+    def no_net(url, **kw):
+        raise AssertionError("a daily share made a request: " + url)
+    data.http_get = no_net
+    try:
+        data.lock()
+        a = data.load_bars("amcr")
+        ny = a.index.tz_convert(NYZ)
+        half = a[a.volume == 210]
+        ok = (a.index.min() == _ny_open("2019-06-07") and a.index.max() < U("2022-01-01") and
+              (ny.hour * 60 + ny.minute == 570).all() and a.attrs["bar"] == "session" and a.attrs["price_is"] == "mid" and
+              a.attrs["in_universe_from"] == "2019-06-07" and "known_at" in a and
+              (pd.DatetimeIndex(a.known_at).tz_convert(NYZ).hour[a.volume == 390] == 16).all() and
+              (pd.DatetimeIndex(half.known_at).tz_convert(NYZ).hour == 13).all() and len(half) > 0 and
+              _ny_at("2019-11-29", "13:00") in set(pd.DatetimeIndex(half.known_at)))
+        check("v2.2 A7: data.load_bars(universe key) reads the prepared daily file with no request, < 2022 while locked, "
+              "no bar before the share's in_universe_from (amcr: 2019-06-07; the 2016-2019 rows are cut, not returned "
+              "as history); index = 09:30 New York, known_at = 16:00 (13:00 on a half day: 2019-11-29)", ok,
+              f"{len(a)} bars from {a.index.min()}, {len(half)} half days")
+        bk = sim.Book(a, "amcr")
+        s20 = pd.DataFrame({"known_at": pd.DatetimeIndex(a.known_at.iloc[[18, 19, 20]]), "side": [1, 1, 1]})
+        tt = sim.simulate(s20, bk, market="amcr", exit=("sessions", 1), stop=("d20", 1.0), mode="every")
+        cnt = tt.attrs["counts"]["amcr"]
+        check("v2.2 A8: D20 = the mean daily range of the 20 sessions before the entry bar: none for the first 20 "
+              "sessions after inclusion (the signal is dropped and counted as no_d20), 1.0 on flat bars after",
+              cnt["no_d20"] == 1 and len(tt) == 2 and abs(tt.d20.iloc[0] - 1.0) < 1e-12 and
+              tt.entry_time.iloc[0] == a.index[20], json.dumps(cnt))
+        errs = []
+        try:
+            data.load_bars("aes")
+            errs.append("no error")
+        except FileNotFoundError as e:
+            errs.append("ok" if "universe" in str(e) and "aes.parquet" in str(e) else str(e)[:80])
+        bad = f.copy()
+        bad.index = bad.index + pd.Timedelta(minutes=30)
+        _write_d1(d1, "aee", bad)
+        try:
+            data.load_bars("aee")
+            errs.append("no error")
+        except data.DataGap:
+            errs.append("ok")
+        try:
+            sim.simulate(s20, bk, market="amcr", exit=("hours", 6), stop=("d20", 1.0))
+            errs.append("hours accepted")
+        except ValueError as e:
+            errs.append("ok" if "sessions" in str(e) else str(e)[:80])
+        try:
+            sim.simulate(s20, bk, market="amcr", exit=sim.event_exit(pd.DatetimeIndex([], tz="UTC"), ("hours", 30)),
+                         stop=("d20", 1.0))
+            errs.append("event hours accepted")
+        except ValueError:
+            errs.append("ok")
+        idea = os.path.join(TMP, "ideas", "980_d1val")
+        os.makedirs(idea, exist_ok=True)
+        json.dump(VALDECL, open(os.path.join(idea, "val_declared.json"), "w"))
+        json.dump({"verdict": "pass"}, open(os.path.join(idea, "results.json"), "w"))
+        data.unlock_val(idea)
+        try:
+            data.load_bars("amcr")
+            errs.append("validation read accepted")
+        except data.PeriodError:
+            errs.append("ok")
+        data.lock()
+        check("v2.2 A9: a missing daily file raises FileNotFoundError naming it; a bar not at 09:30 New York raises "
+              "DataGap; ('hours', N) and an event max_hold in hours are refused on daily bars; after unlock_val a daily "
+              "share is refused (PeriodError) until the 2022-2025 splits and dividends are listed", errs == ["ok"] * 5,
+              str(errs))
+        cal = data.us_sessions("2016-01-01", "2023-06-30")
+        hd = [str(x.date()) for x in cal.index[cal.half_day]]
+        want_hd = ["2016-11-25", "2017-07-03", "2017-11-24", "2018-07-03", "2018-11-23", "2018-12-24", "2019-07-03",
+                   "2019-11-29", "2019-12-24", "2020-11-27", "2020-12-24", "2021-11-26"]
+        dts = set(cal.index)
+        check("v2.2 C: data.us_sessions, the exchange calendar by rule: 1,511 sessions in 2016-2021 (as the daily bars), "
+              "the 12 half days at 13:00, Good Friday, the 2018-12-05 closure and observed holidays out, nothing at or "
+              "after the period end while locked",
+              len(cal) == 1511 and hd == want_hd and cal.index.max() <= pd.Timestamp("2021-12-31") and
+              pd.Timestamp("2018-12-05") not in dts and pd.Timestamp("2019-04-19") not in dts and
+              pd.Timestamp("2021-12-24") not in dts and pd.Timestamp("2021-12-31") in dts and
+              pd.Timestamp("2017-01-02") not in dts and pd.Timestamp("2020-07-03") not in dts and
+              (cal.close_utc - cal.open_utc).max() == pd.Timedelta(minutes=390),
+              f"{len(cal)} sessions, half days {hd}")
+    finally:
+        data.http_get = real
+        os.environ.pop("EXPLORE_D1_DIR", None)
+        data.lock()
+    # ('sessions', N) on the hourly share bars of the lab's 40: same clock N sessions later, by the market's own days
+    jb = flat_share(150.0, "2019-05-01", "2019-08-01")
+    jb = jb[jb.index.tz_convert(NYZ).normalize().tz_localize(None) != pd.Timestamp("2019-07-04")]
+    jb = jb[~((jb.index.tz_convert(NYZ).normalize().tz_localize(None) == pd.Timestamp("2019-07-03")) &
+              (jb.index.tz_convert(NYZ).hour >= 13))]                                   # the 13:00 half day
+    bkj = sim.Book(jb, "jpm")
+    sj = pd.DataFrame({"known_at": [_ny_at("2019-07-02", "10:00"), _ny_at("2019-07-02", "14:00")], "side": [1, 1]})
+    ts = sim.simulate(sj, bkj, market="jpm", exit=("sessions", 2), stop=("bps", 500), mode="every")
+    tb = sim.simulate(sj, bkj, market="jpm", exit=("bdays", 2), stop=("bps", 500), mode="every")
+    t1 = sim.simulate(sj, bkj, market="jpm", exit=("sessions", 1), stop=("bps", 500), mode="every")
+    check("v2.2 A10: ('sessions', N) on hourly share bars: the same clock time N of the market's own sessions later "
+          "(Tuesday 10:00 + 2 sessions = Friday 10:00 over the 4 July holiday; 14:00 + 1 session on the 13:00 half day "
+          "falls to the close of its last bar, 13:00), hold = sessions; ('bdays', 2) unchanged (the holiday: the close "
+          "before, hold in business days)",
+          list(ts.exit_time) == [_ny_at("2019-07-05", "10:00"), _ny_at("2019-07-05", "14:00")] and
+          list(ts.hold_tdays) == [2, 2] and list(t1.exit_time) == [_ny_at("2019-07-03", "10:00"),
+                                                                   _ny_at("2019-07-03", "13:00")] and
+          list(t1.reason) == ["time", "time_close"] and
+          list(tb.exit_time) == [_ny_at("2019-07-03", "13:00"), _ny_at("2019-07-03", "13:00")] and
+          list(tb.reason) == ["time_close", "time_close"] and ts.attrs["hold_count"] == "sessions" and
+          tb.attrs["hold_count"] == "bdays",
+          f"sessions {[str(x) for x in ts.exit_time]}; bdays {[str(x) for x in tb.exit_time]}")
+
+
+def test_v22_daily_traps():
+    """Kit v2.2 A traps: on daily bars a signal stamped at the session's OPEN but computed from its close is caught by
+    the truncation test given row_len='known_at' (the row length a run must pass); a shorter row length is refused;
+    a rule on Yahoo's price level or on the raw share count fails (the levels carry later splits), a rule on ratios or
+    on the dollar volume passes, also on a long frame of several shares."""
+    d1 = _d1_folder("d1_traps")
+    keys = ["aes", "aee", "aep"]
+    for i, k in enumerate(keys):
+        _write_d1(d1, k, synth.d1_bars("2016-01-01", "2021-12-31", seed=300 + i, price=40.0 + 10 * i))
+    os.environ["EXPLORE_D1_DIR"] = d1
+    try:
+        data.lock()
+        bs = {k: data.load_bars(k) for k in keys}
+        b = bs["aes"]
+        bk = sim.Book(b, "aes")
+        KA = "known_at"
+
+        def bad(d):
+            x = d["aes"]
+            return pd.DataFrame({"known_at": x.index, "side": np.sign(x.close - x.open).replace(0, 1).astype(int).to_numpy()})
+
+        def good(d):
+            x = d["aes"]
+            return pd.DataFrame({"known_at": pd.DatetimeIndex(x[KA]),
+                                 "side": np.sign(x.close - x.open).replace(0, 1).astype(int).to_numpy()})
+        tb = checks.truncation_test(bad, {"aes": b}, row_len={"aes": "known_at"})
+        tg = checks.truncation_test(good, {"aes": b}, row_len={"aes": "known_at"})
+        rb = sim.simulate(bad({"aes": b}).assign(market="aes"), {"aes": bk}, exit=("sessions", 1), stop=("d20", 2.0))
+        rg = sim.simulate(good({"aes": b}).assign(market="aes"), {"aes": bk}, exit=("sessions", 1), stop=("d20", 2.0))
+        refused = []
+        for rl in (pd.Timedelta(hours=1), pd.Timedelta(0), pd.Timedelta(hours=6)):
+            try:
+                checks.truncation_test(good, {"aes": b}, row_len={"aes": rl})
+                refused.append(False)
+            except ValueError:
+                refused.append(True)
+        long_ok = checks.truncation_test(good, {"aes": b}, row_len={"aes": pd.Timedelta(hours=6, minutes=30)})["pass"]
+        check("v2.2 A trap: a daily signal stamped at the session's open (09:30) but computed from its close is caught by "
+              "the truncation test with row_len='known_at'; stamped at the close (known_at) it passes and has no edge; "
+              "a row_len of 1 h, 0 or 6 h is refused for daily bars (6.5 h is accepted)",
+              not tb["pass"] and tg["pass"] and stats.t_stat(rb.R_gross) > 10 and abs(stats.t_stat(rg.R_gross)) < 3.5 and
+              all(refused) and long_ok,
+              f"t gross bad {stats.t_stat(rb.R_gross):.1f}, good {stats.t_stat(rg.R_gross):.2f}; failed cuts bad "
+              f"{tb['n_failed_cuts']}/{len(tb['cuts'])}")
+        lv = float(b.close.median())
+        sh = float(b.shares.median())
+        dv = float((b.close * b.shares).median())
+
+        def mk(rule):
+            def f_(d):
+                x = d["aes"]
+                m = rule(x).to_numpy()
+                return pd.DataFrame({"known_at": pd.DatetimeIndex(x[KA])[m], "side": 1})
+            return f_
+        rlev = checks.truncation_test(mk(lambda x: (x.close > lv) & (x.close.shift() <= lv)), {"aes": b},
+                                      row_len={"aes": "known_at"}, n_signal_cuts=30, n_random_cuts=30)
+        rsh = checks.truncation_test(mk(lambda x: x.shares > sh), {"aes": b}, row_len={"aes": "known_at"},
+                                     n_signal_cuts=30, n_random_cuts=30)
+        rdv = checks.truncation_test(mk(lambda x: x.close * x.shares > dv), {"aes": b}, row_len={"aes": "known_at"})
+        rrt = checks.truncation_test(mk(lambda x: (x.close / x.close.shift() - 1).abs() > 0.02), {"aes": b},
+                                     row_len={"aes": "known_at"})
+        lb = data.long_bars(bs)
+
+        def lgood(d):
+            x = d["all"]
+            r = x.groupby("market").close.pct_change()
+            m = (r.abs() > 0.02).to_numpy()
+            return pd.DataFrame({"known_at": pd.DatetimeIndex(x[KA])[m], "side": 1, "market": x.market.to_numpy()[m]})
+
+        def llev(d):
+            x = d["all"]
+            m = (x.close > 45.0).to_numpy()
+            return pd.DataFrame({"known_at": pd.DatetimeIndex(x[KA])[m], "side": 1, "market": x.market.to_numpy()[m]})
+        rl1 = checks.truncation_test(lgood, {"all": lb}, row_len={"all": "known_at"})
+        rl2 = checks.truncation_test(llev, {"all": lb}, row_len={"all": "known_at"}, n_signal_cuts=30, n_random_cuts=30)
+        try:
+            checks.truncation_test(lgood, {"all": lb}, row_len={"all": pd.Timedelta(hours=1)})
+            lref = False
+        except ValueError:
+            lref = True
+        check("v2.2 A trap: Yahoo's levels carry later splits, so the truncation test re-bases every cut copy of daily "
+              "share bars (prices x 2, shares / 2): a rule on the price level or on the raw share count fails; a rule "
+              "on ratios and one on the dollar volume (close x shares) pass; the same on a long frame of 3 shares "
+              "(data.long_bars), whose row_len must also be 'known_at'",
+              not rlev["pass"] and not rsh["pass"] and rdv["pass"] and rrt["pass"] and rl1["pass"] and not rl2["pass"]
+              and lref and rrt["n_signals"] > 50 and rl1["n_signals"] > 150,
+              f"level {rlev['n_failed_cuts']} failed cuts, shares {rsh['n_failed_cuts']}, dollar volume "
+              f"{rdv['n_failed_cuts']}, ratio {rrt['n_failed_cuts']}; long frame ratio {rl1['n_failed_cuts']}, level "
+              f"{rl2['n_failed_cuts']}")
+    finally:
+        os.environ.pop("EXPLORE_D1_DIR", None)
+        data.lock()
+
+
+def _d1_world(folder, edge, seed, per_sector=4, p_event=0.06, hold=5):
+    """Synthetic daily world of 4 shares per sector (44 > 40 markets, 11 groups): each share gets random event days
+    (known at that session's close, value +1/-1: a calendar like the 8-K one) and, when edge > 0, a planted drift of
+    edge x value per session on the next `hold` sessions. Files written to `folder` (data.load_bars reads them)."""
+    u = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "universe_us.csv"), dtype=str)
+    keys = sorted(u.groupby("sector").key.apply(lambda s: list(s[:per_sector])).sum())
+    rng = np.random.default_rng(seed)
+    cal = data.us_sessions("2016-01-01", "2021-12-31")
+    days = cal.index
+    ev_d, ev_k, ev_v = [], [], []
+    for i, k in enumerate(keys):
+        t0 = pd.Timestamp(costs.spec(k)["in_universe_from"])
+        on = (rng.random(len(days)) < p_event) & (days >= t0) & (np.arange(len(days)) < len(days) - hold - 1)
+        v = rng.choice([-1, 1], len(days))
+        drift = np.zeros(len(days))
+        for p in np.flatnonzero(on):
+            drift[p + 1:p + 1 + hold] += edge * v[p]
+        _write_d1(folder, k, synth.d1_bars("2016-01-01", "2021-12-31", seed=seed * 1000 + i, price=30.0 + i,
+                                           drift_d=drift))
+        ev_d += list(days[on]); ev_k += [k] * int(on.sum()); ev_v += list(v[on])
+    ev = data.event_table(pd.DatetimeIndex(ev_d), known=data.rule_local_close("16:00"), min_lag=pd.Timedelta(hours=16),
+                          market=ev_k, value=np.asarray(ev_v, float))
+    return keys, ev
+
+
+def _d1_build(d):
+    """The whole signal table of the planted world: an event of a share, confirmed by its session's close-to-close move
+    in the event's direction (a ratio of the bars), known at the event's known_at (the session's close)."""
+    x, ev = d["bars"], d["events"]
+    r = x.groupby("market").close.pct_change()
+    day = pd.DatetimeIndex(x.index).tz_convert(NYZ).normalize().tz_localize(None)
+    bt = pd.DataFrame({"market": x.market.to_numpy(), "day": day, "r": r.to_numpy()})
+    e = pd.DataFrame({"market": ev.market.to_numpy(), "day": pd.DatetimeIndex(ev.obs_date), "known_at": ev.index,
+                      "v": ev.value.to_numpy()})
+    m = e.merge(bt, on=["market", "day"], how="inner")
+    m = m[np.sign(m.r.to_numpy()) == m.v.to_numpy()]
+    return pd.DataFrame({"known_at": pd.DatetimeIndex(m.known_at), "side": m.v.astype(int).to_numpy(),
+                         "market": m.market.to_numpy()}).sort_values(["known_at", "market"]).reset_index(drop=True)
+
+
+def _d1_chain(idea, folder, edge, seed, decl, ledger):
+    keys, ev = _d1_world(folder, edge, seed)
+    os.environ["EXPLORE_D1_DIR"] = folder
+    bs = {k: data.load_bars(k) for k in keys}
+    d = {"bars": data.long_bars(bs), "events": ev}
+    tr = checks.truncation_test(_d1_build, d, row_len={"bars": "known_at", "events": pd.Timedelta(0)})
+    sig = _d1_build(d)
+    bk = sim.books(bs)
+    rule = dict(exit=("sessions", 5), stop=("d20", 2.0))
+    main = sim.simulate(sig, bk, **rule)
+    nb = {"s3": sim.simulate(sig, bk, exit=("sessions", 3), stop=("d20", 2.0)),
+          "s4": sim.simulate(sig, bk, exit=("sessions", 4), stop=("d20", 2.0)),
+          "k15": sim.simulate(sig, bk, exit=("sessions", 5), stop=("d20", 1.5)),
+          "k3": sim.simulate(sig, bk, exit=("sessions", 5), stop=("d20", 3.0))}
+    every = sim.simulate(sig, bk, mode="every", **rule)
+    nl = stats.null_test(main, bk, n_draws=2000, **rule)
+    _declare(idea, decl)
+    res = judge.verdict(idea, main, nb, every, nl, truncation=tr, corr="compute", ten=TEN, n_configs=5,
+                        data_desc="synthetic daily shares 2017-2021", ledger=ledger, groups="sector")
+    return res, main, nb, every, nl, tr, keys
+
+
+def test_v22_daily_noise():
+    """Kit v2.2: random-signal rules on synthetic daily share bars have no edge and the null stays calibrated (40
+    rules: random sessions and sides, exits of 1-5 sessions or at a close, stops 1-2 x D20; 1,000 draws each)."""
+    d1 = _d1_folder("d1_noise_null")
+    keys = ["aes", "aee", "aep", "awk"]
+    for i, k in enumerate(keys):
+        _write_d1(d1, k, synth.d1_bars("2016-01-01", "2021-12-31", seed=500 + i, price=35.0 + 5 * i))
+    os.environ["EXPLORE_D1_DIR"] = d1
+    tg, pct = [], []
+    try:
+        data.lock()
+        rng = np.random.default_rng(21)
+        for k in keys:
+            b = data.load_bars(k)
+            bk = {k: sim.Book(b, k)}
+            for r in range(10):
+                pick = rng.random(len(b)) < 0.25
+                sg = pd.DataFrame({"known_at": pd.DatetimeIndex(b.known_at)[pick], "side": rng.choice([-1, 1], int(pick.sum())),
+                                   "market": k})
+                ex = [("sessions", 1), ("sessions", 3), ("sessions", 5), ("session_close", 1)][r % 4]
+                rule = dict(exit=ex, stop=("d20", [1.0, 2.0][r % 2]))
+                m = sim.simulate(sg, bk, **rule)
+                tg.append(stats.t_stat(m.R_gross))
+                pct.append(stats.null_test(m, bk, n_draws=1000, seed=r, **rule)["percentile"])
+    finally:
+        os.environ.pop("EXPLORE_D1_DIR", None)
+        data.lock()
+    tg, pct = np.array(tg), np.array(pct)
+    NUMBERS["d1_noise"] = {"rules": len(tg), "t_gross_mean": float(tg.mean()), "t_gross_sd": float(tg.std()),
+                           "null_ge_97.5": int((pct >= 97.5).sum()), "null_mean": float(pct.mean()),
+                           "null_ks_p": float(st.kstest(pct / 100, "uniform").pvalue)}
+    check("v2.2 noise: 40 random-signal rules on synthetic daily share bars: gross t looks standard normal, the null's "
+          "percentile is uniform (KS) and reaches 97.5 in about 2.5 % of them",
+          abs(tg.mean()) < 0.5 and 0.6 < tg.std() < 1.5 and (pct >= 97.5).sum() <= 4 and
+          NUMBERS["d1_noise"]["null_ks_p"] > 0.001, json.dumps(NUMBERS["d1_noise"]))
+
+
+def test_v22_planted_chain_and_groups():
+    """Kit v2.2 A + B: the whole chain on SYNTHETIC daily bars of 44 universe shares in 11 sectors (declared.json with
+    groups 'sector', truncation test on the long bar frame and the event calendar, simulate ('sessions', 5), 4
+    neighbours, every-signal, the same-day null, verdict with groups, ledger_add on a COPY of LEDGER.md): a planted edge
+    is found, pure noise is not; the group bars replace the market bars above 40 markets; no declared groups, other
+    groups or fewer than 8 groups raise; 40 markets or fewer ignore groups; results.json is valid JSON."""
+    t0 = time.time()
+    led = os.path.join(TMP, "LEDGER_copy_v22.md")
+    shutil.copy(judge.LEDGER, led)
+    tot0 = judge.ledger_total(led)
+    decl = {"idea": "990 planted daily drift (synthetic)", "groups": "sector", "markets": "44 universe shares",
+            "configurations": 5}
+    try:
+        data.lock()
+        idea = os.path.join(TMP, "ideas", "990_d1_planted")
+        res, main, nb, every, nl, tr, keys = _d1_chain(idea, _d1_folder("d1_planted"), 0.003, 7, decl, led)
+        rj_txt = open(os.path.join(idea, "results.json")).read()
+
+        def _no_const(c):
+            raise ValueError(f"not JSON: {c}")
+        rj = json.loads(rj_txt, parse_constant=_no_const)
+        new = judge.ledger_add(5, res["ledger_line"], led)
+        tail = open(led).read().rstrip("\n").splitlines()[-1]
+        NUMBERS["d1_planted"] = {k: res["bars"][k]["value"] for k in res["bars"]}
+        NUMBERS["d1_planted"].update(n=len(main), seconds=round(time.time() - t0, 1),
+                                     groups=res["groups"]["n_groups"] if res.get("groups") else None)
+        check("v2.2 chain: a planted drift on synthetic daily bars of 44 shares (11 sectors) is found: every bar passes "
+              "with the group bars (groups_positive>=65%, max_group_share<=25%) instead of the market bars; the hold "
+              "bar counts 5 sessions; results.json (valid JSON) records the 11 groups; the ledger line names the class "
+              "and its count, not 44 tickers; ledger_add on a copy of LEDGER.md adds the 5 configurations",
+              res["verdict"] != "fail" and "groups_positive>=65%" in res["bars"] and "max_group_share<=25%" in res["bars"]
+              and not any(k.startswith("markets_positive") or k.startswith("max_market_share") for k in res["bars"]) and
+              res["bars"]["hold<=5d"]["value"] == 5 and rj["groups"]["n_groups"] == 11 and
+              rj["hold_count"] == "sessions" and "us_shares_d1 class (44 shares)" in res["ledger_line"] and
+              "PROVISIONAL COSTS (us_shares_d1 class (44 shares))" in res["ledger_line"] and
+              not any(f" {k}," in res["ledger_line"] for k in keys[:5]) and new == tot0 + 5 and tail == res["ledger_line"]
+              and tr["pass"] and tr["density_ok"] and nl["joint_groups"] > 0,
+              f"{res['verdict']} {res['failed_bars']}; {res['ledger_line'][:260]}")
+        check("V22-1/V22-2 (ledger): the line of a class basket gives the class's spreads (56 bp at the open, 12 bp at "
+              "a close) and says the per-share commission on Yahoo prices is pessimistic for shares split after 2021; "
+              "results.json says the minimum-commission sensitivity was not run",
+              "us_shares_d1: spread 56 bp at the open, 12 bp at a close" in res["ledger_line"] and
+              "pessimistic for shares split after 2021" in res["ledger_line"] and
+              str(rj.get("commission_min_only", "")).startswith("not run"), res["ledger_line"][-330:])
+        # B: the groups' guards (write=False: judged again on the same trades)
+        kw = dict(truncation=tr, corr=0.0, write=False, ledger=led, n_configs=5)
+        errs = []
+        bare = os.path.join(TMP, "ideas", "991_nogroups")
+        _declare(bare, {"idea": "991 no groups"})
+        for gname, gdir, gval in (("no declared groups", bare, None), ("groups= alone", bare, "sector"),
+                                  ("other groups", idea, {k: ("X" if i == 0 else costs.spec(k)["sector"])
+                                                          for i, k in enumerate(keys)})):
+            try:
+                judge.verdict(gdir, main, nb, every, nl, groups=gval, **kw)
+                errs.append(f"{gname}: accepted")
+            except ValueError as e:
+                want_txt = "differ" if gname == "other groups" else "Baskets of many markets"
+                errs.append("ok" if want_txt in str(e) else str(e)[:90])
+        seven = os.path.join(TMP, "ideas", "992_seven")
+        _declare(seven, {"idea": "992 seven groups", "groups": {k: f"g{i % 7}" for i, k in enumerate(keys)}})
+        try:
+            judge.verdict(seven, main, nb, every, nl, **kw)
+            errs.append("7 groups accepted")
+        except ValueError as e:
+            errs.append("ok" if "at least 8" in str(e) else str(e)[:90])
+        sub = main[main.market.isin(keys[:40])].reset_index(drop=True)
+        sub.attrs.update(main.attrs)
+        r40 = judge.verdict(idea, sub, nb, every, nl, groups="sector", **kw)
+        r_decl = judge.verdict(idea, main, nb, every, nl, **kw)          # groups read from declared.json alone
+        check("v2.2 B: a basket of more than 40 markets without declared groups raises (naming the charter amendment), "
+              "also with groups= alone; groups= that differ from declared.json raise; fewer than 8 groups raise; the "
+              "declaration alone is enough; a basket of 40 markets ignores groups and keeps the market bars",
+              errs == ["ok"] * 4 and "markets_positive>=65%" in r40["bars"] and "groups_positive>=65%" not in r40["bars"]
+              and "ignored" in (r40.get("groups") or {}) and r_decl["bars"]["groups_positive>=65%"] ==
+              res["bars"]["groups_positive>=65%"], str(errs))
+        # the noise world through the same chain: it fails
+        nidea = os.path.join(TMP, "ideas", "993_d1_noise")
+        rn, mn, *_ = _d1_chain(nidea, _d1_folder("d1_noise"), 0.0, 8, dict(decl, idea="993 noise"), led)
+        neg = mn.copy()
+        neg["R"] = -neg.R.abs()
+        neg.attrs.update(mn.attrs)
+        judge.verdict(nidea, neg, None, None, None, corr=0.0, ledger=led)
+        rjn = json.loads(open(os.path.join(nidea, "results.json")).read(), parse_constant=_no_const)
+        check("v2.2 chain: pure noise on the same synthetic universe through the same chain fails; a basket whose "
+              "profit is <= 0 writes max_market_share_of_profit as null (valid JSON, C) and its group share bar fails",
+              rn["verdict"] == "fail" and rjn["main"]["max_market_share_of_profit"] is None and
+              rjn["bars"]["max_group_share<=25%"]["pass"] is False,
+              f"noise: {rn['failed_bars']}; n {len(mn)}, PF {stats.pf(mn.R):.2f}, null {rn['null']['percentile']:.1f}")
+    finally:
+        os.environ.pop("EXPLORE_D1_DIR", None)
+        data.lock()
+
+
+def test_v22_review_fixes():
+    """Kit v2.2 review (verifier's issues V22-1 to V22-10): one check per fix, each failing on the kit before the fixes
+    (scratch kit_v22/fix/kit_before) and passing after; an API the old kit lacks is a FAIL (_try), not a crash.
+    Synthetic daily bars of universe keys only (no real price)."""
+    NYc = "America/New_York"
+    KA = "known_at"
+    names = {
+        1: "V22-1: the class's spread for an order at the session's open is at least the 75th percentile of the lab's 40 "
+           "shares' modelled 09:30 first-minute spread (per-share medians 2017-2021) and their worst year's median, and "
+           "its stress (x1.5) covers the costliest of the 40 (the universe's shares are smaller than the 40)",
+        2: "V22-2: checks.min_commission_test re-simulates the same signals with the 2 USD minimum commission alone (the "
+           "optimistic bound for shares split after 2021): a share Yahoo prices near 10 USD gains, one near 300 USD is "
+           "unchanged; the report lists the shares whose median bar pays the per-share rate",
+        3: "V22-3: a daily input without a known_at column (a close Series of data.load_bars, its frame with known_at "
+           "dropped, a wide frame of closes named by ticker) is refused with row_len 0 (the open-stamped trap passed "
+           "before); the same wide frame re-indexed to the closes takes row_len 0, or 6.5 h at its opens",
+        4: "V22-4: data.daily_bars refuses the daily share bars (it stamped each close at 10:30 New York instead of "
+           "16:00), also once their attrs are lost (known_at more than 1 h after the open)",
+        5: "V22-5: a rule on price LEVELS compared across shares (long the shares below the day's median price, on "
+           "data.long_bars) fails the truncation test, and so does a level rule on a wide frame of closes named by "
+           "ticker; a cross-sectional rule on returns and dollar volumes passes; a wide frame of returns is refused "
+           "(compute it inside build)",
+        6: "V22-6: checks.shift_test on daily bars shifts by one session by default (24 h: the shifted run differs) and "
+           "refuses a shift of 1 h (it moved no entry, so the test was silently a no-op)",
+        7: "V22-7: on hourly share bars with bars after a half day's 13:00 close (the lab's 2019-07-03), ('sessions', 1) "
+           "and ('session_close', 1) leave at 13:00, not at a later stray bar; a normal day keeps the same hour",
+        8: "V22-8: data.session_moves gives each session's move with the ex-date's dividend added back and flags "
+           "corporate actions: gen's 42 % special dividend of 2020-02-03 is a -42 % close-to-close move but a 0 total "
+           "move, flagged; dd's 2019-06-03 spin-off record is flagged; other sessions are not",
+        9: "V22-9: a prepared daily file whose times are a column (it loaded as 0 bars) or a tz-naive index (a raw "
+           "ArrowInvalid) raises data.DataGap naming the file",
+        10: "V22-10: the truncation test's re-basing plan of a long frame of daily shares holds one int32 code per row "
+            "(4 bytes a row), not a boolean row mask per share (about 1 GB for 382 shares at full size)"}
+
+    def c1():   # spread levels of the 40 are bp of price by year: no bar is read
+        cal = data.us_sessions("2017-01-01", "2021-12-31")
+        t9 = pd.DatetimeIndex([pd.Timestamp(f"{d.date()} 09:00").tz_localize(NYc) for d in cal.index]).tz_convert("UTC")
+        yr = t9.tz_convert(NYc).year.to_numpy()
+        per, by_year = {}, {}
+        for k in sorted(k for k in costs.EXTRA if "splits" in costs.spec(k)):
+            bp = costs.spread(k, np.full(len(t9), 100.0), t9) / 100.0 * 1e4
+            per[k] = float(np.median(bp))
+            for y in range(2017, 2022):
+                by_year.setdefault(y, []).append(float(np.median(bp[yr == y])))
+        p75 = float(np.percentile(list(per.values()), 75))
+        worst = max(float(np.median(v)) for v in by_year.values())
+        so = float(D1C["spread_bps_open"])
+        NUMBERS["v22_open_spread_40"] = {"class": so, "p75": round(p75, 1), "worst_year": round(worst, 1),
+                                         "max": round(max(per.values()), 1)}
+        return (len(per) == 40 and so >= p75 and so >= worst and 1.5 * so >= max(per.values()),
+                f"open spread {so:g} bp; the 40: P75 {p75:.1f}, worst year median {worst:.1f}, max "
+                f"{max(per.values()):.1f} ({max(per, key=per.get)}), median {float(np.median(list(per.values()))):.1f}")
+    _try(names[1], c1)
+    d1 = _d1_folder("d1_review")
+    keys = ["afl", "low", "key", "f", "nvr"]
+    for i, k in enumerate(keys):
+        _write_d1(d1, k, synth.d1_bars("2016-01-01", "2021-12-31", seed=500 + i, price=[40, 150, 15, 10, 300][i],
+                                       vol_d=0.02))
+    os.environ["EXPLORE_D1_DIR"] = d1
+    try:
+        data.lock()
+        bs = {k: data.load_bars(k) for k in keys}
+        b = bs["afl"]
+        bk = sim.books(bs)
+        rng = np.random.default_rng(11)
+        sg = []
+        for k in ("f", "nvr"):
+            pick = np.sort(rng.choice(np.arange(30, len(bk[k].t) - 10), 150, replace=False))
+            sg.append(pd.DataFrame({"known_at": pd.DatetimeIndex(bk[k].t_end[pick].astype("datetime64[ns]")).tz_localize("UTC"),
+                                    "side": rng.choice([-1, 1], len(pick)), "market": k}))
+        sg = pd.concat(sg).sort_values(["known_at", "market"]).reset_index(drop=True)
+        rule = dict(exit=("sessions", 3), stop=("d20", 1.5))
+
+        def c2():
+            mc = checks.min_commission_test(sg, {k: bk[k] for k in ("f", "nvr")}, max_wait_h=96, **rule)
+            mf = checks.min_commission_test(sg[sg.market == "f"], {"f": bk["f"]}, max_wait_h=96, **rule)
+            mn = checks.min_commission_test(sg[sg.market == "nvr"], {"nvr": bk["nvr"]}, max_wait_h=96, **rule)
+            return (mc["shares_paying_per_share_rate"] == ["f"] and mf["min_commission"]["mean_R"] > mf["base"]["mean_R"]
+                    and mn["min_commission"] == mn["base"] and mc["base"]["n"] > 100 and mc["n_class_markets"] == 2,
+                    f"f: mean R {mf['base']['mean_R']:.4f} -> {mf['min_commission']['mean_R']:.4f}; nvr equal "
+                    f"{mn['min_commission'] == mn['base']}; per-share rate {mc['shares_paying_per_share_rate']}; "
+                    f"{mc['base']['n']} trades")
+        _try(names[2], c2)
+
+        def trap_ser(x):          # close-to-close move stamped at its own bar's OPEN (index): a look-ahead
+            r = x / x.shift(1) - 1
+            s = r[r.abs() > 0.015]
+            return pd.DataFrame({"known_at": pd.DatetimeIndex(s.index), "side": np.sign(s.to_numpy()).astype(int)})
+
+        def trap_wide(x):
+            st_ = (x / x.shift(1) - 1).stack()
+            st_ = st_[st_.abs() > 0.015]
+            return pd.DataFrame({"known_at": pd.DatetimeIndex(st_.index.get_level_values(0)),
+                                 "market": st_.index.get_level_values(1), "side": np.sign(st_.to_numpy()).astype(int)}) \
+                .sort_values(["known_at", "market"]).reset_index(drop=True)
+        wide = pd.concat({k: bs[k]["close"] for k in keys}, axis=1)
+
+        def c3():
+            outs = []
+            for nm, fn, x in (("series", trap_ser, b["close"]), ("no known_at", lambda d: trap_ser(d["close"]),
+                                                                  b.drop(columns=[KA])), ("wide", trap_wide, wide)):
+                try:
+                    r = checks.truncation_test(fn, x, row_len=pd.Timedelta(0))
+                    outs.append(f"{nm}: pass={r['pass']}")
+                except ValueError as e:
+                    outs.append(f"{nm}: refused" if "row_len" in str(e) else f"{nm}: {str(e)[:60]}")
+            wk = wide.copy()
+            wk.index = pd.DatetimeIndex(b[KA])                # values re-indexed to the time they are known
+            r_hk = checks.truncation_test(trap_wide, wk, row_len=pd.Timedelta(0))
+            r_h65 = checks.truncation_test(
+                lambda x: trap_wide(x).assign(known_at=lambda t: t.known_at + pd.Timedelta(hours=6, minutes=30)),
+                wide, row_len=pd.Timedelta(hours=6, minutes=30))
+            return (outs == ["series: refused", "no known_at: refused", "wide: refused"] and r_hk["pass"] and
+                    r_h65["pass"], f"{outs}; re-indexed honest {r_hk['pass']}, 6.5 h {r_h65['pass']}")
+        _try(names[3], c3)
+
+        def c4():
+            e4 = []
+            bare = b.copy()
+            bare.attrs = {}
+            for x in (b, bare):
+                try:
+                    data.daily_bars(x)
+                    e4.append("accepted")
+                except ValueError as e:
+                    e4.append("refused" if "already one bar a SESSION" in str(e) else str(e)[:60])
+            return e4 == ["refused", "refused"], str(e4)
+        _try(names[4], c4)
+
+        def c5():
+            lb = data.long_bars(bs)
+
+            def xs_level(x):
+                med = x.groupby(level=0)["close"].transform("median")
+                m = ((x["close"] < med) & ((x["close"] / x["open"] - 1).abs() > 0.005)).to_numpy()
+                return pd.DataFrame({"known_at": pd.DatetimeIndex(x[KA])[m], "market": x["market"].to_numpy()[m],
+                                     "side": 1}).sort_values(["known_at", "market"]).reset_index(drop=True)
+
+            def xs_ratio(x):
+                r = x.groupby("market").close.pct_change()
+                med = r.groupby(level=0).transform("median")
+                dv = x.close * x.shares
+                m = ((r > med) & (dv > dv.groupby(level=0).transform("median")) & (r.abs() > 0.01)).to_numpy()
+                return pd.DataFrame({"known_at": pd.DatetimeIndex(x[KA])[m], "market": x["market"].to_numpy()[m],
+                                     "side": 1}).sort_values(["known_at", "market"]).reset_index(drop=True)
+
+            def wide_level(x):
+                lv = x.stack()
+                lv = lv[lv > 40.0]
+                return pd.DataFrame({"known_at": pd.DatetimeIndex(lv.index.get_level_values(0)) + pd.Timedelta(hours=7),
+                                     "market": lv.index.get_level_values(1), "side": 1}) \
+                    .sort_values(["known_at", "market"]).reset_index(drop=True)
+            r5a = checks.truncation_test(xs_level, lb, row_len="known_at", n_signal_cuts=30, n_random_cuts=30)
+            r5b = checks.truncation_test(wide_level, wide, row_len=pd.Timedelta(hours=7), n_signal_cuts=30,
+                                         n_random_cuts=30)
+            r5c = checks.truncation_test(xs_ratio, lb, row_len="known_at")
+            try:
+                checks.truncation_test(trap_ser, wide / wide.shift(1), row_len=pd.Timedelta(hours=7))
+                r5d = "accepted"
+            except ValueError as e:
+                r5d = "refused" if "price level" in str(e) else str(e)[:60]
+            return (not r5a["pass"] and not r5b["pass"] and r5c["pass"] and r5c["n_signals"] > 300 and r5d == "refused",
+                    f"xs level {r5a['n_failed_cuts']}/{len(r5a['cuts'])} failed, wide level {r5b['n_failed_cuts']}, xs "
+                    f"ratio {r5c['n_failed_cuts']} ({r5c['n_signals']} signals); returns frame {r5d}")
+        _try(names[5], c5)
+
+        def c6():
+            sf = sg[sg.market == "f"].reset_index(drop=True)
+            sh = checks.shift_test(sf, {"f": bk["f"]}, max_wait_h=96, **rule)
+            try:
+                checks.shift_test(sf, {"f": bk["f"]}, delay_extra_h=1.0, max_wait_h=96, **rule)
+                s1 = "accepted"
+            except ValueError:
+                s1 = "refused"
+            return (sh["delay_extra_h"] == 24.0 and sh["shifted"] != sh["base"] and s1 == "refused",
+                    f"delay {sh['delay_extra_h']} h: base {sh['base']['n']} trades PF {sh['base']['PF']:.3f}, shifted "
+                    f"{sh['shifted']['n']} PF {sh['shifted']['PF']:.3f}; 1 h {s1}")
+        _try(names[6], c6)
+
+        def c8():
+            d8 = _d1_folder("d1_review_moves")
+            for k, ex in (("gen", "2020-02-03"), ("dd", "2019-06-03")):
+                g = _flat_d1(30.0, "2019-01-01", "2021-12-31")
+                fr = costs.spec(k)["dividends"].get(ex, 0.0)
+                g.loc[g.index >= _ny_open(ex), ["open", "high", "low", "close"]] *= (1 - fr)
+                _write_d1(d8, k, g)
+            os.environ["EXPLORE_D1_DIR"] = d8
+            try:
+                gm = data.session_moves(data.load_bars("gen"))
+                dm = data.session_moves(data.long_bars({"dd": data.load_bars("dd"), "gen": data.load_bars("gen")}))
+            finally:
+                os.environ["EXPLORE_D1_DIR"] = d1
+            ge = gm.loc[_ny_open("2020-02-03")]
+            dd_ = dm[(dm.market == "dd") & (dm.index == _ny_open("2019-06-03"))].iloc[0]
+            return (ge.ret < -0.4 and abs(ge.ret_total) < 1e-12 and bool(ge.action) and bool(dd_.action) and
+                    dd_.split_ratio == 0.4725 and int(gm.action.sum()) <= 3 and
+                    abs(gm.ret_total.drop(_ny_open("2020-02-03")).dropna()).max() < 0.02,
+                    f"gen ret {ge.ret:.4f}, total {ge.ret_total:.2e}, flagged {int(gm.action.sum())} session(s); dd "
+                    f"{dd_.split_ratio}")
+        _try(names[8], c8)
+
+        def c9():
+            d9 = _d1_folder("d1_review_badfiles")
+            g9 = synth.d1_bars("2016-01-01", "2021-12-31", seed=9, price=40.0)
+            g9.reset_index().to_parquet(os.path.join(d9, "afl.parquet"))
+            g9n = g9.copy()
+            g9n.index = g9n.index.tz_localize(None)
+            g9n.to_parquet(os.path.join(d9, "low.parquet"))
+            os.environ["EXPLORE_D1_DIR"] = d9
+            e9 = []
+            try:
+                for k in ("afl", "low"):
+                    try:
+                        x = data.load_bars(k)
+                        e9.append(f"{len(x)} rows")
+                    except data.DataGap:
+                        e9.append("DataGap")
+                    except Exception as e:      # noqa: BLE001
+                        e9.append(type(e).__name__)
+            finally:
+                os.environ["EXPLORE_D1_DIR"] = d1
+            return e9 == ["DataGap", "DataGap"], str(e9)
+        _try(names[9], c9)
+
+        def c10():
+            lb = data.long_bars(bs)
+            plan = checks._scale_plan(lb)[None]
+            arrs = {}
+            for p in plan:
+                for v in ([p[2]["codes"]] if isinstance(p[2], dict) else [p[2]] if p[2] is not None else []):
+                    arrs[id(v)] = v.nbytes
+            return (len(plan) >= 5 and len(arrs) == 1 and sum(arrs.values()) <= 4 * len(lb),
+                    f"{len(plan)} plan items, {len(arrs)} distinct row array(s), {sum(arrs.values())} bytes for "
+                    f"{len(lb)} rows of {len(bs)} shares")
+        _try(names[10], c10)
+    finally:
+        os.environ.pop("EXPLORE_D1_DIR", None)
+        data.lock()
+
+    def c7():   # synthetic hourly bars of the lab share jpm, with the lab's stray bars of 2019-07-03
+        rows = []
+        for d, r in data.us_sessions("2019-06-01", "2019-07-31").iterrows():
+            extra = (13, 14, 15) if str(d.date()) == "2019-07-03" else ()
+            for h in list(range(9, 13 if r.half_day else 16)) + list(extra):
+                rows.append(pd.Timestamp(f"{d.date()} {h:02d}:00").tz_localize(NYc).tz_convert("UTC"))
+        hb = pd.DataFrame({"open": 100.0, "high": 100.5, "low": 99.5, "close": 100.0, "volume": 60.0},
+                          index=pd.DatetimeIndex(rows))
+        hb.attrs.update(market="jpm", price_is="bid")
+        hk = sim.Book(hb, "jpm")
+        s7 = pd.DataFrame({"known_at": [pd.Timestamp("2019-07-02 14:00", tz=NYc).tz_convert("UTC"),
+                                        pd.Timestamp("2019-07-01 14:00", tz=NYc).tz_convert("UTC")], "side": [1, 1]})
+        r7 = {ex: sim.simulate(s7, hk, market="jpm", exit=ex, stop=("bps", 2000), mode="every")
+              .sort_values("entry_time", ascending=False).reset_index(drop=True)
+              for ex in (("sessions", 1), ("session_close", 1))}
+        ex1, ex2 = r7[("sessions", 1)], r7[("session_close", 1)]
+        t13 = pd.Timestamp("2019-07-03 13:00", tz=NYc)
+        return (ex1.exit_time[0] == t13 and ex1.reason[0] == "time_close" and ex2.exit_time[0] == t13 and
+                ex1.exit_time[1] == pd.Timestamp("2019-07-02 14:00", tz=NYc) and ex1.reason[1] == "time",
+                f"sessions: {ex1.exit_time[0].tz_convert(NYc)} {ex1.reason[0]}; session_close: "
+                f"{ex2.exit_time[0].tz_convert(NYc)}; normal day {ex1.exit_time[1].tz_convert(NYc)} {ex1.reason[1]}")
+    _try(names[7], c7)
+
+
 def test_v21_real_bars():
     """--real-bars: mechanical checks on the prepared hourly bars of ~/explore_data/h1 (no trading rule): every new
     market loads (< 2022), D20 exists, share days have 7 bars, the modelled cost of a round trip is sane."""
@@ -3158,6 +4025,90 @@ def test_v21_real_bars():
         os.environ.pop("EXPLORE_H1_DIR", None)
 
 
+def test_v22_real_bars_d1():
+    """--real-bars (kit v2.2): mechanical checks on the prepared daily bars of the universe (~/explore_data/d1/bars; no
+    trading rule): every share of kit/universe_us.csv loads or is listed as missing; no bar before its
+    in_universe_from, none after 2021; sessions of 390 / 210 minutes on the rule calendar; D20 exists; a daily round
+    trip (in at an open, out at the next open, one night) costs 20-120 bp; random signals have no edge (gross)."""
+    os.environ["EXPLORE_D1_DIR"] = os.path.expanduser("~/explore_data/d1/bars")
+    data.lock()
+    cal = data.us_sessions("2016-01-01", "2021-12-31")
+    cal_open = set(pd.DatetimeIndex(cal.open_utc).as_unit("ns").asi8)
+    out, bad, missing, books_, short = {}, [], [], {}, []
+    try:
+        for k in sorted(costs.UNIVERSE):
+            try:
+                b = data.load_bars(k)
+            except FileNotFoundError:
+                missing.append(k)
+                continue
+            try:
+                bk = sim.Book(b, k)
+                t0 = pd.Timestamp(costs.spec(k)["in_universe_from"]).tz_localize(NYZ)
+                d20 = bk.d20(bk.t)
+                med = float(b.close.median())
+                i = len(b) // 2
+                c = costs.round_trip(k, 1, med, med, b.index[i], b.index[i + 1])["cost_bp"]
+                on_cal = bool(np.isin(b.index.as_unit("ns").asi8, list(cal_open)).all())
+                pk = pd.DatetimeIndex(b.known_at).as_unit("ns").asi8
+                calk = cal.set_index(pd.DatetimeIndex(cal.open_utc)).close_utc.reindex(b.index)
+                rec = {"bars": len(b), "first": str(b.index[0].date()),
+                       "d20_share": round(float(np.isfinite(d20[20:]).mean()), 3) if len(b) > 20 else None,
+                       "cost_bp": round(c, 1)}
+                if rec["d20_share"] is None:
+                    short.append(k)                  # entered the universe less than 21 sessions before 2022
+                ok = (b.index.min() >= t0 and b.index.max() < U("2022-01-01") and pk.max() < U("2022-01-01").value and
+                      on_cal and (pd.DatetimeIndex(calk) == pd.DatetimeIndex(b.known_at)).all() and
+                      (rec["d20_share"] is None or rec["d20_share"] > 0.99) and 20 < c < 160 and (b.low <= b[["open", "close"]].min(axis=1)).all())
+                out[k] = rec
+                books_[k] = bk
+                if not ok:
+                    bad.append(f"{k}: {rec}")
+            except Exception as e:      # noqa: BLE001
+                bad.append(f"{k}: {e!r}"[:160])
+        cs = np.array([v["cost_bp"] for v in out.values()])
+        NUMBERS["real_bars_d1"] = {"shares": len(out), "missing": missing, "bad": bad[:10], "no_d20_yet": short,
+                                   "cost_bp_min_median_max": [float(cs.min()), float(np.median(cs)), float(cs.max())]
+                                   if len(cs) else None}
+        check("real bars (v2.2): every share of the universe file loads (missing ones listed), no bar before its "
+              "in_universe_from or after 2021, bars on the rule calendar with the session's close as known_at, D20 on "
+              "> 99 % of bars after the first 20 sessions, a daily round trip (open to next open, 1 night) costs 20-160 bp",
+              not bad and len(out) + len(missing) == 382 and len(out) > 0,
+              f"{len(out)} loaded, missing {missing}, bad {bad[:3]}, fewer than 21 sessions (no D20 yet) {short}; cost bp min/median/max "
+              f"{NUMBERS['real_bars_d1']['cost_bp_min_median_max']}")
+        dsrc = os.path.expanduser("~/explore_data/d1/dividends.csv")
+        if os.path.isfile(dsrc):              # V22-9: the kit's dividend facts = the data's final file (2016-2021,
+            dv0 = pd.read_csv(dsrc, dtype={"key": str, "ex_date": str})    # the builder's filters)
+            dv0 = dv0[(dv0.ex_date < "2022-01-01") & (dv0.ex_date >= "2016-01-01") & dv0.key.isin(set(costs.UNIVERSE))]
+            dv0 = dv0.dropna(subset=["fraction"])
+            dvk = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "universe_us_dividends.csv"),
+                              dtype={"key": str, "ex_date": str})
+            a_ = set(zip(dv0.key, dv0.ex_date)) - {("dhr", "2016-07-05")}
+            b_ = set(zip(dvk.key, dvk.ex_date))
+            mg = dvk.merge(dv0, on=["key", "ex_date"], suffixes=("_kit", "_data"))
+            check("real bars (V22-9): the kit's dividend file holds exactly the data's final dividends of the universe "
+                  "2016-2021 (but dhr's spin-off record), with the same fractions",
+                  a_ == b_ and float((mg.fraction_kit - mg.fraction_data).abs().max()) < 1e-9,
+                  f"kit {len(b_)} rows, data {len(a_)}; only in kit {sorted(b_ - a_)[:5]}, only in data {sorted(a_ - b_)[:5]}")
+        rng = np.random.default_rng(5)
+        sigs = []
+        for k, bk in books_.items():
+            if len(bk.t) < 80:
+                continue
+            pick = np.sort(rng.choice(np.arange(25, len(bk.t) - 10), min(40, len(bk.t) - 40), replace=False))
+            sigs.append(pd.DataFrame({"known_at": pd.DatetimeIndex(bk.t_end[pick].astype("datetime64[ns]")).tz_localize("UTC"),
+                                      "side": rng.choice([-1, 1], len(pick)), "market": k}))
+        sg = pd.concat(sigs, ignore_index=True)
+        tr_ = sim.simulate(sg, books_, exit=("sessions", 5), stop=("d20", 2.0))
+        tg_, tn_ = stats.t_stat(tr_.R_gross), stats.t_stat(tr_.R)
+        check("real bars (v2.2): random sides on random sessions of every share (5 sessions, stop 2 x D20) have no gross "
+              "edge (|t| < 3.5) and lose their costs net", abs(tg_) < 3.5 and tr_.R.mean() < tr_.R_gross.mean(),
+              f"{len(tr_)} trades, t gross {tg_:.2f}, t net {tn_:.2f}, mean net bp {tr_.net_bp.mean():.1f}, mean gross bp "
+              f"{tr_.gross_bp.mean():.1f}")
+    finally:
+        os.environ.pop("EXPLORE_D1_DIR", None)
+
+
 if __name__ == "__main__":
     T0 = time.time()
     tests = [test_period_lock, test_asof_and_known, test_daily_bars_dst, test_costs, test_sim_mechanics, test_lookahead,
@@ -3169,7 +4120,9 @@ if __name__ == "__main__":
              test_event_lookahead, test_event_null_noise, test_crypto_venues,
              test_fix_v1_suppression, test_fix_v2_v4_judge_binding, test_fix_v3_venue_holes, test_lead_joint_null,
              test_v21_costs_by_hand, test_v21_local_markets, test_v21_share_traps, test_v21_slow_track_and_provisional,
-             test_v21_small_fixes, test_v21_review_fixes, test_v21_review2_fixes, test_v21_review3_fixes]
+             test_v21_small_fixes, test_v21_review_fixes, test_v21_review2_fixes, test_v21_review3_fixes,
+             test_v22_universe_and_costs, test_v22_daily_data_and_sessions, test_v22_daily_traps,
+             test_v22_daily_noise, test_v22_planted_chain_and_groups, test_v22_review_fixes]
     if "--review" in sys.argv:
         tests = [t for t in tests if t.__name__.startswith("test_review")]
     if "--only" in sys.argv:                 # --only <substring of a test name>
@@ -3179,7 +4132,7 @@ if __name__ == "__main__":
     elif "--net-venues" in sys.argv:         # the crypto venues only (no Dukascopy request)
         tests.append(test_net_venues)
     if "--real-bars" in sys.argv:            # + mechanical checks on the prepared bars of ~/explore_data/h1 (kit v2.1)
-        tests.append(test_v21_real_bars)
+        tests += [test_v21_real_bars, test_v22_real_bars_d1]
     for t in tests:
         try:
             t()

@@ -45,6 +45,27 @@ Output trade columns: market rule side known_at entry_time exit_time entry_px ex
 reason gross_bp net_bp stress_bp swap_bp R_gross R R_stress hold_h hold_tdays entry_i exit_i sig.
 R = net result / stop distance (price units per unit). Skipped counts in trades.attrs['counts']; trades.attrs['signals_sha']
 = signals_sha(input table), checked by judge.verdict against the truncation report.
+
+Kit v2.2 (2026-11-18): BARS OF ANY LENGTH. Every place that took a bar to last one hour now reads the bar's own end,
+Book.t_end: open + 1 h for every hourly market (unchanged), the session's close for a market whose cost entry says
+bar 'session' (the daily US shares: a bar opens at 09:30 New York and its close is known at 16:00, 13:00 on a half day,
+column known_at of data.load_bars). Where the end is used: the exit time of an exit at a bar's close (a scheduled exit
+in a closure, 'session_close'), of a stop or target (the end of the bar that hit it: swaps and hold count to it), D20's
+day ends, the event exits' max_hold in a closure. The 59-minute rule (GAP_NS: a scheduled exit more than 59 min before
+the next bar's open has no bar holding it, so it is done at the close of the bar before) is unchanged: on daily bars a
+'bdays' exit that falls on a holiday is therefore done at the close of the session before (one session early).
+Exits counted in the market's OWN sessions (its trading days, 17:00 New York boundary, as the bars show them):
+  ("sessions", N)      the open of the bar at the same New York clock time N sessions after the entry bar's session
+                       (daily bars: the open N sessions later; hourly share bars: the same hour N sessions later; a
+                       clock time missing that day, e.g. a half day, falls to the close of the bar before as any
+                       scheduled exit); exchange holidays are not sessions, unlike 'bdays'.
+  ("session_close", N) the close of the last bar of the session N sessions after the entry bar's session (N = 0: the
+                       entry session's own close); reason 'session_close', the close spread.
+On a session market (bar 'session') ('hours', N) and ('clock', ...) are refused (a time inside a session has no bar
+open): use 'sessions', 'session_close', 'bdays' or an event exit (whose max_hold may be ('sessions', N)). Trades of a
+session market, or of a rule whose exit (or event max_hold) is counted in sessions, get hold_tdays = the market's own
+sessions crossed (trading days of the bars from the entry's to the exit's, exit - 1 s); every other trade keeps the
+business-day count (costs.held_tdays), as before.
 """
 import numpy as np
 import pandas as pd
@@ -55,6 +76,7 @@ from . import data as _data
 NS_H = 3_600_000_000_000
 BAR_NS = NS_H
 GAP_NS = 59 * 60 * 1_000_000_000          # a scheduled exit more than 59 min before the next bar: no bar holds it
+NY = "America/New_York"
 
 
 class Book:
@@ -75,6 +97,7 @@ class Book:
         self.key, self.index = key, idx
         self.price_is = price_is or bars.attrs.get("price_is") or "bid"
         self.t = idx.tz_convert("UTC").as_unit("ns").asi8
+        self.t_end = _bar_ends(bars, key, self.t)                         # kit v2.2: each bar's own end
         o, h, l, c = (bars[k].to_numpy(float) for k in ("open", "high", "low", "close"))
         sp = C.spec(key)
         if "splits" in sp or "rolls" in sp:                              # shares / oil: adjusted bars only (load_bars)
@@ -97,8 +120,8 @@ class Book:
     def _set_d20(self, idx, h, l, min_day_bars):
         # D20: completed 17:00-NY trading days with >= min_day_bars bars, known at the end of their last bar
         td = C.trading_day(idx)
-        g = pd.DataFrame({"h": h, "l": l, "t": self.t}).groupby(td)
-        d = pd.DataFrame({"rng": g["h"].max() - g["l"].min(), "n": g["h"].size(), "end": g["t"].max() + BAR_NS})
+        g = pd.DataFrame({"h": h, "l": l, "t": self.t_end}).groupby(td)
+        d = pd.DataFrame({"rng": g["h"].max() - g["l"].min(), "n": g["h"].size(), "end": g["t"].max()})
         d = d[d.n >= min_day_bars]
         cs = np.r_[0.0, np.cumsum(d.rng.to_numpy())]
         self.d_end, self.d_cs = d.end.to_numpy(np.int64), cs
@@ -117,6 +140,97 @@ class Book:
         if self.comm_q is not None:                     # per-unit commission on top of the half spread, each side
             hs = {x: v + self.comm_q[x] * k_spr for x, v in hs.items()}
         return ({x: self.mid[x] - hs[x] for x in "ohlc"}, {x: self.mid[x] + hs[x] for x in "ohlc"})
+
+
+def _bar_ends(bars, key, t):
+    """Kit v2.2: int64 ns end of each bar: open + 1 h for an hourly market; for a market of bar 'session' (daily US
+    shares) the session's close, from the bars' known_at column (data.load_bars) or else their 'volume' minutes
+    (data.session_known_at). A session end must lie after its open and at or before the next bar's open."""
+    if C.bar_kind(key) != "session":
+        return t + NS_H
+    if "known_at" in bars:
+        te = pd.DatetimeIndex(bars["known_at"])
+        te = (te.tz_convert("UTC") if te.tz is not None else te.tz_localize("UTC")).as_unit("ns").asi8
+    elif "volume" in bars:
+        te = _data.session_known_at(bars.index, bars["volume"].to_numpy()).as_unit("ns").asi8
+    else:
+        raise ValueError(f"{key}: daily session bars need their close time (column known_at of data.load_bars, or the "
+                         "session's minutes in 'volume')")
+    te = np.asarray(te, np.int64)
+    if not ((te > t).all() and (te[:-1] <= t[1:]).all()):
+        raise ValueError(f"{key}: a session bar ends before its open or after the next bar's open")
+    if te.max() > _data.period_end().value:
+        raise _data.PeriodError(f"{key}: a bar ends after the period end")
+    return te
+
+
+def _days(book):
+    """Kit v2.2: (day number of each bar, first bar index of each day, day dates as int64 ns) of a book's own trading
+    days (17:00 New York boundary: the dates of costs.trading_day), cached on the book."""
+    if getattr(book, "_days_cache", None) is None:
+        td = C.trading_day(book.index)
+        u, inv = np.unique(td.as_unit("ns").asi8, return_inverse=True)
+        first = np.searchsorted(inv, np.arange(len(u)), side="left")
+        book._days_cache = (inv.astype(np.int64), first.astype(np.int64), u.astype(np.int64))
+    return book._days_cache
+
+
+SESSION_EXITS = ("sessions", "session_close")
+
+
+def _session_ends(book):
+    """Kit v2.2 fix (V22-7): exclusive end index of each of a book's trading days for the session exits. For the lab's
+    hourly US share bars (a market with listed splits, bar 'hour') a bar that OPENS at or after the exchange's close of
+    that session (data.us_sessions close_utc: 16:00, 13:00 on a half day) is not part of the session: the hourly bars of
+    2019-07-03 (a 13:00 half day) carry bars at 13:00, 14:00 and 15:00, and ('sessions', N) / ('session_close', N) must
+    not exit on them. Every other book: the first bar of the next day (unchanged)."""
+    if getattr(book, "_sess_end_cache", None) is None:
+        inv, first, u = _days(book)
+        end = np.r_[first[1:], len(book.t)].astype(np.int64)
+        if C.bar_kind(book.key) == "hour" and "splits" in C.spec(book.key) and len(u):
+            days = pd.DatetimeIndex(u.astype("datetime64[ns]"))
+            cal = _data.us_sessions(str(days.min().date()), str(days.max().date()))
+            cl = pd.DatetimeIndex(cal.close_utc).as_unit("ns").asi8
+            pos = pd.DatetimeIndex(cal.index).as_unit("ns").asi8
+            k = np.searchsorted(pos, u)
+            hit = (k < len(pos)) & (pos[np.clip(k, 0, len(pos) - 1)] == u)
+            cut_at = np.searchsorted(book.t, cl[np.clip(k, 0, len(pos) - 1)], side="left")
+            end = np.where(hit, np.maximum(np.minimum(end, cut_at), first + 1), end)
+        book._sess_end_cache = end
+    return book._sess_end_cache
+
+
+def counts_sessions(exit):
+    """True if an exit rule is counted in the market's own sessions (('sessions', N), ('session_close', N), or an event
+    exit whose max_hold is one of them)."""
+    if exit is None or not len(exit):
+        return False
+    if exit[0] == "event":
+        return len(exit) > 2 and exit[2] is not None and exit[2][0] in SESSION_EXITS
+    return exit[0] in SESSION_EXITS
+
+
+def _check_exit_for(book, exit):
+    """A session market (daily bars) refuses an exit at a clock time or after a number of hours."""
+    keys = book.leg_keys if isinstance(book, PairBook) else (book.key,)
+    if not any(C.bar_kind(k) == "session" for k in keys):
+        return
+    kinds = [exit[0]] + ([exit[2][0]] if exit[0] == "event" and len(exit) > 2 and exit[2] is not None else [])
+    if any(k in ("hours", "clock") for k in kinds):
+        raise ValueError(f"{book.key}: one bar a session (daily bars): an exit after N hours or at a clock time falls "
+                         "inside a session, where no bar opens; use ('sessions', N), ('session_close', N), ('bdays', "
+                         "N) or an event exit with max_hold ('sessions', N)")
+
+
+def hold_sessions(book, entry_ns, exit_ns):
+    """Kit v2.2: sessions held = the market's own trading days from the entry's to that of (exit - 1 s), as
+    costs.held_tdays counts business days."""
+    _, _, u = _days(book)
+    d0 = C.trading_day(pd.DatetimeIndex(np.asarray(entry_ns, np.int64).astype("datetime64[ns]")).tz_localize("UTC"))
+    d1 = C.trading_day(pd.DatetimeIndex((np.asarray(exit_ns, np.int64) - 1_000_000_000).astype("datetime64[ns]"))
+                       .tz_localize("UTC"))
+    return (np.searchsorted(u, d1.as_unit("ns").asi8, side="left") -
+            np.searchsorted(u, d0.as_unit("ns").asi8, side="left")).astype(np.int64)
 
 
 class PairBook(Book):
@@ -148,6 +262,7 @@ class PairBook(Book):
             raise ValueError(f"{name}: the legs share no hour")
         self.t = t
         self.index = pd.DatetimeIndex(t.astype("datetime64[ns]")).tz_localize("UTC")
+        self.t_end = np.maximum(book_a.t_end[np.searchsorted(book_a.t, t)], book_b.t_end[np.searchsorted(book_b.t, t)])
         self.price_is = "pair"
         self.leg = []
         for bk in self.legs:
@@ -264,7 +379,7 @@ def event_exit(events, max_hold):
     return ("event", events, tuple(max_hold))
 
 
-def _exit_plan(t, eic, exit, key=None):
+def _exit_plan(t, eic, exit, key=None, book=None):
     """Exit bar of entries at bar indices eic: (j, closure, label). j = the first bar opening at or after the exit time
     (time exit at its open), closure = no bar holds a scheduled exit (exit at the close of bar j - 1, lab/goldlab/data.py
     exit_index). Event exits (exit = ('event', events, max_hold)): the first event time STRICTLY after the entry bar's
@@ -273,6 +388,11 @@ def _exit_plan(t, eic, exit, key=None):
     (a closure, the crypto weekend) is NOT done at the close before it, which would act before the event is known: the
     trade leaves at the reopening bar's open."""
     N = len(t)
+    te = book.t_end if book is not None else t + NS_H
+    if exit[0] in SESSION_EXITS:                                       # kit v2.2: the market's own sessions
+        if book is None:
+            raise ValueError(f"exit {exit}: counted in the market's sessions, needs the market's book")
+        return _session_plan(book, eic, exit)
     if exit[0] != "event":
         X = _sched_exit(t[eic], exit)
         j = np.searchsorted(t, X, side="left")
@@ -286,15 +406,50 @@ def _exit_plan(t, eic, exit, key=None):
     ev = canon.get(str(key), canon.get("*"))
     if ev is None:
         raise ValueError(f"event exit: no events given for market {key} (give an empty DatetimeIndex if none)")
-    jm, cm, wm = _exit_plan(t, eic, tuple(exit[2]))
+    jm, cm, wm = _exit_plan(t, eic, tuple(exit[2]), book=book)
     big = np.iinfo(np.int64).max
     k = np.searchsorted(ev, t[eic], side="right")                     # first event strictly after the entry bar's open
     E = np.where(k < len(ev), ev[np.clip(k, 0, max(len(ev) - 1, 0))] if len(ev) else big, big)
     je = np.searchsorted(t, E, side="left")
-    tm = np.where(jm >= N, big, np.where(cm, t[np.clip(jm - 1, 0, N - 1)] + BAR_NS, t[np.clip(jm, 0, N - 1)]))
+    tm = np.where(jm >= N, big, np.where(cm, te[np.clip(jm - 1, 0, N - 1)], t[np.clip(jm, 0, N - 1)]))
     te = np.where(je >= N, big, t[np.clip(je, 0, N - 1)])
     use_e = (je < N) & (te <= tm)
     return (np.where(use_e, je, jm), np.where(use_e, False, cm), np.where(use_e, "event", wm).astype(object))
+
+
+def _session_plan(book, eic, exit):
+    """Kit v2.2: exit bar of ('sessions', N) / ('session_close', N) entries at bar indices eic (see the module doc):
+    (j, closure, label) as _exit_plan. 'sessions': the first bar opening at or after the entry's New York wall clock on
+    the trading day N sessions later (the 59-minute rule as any scheduled exit). 'session_close': the close of the last
+    bar of the trading day N sessions later (j = the first bar of the day after; closure). Past the data: j = len(t)."""
+    t = book.t
+    N = len(t)
+    n = int(exit[1])
+    if n != exit[1] or n < (1 if exit[0] == "sessions" else 0):
+        raise ValueError(f"exit {exit}: N is a whole number of sessions (>= 1 for 'sessions', >= 0 for 'session_close')")
+    inv, first, u = _days(book)
+    ends = _session_ends(book)                                         # kit v2.2 fix (V22-7)
+    clamp = not np.array_equal(ends, np.r_[first[1:], N])
+    d0 = inv[eic]
+    tgt = d0 + n
+    if exit[0] == "session_close":
+        j = np.where(tgt < len(u), ends[np.clip(tgt, 0, len(u) - 1)], N)
+        return j, np.ones(len(eic), bool), np.full(len(eic), "session_close", dtype=object)
+    ok = tgt < len(u)
+    ent = pd.DatetimeIndex(t[eic].astype("datetime64[ns]")).tz_localize("UTC").tz_convert(NY).tz_localize(None)
+    shift = (u[np.clip(tgt, 0, len(u) - 1)] - u[d0]).astype("timedelta64[ns]")
+    loc = ent + pd.to_timedelta(shift)
+    X = loc.tz_localize(NY, ambiguous=True, nonexistent="shift_forward").tz_convert("UTC").as_unit("ns").asi8
+    j = np.where(ok, np.searchsorted(t, X, side="left"), N)
+    end = j >= N
+    jc = np.clip(j, 0, N - 1)
+    closure = ~end & ((t[jc] - X) > GAP_NS)
+    if clamp:                       # V22-7: a bar opening at or after the session's close is not in the session
+        e = ends[np.clip(tgt, 0, len(u) - 1)]
+        over = ok & ~end & (j >= e)
+        j = np.where(over, e, j)
+        closure = closure | over
+    return j, closure, np.where(closure, "time_close", "time").astype(object)
 
 
 def _sched_exit(t_entry_ns, exit):
@@ -342,7 +497,9 @@ def outcomes(book, ei, side, exit, stop, target=None, scenarios=("gross", "net",
         return out
     valid = (ei >= 0) & (ei < N)
     eic = np.clip(ei, 0, N - 1)
-    j, closure, xlabel = _exit_plan(t, eic, exit, book.key)
+    _check_exit_for(book, exit)
+    j, closure, xlabel = _exit_plan(t, eic, exit, book.key, book)
+    te = book.t_end
     end = j >= N
     jc = np.clip(j, 0, N - 1)
     last = np.maximum(j - 1, eic)                                     # last bar scanned for stop/target
@@ -368,7 +525,7 @@ def outcomes(book, ei, side, exit, stop, target=None, scenarios=("gross", "net",
         xpx = np.where(closure,
                        np.where(side > 0, bid["c"][np.clip(j - 1, 0, N - 1)] * (1 - sm), ask["c"][np.clip(j - 1, 0, N - 1)] * (1 + sm)),
                        np.where(side > 0, bid["o"][jc] * (1 - sm), ask["o"][jc] * (1 + sm)))
-        xt = np.where(closure, t[np.clip(j - 1, 0, N - 1)] + BAR_NS, t[jc])
+        xt = np.where(closure, te[np.clip(j - 1, 0, N - 1)], t[jc])
         why = xlabel.copy()
         order = np.argsort(-L, kind="stable")            # longest windows first: chunk size from the first
         pos = 0
@@ -402,7 +559,7 @@ def outcomes(book, ei, side, exit, stop, target=None, scenarios=("gross", "net",
             gap_s = (b_s > 0) & np.where(side[sel] > 0, o_s < st[sel], o_s > st[sel])
             xpx[sel] = np.where(take_s, px_s, np.where(take_t, px_t, xpx[sel]))
             xi[sel] = np.where(take_s, eic[sel] + b_s, np.where(take_t, eic[sel] + b_t, xi[sel]))
-            xt[sel] = np.where(take_s | take_t, t[np.minimum(xi[sel], N - 1)] + BAR_NS, xt[sel])
+            xt[sel] = np.where(take_s | take_t, te[np.minimum(xi[sel], N - 1)], xt[sel])
             why[sel] = np.where(take_s, np.where(gap_s, "stop_gap", "stop"), np.where(take_t, "target", why[sel]))
             pos += m
         et = pd.DatetimeIndex(t[eic].astype("datetime64[ns]")).tz_localize("UTC")
@@ -437,7 +594,9 @@ def _pair_outcomes(book, ei, side, exit, stop, target=None, scenarios=("gross", 
         return out
     valid = (ei >= 0) & (ei < N)
     eic = np.clip(ei, 0, N - 1)
-    j, closure, xlabel = _exit_plan(t, eic, exit, book.key)
+    _check_exit_for(book, exit)
+    j, closure, xlabel = _exit_plan(t, eic, exit, book.key, book)
+    te = book.t_end
     end = j >= N
     jc = np.clip(j, 0, N - 1)
     jp = np.clip(j - 1, 0, N - 1)
@@ -472,7 +631,7 @@ def _pair_outcomes(book, ei, side, exit, stop, target=None, scenarios=("gross", 
                               np.where(s > 0, q["bid"]["o"][jc] * (1 - q["sm"]), q["ask"]["o"][jc] * (1 + q["sm"])))
             Q.append(q)
         xi = np.where(closure, j - 1, jc).astype(np.int64)
-        xt = np.where(closure, t[jp] + BAR_NS, t[jc])
+        xt = np.where(closure, te[jp], t[jc])
         why = xlabel.copy()
         order = np.argsort(-L, kind="stable")
         pos = 0
@@ -513,7 +672,7 @@ def _pair_outcomes(book, ei, side, exit, stop, target=None, scenarios=("gross", 
                 px = qq * np.where(s1 > 0, 1 - sl, 1 + sl)
                 q["x"][sel] = np.where(hit, px, q["x"][sel])
             xi[sel] = np.where(hit, b, xi[sel])
-            xt[sel] = np.where(hit, t[b] + np.where(at_open, 0, BAR_NS), xt[sel])
+            xt[sel] = np.where(hit, np.where(at_open, t[b], te[b]), xt[sel])
             why[sel] = np.where(take_s, np.where(at_open, "stop_gap", "stop"), np.where(take_t, "target", why[sel]))
             pos += m
         xtt = pd.DatetimeIndex(xt.astype("datetime64[ns]")).tz_localize("UTC")
@@ -625,7 +784,11 @@ def simulate(signals, bars, exit, stop, target=None, delay_h=0.0, mode="one", ma
             "swap_bp": f(n["swap"]) / f(n["fill"]) * 1e4, "R_gross": f(o["gross"]["R"]), "R": f(n["R"]),
             "R_stress": f(o["stress"]["R"]), "entry_i": f(o["entry_i"]), "exit_i": f(n["exit_i"]), "sig": f(g["sig"])})
         tr["hold_h"] = (tr.exit_time - tr.entry_time).dt.total_seconds() / 3600
-        tr["hold_tdays"] = C.held_tdays(tr.entry_time, tr.exit_time)
+        if C.bar_kind(mk) == "session" or counts_sessions(exit) or (isinstance(bk, PairBook) and any(
+                C.bar_kind(k_) == "session" for k_ in bk.leg_keys)):   # kit v2.2: the market's own sessions
+            tr["hold_tdays"] = hold_sessions(bk, bk.t[f(o["entry_i"])], f(n["exit_t"]))
+        else:
+            tr["hold_tdays"] = C.held_tdays(tr.entry_time, tr.exit_time)
         if isinstance(bk, PairBook):                      # both legs' prices (net scenario) for hand checks and sizing
             for k_ in ("fill_a", "fill_b", "exit_a", "exit_b"):
                 tr[{"fill_a": "entry_px_a", "fill_b": "entry_px_b", "exit_a": "exit_px_a", "exit_b": "exit_px_b"}[k_]] = \
@@ -647,6 +810,8 @@ def simulate(signals, bars, exit, stop, target=None, delay_h=0.0, mode="one", ma
         ex = ("event", f"{ne} event times, sha256 {out.attrs['events_sha'][:16]}", tuple(exit[2]))
     out.attrs["exit_key"] = exit_key(exit, stop, target, sorted(out["market"].astype(str).unique()) if len(out) else [])
     out.attrs["rule"] = {"exit": ex, "stop": stop, "target": target, "delay_h": delay_h, "mode": mode}
+    sess = [str(m) for m in counts if C.bar_kind(m) == "session" or counts_sessions(exit)]
+    out.attrs["hold_count"] = "sessions" if sess and len(sess) == len(counts) else ("mixed" if sess else "bdays")
     return out
 
 

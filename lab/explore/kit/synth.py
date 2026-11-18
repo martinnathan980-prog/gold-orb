@@ -86,3 +86,32 @@ def ten_fixture(folder, seed=0):
         t = pd.DataFrame({"entry_time": e, "exit_time": e + pd.Timedelta(hours=30), "R": rng.standard_normal(400)})
         t.to_parquet(os.path.join(folder, f"{n}__{s}.parquet"))
     return folder
+
+
+def d1_bars(start="2016-01-01", end="2021-12-31", vol_d=0.015, seed=0, price=50.0, drift_d=None, night=0.35,
+            with_shares=True):
+    """Kit v2.2: synthetic DAILY session bars of a US share, in the format of the prepared files (scout/prices_d1.py):
+    UTC index = the session's open (09:30 New York) for every session of data.us_sessions (holidays and 13:00 half
+    days by rule), open high low close, volume = the session's length in minutes (390 / 210), shares. Each session: an
+    overnight gap N(0, (night x vol_d)^2) from the previous close to the open, then an intraday Brownian path from the
+    open to the close with variance (1 - night^2) x vol_d^2 x minutes / 390, high and low drawn from the exact law of
+    the path's max and min given its move (as bars()). drift_d: optional array (one per session) of expected log
+    return added to the intraday move (a planted edge). Bars are cut at the period end like every reader."""
+    rng = np.random.default_rng(seed)
+    cal = data.us_sessions(start, end)
+    n = len(cal)
+    mins = cal.minutes.to_numpy(float)
+    sd_in = vol_d * np.sqrt(max(1 - night ** 2, 0.0) * mins / 390.0)
+    g = night * vol_d * rng.standard_normal(n)
+    mu = np.zeros(n) if drift_d is None else np.asarray(drift_d, float)
+    x = mu + sd_in * rng.standard_normal(n)
+    u = 1.0 - rng.random((n, 2))
+    up = (x + np.sqrt(x * x - 2 * sd_in ** 2 * np.log(u[:, 0]))) / 2
+    dn = (x - np.sqrt(x * x - 2 * sd_in ** 2 * np.log(u[:, 1]))) / 2
+    lo = np.log(price) + np.cumsum(g) + np.r_[0.0, np.cumsum(x)[:-1]]       # log open of each session
+    df = pd.DataFrame({"open": np.exp(lo), "high": np.exp(lo + up), "low": np.exp(lo + dn), "close": np.exp(lo + x),
+                       "volume": mins}, index=pd.DatetimeIndex(cal.open_utc))
+    if with_shares:
+        df["shares"] = rng.integers(500_000, 5_000_000, n).astype(float)
+    df.index.name = "time"
+    return df

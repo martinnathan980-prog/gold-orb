@@ -10,7 +10,7 @@ the verdict.** Plain Python 3 + numpy, pandas, pyarrow, scipy. It finds the repo
 PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py            # self-tests, offline, ~2 min: must end "N/N checks passed"
 PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py --net      # + one month of each source, decoded
 PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py --net-venues   # + Bitstamp, Bitfinex, Coinbase only
-PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py --real-bars    # + oil and the 40 shares' prepared bars (lead's machine)
+PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py --real-bars    # + oil and the 40 shares' prepared bars, the universe's daily bars (lead's machine)
 PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/data.py prefetch us500 eurusd --budget 1200    # bars into the cache, stops cleanly
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=lab/explore python3 -B lab/explore/kit/template/run_template.py   # the whole flow on synthetic data
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=lab/explore python3 -B lab/explore/ideas/NNN_slug/run.py          # a run's own idea
@@ -647,3 +647,260 @@ Limits that remain:
 - The vendor's flicker on 2014-03-19 / 03-20 leaves spikes of about +120 bp in the bars.
 - The close levels are calibrated on the mean quoted spread of each group of close minutes; the hour-of-week close
   shape inside a group stays the whole-period one.
+
+## Kit v2.2 (2026-11-18): generic US shares on daily bars, exits in sessions, basket bars by groups
+
+For lead/DIRECTION3.md (ideas 059-062) and the CHARTER amendment 'Baskets of many markets'. Self-test: the 166 checks
+of v2.1, unchanged (same output line by line, timings aside: scratch `kit_v22/builder/baseline_selftest.log` against the
+final run), plus the checks `test_v22_*` below; `--real-bars` adds 2. After the review fixes (below): '195/195 checks
+passed in 391 s'; with --real-bars '202/202 checks passed in 430 s' (scratch `kit_v22/fix/selftest_final.log`,
+`selftest_realbars.log`). Nothing changed for the 16 FP markets, oil and the
+40 hourly shares: the same 4 rules (hours, bdays with a target, a New York clock exit, an event exit) with random
+signals on the REAL prepared hourly bars of all 57 give the same 52,175 trades, null percentiles, exit keys and round
+trips with the kit before and after (`kit_v22/builder/s/same_old_new.py`, `cmp_old_new.py`, `cmp/compare.txt`).
+
+### A. The share universe is ONE cost class
+- `kit/universe_us.csv`: the 382 companies of `~/explore_data/d1/universe.csv` with `in_universe` true (the S&P 500
+  list read on 2026-11-18 minus the lab's 40): key, ticker, sector (11 GICS sectors), in_universe_from. Public facts,
+  no price. A row added to this file is a new market of the class. A key that is also a key of fp_costs.json or
+  extra_costs.json raises at import.
+- `kit/extra_costs.json` `_classes.us_shares_d1` (the 41 entries above it are byte-identical): every share of the file
+  gets `costs.spec(key)` = this entry + its sector, in_universe_from, dividends and 2016-2021 splits.
+  `costs.market_class(key)`, `costs.bar_kind(key)` ('session'), `costs.is_provisional(key)` (True), `costs.UNIVERSE`.
+  `costs.SPEC` (16) and `costs.EXTRA` (41) are unchanged.
+
+| cost (net scenario; stress = spread, commission and slippage x1.5) | value | source |
+|---|---|---|
+| spread, order at a bar's OPEN (= the session's open: entries, exits at an open) | 56 bp of the price (the lead's 25 bp raised by review fix V22-1, below) | the kit's model of the lab's 40 shares at the 09:30 first minute |
+| spread, order at a bar's CLOSE (('session_close', N), a 'bdays' exit on a holiday) | 12 bp of the price | lead/DIRECTION3.md |
+| shape over the week | flat (one bar a session) | - |
+| commission per side | max(0.03 USD a share, 2 USD an order) at the stake notional 4,791.67 USD (5,000 EUR / 6 x 1:5 x 1.15) | as the 40 shares (kit v2.1 fix V21-2/V21-8) |
+| slippage | 1 bp market order, 2 bp stop | lab STOCK_SPEC, as the 40 |
+| swaps | 7 % long, 3 % short a year / 360, triple Friday, credits ignored | lab STOCK_SPEC, as the 40 |
+| dividends | dividend / previous close (`kit/universe_us_dividends.csv`, 7,454 ex-dates of 326 shares, 2016-2021, Yahoo chart events via scout/prices_d1.py); a short open at the ex-date's open pays it, a long is credited 70 % | as the 40 (costs.dividends) |
+| lots, leverage | 1 share a lot, minimum 1, 1:5 | as the 40 |
+
+  Round trips by hand (`costs.round_trip`, a share of the class at 40 USD / 100 USD, July 2019, no ex-date), with the
+  56 bp open spread: open to the next session's open, long: 75.0 / 68.3 bp (stress 111.5 / 101.5; with 25 bp they were 43.9 / 37.3);
+  open to the open 5 sessions later (Monday to Monday, 7 nights), long 86.7 / 80.0 bp, short 78.8 / 72.2 bp; open to
+  the same session's close 51.0 / 44.4 bp. On the real bars (--real-bars) one open-to-open night at each share's
+  median price costs 53.9 to 121.0 bp, median 72.2 (22.9 to 89.9, median 41.2, with 25 bp).
+- **Heavier than the 40 measured shares, at the open too (review fix V22-1).** The lead's 25 bp for an order at the
+  session's open was LIGHTER than the kit's own model of the 40 (spread levels calibrated on the lab's one-minute
+  quotes) at their 09:30 first minute: per-share medians 2017-2021 median 36.8 bp, P75 46.9, P90 62.7, max 83.1 (orcl);
+  the 40's median by year at most 46.6 (2020) (scratch `kit_v22/fix/s/open_spread40.py`; the self-test recomputes it
+  from the cost tables, check 'V22-1'). Ideas 059, 061 and 062 enter and leave at an open, so the class understated
+  their main cost by about 30 % (verifier: long open to next open, class median 37.3 bp against 53.7 for the 40's own
+  model, cheaper for 27 of the 40). Decision (a cost figure, taken on the pessimistic side; the lead confirms it in
+  MetaTrader): **56 bp**, the smallest whole figure at or above the 40's P75 and their worst year's median whose stress
+  (x1.5 = 84 bp) covers the costliest of the 40; the universe's shares are smaller than the 40. A per-share open
+  spread from dollar volume was not built: 40 large shares would have to be extrapolated to smaller ones (a model
+  calibrated on the 40 gives LOWER spreads to the large shares of the universe). The 12 bp close spread stays: above
+  the 40's modelled 15:00-bar close (per-share medians P90 7.3 bp, max 21.2). The ledger line of a class basket gives
+  both figures.
+- **Yahoo's prices are adjusted for every split up to the download (2026-11-18), splits after 2021 included**
+  (scout/prices_d1.py docstring: Amazon's 20:1 of 2022 makes its 2021 prices 1/20 of the prices traded then; on this
+  universe KLAC's last 2021 close reads 43.01 USD and CMG's 34.97, when they traded near 430 and 1,750 USD). The kit
+  never adjusts them again. Consequences:
+  - an ABSOLUTE price level, a level threshold or a raw share count (`shares`) of these bars is not what traded then.
+    **Use ratios** (returns, range / close, close against the previous close). No list can tell the guard about the
+    splits after 2021, so `checks.truncation_test` treats every level of these bars as unknown: each cut copy is
+    re-based by the share's own power of two (`data.class_q`: 2 ** (1 + (7 i) mod 11), 2 to 2,048, i = the key's rank
+    in the universe; exact, so ratios and price x shares are bit-identical) and `shares` by its inverse, so a rule on a
+    level, on levels COMPARED ACROSS SHARES (a cross-sectional price rank, the cheapest decile, below the day's median
+    price) or on a share count FAILS the test (tested), a rule on ratios passes. `data.LEVEL_WARNING` says it in the
+    error texts. (Before review fix V22-5 every share was re-based by the same 2, so cross-sectional level rules
+    passed.)
+  - the per-share commission needs the share count at the price traded then. Decision (pessimistic, simple): the price
+    is unadjusted for the splits the kit knows (2016-2021, `kit/universe_us_splits.csv`, 61 splits of the class):
+    commission per adjusted unit per side = max(0.03 x adj, 2 USD x price / 4,791.67) with adj = `data.price_factor` =
+    1 / the product of the share's 2016-2021 split ratios after the bar (test A5 on afl's 2:1 split of 2018-03-19:
+    0.015 USD per adjusted unit before it, 0.03 after). A FORWARD split after 2021 leaves the kit's price below the real
+    one, so the per-share rate binds when the real minimum would (pessimistic: KLAC at a Yahoo median of 12 USD pays
+    24 bp a side instead of 4.17; 150 of the 382 shares pay the per-share rate at their median Yahoo price); a reverse
+    split after 2021 (none known to the kit, possible) would make it cheaper than real. The 2 USD minimum at the
+    stake's notional does not depend on the share count, so it is exact in every case. Review fix V22-2:
+    `checks.min_commission_test(signals, books, max_wait_h=96, **rule)` re-simulates the same signals with the 2 USD
+    minimum ALONE (the optimistic bound; the truth lies between): a sensitivity, reported, not judged; give it to
+    `judge.verdict(min_commission=...)` (results.json 'commission_min_only', the ledger line's 'PF net at the 2 USD
+    minimum commission'). The ledger line of a class basket says the per-share commission is pessimistic for shares
+    split after 2021. Listing the 2022-2025 splits (public facts, used only in the commission factor) would fix it at
+    the root: whether that is allowed under the period lock is the lead's call (not done here).
+  - the dividend fractions are dividend / previous close of the same (split-adjusted) series: ratios, exact whatever
+    the later splits. One row was dropped: dhr 2016-07-05 (Yahoo's record of the Fortive spin-off, on a split day; the
+    price did not drop by it; before dhr's in_universe_from anyway).
+- `judge.verdict` prints the class and the count, not 382 names: `PROVISIONAL COSTS (us_shares_d1 class (44 shares))`
+  and the markets column `us_shares_d1 class (44 shares)`; `results.json` 'costs' likewise.
+
+### A. Daily bars of the universe (`data.load_bars(key)`)
+- Prepared files `<key>.parquet` from `data.d1_dirs()`: `EXPLORE_D1_DIR`, `<cache>/d1/bars` (= ~/explore_data/d1/bars),
+  `lab/explore/prices/d1`. Rows filtered INSIDE the read (< 2022 while locked; after `unlock_val` the sibling
+  `<dir>_val` for 2022-2025, never 2026). A missing file raises `FileNotFoundError` naming the folders. After
+  `unlock_val` a share of the class is refused (`PeriodError`) until the class's 2022-2025 splits and dividends are
+  listed (`splits_checked_to`, `dividends_checked_to`).
+- One bar a SESSION: index = the session's open (09:30 New York, UTC), columns open high low close (Yahoo, price_is
+  'mid'), volume = the session's length in minutes (390, or 210 on a 13:00 half day), shares (Yahoo's traded volume),
+  **known_at = the session's close (16:00, 13:00 on a half day): a value computed from a bar's close is known at its
+  known_at, never at its index.** A bar not at 09:30 or of another length raises `DataGap`. attrs: market, bar
+  'session', in_universe_from, price_range, levels.
+- **No row before the share's in_universe_from** (no look-ahead at inclusion). The earlier bars are cut, not handed
+  over as history: it was the safe choice (a run cannot trade or rank on them by mistake). Cost: D20 needs the 20
+  sessions before an entry, so a share has no trade in its first 20 sessions in the universe (about January 2017 for
+  the 310 shares in from 2017-01-01; counted as `no_d20`), and a rule that needs the previous close has no signal on
+  the first session. fds (in from 2021-12-20) has 9 bars and no D20.
+- `data.long_bars({key: bars})`: one long frame (a 'market' column) for a build over the whole universe; the truncation
+  test re-bases its rows market by market (attrs price_ranges).
+- `data.us_sessions(start, end)` (C): the exchange calendar by rule (NYSE holidays with their observed dates, the
+  special closures 2012-10-29/30, 2018-12-05, 2025-01-09, the 13:00 half days: day after Thanksgiving, 24 December and
+  3 July when Monday to Thursday), through the period lock: open_utc, close_utc, minutes, half_day. 1,511 sessions and
+  12 half days in 2016-2021, the same as the daily bars (checked on all 382 files under --real-bars). Runs read
+  sessions and half days from here instead of hard-coding holiday lists. `synth.d1_bars` makes synthetic bars on it.
+
+### A. Daily bars in the simulator: every one-hour assumption, and what it is now
+| where | was | now |
+|---|---|---|
+| sim.BAR_NS: exit time of an exit at a bar's close (a scheduled exit in a closure) | bar open + 1 h | `Book.t_end`: open + 1 h for hourly markets (unchanged), the session's close for daily bars |
+| sim: exit time of a stop or a target (swaps and hold count to it) | bar open + 1 h | the bar's end (t_end): a daily stop is stamped at the session's close |
+| sim.Book D20: a day's end | last bar open + 1 h | the last bar's end; daily: min_day_bars 1, D20 = mean high - low of the 20 sessions completed before the entry bar opens |
+| sim: event exit, max_hold in a closure | bar open + 1 h | t_end |
+| sim.PairBook stop or target at a close | bar open + 1 h | t_end (the later of the legs') |
+| sim.GAP_NS (59 min: no bar holds a scheduled exit) | - | unchanged; on daily bars a ('bdays', N) exit on a holiday is done at the close of the session before (12 bp, one session early); ('hours', N) and ('clock', ...), which fall inside a session, are refused on daily bars |
+| hold bar (costs.held_tdays, business days) | busdays | for daily markets and for exits counted in sessions: the market's own sessions crossed (`sim.hold_sessions`); hourly markets with other exits: unchanged. trades.attrs/results.json 'hold_count' says which |
+| checks.truncation_test row length (default 1 h) | 1 h | daily bars: row_len='known_at' (each bar complete at its own close); a Timedelta shorter than the longest session (6.5 h) is REFUSED for an item of daily bars, also one without known_at (a close Series, a wide frame of closes: fix V22-3); values re-indexed to the closes (13:00 / 16:00) may take 0 |
+| truncation test 'after' cuts (1-24 bar ends after a stamp) | hours | the data's own bar ends: 1-24 sessions on daily bars |
+| dividend clock (ex-date at 09:00 New York, the hourly bars' first label) | 09:00 | unchanged and right for daily bars: an entry AT the ex-date's 09:30 open is ex-dividend (no charge); a position held into it (exit at or after that open) pays / is credited (test A1) |
+| spread shape (hour of the week) and close shape | per hour | flat for the class; at='open' 25 bp, at='close' 12 bp |
+| stats.null_test clock (New York hh:mm) | per hour | every daily bar opens at 09:30: a random session of the same share, same side and exit (joint same-day null when legs share a known_at) |
+| daily sums, years | 17:00 NY trading day | unchanged (a session's date) |
+| swaps | 17:00 NY rollovers, business days, triple weekday | unchanged: the nights between entry and exit (a holiday night is a night; triple Friday) |
+| simulate delay_h / max_wait_h | hours | unchanged; a signal at a close enters the next session's open 17.5 h later (65.5 over a weekend, 89.5 over a long weekend): give daily bars max_wait_h=90 or more |
+| checks.shift_test delay_extra_h=1 | one bar | default None: 1 h for hourly markets, 24 h (one session) when a market of the books has one bar a session; under 17.5 h REFUSED there (it moved no entry: fix V22-6) |
+| data.daily_bars on daily share bars | stamped each close at open + 1 h (10:30 New York) | REFUSED (attrs bar 'session', a class market, or known_at more than 1 h after the index): use the bars as they are (fix V22-4) |
+| stops intraday on daily bars | - | on the day's high and low with the OPEN spread (25 bp) on h and l (pessimistic), from the entry session on; both stop and target in a bar: the stop; a session opening beyond the stop fills at its open (2 bp) |
+
+### A. Exits counted in the market's own sessions
+- `("sessions", N)` (N >= 1): the open of the bar at the same New York clock time N sessions after the entry bar's
+  session; daily bars: the open N sessions later. Sessions are the market's own trading days (its bars), so exchange
+  holidays are skipped; ('bdays', N) is pandas' BDay and is not (the run of the batch before lost one session in 36 of
+  355 trades to that). On hourly share bars a clock time the target day lacks (a 13:00 half day) falls to the close of
+  the bar before, as any scheduled exit. Fix V22-7: on the lab's hourly share bars a bar that opens at or after the
+  session's close (data.us_sessions close_utc) is not part of the session for these exits (the lab's bars of the 13:00
+  half day 2019-07-03 run to 15:00: 41, 20 and 5 minutes); every other market and exit is unchanged.
+- `("session_close", N)` (N >= 0): the close of the last bar of the session N sessions after the entry's (N = 0: the
+  entry session's own close), reason 'session_close', the close spread.
+- Both work in `sim.simulate`, `stats.null_test` (the same exit key) and as an event exit's max_hold; the judge's hold
+  bar counts them in sessions (a 5-session hold across a holiday is 5, not 6).
+
+### B. Basket bars by groups (CHARTER 'Baskets of many markets')
+- `judge.verdict(..., groups=None)`: a basket of MORE THAN 40 traded markets reads 'groups_positive>=65%' and
+  'max_group_share<=25%' instead of the two market bars, on the groups of the idea's `declared.json` `"groups"`:
+  `"sector"` (the sectors of kit/universe_us.csv) or `{market: group}`; at least 8 groups among the traded markets.
+  `groups=` may repeat them and must then be equal. It raises (ValueError) without declared groups (the message names
+  the amendment), with other groups, with a traded market without a group, or with fewer than 8 groups. A basket of 40
+  markets or fewer ignores groups (results.json 'groups' says 'ignored'). results.json 'groups': by group n, markets,
+  sum and mean R, n_groups, groups_positive_frac, max_group_share_of_profit, and the group of every traded market; the
+  ledger line adds 'groups + a/b, max group share x'.
+- Every other bar is unchanged (t on daily sums, PF, years, stress, neighbours, every-signal, hold, the same-day null,
+  correlation, deflated Sharpe on daily sums).
+
+### C. Small things
+- results.json is valid JSON: main['max_market_share_of_profit'] is null with 'max_market_share_note' when the total
+  profit is <= 0 (it was Infinity), and any other non-finite number is written as the string 'inf' / '-inf' / 'nan'.
+- `data.us_sessions` (above).
+
+### Tests (`test_v22_*`)
+- A (universe, costs by hand, on flat daily bars of afl read through data.load_bars): the class and its files; entry at
+  the next open (25 bp) and exit 2 sessions later across the ex-date long and short (credit 70 % / pays), equal to
+  costs.round_trip; across a Friday and Memorial Day ('sessions' 5 nights, hold 2; 'bdays' done at the Friday close);
+  exits at a close (12 bp); a stop inside a day, a stop gapped through at the open, stop and target in one bar; the
+  per-share commission across afl's 2018 split and the minimum; stress and gross.
+- A (data): no request; < 2022; the in_universe_from cut (amcr 2019-06-07); known_at 16:00 / 13:00; D20 absent for
+  the first 20 sessions; missing file, a bar off 09:30, hours exits, validation years refused; the calendar (1,511
+  sessions, 12 half days); ('sessions', N) on hourly share bars across 4 July and a half day.
+- Traps: a signal stamped at the open but computed from the close is caught with row_len='known_at' (t gross 28 of fake
+  edge); 1 h, 0 and 6 h row lengths are refused; level and share-count rules fail, ratio and dollar-volume rules pass
+  (one share and a long frame of three).
+- Noise: 40 random rules on synthetic daily bars: gross t ~ N(0, 1), null percentile uniform.
+- Chain: 44 synthetic shares in 11 sectors, declared groups 'sector': a planted drift passes every bar with the group
+  bars (n about 1,340, PF 1.9, t 9.4 on daily sums, null 100), noise fails; the group guards; ledger_add on a COPY of
+  LEDGER.md; results.json parsed with a parser that refuses Infinity.
+- --real-bars: all 382 shares load (0 missing), no bar before in_universe_from or after 2021, on the rule calendar with
+  the right known_at, D20 on > 99 % of bars after the first 20 sessions (fds too young), a daily round trip 20-160 bp
+  (120 before the open spread went to 56 bp); random signals on every share: no gross edge; the kit's dividend file
+  equals the data's final one (V22-9).
+
+### Review fixes (2026-11-18, the verifier's issues V22-1 to V22-10)
+Test: `test_v22_review_fixes` (10 checks, one per issue; each FAILS on the kit before the fixes, scratch
+`kit_v22/fix/kit_before`, and passes after: `kit_v22/fix/before_after_review_fixes.txt`), plus a ledger check in
+`test_v22_planted_chain_and_groups` and a dividend-file check under --real-bars.
+- **V22-1 (blocking) open spread 25 -> 56 bp** (above). Round trips and the tests' hand costs follow from the cost
+  entry (`D1C['spread_bps_open']`).
+- **V22-2 commission on Yahoo prices**: `checks.min_commission_test` (a sensitivity at the 2 USD minimum alone), the
+  ledger-line note, `judge.verdict(min_commission=...)`. Not fixed at the root (the 2022-2025 splits are the lead's call).
+- **V22-3 row length of daily inputs without known_at**: `_check_row_len` also treats as daily a Series or frame whose
+  attrs say bar 'session' or a class market (a close Series of load_bars, a frame with known_at dropped), and a wide
+  frame or Series named after universe shares whose index holds 09:30 opens (`checks._class_keys_of`: ALL columns
+  universe keys, a session-stamped index, no attrs 'market'); such an input needs row_len >= 6.5 h (or re-index it to
+  the closes and give 0). The verifier's traps T3b, T4, T5 (passed before) are now refused.
+- **V22-4 `data.daily_bars`** refuses daily session bars (it stamped their close at 10:30 New York).
+- **V22-5 levels across shares**: per-share re-basing factors 2 to 2,048 (`data.class_q`); wide frames and Series named
+  after universe shares are re-based too (a wide frame of returns or other non-price values named by ticker is
+  REFUSED: compute it inside build). The verifier's T11 (cross-sectional price rank) and T6c (level on a wide frame)
+  now fail the test (125/200 and 200/200 cuts); ratio and dollar-volume rules still pass.
+- **V22-6 `checks.shift_test`** on daily markets: default one session (24 h), under 17.5 h refused.
+- **V22-7 stray hourly bars after a half day's close** (2019-07-03): the session exits end at the session's close.
+- **V22-8 dividends in moves**: `data.session_moves(bars)` (also on data.long_bars): ret (close / previous close - 1),
+  dividend_fraction, split_ratio, ret_total (= ret + the ex-date's fraction: the holder's move), action (an ex-date of
+  2 % or more, or a split / spin-off record). **A large move on an `action` session is a corporate action, not news**:
+  ideas 059, 061 and 062 measure moves with ret_total and treat flagged sessions as no signal (or say how they treat
+  them in the declaration). Examples in the universe after inclusion: gen 2020-02-03 (42 % special dividend), ben
+  2018-03-28 (8.6 %), tdg 2017-08-31 (8.0 %), dd 2019-06-03 (spin-off record, close / previous close 1.178).
+- **V22-9 files**: `kit/universe_us_dividends.csv` re-synced from the final `~/explore_data/d1/dividends.csv` (7,444
+  rows of 326 shares; the 10 dropped rows were amcr and hwm ex-dates before those shares' inclusion, which the data no
+  longer prices; --real-bars checks the two files match); a prepared daily file whose times are a column or a tz-naive
+  index raises `data.DataGap` (it gave 0 bars or a raw ArrowInvalid).
+- **V22-10 scale**: the re-basing plan of a long frame holds one int32 market code per row instead of a boolean mask
+  per share and column (382 x 5 masks of 442,493 rows), and re-bases a column in one vectorised product per cut. At the
+  universe's size: one truncation test on the long frame of 382 synthetic shares (442,493 rows, 199 cuts) took 92 s at a peak of
+  500 MB (the verifier measured 704 s and 1,437 MB before; scratch `kit_v22/fix/scale382.log`, the verifier's
+  s/scale382.py). **`cols` of the truncation test must hold only known_at, side and integer or label
+  columns** (a float feature differs in its last bits under the re-basing and fails an honest rule).
+
+### How a run uses it (the text for CHARTER.md is in the hand-back)
+```
+bs = {k: data.load_bars(k) for k in keys}                 # keys of kit/universe_us.csv; daily session bars
+d = {"bars": data.long_bars(bs), "events": ev}            # ev: data.event_table(...) of the 8-K calendar
+def build(d):                                             # every feature INSIDE build, from ratios only:
+    mv = data.session_moves(d["bars"])                    # ret_total (dividends added back), action (not news)
+    ...                                                   # known_at = the session's close (bars' known_at) or later
+tr = checks.truncation_test(build, d, row_len={"bars": "known_at", "events": pd.Timedelta(0)})
+sig = build(d)
+bk = sim.books(bs)
+rule = dict(exit=("sessions", 5), stop=("d20", 1.5))
+main = sim.simulate(sig, bk, max_wait_h=96, **rule); null = stats.null_test(main, bk, n_draws=2000, **rule)
+sh = checks.shift_test(sig, bk, max_wait_h=96, **rule)                  # one session later (default on daily bars)
+mc = checks.min_commission_test(sig, bk, max_wait_h=96, **rule)         # sensitivity, not judged
+res = judge.verdict(folder, main, neigh, every, null, truncation=tr, n_configs=N, min_commission=mc,
+                    extra={"shift": sh})                  # declared.json: "groups": "sector"
+```
+
+### Limits (v2.2)
+- The costs are PROVISIONAL: 56 bp at the open (the review's pessimistic figure, from the 40 shares' model, not a quote
+  of these shares), 12 bp at a close, commission, swaps and the dividend credit are to be read in MetaTrader.
+- Levels carry splits after 2021: the guard makes every level rule fail, across shares too; a feature that leaves the
+  bars without their marks (a numpy array, a frame with a date index without time, a wide frame mixing universe keys
+  with other columns, a Series renamed to something that is not a key) is not seen. Tickers like 'low', 'key', 'a',
+  'all' are recognised as shares only with both marks (all columns keys AND a session-stamped index, no attrs market).
+  Build from the bars of data.load_bars / data.long_bars, inside build.
+- A level rule passes only if no cut reorders it: two shares whose factors differ (2 to 2,048) are reordered unless
+  their prices differ by more than the factors' ratio; with 382 shares this is a sampled guard, not a proof.
+- The per-share commission is pessimistic for shares with a forward split after 2021 (KLAC, CMG and others: up to about
+  20 bp a side too much; checks.min_commission_test gives the optimistic bound), optimistic for a reverse split after
+  2021; neither list is in the kit.
+- The lab's hourly share bars still carry the stray bars of 2019-07-03 after 13:00 (they predate v2.2): only the
+  session exits ignore them; D20 and other exits see them as before.
+- Survivors only (today's S&P 500 list): said with every result; the null on the same share and side is the guard.
+- No history before in_universe_from (no D20 in a share's first 20 sessions).
+- Intraday stops on daily bars: the path inside the day is unknown; the stop is touched on the day's low / high with
+  the open spread; a target and a stop in the same session: the stop.
+- 'bdays' exits on daily bars still fall one session early on a holiday (as before): use 'sessions'.

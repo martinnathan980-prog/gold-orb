@@ -82,12 +82,12 @@ Cache folder: `~/explore_data` (outside the repository; it may survive between r
 - `lab/explore/fetch.py` is the first runs' helper; the kit's `data.py` replaces it.
 
 ## The kit (`lab/explore/kit`): use it; do not rewrite fetch, backtest or statistics
-Built and attacked on 2026-11-17/18 (README.md in the folder; v2.1 after three adversarial reviews: 166 self-tests). It holds the period lock, FP
+Built and attacked on 2026-11-17/18 (README.md in the folder; v2.2, after four adversarial reviews: 195 self-tests). It holds the period lock, FP
 costs in the lab's conventions, an hourly simulator, hedged pairs, exits on a condition, every bar below, the
 random-entry null (same-day for baskets), the correlation with the ten, the deflated Sharpe, the guards against
 look-ahead and, since v2.1, US shares and oil with provisional costs and the slow track (paragraphs under "The bars").
 1. Check first: `PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py` must end `N/N checks passed`
-   (about 4 minutes). If it does not, run no idea and write the failure in the ledger.
+   (about 7 minutes). If it does not, run no idea and write the failure in the ledger.
 2. Write `ideas/NNN_slug/declared.json` from `kit/template/declared.template.json` (at most 11 configurations, the
    publication lag of every external series), its sha256 in `declared.sha256`, commit and push. Copy
    `kit/template/run_template.py` to the idea's `run.py`: it READS the declaration and never writes it. Run it with
@@ -221,6 +221,39 @@ does not pass.
   STARTS after that time. A value taken from the reaction is known at the end of the bar that carries it. A rule
   that trades the reaction day loads `calendar(drop_late=True)` (it drops the 25 rows known to be a session late:
   Alibaba, and Citigroup's filings made during the session); never move an event earlier because of a price move.
+- **US shares on daily bars (kit v2.2; direction 3, ideas 059 to 062):**
+  - Load: `data.load_bars(key)` for the keys of `kit/universe_us.csv` (382 shares with sector and in_universe_from;
+    the lab's 40 are not in it). One bar a session: the index is the session's open (09:30 New York); the column
+    `known_at` is its close (16:00, 13:00 on a half day). No bar before in_universe_from (so no D20 in a share's
+    first 20 sessions) and none after 2021. For the whole universe at once: `data.long_bars({key: bars})`. Sessions
+    and half days come from `data.us_sessions()`; never hard-code a holiday list. Never pass these bars to
+    `data.daily_bars` (it refuses them).
+  - Prices: Yahoo's levels carry every split up to today and are not adjusted for dividends. Use ratios only
+    (returns, range / close, dollar volume). A rule on a price level, on levels compared ACROSS shares (a price rank,
+    the cheapest decile) or on a raw share count fails the truncation test. Measure moves with
+    `data.session_moves(bars)`: `ret_total` adds the ex-date's dividend back; a session flagged `action` (an ex-date
+    of 2 % or more, a split or spin-off record) is a corporate action, not news (no signal on it unless the
+    declaration says otherwise).
+  - Stamp: a value computed from a session's close is known at that bar's `known_at` (or later), never at its index.
+    The 8-K events (`scout/events_edgar.py`, `scout/sources.md` section 31: `event_session` is the first session that
+    closes after the filing was accepted) go through `data.event_table(..., min_lag=...)` and take row_len 0.
+  - Truncation test: compute every feature INSIDE build from the bars passed to it; give the bars
+    `row_len='known_at'` (a shorter row length is refused). `cols` holds only known_at, side and integer or label
+    columns. On the whole universe the test takes a few minutes.
+  - Simulate: entry is the next session's open; pass `max_wait_h=96`. Exit with `('session_close', N)` (a close) or
+    `('sessions', N)` (the open N sessions later, holidays skipped; not `('bdays', N)`); `('hours', N)` and clock
+    exits are refused. Stop `('d20', k)`: D20 is the mean high - low of the 20 sessions completed before the entry.
+  - Costs, PROVISIONAL and heavy on purpose: spread 56 bp of the price for an order at the session's open (the
+    first-minute cost measured on the lab's 40 shares, at its 75th percentile), 12 bp at a close; commission
+    max(0.03 USD a share, 2 USD an order) at 4,791.67 USD a trade, computed on Yahoo's price levels (pessimistic for
+    shares that split after 2021: run `checks.min_commission_test` and pass it to `judge.verdict(min_commission=...)`;
+    reported, not judged); slippage 1 bp (2 on a stop); swaps 7 % long and 3 % short a year; dividends (a short
+    pays, a long is credited 70 %). One night, open to open, costs about 70 bp.
+  - Declare `"groups": "sector"` in declared.json for a basket of more than 40 markets (next paragraph);
+    `judge.verdict(..., groups=...)` raises without it. Survivors only (today's index list: 183 companies that left
+    the index since 2017 are missing): said with every result, long and short sides reported apart.
+  - A validation look on these shares needs the lead to prepare the 2022-2025 bars, splits, dividends and filings
+    first; the kit refuses to read past what it holds.
 - **Baskets of many markets (amendment of 2026-11-18, written before any run on such a basket):** for a basket of
   MORE THAN 40 markets (several hundred shares with a few trades each) the two basket bars are read on GROUPS of
   markets fixed in the declaration before any result (at least 8 groups, for example sectors): at least 65 % of the

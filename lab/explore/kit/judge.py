@@ -39,6 +39,94 @@ VAL_YEARS = (2022, 2023, 2024, 2025)
 # approximate EUR per unit of quote currency, for the minimum-lot figures only (reported, not judged)
 EUR_PER = {"EUR": 1.0, "USD": 1 / 1.15, "JPY": 1 / 130.0, "CAD": 1 / 1.50, "CHF": 1 / 1.10}
 SMALL_BASKET_SHARE = {2: 0.75, 3: 0.60, 4: 0.50}
+GROUPS_ABOVE = 40                                  # CHARTER 'Baskets of many markets' (2026-11-18): above 40 markets the
+GROUPS_MIN = 8                                     # two basket bars are read on >= 8 groups fixed in the declaration
+
+
+def _resolve(spec_, markets, what):
+    """{market: group} from a groups specification: 'sector' (the sector of kit/universe_us.csv, costs.spec(m)['sector'])
+    or a dict {market: group}; every market must have a group."""
+    if isinstance(spec_, str) and spec_.strip().lower() == "sector":
+        out = {}
+        for m in markets:
+            sec = C.spec(m).get("sector")
+            if not sec:
+                raise ValueError(f"{what}: groups 'sector' but market {m} has no sector (only the shares of "
+                                 "kit/universe_us.csv have one): declare {market: group} instead")
+            out[m] = str(sec)
+        return out
+    if isinstance(spec_, dict):
+        miss = [m for m in markets if m not in spec_]
+        if miss:
+            raise ValueError(f"{what}: groups name no group for {len(miss)} traded market(s), first {miss[:5]}")
+        return {m: str(spec_[m]) for m in markets}
+    raise ValueError(f"{what}: groups are 'sector' or {{market: group}}, got {type(spec_).__name__}")
+
+
+def resolve_groups(idea_dir, markets, groups=None):
+    """CHARTER 'Baskets of many markets' (amendment of 2026-11-18): the groups of a basket of more than 40 markets,
+    fixed in the declaration BEFORE any result: declared.json "groups" = "sector" (the 11 sectors of kit/universe_us.csv)
+    or {market: group}. groups= (same forms), if given, must equal the declared groups on the traded markets. Raises
+    ValueError when the declaration names no groups, when groups= differ from it, when a traded market has no group, or
+    when the traded markets fall in fewer than 8 groups."""
+    try:
+        decl = json.load(open(os.path.join(idea_dir, "declared.json"))).get("groups")
+    except (OSError, ValueError, AttributeError):
+        decl = None
+    if decl is None:
+        raise ValueError(f"a basket of {len(markets)} markets (more than {GROUPS_ABOVE}): CHARTER.md amendment 'Baskets of "
+                         "many markets' (2026-11-18) reads the bars 'markets positive >= 65 %' and 'max market share <= "
+                         "25 %' on GROUPS of markets fixed in the declaration before any result (at least 8): the idea's "
+                         "declared.json needs a \"groups\" entry (\"sector\" or {market: group})"
+                         + ("; groups= alone is not enough" if groups is not None else ""))
+    want = _resolve(decl, markets, "declared.json")
+    if groups is not None:
+        got = _resolve(groups, markets, "groups=")
+        diff = [m for m in markets if got[m] != want[m]]
+        if diff:
+            raise ValueError(f"groups= differ from the groups of declared.json on {len(diff)} market(s), first "
+                             f"{diff[:5]}: the groups are fixed by the declaration (CHARTER 'Baskets of many markets')")
+    ng = len(set(want.values()))
+    if ng < GROUPS_MIN:
+        raise ValueError(f"a basket of {len(markets)} markets traded in {ng} group(s): CHARTER 'Baskets of many markets' "
+                         f"needs at least {GROUPS_MIN} groups")
+    return want
+
+
+def group_split(t, groups, col="R"):
+    """The basket bars read on groups: per group the trades, markets, sum and mean of R; the share of groups with a
+    positive mean R and the largest group's share of the total profit (None when the total is <= 0)."""
+    g = t.groupby(t["market"].astype(str).map(groups))[col].agg(["sum", "mean", "size"])
+    mk = t.groupby(t["market"].astype(str).map(groups))["market"].nunique()
+    tot = float(t[col].sum())
+    share = float(g["sum"].max() / tot) if tot > 0 else None
+    return {"by_group": {str(k): {"n": int(r["size"]), "markets": int(mk[k]), "sum_R": float(r["sum"]),
+                                  "mean_R": float(r["mean"])} for k, r in g.iterrows()},
+            "n_groups": int(len(g)), "groups_positive_frac": float((g["mean"] > 0).mean()),
+            "max_group_share_of_profit": share}
+
+
+def _names(markets):
+    """Markets for a ledger line: plain names, and the shares of a cost class as '<class> class (N shares)' (kit v2.2:
+    a basket of several hundred shares does not print every name)."""
+    plain = [m for m in markets if C.market_class(m) is None]
+    cls = {}
+    for m in markets:
+        c = C.market_class(m)
+        if c is not None:
+            cls[c] = cls.get(c, 0) + 1
+    return plain + [f"{c} class ({n} share{'s' if n != 1 else ''})" for c, n in sorted(cls.items())]
+
+
+def _finite(o):
+    """JSON-valid copy: a float inf / nan becomes the string 'inf', '-inf' or 'nan' (json.dump would write Infinity)."""
+    if isinstance(o, dict):
+        return {k: _finite(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [_finite(v) for v in o]
+    if isinstance(o, (float, np.floating)) and not np.isfinite(o):
+        return "nan" if np.isnan(o) else ("inf" if o > 0 else "-inf")
+    return o
 
 
 def ledger_total(path=LEDGER):
@@ -235,7 +323,7 @@ def _same_events(rep, main):
 
 def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr="compute", n_configs=None,
             basket=None, small_basket=True, write=True, idea=None, data_desc=None, ledger=LEDGER, ten=None, extra=None,
-            truncation=None, event_truncation=None, max_hold_tdays=MAX_HOLD_DEFAULT):
+            truncation=None, event_truncation=None, max_hold_tdays=MAX_HOLD_DEFAULT, groups=None, min_commission=None):
     """Judge the MAIN configuration. main / every_signal / neighbours[id]: trade tables of kit.sim.simulate (every_signal
     = the same rule with mode='every'); null: the dict of stats.null_test (>= 2000 draws); corr: 'compute' (reads the
     ten's trades from lab/results/r2/recalc/trades with the in-sample filter), a number, or None (bar fails as missing);
@@ -257,8 +345,17 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     max_hold_tdays: 5 by default (bar 'hold<=5d'); a run of the slow track (CHARTER 'Slow track') passes 40 (bar
     'hold<=40d', the ledger line says 'slow track'), and only when idea_dir/declared.json says "track": "slow"; any
     other value raises (kit v2.1 fix, V21-6). results.json records it.
+    BASKETS OF MANY MARKETS (kit v2.2, CHARTER amendment of 2026-11-18): for a basket of MORE THAN 40 traded markets the
+    bars 'markets_positive>=65%' and 'max_market_share<=25%' become 'groups_positive>=65%' and 'max_group_share<=25%',
+    read on the groups of the idea's declared.json ("groups": "sector" or {market: group}, at least 8 groups;
+    resolve_groups); groups= may repeat them and must then be equal; without declared groups, or with other groups, it
+    raises. results.json 'groups' records the figures. A basket of 40 markets or fewer ignores groups (as before).
     PROVISIONAL COSTS: when a market of the main (or a leg of a pair) has provisional costs (kit/extra_costs.json), the
     ledger line and results.json say 'PROVISIONAL COSTS' (a pass must be re-judged on the broker's own figures).
+    Kit v2.2 fixes V22-1/V22-2: for the shares of a cost class the line also gives the class's spreads at the open and
+    at a close, and says that the per-share commission on Yahoo's prices is pessimistic for shares split after 2021;
+    min_commission = the report of checks.min_commission_test (a sensitivity with the 2 USD minimum alone, not judged):
+    results.json 'commission_min_only' and the line's 'PF net at the 2 USD minimum'.
     Returns {'verdict', 'bars', 'ledger_line', ...}; with write=True writes results.json and appends trials.jsonl in
     idea_dir. Call it BEFORE ledger_add (N_all reads the running total as it stands)."""
     if isinstance(max_hold_tdays, bool) or not isinstance(max_hold_tdays, (int, np.integer)) or \
@@ -279,6 +376,7 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     mk = sorted(main.market.unique()) if len(main) else []
     basket = (len(mk) > 1) if basket is None else basket
     sm = S.summary(main)
+    gsplit = None
     if len(main):
         y0 = int(pd.DatetimeIndex(main.entry_time).year.min())
         yr = S.by_year(main).reindex(range(y0, max(IS_LAST_YEAR, y0) + 1), fill_value=0.0)
@@ -314,6 +412,17 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     if not basket:
         bars["n>=250"] = _b(sm.get("n", 0), sm.get("n", 0) >= 250, ">= 250 trades")
         bars["t>=2.5"] = _b(sm.get("t_trade"), (sm.get("t_trade") or 0) >= 2.5, "t per trade >= 2.5")
+    elif len(mk) > GROUPS_ABOVE:                        # kit v2.2: CHARTER 'Baskets of many markets'
+        grp = resolve_groups(idea_dir, mk, groups)
+        gsplit = group_split(main, grp)
+        gsplit.update(source="declared.json groups", groups_of_markets={m: grp[m] for m in mk})
+        bars["t_daily>=2.5"] = _b(sm.get("t_daily"), (sm.get("t_daily") or 0) >= 2.5, "t on daily sums of R >= 2.5")
+        bars["groups_positive>=65%"] = _b(gsplit["groups_positive_frac"], gsplit["groups_positive_frac"] >= 0.65,
+                                          f">= 65 % of the declared groups ({gsplit['n_groups']}) with positive "
+                                          "expectancy (CHARTER 'Baskets of many markets')")
+        gsh = gsplit["max_group_share_of_profit"]
+        bars["max_group_share<=25%"] = _b(gsh if gsh is not None else "n/a (total profit <= 0)",
+                                          gsh is not None and gsh <= 0.25, "no declared group above 25 % of the profit")
     else:
         bars["t_daily>=2.5"] = _b(sm.get("t_daily"), (sm.get("t_daily") or 0) >= 2.5, "t on daily sums of R >= 2.5")
         share_bar = SMALL_BASKET_SHARE.get(len(mk), 0.25) if small_basket else 0.25
@@ -379,7 +488,16 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     if max_hold_tdays != MAX_HOLD_DEFAULT:
         vtxt += f" ; slow track (hold<={max_hold_tdays}d)"
     if provisional:
-        vtxt += " ; PROVISIONAL COSTS (" + ", ".join(provisional) + ")"
+        vtxt += " ; PROVISIONAL COSTS (" + ", ".join(_names(provisional)) + ")"
+        for cn in sorted({C.market_class(m) for m in provisional} - {None}):      # kit v2.2 fixes V22-1/V22-2
+            ce = C.CLASSES[cn]
+            vtxt += (f" ; {cn}: spread {ce['spread_bps_open']:g} bp at the open, {ce['spread_bps_close']:g} bp at a "
+                     "close; per-share commission on Yahoo prices, pessimistic for shares split after 2021")
+    if min_commission is not None:
+        key += f", PF net at the 2 USD minimum commission {fmt((min_commission.get('min_commission') or {}).get('PF'))}"
+    if gsplit is not None:
+        key += (f", groups + {int(round(gsplit['groups_positive_frac'] * gsplit['n_groups']))}/{gsplit['n_groups']}, "
+                f"max group share {fmt(gsplit['max_group_share_of_profit'])}")
     sz = sizing(main)
     divr = dividend_report(main)
     if divr.get("by_market") and any(v["long_trades_across_ex_dates"] for v in divr["by_market"].values()):
@@ -391,15 +509,21 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
         key += (f", sizing not judged (min lot: margin {sz['min_lot_margin_eur']:.0f} EUR, loss at median stop "
                 f"{sz['min_lot_loss_at_median_stop_eur']:.1f} EUR)")
     num = os.path.basename(os.path.abspath(idea_dir))[:3]
-    line = (f"| {num} | {_dt.date.today().isoformat()} | {idea} | {', '.join(mk)} | {data_desc or ''} | {n_configs} | "
+    line = (f"| {num} | {_dt.date.today().isoformat()} | {idea} | {', '.join(_names(mk))} | {data_desc or ''} | {n_configs} | "
             f"{vtxt} | {key} |")
     res = {"idea": idea, "declared_sha256": sha, "verdict": verdict_, "failed_bars": failed, "basket": basket,
-           "bars": bars, "selection": selection, "main": sm, "sizing": sz, "dividends": divr,
+           "bars": bars, "selection": selection, "main": _main_json(sm), "sizing": sz, "dividends": divr,
            "max_hold_tdays": max_hold_tdays,
            "slow_track": max_hold_tdays != MAX_HOLD_DEFAULT,
-           "costs": ("PROVISIONAL COSTS: " + ", ".join(provisional) + " (kit/extra_costs.json; re-judge on the broker's "
-                     "own figures before anything else)") if provisional else "FP costs (lab/r2/fp_costs.json)",
+           "costs": ("PROVISIONAL COSTS: " + ", ".join(_names(provisional)) + " (kit/extra_costs.json; re-judge on the "
+                     "broker's own figures before anything else)") if provisional else "FP costs (lab/r2/fp_costs.json)",
+           "groups": gsplit if gsplit is not None else (None if groups is None else
+                                                        {"ignored": f"a basket of {len(mk)} markets (<= {GROUPS_ABOVE}): "
+                                                                    "the bars are read market by market"}),
+           "hold_count": main.attrs.get("hold_count"),
            "provisional_costs": bool(provisional),
+           "commission_min_only": min_commission if min_commission is not None else (
+               "not run (checks.min_commission_test)" if any(C.market_class(m) for m in mk) else None),
            "neighbours": {k: {"n": int(len(t)), "PF": S.pf(t.R), "mean_R": float(t.R.mean()) if len(t) else None}
                           for k, t in neighbours.items()},
            "every_signal": None if every_signal is None else {"n": int(len(every_signal)), "mean_R": ev},
@@ -410,7 +534,7 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
         res["extra"] = extra
     if write:
         with open(os.path.join(idea_dir, "results.json"), "w") as f:
-            json.dump(res, f, indent=1, default=_js)
+            json.dump(_finite(res), f, indent=1, default=_js, allow_nan=False)    # kit v2.2: JSON-valid (no Infinity)
         tp = os.path.join(idea_dir, "trials.jsonl")
         if sha is not None and os.path.exists(tp):          # a re-run replaces this declaration's rows (no duplicates)
             keep = [x for x in open(tp).read().splitlines() if x.strip() and f'"declared_sha256": "{sha}"' not in x]
@@ -424,6 +548,17 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
                                     "PF_stress": s.get("PF_stress"), "mean_R": s.get("mean_R"),
                                     "declared_sha256": sha, "time": res["written_utc"]}, default=_js) + "\n")
     return res
+
+
+def _main_json(sm):
+    """results.json 'main' (kit v2.2): max_market_share_of_profit is None (with a note) when the total profit is <= 0,
+    instead of inf (json.dump wrote 'Infinity', which is not JSON)."""
+    out = dict(sm)
+    v = out.get("max_market_share_of_profit")
+    if v is not None and not np.isfinite(v):
+        out["max_market_share_of_profit"] = None
+        out["max_market_share_note"] = "n/a (total profit <= 0)"
+    return out
 
 
 def val_verdict(idea_dir, trades, every_signal, write=True):

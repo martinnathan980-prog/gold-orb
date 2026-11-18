@@ -13,6 +13,7 @@
     "nothing_after": "2021-12-31"
   },
   "markets": ["us500"],
+  "groups": "only for a basket of MORE THAN 40 markets (CHARTER 'Baskets of many markets'): \"sector\" (the 11 sectors of kit/universe_us.csv) or {market: group}, at least 8 groups; judge.verdict reads it (and raises without it); delete this field otherwise",
   "rule_main": {
     "signal": "exact formula, with the time each signal is known (a value from a bar's close is known at the bar's end)",
     "side": "+1 / -1 rule",

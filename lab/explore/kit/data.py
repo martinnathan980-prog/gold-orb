@@ -26,6 +26,16 @@ Guarantees (tested in test_kit.py):
   per-unit commission and refuses raw bars. No column of the bars carries the split adjustment (a build could read a
   future split from it); an ABSOLUTE share (or oil) price level still depends on later splits (rolls): use ratios.
   checks.truncation_test catches a rule on levels (kit v2.1 fix 2, KF-2: cut copies re-based, cut builds in asof).
+- DAILY SHARES (kit v2.2, cost class 'us_shares_d1' of kit/extra_costs.json, keys of kit/universe_us.csv): load_bars(key)
+  reads <key>.parquet from d1_dirs() (EXPLORE_D1_DIR, <cache>/d1/bars, lab/explore/prices/d1; validation years from the
+  sibling '<dir>_val' after unlock_val), one bar a SESSION: index = the session's open (09:30 New York, UTC), column
+  known_at = the session's close (16:00, or 13:00 on a half day: the file's 'volume' is the session's length in minutes,
+  390 or 210), price_is 'mid' (Yahoo's trade prices). No row before the share's in_universe_from (no look-ahead at
+  inclusion: the earlier bars are CUT, not even returned as history). YAHOO'S LEVELS CARRY EVERY SPLIT UP TO TODAY (the
+  download), splits after 2021 included, which no list in the kit holds: an absolute price level of these bars is not
+  the price traded then. Use ratios. checks.truncation_test re-bases every cut copy of these bars by 2 (and 'shares' by
+  1/2), so a rule on levels or on raw share counts fails the test; a ratio rule is bit-identical (us_sessions: the
+  exchange calendar).
 - Cache: ~/explore_data (EXPLORE_CACHE overrides), outside the repository. Polite HTTP: browser User-Agent, at least
   1 s between Dukascopy requests (0.3 s for other hosts), growing waits on 429/503/network errors, 404 = no data.
 """
@@ -815,6 +825,15 @@ def daily_bars(h1, boundary="ny17", bar=pd.Timedelta(hours=1)):
     """Daily bars from hourly bars. boundary 'ny17': day = 17:00 New York to 17:00 New York (FX convention, DST
     correct, label = the date the day ends); 'utc': UTC calendar day. Columns open high low close volume n_bars
     known_at (end of the day's last bar: use it, never the label, to time a signal)."""
+    at = getattr(h1, "attrs", {}) or {}
+    ka = h1["known_at"] if isinstance(h1, pd.DataFrame) and "known_at" in h1.columns else None
+    long_rows = ka is not None and len(h1) and bool(
+        ((pd.DatetimeIndex(ka) - pd.DatetimeIndex(h1.index)) > pd.Timedelta(bar)).any())
+    if at.get("bar") == "session" or _C.market_class(at.get("market")) is not None or long_rows:
+        raise ValueError("daily_bars: these bars are already one bar a SESSION (kit v2.2 daily shares, data.load_bars: "
+                         "open 09:30 New York, close known at its known_at, 16:00 or 13:00): use them as they are, with "
+                         "their own known_at. daily_bars would stamp each close at the last bar's open + 1 h (10:30 New "
+                         "York), 5.5 hours before it is known (kit v2.2 fix V22-4)")
     lab = trading_day(h1.index) if boundary == "ny17" else pd.DatetimeIndex(h1.index).tz_convert("UTC").tz_localize(None).normalize()
     g = h1.groupby(lab)
     d = pd.DataFrame({"open": g["open"].first(), "high": g["high"].max(), "low": g["low"].min(),
@@ -909,6 +928,10 @@ def load_bars(key, start_year=2013, venue=None, allow_holes=False):
     trades; costs stay FP's); price_is 'mid', FP's weekend closure removed, attrs['venue'] says which. None or
     'binance': the default, unchanged. allow_holes: passed to crypto_h1 (a venue month with a run of more than 48 h
     without a candle raises DataGap unless allowed)."""
+    if _C.market_class(key) is not None:        # kit v2.2: a share of a cost class (daily bars of the universe)
+        if venue not in (None, "binance"):
+            raise ValueError(f"venue= is for the crypto keys (btcusd, ethusd), not {key}")
+        return local_d1(key, start_year)
     m = fp_markets()[key]
     if m["source"] == "local":
         if venue not in (None, "binance"):
@@ -966,6 +989,230 @@ def load_bars(key, start_year=2013, venue=None, allow_holes=False):
     b = fp_hours(key, b)
     b.attrs["price_is"], b.attrs["market"], b.attrs["source"] = m["price_is"], key, src
     return b
+
+
+# ---------------------------------------------------------------- kit v2.2: daily bars of the US share universe
+SESSION_MINUTES = (390, 210)          # a full NYSE session (09:30-16:00) and a 13:00 half day
+LEVEL_WARNING = ("Yahoo's daily prices are adjusted for EVERY split up to the day they were downloaded (2026-11-18), splits "
+                 "after 2021 included (no list in the kit holds those): an absolute price level of these bars is NOT the "
+                 "price traded then. Use ratios of prices (returns, ranges / close, moves against the previous close); "
+                 "never a level, a level threshold or a raw share count")
+
+
+def d1_dirs():
+    """Folders searched, in order, for prepared daily bars <key>.parquet of the share universe (kit v2.2):
+    EXPLORE_D1_DIR, <cache>/d1/bars, and lab/explore/prices/d1 in the repository (present only if the lead puts them
+    there)."""
+    d = [os.environ.get("EXPLORE_D1_DIR"), os.path.join(cache_dir(), "d1", "bars"), os.path.join(KIT, "..", "prices", "d1")]
+    return [os.path.abspath(x) for x in d if x]
+
+
+def session_known_at(index, minutes):
+    """Close time (UTC) of daily session bars indexed by their open (09:30 New York): open + the session's length in
+    minutes (390, or 210 on a 13:00 half day). Any other open clock or length raises DataGap."""
+    idx = pd.DatetimeIndex(index)
+    mins = np.asarray(minutes, float)
+    ny = idx.tz_convert(NY)
+    bad = (ny.hour * 60 + ny.minute != 570) | ~np.isin(mins, SESSION_MINUTES)
+    if bad.any():
+        i = int(np.flatnonzero(bad)[0])
+        raise DataGap(f"daily share bars: {int(bad.sum())} bar(s) that do not open at 09:30 New York or last neither 390 "
+                      f"nor 210 minutes, first {idx[i]} ({mins[i]} minutes)")
+    return idx + pd.to_timedelta(mins, unit="min")
+
+
+def _read_d1_file(key, path, filters):
+    """Kit v2.2 fix (V22-9): one prepared daily file read through the period lock (rows filtered inside the read). The
+    file must hold its times as a tz-aware index named 'time' (scout/prices_d1.py writes it so): a 'time' column, a
+    tz-naive index or any other index raises DataGap naming the file, instead of 0 rows or a raw pyarrow error."""
+    try:
+        b = pd.read_parquet(path, filters=filters)
+    except Exception as e:      # noqa: BLE001 (pyarrow raises ArrowInvalid / ArrowNotImplementedError / TypeError)
+        raise DataGap(f"{key}: prepared daily file {path} cannot be read with the period filter on a tz-aware 'time' "
+                      f"index ({type(e).__name__}: {str(e)[:160]}); its index must be the session opens in UTC") from e
+    idx = b.index
+    if not isinstance(idx, pd.DatetimeIndex) or idx.tz is None or idx.name != "time":
+        raise DataGap(f"{key}: prepared daily file {path} has no tz-aware DatetimeIndex named 'time' (found "
+                      f"{type(idx).__name__} {idx.name!r}{'' if not isinstance(idx, pd.DatetimeIndex) else f', tz {idx.tz}'}"
+                      f"{', a time COLUMN' if 'time' in b.columns else ''}): rewrite it with the session opens (UTC) as "
+                      "the index 'time'")
+    return b
+
+
+def local_d1(key, start_year=2013):
+    """Daily session bars of a share of a cost class (kit v2.2; data.load_bars(key) calls it): the prepared file of
+    d1_dirs(), read through the period lock (rows filtered inside the read: before 2022 while locked; after unlock_val
+    the sibling '<dir>_val' adds 2022-2025; never 2026), cut at the share's in_universe_from (00:00 New York: no bar
+    before the share entered the universe is returned), columns open high low close (Yahoo's prices, split-adjusted to
+    the download: data.LEVEL_WARNING), volume (the session's length in minutes), shares (Yahoo's traded volume,
+    split-adjusted the same way) if the file has it, known_at (the session's close, UTC). attrs: market, price_is 'mid',
+    bar 'session', in_universe_from, price_range, source, levels 'split-adjusted to the download'. A missing file raises
+    FileNotFoundError naming the folders; a read past the class's splits_checked_to (validation years) raises PeriodError
+    (the per-share commission needs the later splits listed first)."""
+    sp = _C.spec(key)
+    chk = pd.Timestamp(sp.get("splits_checked_to", "1900-01-01")).tz_localize(NY) + pd.Timedelta(days=1)
+    if period_end() > chk.tz_convert("UTC"):
+        raise PeriodError(f"{key}: the splits of its class are checked to {sp.get('splits_checked_to')} only; reading to "
+                          f"{period_end()} needs the later splits (and dividends) in the class files first")
+    lim = min(period_end(), VAL_END)
+    for d in d1_dirs():
+        p = os.path.join(d, f"{key}.parquet")
+        if not os.path.isfile(p):
+            continue
+        parts = [_read_d1_file(key, p, [("time", "<", min(lim, IS_END))])]
+        if lim > IS_END:
+            pv = os.path.join(d.rstrip("/") + "_val", f"{key}.parquet")
+            if not os.path.isfile(pv):
+                raise FileNotFoundError(f"{key}: no validation file {pv} (the sibling '<dir>_val' folder)")
+            parts.append(_read_d1_file(key, pv, [("time", ">=", IS_END), ("time", "<", lim)]))
+        b = pd.concat(parts).sort_index()
+        idx = pd.DatetimeIndex(b.index)
+        b.index = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
+        b.index.name = "time"
+        b = b[~b.index.duplicated(keep="last")]
+        b = b[b.index >= pd.Timestamp(year=start_year, month=1, day=1, tz="UTC")]
+        t0 = pd.Timestamp(sp["in_universe_from"]).tz_localize(NY).tz_convert("UTC")
+        b = b[b.index >= t0]                        # no look-ahead at inclusion: nothing before in_universe_from
+        cols = ["open", "high", "low", "close", "volume"] + (["shares"] if "shares" in b.columns else [])
+        b = cut(b[cols].astype(float))
+        b["known_at"] = session_known_at(b.index, b.volume.to_numpy())
+        q = _asof_q(key)                            # inside a truncation cut build: the levels are re-based (x 2 to 2,048)
+        if q != 1.0:
+            for col in ("open", "high", "low", "close"):
+                b[col] = b[col].to_numpy(float) * q
+            if "shares" in b.columns:
+                b["shares"] = b["shares"].to_numpy(float) / q
+        b.attrs.update(market=key, price_is="mid", bar="session", source=f"prepared daily bars ({d})",
+                       in_universe_from=str(sp["in_universe_from"]), levels="split-adjusted to the download (2026-11-18)")
+        if len(b):
+            b.attrs["price_range"] = (float(b.low.min()), float(b.high.max()))
+        return b
+    raise FileNotFoundError(f"{key}: a share of the daily universe (kit/universe_us.csv) without a prepared file: no "
+                            f"{key}.parquet in {d1_dirs()} (scout/prices_d1.py builds them in ~/explore_data/d1/bars)")
+
+
+def long_bars(bars_by_key):
+    """Kit v2.2: one long frame of several daily shares' bars ({key: data.load_bars(key)}), sorted by time then market,
+    with a 'market' column, for a build that works on the whole universe at once and for checks.truncation_test (give
+    it row_len='known_at'): attrs price_ranges = {key: (low, high)} (the price-level check of the test), bar 'session'.
+    The rows of each share keep their in_universe_from cut."""
+    parts = []
+    rng = {}
+    for k, b in bars_by_key.items():
+        if b.attrs.get("market") != k:
+            raise ValueError(f"long_bars: the bars given for {k} are of market {b.attrs.get('market')!r}")
+        parts.append(b.assign(market=k))
+        if b.attrs.get("price_range"):
+            rng[k] = tuple(b.attrs["price_range"])
+    out = pd.concat(parts) if parts else pd.DataFrame()
+    if len(out):
+        out = out.reset_index().sort_values(["time", "market"], kind="mergesort").set_index("time")
+    out.attrs = {"bar": "session", "price_ranges": rng, "markets": sorted(bars_by_key)}
+    return out
+
+
+def session_moves(bars):
+    """Kit v2.2 fix (V22-8): the session-to-session moves of daily share bars (data.load_bars, or data.long_bars with its
+    'market' column), with the corporate actions of the kit's fact files. Yahoo's closes are adjusted for splits but NOT
+    for dividends, so a large dividend (a special one, a spin-off paid as a dividend) shows as a fall on its ex-date that
+    is not news. Columns, on the bars' own index (and market):
+      ret                close / previous close of the same share - 1 (NaN on a share's first bar)
+      dividend_fraction  the ex-date's dividend / previous close (kit/universe_us_dividends.csv), else 0
+      split_ratio        the ratio of a split or spin-off record on that session (kit/universe_us_splits.csv), else 1
+      ret_total          ret + dividend_fraction: the move a holder had, dividends included (a ratio: bit-identical
+                         under the truncation test's re-basing)
+      action             True on an ex-date with a fraction >= 2 % (above any ordinary quarterly dividend of these
+                         shares: 8 % a year) or on a split / spin-off record: the move of that session is a corporate
+                         action, not news (README 'Kit v2.2').
+    Facts are dated by the session's New York date; both files are public facts known before the session (dividends are
+    declared before their ex-date)."""
+    if "market" in bars.columns:
+        mk = bars["market"].astype(str).to_numpy()
+    else:
+        k = (getattr(bars, "attrs", {}) or {}).get("market")
+        if _C.market_class(k) is None:
+            raise ValueError("session_moves: give the bars of data.load_bars (attrs market) or data.long_bars ('market')")
+        mk = np.full(len(bars), k, dtype=object)
+    day = pd.DatetimeIndex(bars.index).tz_convert(NY).strftime("%Y-%m-%d").to_numpy()
+    c = bars["close"].to_numpy(float)
+    prev = pd.Series(c).groupby(mk).shift(1).to_numpy()
+    div = np.zeros(len(bars))
+    spl = np.ones(len(bars))
+    for k in pd.unique(mk):
+        if _C.market_class(k) is None:
+            raise ValueError(f"session_moves: {k!r} is not a share of a cost class (kit/universe_us.csv)")
+        m = mk == k
+        sp = _C.spec(k)
+        dv, sr = sp.get("dividends", {}), sp.get("commission_splits", {})
+        if dv:
+            div[m] = [dv.get(d, 0.0) for d in day[m]]
+        if sr:
+            spl[m] = [sr.get(d, 1.0) for d in day[m]]
+    ret = c / prev - 1
+    out = pd.DataFrame({"ret": ret, "dividend_fraction": div, "split_ratio": spl, "ret_total": ret + div,
+                        "action": (div >= 0.02) | (spl != 1.0)}, index=bars.index)
+    if "market" in bars.columns:
+        out.insert(0, "market", mk)
+    return out
+
+
+def _class_split_factor(key, index):
+    """Kit v2.2: Yahoo price / price traded then, as far as the kit knows: 1 / the product of the share's 2016-2021 split
+    ratios (cost entry commission_splits, from kit/universe_us_splits.csv) whose date (New York midnight) is after the
+    bar. Used for the per-share commission only (the bars are never adjusted by the kit); the splits after 2021 are not
+    known (README 'Kit v2.2' limits)."""
+    idx = pd.DatetimeIndex(index)
+    adj = np.ones(len(idx))
+    for d, q in _C.spec(key).get("commission_splits", {}).items():
+        adj[np.asarray(idx < pd.Timestamp(d).tz_localize(NY))] /= float(q)
+    return adj
+
+
+def _rule_sessions(y0, y1):
+    """NYSE sessions of the years y0..y1 by rule (naive dates -> minutes): weekdays minus the full-day holidays
+    (_nyse_holidays) and the special closures, 210 minutes on the 13:00 half days (the day after Thanksgiving; 24
+    December and 3 July when they fall Monday to Thursday)."""
+    hol = _nyse_holidays(y0, y1) | {pd.Timestamp(x) for x in NYSE_SPECIAL_CLOSURES}
+    days = pd.bdate_range(f"{y0}-01-01", f"{y1}-12-31")
+    out = {}
+    for d in days:
+        if d in hol:
+            continue
+        half = False
+        if d.month == 11 and d.dayofweek == 4 and (d - pd.Timedelta(days=1)) in hol and 22 <= d.day - 1 <= 28:
+            half = True                              # the day after Thanksgiving (fourth Thursday of November)
+        if (d.month, d.day) in ((12, 24), (7, 3)) and d.dayofweek <= 3:
+            half = True
+        out[d] = 210 if half else 390
+    return out
+
+
+NYSE_SPECIAL_CLOSURES = ("2012-10-29", "2012-10-30", "2018-12-05", "2025-01-09")   # Sandy; Bush and Carter funerals
+
+
+def us_sessions(start="2013-01-01", end=None):
+    """The exchange calendar of the US shares (kit v2.2), from rules, through the period lock: one row per NYSE session
+    from start to end (naive New York dates; end defaults to the period end), columns open_utc (09:30 New York),
+    close_utc (16:00, or 13:00 on a half day), minutes (390 / 210), half_day. Rules: weekdays minus the NYSE full-day
+    holidays (New Year, Martin Luther King, Presidents, Good Friday, Memorial, Juneteenth from 2022, Independence,
+    Labor, Thanksgiving, Christmas, with their observed dates) and the special closures NYSE_SPECIAL_CLOSURES; 13:00
+    half days: the day after Thanksgiving, 24 December and 3 July when Monday to Thursday. Checked against the daily
+    bars (1,511 sessions and 12 half days in 2016-2021, test_kit). A run reads sessions and half days from here instead
+    of hard-coding holiday lists."""
+    s, e = pd.Timestamp(start), (period_end() - pd.Timedelta(days=1)).tz_localize(None).normalize()
+    if end is not None:
+        e = min(e, pd.Timestamp(end))
+    if e < s:
+        return pd.DataFrame(columns=["open_utc", "close_utc", "minutes", "half_day"])
+    tab = _rule_sessions(s.year, e.year)
+    days = pd.DatetimeIndex(sorted(d for d in tab if s <= d <= e))
+    mins = np.array([tab[d] for d in days], float)
+    op = (days + pd.Timedelta(hours=9, minutes=30)).tz_localize(NY).tz_convert("UTC")
+    out = pd.DataFrame({"open_utc": op, "close_utc": op + pd.to_timedelta(mins, unit="min"), "minutes": mins,
+                        "half_day": mins == 210}, index=days)
+    out.index.name = "day"
+    out = out[out.open_utc < period_end()]
+    return out
 
 
 SPLIT_RATIOS = (1.5, 2, 3, 4, 5, 6, 7, 8, 10, 15, 20, 25, 50)    # lab/prep_round3.py RATIOS
@@ -1092,6 +1339,8 @@ def _asof_q(key):
     c = _ASOF[0]
     if c is None or not has_adjustment(key):
         return 1.0
+    if _C.market_class(key) is not None:      # kit v2.2: the levels carry splits the kit does not know (after 2021):
+        return class_q(key)                   # no level is ever known, so every cut copy is re-based (x 2 to 2,048)
     ck = (key, c, period_end(), tuple(sorted(_ROLLS_MEASURED.get(key, {}).items())))
     if ck in _Q_CACHE:
         return _Q_CACHE[ck]
@@ -1107,6 +1356,19 @@ def _asof_q(key):
 
 
 _Q_CACHE = {}
+_CLASS_Q = {}
+
+
+def class_q(key):
+    """Kit v2.2 fix (V22-5): the re-basing factor of a share of a cost class inside a truncation cut build: 2 ** (1 +
+    (7 i) mod 11), from 2 to 2,048, i = the key's position in the sorted keys of the class universe. Exact powers of two,
+    so ratios within a share (and price x shares) stay bit-identical; factors that differ by up to 1,024 times between
+    shares, so a rule that compares price LEVELS across shares (a cross-sectional rank of prices, the cheapest decile,
+    price below the day's median) is reordered in the cut builds and fails the test, like a rule on one share's level.
+    (Factors of 2, 4 and 8 only were too narrow: shares whose prices differ more than 4 times kept their order.)"""
+    if not _CLASS_Q:
+        _CLASS_Q.update({k: float(2.0 ** (1 + (7 * i) % 11)) for i, k in enumerate(sorted(_C.UNIVERSE))})
+    return _CLASS_Q[key]
 
 
 def roll_times(key):
@@ -1259,6 +1521,8 @@ def _roll_adj(index, applied):
 def _price_factor_known(key, index):
     """price_factor with the rolls / splits known at known_end() and no re-basing (internal)."""
     idx = pd.DatetimeIndex(index)
+    if _C.market_class(key) is not None:      # kit v2.2: the commission factor of the daily shares
+        return _class_split_factor(key, idx)
     f = _split_factor_known(key, idx)
     if "rolls" in _C.spec(key) and len(idx):
         tab = _roll_table(key, since=idx.min())
@@ -1283,9 +1547,10 @@ def price_factor(key, index):
 
 
 def has_adjustment(key):
-    """True for a market whose loaded bars are back-adjusted (share splits, oil rolls)."""
+    """True for a market whose loaded bars are back-adjusted (share splits, oil rolls), or whose levels carry splits the
+    kit does not know (kit v2.2 daily shares: Yahoo's levels are adjusted to the download)."""
     sp = _C.spec(key)
-    return "splits" in sp or "rolls" in sp
+    return "splits" in sp or "rolls" in sp or _C.market_class(key) is not None
 
 
 def _split_factor_known(key, index):
