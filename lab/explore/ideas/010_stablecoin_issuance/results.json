@@ -1,0 +1,438 @@
+{
+ "idea": "010 Stablecoin issuance: fast growth of Tether (USDT) supply, then long bitcoin and ether for five days",
+ "declared_sha256": "a8c1e9901b43ab315c6dd072a0392f899352f590f5e12c077d0142b93721e188",
+ "verdict": "fail",
+ "failed_bars": [
+  "t_daily>=2.5",
+  "null>=97.5"
+ ],
+ "basket": true,
+ "bars": {
+  "truncation_test": {
+   "value": "passed",
+   "bar": "checks.truncation_test on the main signal build passed (same signals)",
+   "pass": true
+  },
+  "declared_hash": {
+   "value": "matches declared.sha256",
+   "bar": "declared.json matches declared.sha256",
+   "pass": true
+  },
+  "configs<=11": {
+   "value": 10,
+   "bar": "at most 11 configurations",
+   "pass": true
+  },
+  "t_daily>=2.5": {
+   "value": 2.1800885942754915,
+   "bar": "t on daily sums of R >= 2.5",
+   "pass": false
+  },
+  "markets_positive>=65%": {
+   "value": 1.0,
+   "bar": ">= 65 % of markets with positive expectancy",
+   "pass": true
+  },
+  "max_market_share<=75%": {
+   "value": 0.6716034780704924,
+   "bar": "no market above 75% of the profit",
+   "pass": true
+  },
+  "PF>=1.12": {
+   "value": 1.5364106597810725,
+   "bar": "PF net >= 1.12",
+   "pass": true
+  },
+  "years>=60%": {
+   "value": 0.8571428571428571,
+   "bar": ">= 60 % of years positive",
+   "pass": true
+  },
+  "PF_stress>=1.04": {
+   "value": 1.5205858117910338,
+   "bar": "PF with spread and slippage x1.5 >= 1.04",
+   "pass": true
+  },
+  "neighbours_median_PF>=1.06": {
+   "value": 1.4301766195470127,
+   "bar": "median PF of the neighbours >= 1.06",
+   "pass": true
+  },
+  "every_signal_exp>0": {
+   "value": 0.10371556151776021,
+   "bar": "every-signal expectancy > 0",
+   "pass": true
+  },
+  "hold<=5d": {
+   "value": 4,
+   "bar": "hold <= 5 trading days",
+   "pass": true
+  },
+  "null>=97.5": {
+   "value": 75.9,
+   "bar": "random-entry null (same market, side, clock; >= 2000 draws) >= 97.5th percentile",
+   "pass": false
+  },
+  "corr<=0.30": {
+   "value": 0.014989722237595577,
+   "bar": "weekly corr with the sum of the ten <= 0.30 (CHARTER 'Independence'; a negative one passes)",
+   "pass": true
+  }
+ },
+ "selection": {
+  "N_all": 2593,
+  "N_main": 170,
+  "dsr_N_all": {
+   "dsr": 0.07294816825216019,
+   "sr": 0.1723511364716318,
+   "sr0": 0.27890822160304757,
+   "T": 160,
+   "n_trials": 2593,
+   "skew": 1.000697497121001,
+   "kurtosis": 4.529476570652946,
+   "var_sr_used": 0.006289308176100629
+  },
+  "dsr_N_main": {
+   "dsr": 0.2799398674853467,
+   "sr": 0.1723511364716318,
+   "sr0": 0.21507275056309547,
+   "T": 160,
+   "n_trials": 170,
+   "skew": 1.000697497121001,
+   "kurtosis": 4.529476570652946,
+   "var_sr_used": 0.006289308176100629
+  },
+  "dsr_N_all_V_noise": {
+   "dsr": 0.07294816825216019,
+   "sr": 0.1723511364716318,
+   "sr0": 0.27890822160304757,
+   "T": 160,
+   "n_trials": 2593,
+   "skew": 1.000697497121001,
+   "kurtosis": 4.529476570652946,
+   "var_sr_used": 0.006289308176100629
+  },
+  "pass": false
+ },
+ "main": {
+  "n": 277,
+  "markets": [
+   "btcusd",
+   "ethusd"
+  ],
+  "PF_gross": 1.639178614063941,
+  "PF": 1.5364106597810725,
+  "PF_stress": 1.5205858117910338,
+  "mean_R": 0.1452764973666239,
+  "mean_R_gross": 0.1678211950475029,
+  "mean_R_stress": 0.14180370619378296,
+  "mean_net_bp": 193.83318405271783,
+  "mean_gross_bp": 223.73859821417406,
+  "t_trade": 2.4702140312869227,
+  "t_daily": 2.1800885942754915,
+  "n_days": 160,
+  "years_positive_frac": 0.8571428571428571,
+  "by_year_R": {
+   "2015": 1.4305794892965038,
+   "2016": 5.743951011726788,
+   "2017": 19.411255696847793,
+   "2018": -2.888369160858741,
+   "2019": 2.6611302664280516,
+   "2020": 11.267794536403905,
+   "2021": 2.6152479307105234
+  },
+  "hold_tdays_max": 4,
+  "hold_h_mean": 105.09747292418773,
+  "exit_reasons": {
+   "time_close": 117,
+   "time": 109,
+   "stop": 50,
+   "stop_gap": 1
+  },
+  "long_n": 277,
+  "long_R": 40.241589770554825,
+  "short_n": 0,
+  "short_R": 0.0,
+  "by_market": {
+   "btcusd": {
+    "n": 144,
+    "sum_R": 13.21519811756426,
+    "mean_R": 0.0917722091497518
+   },
+   "ethusd": {
+    "n": 133,
+    "sum_R": 27.026391652990565,
+    "mean_R": 0.20320595227812455
+   }
+  },
+  "markets_positive_frac": 1.0,
+  "max_market_share_of_profit": 0.6716034780704924
+ },
+ "sizing": {
+  "judged": false,
+  "note": "reported only: the charter's sizing bar is checked by the lead (risk plan)",
+  "by_market": {
+   "btcusd": {
+    "min_lot": 0.01,
+    "margin_eur": 1.5026562336596894,
+    "loss_at_median_stop_eur": 8.201495080287014
+   },
+   "ethusd": {
+    "min_lot": 0.01,
+    "margin_eur": 0.04665563472292285,
+    "loss_at_median_stop_eur": 0.3756842362434786
+   }
+  },
+  "min_lot_margin_eur": 1.5026562336596894,
+  "min_lot_loss_at_median_stop_eur": 8.201495080287014,
+  "min_lot_loss_pct_of_1000_eur": 0.8201495080287013
+ },
+ "neighbours": {
+  "02_q0.6": {
+   "n": 323,
+   "PF": 1.4301766195470127,
+   "mean_R": 0.11852935671749602
+  },
+  "03_q0.8": {
+   "n": 189,
+   "PF": 1.8175490665732077,
+   "mean_R": 0.22909282077766577
+  },
+  "04_win180": {
+   "n": 239,
+   "PF": 1.716952967182686,
+   "mean_R": 0.19321581733139237
+  },
+  "05_g3": {
+   "n": 268,
+   "PF": 1.5061406410152522,
+   "mean_R": 0.135796650009948
+  },
+  "06_g14": {
+   "n": 249,
+   "PF": 1.3903946705087311,
+   "mean_R": 0.10625887622595688
+  },
+  "07_h72": {
+   "n": 391,
+   "PF": 1.1807188104478032,
+   "mean_R": 0.039999813953799465
+  },
+  "08_h96": {
+   "n": 321,
+   "PF": 1.3074718047766203,
+   "mean_R": 0.07940057373776002
+  },
+  "09_stop1.5": {
+   "n": 296,
+   "PF": 1.4212834451329646,
+   "mean_R": 0.1542990771125915
+  },
+  "10_stop3.0": {
+   "n": 263,
+   "PF": 1.4941924529675708,
+   "mean_R": 0.09101289506744639
+  }
+ },
+ "every_signal": {
+  "n": 1189,
+  "mean_R": 0.10371556151776021
+ },
+ "null": {
+  "real_mean_R": 0.1452764973666239,
+  "percentile": 75.9,
+  "n_draws": 2000,
+  "seed": 0,
+  "mode": "every",
+  "null_mean": 0.10899389705723306,
+  "null_sd": 0.05070405065176792
+ },
+ "counts": {
+  "btcusd": {
+   "signals": 605,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 461,
+   "same_bar_skipped": 38,
+   "taken": 144
+  },
+  "ethusd": {
+   "signals": 584,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 451,
+   "same_bar_skipped": 38,
+   "taken": 133
+  }
+ },
+ "rule": {
+  "exit": [
+   "hours",
+   120
+  ],
+  "stop": [
+   "d20",
+   2.0
+  ],
+  "target": null,
+  "delay_h": 0.0,
+  "mode": "one"
+ },
+ "ledger_line": "| 010 | 2026-11-18 | 010 Stablecoin issuance: fast growth of Tether (USDT) supply, then long bitcoin and ether for five days | btcusd, ethusd | Coin Metrics USDT SplyCur (known D+2), Bitfinex 1h BTC 2015-2021, ETH 2016-2021 | 10 | fermee : echoue (t_daily>=2.5, null>=97.5) | n 277, PF net 1.54, t 2.18 (daily sums), PF x1.5 1.52, years + 6/7, null 75.9 pct, corr 0.01, DSR 0.073 (N_all 2593) / 0.280 (N_main 170), sizing not judged (min lot: margin 2 EUR, loss at median stop 8.2 EUR) |",
+ "written_utc": "2026-11-18T01:48:10Z",
+ "extra": {
+  "shift_test": {
+   "base": {
+    "n": 277,
+    "PF": 1.5364106597810725,
+    "mean_R": 0.1452764973666239,
+    "PF_gross": 1.639178614063941
+   },
+   "shifted": {
+    "n": 278,
+    "PF": 1.4447937948126803,
+    "mean_R": 0.12350610090081025,
+    "PF_gross": 1.5432018434421564
+   },
+   "delay_extra_h": 1.0
+  },
+  "main_figures": {
+   "all": {
+    "n": 277,
+    "PF_gross": 1.639178614063941,
+    "PF": 1.5364106597810725,
+    "PF_stress": 1.5205858117910338,
+    "mean_R": 0.1452764973666239,
+    "sum_R": 40.241589770554825
+   },
+   "by_market": {
+    "btcusd": {
+     "n": 144,
+     "PF_gross": 1.3907753627956214,
+     "PF": 1.304626441467423,
+     "PF_stress": 1.29364420428298,
+     "mean_R": 0.0917722091497518,
+     "sum_R": 13.21519811756426
+    },
+    "ethusd": {
+     "n": 133,
+     "PF_gross": 1.980535858797356,
+     "PF": 1.8542257757423994,
+     "PF_stress": 1.8317963333844482,
+     "mean_R": 0.20320595227812455,
+     "sum_R": 27.026391652990565
+    }
+   },
+   "by_year_R_gross": {
+    "2015": 1.5687762482118375,
+    "2016": 6.207965899207385,
+    "2017": 20.66814532484155,
+    "2018": -2.6270800630648337,
+    "2019": 4.094118879294727,
+    "2020": 13.051470642465366,
+    "2021": 3.5230740972022776
+   },
+   "t_daily_gross": 2.5000113533185373
+  },
+  "counts": {
+   "btcusd": {
+    "signals": 605,
+    "stale": 0,
+    "no_bar": 0,
+    "open_at_end": 0,
+    "no_d20": 0,
+    "overlap_skipped": 461,
+    "same_bar_skipped": 38,
+    "taken": 144
+   },
+   "ethusd": {
+    "signals": 584,
+    "stale": 0,
+    "no_bar": 0,
+    "open_at_end": 0,
+    "no_d20": 0,
+    "overlap_skipped": 451,
+    "same_bar_skipped": 38,
+    "taken": 133
+   }
+  },
+  "neighbour_figures": {
+   "02_q0.6": {
+    "n": 323,
+    "PF_gross": 1.5309675673338325,
+    "PF": 1.4301766195470127,
+    "PF_stress": 1.4150792582357614,
+    "mean_R": 0.11852935671749602,
+    "sum_R": 38.284982219751214
+   },
+   "03_q0.8": {
+    "n": 189,
+    "PF_gross": 1.928686562586772,
+    "PF": 1.8175490665732077,
+    "PF_stress": 1.7982136871161156,
+    "mean_R": 0.22909282077766577,
+    "sum_R": 43.29854312697883
+   },
+   "04_win180": {
+    "n": 239,
+    "PF_gross": 1.8264034503578948,
+    "PF": 1.716952967182686,
+    "PF_stress": 1.6993453311179292,
+    "mean_R": 0.19321581733139237,
+    "sum_R": 46.17858034220278
+   },
+   "05_g3": {
+    "n": 268,
+    "PF_gross": 1.6141063009242,
+    "PF": 1.5061406410152522,
+    "PF_stress": 1.4896969960200521,
+    "mean_R": 0.135796650009948,
+    "sum_R": 36.39350220266606
+   },
+   "06_g14": {
+    "n": 249,
+    "PF_gross": 1.4868876895844103,
+    "PF": 1.3903946705087311,
+    "PF_stress": 1.3752735380822818,
+    "mean_R": 0.10625887622595688,
+    "sum_R": 26.458460180263263
+   },
+   "07_h72": {
+    "n": 391,
+    "PF_gross": 1.2558325577307958,
+    "PF": 1.1807188104478032,
+    "PF_stress": 1.1659865362368662,
+    "mean_R": 0.039999813953799465,
+    "sum_R": 15.639927255935591
+   },
+   "08_h96": {
+    "n": 321,
+    "PF_gross": 1.392756305812572,
+    "PF": 1.3074718047766203,
+    "PF_stress": 1.2945876442203161,
+    "mean_R": 0.07940057373776002,
+    "sum_R": 25.487584169820966
+   },
+   "09_stop1.5": {
+    "n": 296,
+    "PF_gross": 1.5068840284580098,
+    "PF": 1.4212834451329646,
+    "PF_stress": 1.4109631553980344,
+    "mean_R": 0.1542990771125915,
+    "sum_R": 45.67252682532708
+   },
+   "10_stop3.0": {
+    "n": 263,
+    "PF_gross": 1.6417280666253562,
+    "PF": 1.4941924529675708,
+    "PF_stress": 1.4806961939906285,
+    "mean_R": 0.09101289506744639,
+    "sum_R": 23.9363914027384
+   }
+  }
+ }
+}
