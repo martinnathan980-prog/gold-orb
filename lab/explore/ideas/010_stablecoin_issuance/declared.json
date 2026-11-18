@@ -1,0 +1,179 @@
+{
+ "idea": "010 Stablecoin issuance: fast growth of Tether (USDT) supply, then long bitcoin and ether for five days",
+ "date_declared": "2026-11-18",
+ "family": "crypto-flow (stablecoin money supply; on-chain count)",
+ "hypothesis": "When the circulating supply of USDT grows unusually fast over a week (7-day log growth above the 70th percentile of its own trailing 365 days, and positive), BTC and ETH rise more than usual over the next five days.",
+ "mechanism": "New USDT is minted when traders and desks wire dollars to Tether to buy crypto on exchanges that quote in USDT; minting is visible on chain before (or while) that money is spent on coins, so fast issuance marks buying pressure not yet fully absorbed (Griffin and Shams 2020 discuss issuance followed by BTC rises; the opposite reading, issuance merely following past price rises, is what the random-entry null and the out-of-sample years control). Not a closed family: crypto short horizon (118 configurations) used prices only; no money-supply or on-chain flow signal was tested by the lab. Risk to independence: issuance clusters in bull phases, like the robot's BTC/ETH breakout rules; the correlation bar decides.",
+ "data": {
+  "signal": "Coin Metrics community API v4, asset-metrics, assets=usdt, metrics=SplyCur, frequency=1d, start 2014-10-06, end_time 2021-12-31 (scout/sources.md 19: open, CC BY-NC; SplyCur is a chain count, not revised like the exchange flows). The row stamped D 00:00 is the supply at the end of UTC day D. KNOWN-AT: D + 2 days 00:00 UTC (scout's safe rule; Coin Metrics publishes day D on D+1). Downloaded once to ~/explore_data/cm/usdt.json (fetch in run.py).",
+  "publication_lag": "data.external min_lag = 2 days after the observation date (the rule gives exactly 2 days).",
+  "prices": "Bitfinex public API 1h trade candles tBTCUSD (cached from 2014-06) and tETHUSD (from 2016-03-09), bitfinex_bars.py in this folder, cut at 2021-12-31, FP crypto closure removed (kit.data.fp_hours), price_is 'mid'. The lead's ruling (b) allows a dollar venue before Binance's 2017-08 start; one venue (Bitfinex) prices every trade of this test, also after 2017. Costs stay FP's (kit.costs btcusd, ethusd).",
+  "in_sample_years": "Signals 2015-04 .. 2021-12 for btcusd (6.75 years), 2016-03 .. 2021-12 for ethusd (5.8 years). Power check from the signal data alone (no price read): main config 605 signal days on btcusd's span; about 135 non-overlapping 5-day trades on btcusd and 129 on ethusd (264 pooled); few signals in 2015 (14 days) and 2016 (37 days), since supply moved in rare large mints then. Below 250 per market, so the BASKET bars of two markets apply (small-basket amendment: no market above 75 % of the profit).",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": [
+  "btcusd",
+  "ethusd"
+ ],
+ "rule_main": {
+  "signal": "S_D = USDT SplyCur at end of day D. g_D = ln(S_D / S_{D-7}) (calendar days; NaN if either is missing). thr_D = 70th percentile (pandas rolling quantile, linear) of g over the 365 daily rows ending at D inclusive (min_periods 182). Signal on day D if g_D > thr_D and g_D > 0. known_at = D + 2 days 00:00 UTC. Every signal day is a row for each market (btcusd, ethusd) whose bars have started.",
+  "side": "+1 (long) only",
+  "entry": "open of the first H1 bar opening at or after known_at (FP closure: first bar after Monday 00:00 server)",
+  "exit": [
+   "hours",
+   120
+  ],
+  "stop": [
+   "d20",
+   2.0
+  ],
+  "target": null,
+  "overlap": "one position per market (kit.sim mode 'one'): consecutive signal days while a trade is open are skipped; every-signal variant for the every-signal bar"
+ },
+ "configurations": [
+  {
+   "id": "01_main",
+   "q": 0.7,
+   "window_days": 365,
+   "growth_days": 7,
+   "exit": [
+    "hours",
+    120
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "02_q0.6",
+   "q": 0.6,
+   "window_days": 365,
+   "growth_days": 7,
+   "exit": [
+    "hours",
+    120
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "03_q0.8",
+   "q": 0.8,
+   "window_days": 365,
+   "growth_days": 7,
+   "exit": [
+    "hours",
+    120
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "04_win180",
+   "q": 0.7,
+   "window_days": 180,
+   "growth_days": 7,
+   "exit": [
+    "hours",
+    120
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "05_g3",
+   "q": 0.7,
+   "window_days": 365,
+   "growth_days": 3,
+   "exit": [
+    "hours",
+    120
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "06_g14",
+   "q": 0.7,
+   "window_days": 365,
+   "growth_days": 14,
+   "exit": [
+    "hours",
+    120
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "07_h72",
+   "q": 0.7,
+   "window_days": 365,
+   "growth_days": 7,
+   "exit": [
+    "hours",
+    72
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "08_h96",
+   "q": 0.7,
+   "window_days": 365,
+   "growth_days": 7,
+   "exit": [
+    "hours",
+    96
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "09_stop1.5",
+   "q": 0.7,
+   "window_days": 365,
+   "growth_days": 7,
+   "exit": [
+    "hours",
+    120
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "10_stop3.0",
+   "q": 0.7,
+   "window_days": 365,
+   "growth_days": 7,
+   "exit": [
+    "hours",
+    120
+   ],
+   "stop": [
+    "d20",
+    3.0
+   ]
+  }
+ ],
+ "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw, btcusd and ethusd; swaps included): gross, net, spread and slippage x1.5",
+ "bars": "CHARTER.md 'The bars', BASKET of 2 markets on 01_main, computed by kit.judge.verdict (t on daily sums >= 2.5, pooled PF >= 1.12, PF x1.5 >= 1.04, >= 60 % of years positive, >= 65 % of markets positive, no market above 75 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, null >= 97.5th percentile on pooled trades, hold <= 5 trading days); random-entry null 2000 draws; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported)",
+ "split": "IS only (to 2021-12-31). VAL only per charter rule 5 (attack, val_declared.json, then kit.data.unlock_val; Bitfinex or Binance prices for 2022-2025 to be declared then).",
+ "kit": "lab/explore/kit unchanged; Bitfinex reader in this folder (bitfinex_bars.py) on top of kit.data"
+}
