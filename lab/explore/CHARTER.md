@@ -218,6 +218,11 @@ does not pass.
   STARTS after that time. A value taken from the reaction is known at the end of the bar that carries it. A rule
   that trades the reaction day loads `calendar(drop_late=True)` (it drops the 25 rows known to be a session late:
   Alibaba, and Citigroup's filings made during the session); never move an event earlier because of a price move.
+- **Baskets of many markets (amendment of 2026-11-18, written before any run on such a basket):** for a basket of
+  MORE THAN 40 markets (several hundred shares with a few trades each) the two basket bars are read on GROUPS of
+  markets fixed in the declaration before any result (at least 8 groups, for example sectors): at least 65 % of the
+  groups positive, no group above 25 % of the profit. A market with two trades is positive or negative by chance, so
+  the bars say nothing market by market. Every other bar is unchanged (`lab/explore/lead/DIRECTION3.md`).
 - **Rulings of the lead (2026-11-18):** (a) a hedged pair (two legs of equal notional) is ONE synthetic market, and
   several pairs form a basket of pairs: the basket bars are read across pairs, never across the two legs of a hedge
   (the scout's ideas 1, 3 and 4 are run as ONE basket of seven pairs, idea 015; not both ways);
@@ -255,6 +260,12 @@ does not pass.
    - `A VERIFIER : idee NNN (<titre>) passe en echantillon, validation a faire : <chiffres>`
    (a weak pass is also `A VERIFIER` or `TROUVE`, with the words `faible face a la selection` in the next line)
    Then at most three short lines. No jargon in the first line.
+
+## Direction 3 (2026-11-18, evening)
+The batch of 18 November (ideas 051 to 058) found nothing, but showed for the first time a gross edge: the drift
+after LARGE results-day moves on the 40 shares (a reading made after the verdict: a hypothesis). It is tested on
+other shares: a broad universe of US shares on daily bars, with every 8-K as an event calendar. Plan, universe, costs
+and the briefs of ideas 059 to 062: `lab/explore/lead/DIRECTION3.md`.
 
 ## Direction 2 (2026-11-18)
 After 17 ideas without a find, the lead changed the direction of the search: company earnings on US share CFDs, slow
