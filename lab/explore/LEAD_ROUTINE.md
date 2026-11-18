@@ -7,10 +7,16 @@ session every day at 13:23 Paris with the instruction to follow this file. Keep 
 are the costly part; the idea agents are cheap.
 
 ## Every day
+(The scheduled task's own text still names `ideas2.js` and DIRECTION2.md: this file is what counts.)
+0. If a batch already ran today (the lead sometimes starts it before the task fires: look at the ledger's last lines
+   and at the task list), do NOT start another: answer in one line with the sheet's link.
 1. `cd /home/user/gold-orb && git pull --rebase origin lab`. Read the last lines of `lab/explore/LEDGER.md` and the
-   statuses in `lab/explore/IDEAS.md` (and `lab/explore/lead/DIRECTION2.md` for the current plan).
-2. Choose 8 ideas: the plan of DIRECTION2.md first, then the open ideas of IDEAS.md, varying the families. Count the
-   ideas already handled today (ledger lines with today's date): 8 a day in all.
+   statuses in `lab/explore/IDEAS.md`, and the CURRENT plan: `lab/explore/lead/DIRECTION3.md` (since 2026-11-18:
+   ideas 059, 060 and 062 on the broad universe of US shares, kit v2.2; DIRECTION2.md is done).
+2. Choose AT MOST 8 ideas (8 is the user's ceiling, not a quota: run what is worth running): the current plan first,
+   then the open ideas of IDEAS.md, varying the families. Count the ideas already handled today (ledger lines with
+   today's date): 8 a day in all. Before a new direction's first batch, its data and kit changes are built, attacked
+   by an independent verifier and repaired first (as on 2026-11-18: three reviews of kit v2.1, one of the data).
 3. Bring the batch working copy to the pushed head (`git -C <scratchpad>/explore_wt checkout --detach <head>`, after
    `git clean -fdq lab/explore`), then launch the batch: `Workflow({scriptPath: "<scratchpad>/wf/ideas3.js", args:
    {ideas: [...], selftest: "<the self-test's last line>"}})`. Each entry: `{num, slug, row: "lead/DIRECTION2.md"}`
