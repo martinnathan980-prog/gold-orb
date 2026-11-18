@@ -281,86 +281,6 @@
    "pourquoi": "Seulement 226 week-ends avec un mouvement suffisant en neuf ans : trop peu pour juger."
   },
   {
-   "id": "a01",
-   "type": "afaire",
-   "ordre": 1,
-   "idee": "Très gros chocs après les résultats d'entreprises (plus de 8 %), sur plusieurs centaines d'actions au lieu de 40",
-   "famille": "Actions américaines",
-   "quand": "Demain"
-  },
-  {
-   "id": "a02",
-   "type": "afaire",
-   "ordre": 2,
-   "idee": "La même piste en gardant la position plusieurs semaines",
-   "famille": "Actions américaines",
-   "quand": "Demain"
-  },
-  {
-   "id": "a03",
-   "type": "afaire",
-   "ordre": 3,
-   "idee": "Bitcoin plus cher sur la bourse américaine qu'ailleurs",
-   "famille": "Crypto",
-   "quand": "Demain"
-  },
-  {
-   "id": "a04",
-   "type": "afaire",
-   "ordre": 4,
-   "idee": "Achats agressifs absorbés sur les cryptos",
-   "famille": "Crypto",
-   "quand": "Demain"
-  },
-  {
-   "id": "a05",
-   "type": "afaire",
-   "ordre": 5,
-   "idee": "Résultats d'entreprises : effet sur les concurrents qui publient après",
-   "famille": "Actions américaines",
-   "quand": "Ensuite"
-  },
-  {
-   "id": "a06",
-   "type": "afaire",
-   "ordre": 6,
-   "idee": "Nombres ronds sur les devises",
-   "famille": "Devises",
-   "quand": "Ensuite"
-  },
-  {
-   "id": "a07",
-   "type": "afaire",
-   "ordre": 7,
-   "idee": "L'or avant l'expiration de ses options",
-   "famille": "Calendrier",
-   "quand": "Ensuite"
-  },
-  {
-   "id": "a08",
-   "type": "afaire",
-   "ordre": 8,
-   "idee": "Jours où la nouvelle dette américaine est réglée",
-   "famille": "Calendrier",
-   "quand": "Ensuite"
-  },
-  {
-   "id": "a09",
-   "type": "afaire",
-   "ordre": 9,
-   "idee": "Écart de taux États-Unis / Japon que la devise n'a pas suivi",
-   "famille": "Devises",
-   "quand": "Ensuite"
-  },
-  {
-   "id": "a10",
-   "type": "afaire",
-   "ordre": 10,
-   "idee": "Pics d'attention sur Wikipédia (à refaire lentement)",
-   "famille": "Signaux inhabituels",
-   "quand": "Ensuite"
-  },
-  {
    "id": "s01",
    "type": "stop",
    "ordre": 1,
@@ -445,11 +365,126 @@
    "pourquoi": "Testés avant : n'améliorent pas le robot."
   },
   {
+   "id": "i061",
+   "type": "idee",
+   "n": "061",
+   "date": "2026-11-18",
+   "idee": "Gros chocs sur d'autres annonces officielles d'entreprises (hors résultats)",
+   "famille": "Actions américaines",
+   "marche": "Pas testée",
+   "gain": "—",
+   "pourquoi": "Trop peu de cas : 130 en cinq ans, dont 88 pendant le krach de 2020."
+  },
+  {
+   "id": "a01",
+   "type": "afaire",
+   "ordre": 1,
+   "idee": "Très gros chocs après les résultats d'entreprises (plus de 8 %), sur 382 actions au lieu de 40",
+   "famille": "Actions américaines",
+   "quand": "Demain"
+  },
+  {
+   "id": "a02",
+   "type": "afaire",
+   "ordre": 2,
+   "idee": "La même piste en gardant la position plusieurs semaines",
+   "famille": "Actions américaines",
+   "quand": "Demain"
+  },
+  {
+   "id": "a03",
+   "type": "afaire",
+   "ordre": 3,
+   "idee": "Gros mouvements d'une action sans aucune annonce : parier sur le retour en arrière",
+   "famille": "Actions américaines",
+   "quand": "Demain"
+  },
+  {
+   "id": "a04",
+   "type": "afaire",
+   "ordre": 4,
+   "idee": "Bitcoin plus cher sur la bourse américaine qu'ailleurs",
+   "famille": "Crypto",
+   "quand": "Demain"
+  },
+  {
+   "id": "a05",
+   "type": "afaire",
+   "ordre": 5,
+   "idee": "Achats agressifs absorbés sur les cryptos",
+   "famille": "Crypto",
+   "quand": "Demain"
+  },
+  {
+   "id": "a06",
+   "type": "afaire",
+   "ordre": 6,
+   "idee": "Dollars chers à emprunter sur une bourse crypto : signe d'excès",
+   "famille": "Crypto",
+   "quand": "Demain"
+  },
+  {
+   "id": "a07",
+   "type": "afaire",
+   "ordre": 7,
+   "idee": "Bitcoin plus cher en Corée qu'ailleurs",
+   "famille": "Crypto",
+   "quand": "Demain"
+  },
+  {
+   "id": "a08",
+   "type": "afaire",
+   "ordre": 8,
+   "idee": "Résultats d'entreprises : effet sur les concurrents qui publient après",
+   "famille": "Actions américaines",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a09",
+   "type": "afaire",
+   "ordre": 9,
+   "idee": "Nombres ronds sur les devises",
+   "famille": "Devises",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a10",
+   "type": "afaire",
+   "ordre": 10,
+   "idee": "L'or avant l'expiration de ses options",
+   "famille": "Calendrier",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a11",
+   "type": "afaire",
+   "ordre": 11,
+   "idee": "Jours où la nouvelle dette américaine est réglée",
+   "famille": "Calendrier",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a12",
+   "type": "afaire",
+   "ordre": 12,
+   "idee": "Écart de taux États-Unis / Japon que la devise n'a pas suivi",
+   "famille": "Devises",
+   "quand": "Ensuite"
+  },
+  {
+   "id": "a13",
+   "type": "afaire",
+   "ordre": 13,
+   "idee": "Pics d'attention sur Wikipédia (à refaire lentement)",
+   "famille": "Signaux inhabituels",
+   "quand": "Ensuite"
+  },
+  {
    "id": "jour",
    "type": "jour",
    "date": "2026-11-18",
    "texte": "8 idées testées aujourd'hui, aucune ne passe : 25 idées depuis lundi, toujours rien de trouvé. Mais pour la première fois deux pistes montrent un vrai gain avant frais : les résultats d'entreprises (surtout quand l'action bouge de plus de 8 % le jour de la publication) et le pétrole. Les tendances lentes, elles, ne donnent rien.",
-   "direction": "Je creuse la piste des très gros chocs après résultats : sur 40 actions il y a trop peu de cas pour conclure (80 en cinq ans), donc je prépare le même test sur plusieurs centaines d'actions américaines. Résultat demain.",
+   "direction": "Je creuse la piste des très gros chocs après résultats. Sur 40 actions il y a trop peu de cas pour conclure (80 en cinq ans, gain d'environ 1 % par opération avant frais). Le même test est prêt sur 382 autres actions américaines : 532 cas, avec des frais comptés large. Résultat demain.",
    "rythme": "8 idées par jour au plus, en un lot lancé chaque jour vers 13 h 30. Cette feuille est mise à jour juste après."
   }
  ]

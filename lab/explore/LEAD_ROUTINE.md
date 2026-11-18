@@ -51,6 +51,22 @@ are the costly part; the idea agents are cheap.
 7. Final message in the conversation: three lines at most, in plain French, with the sheet's link. Everything else
    goes on the sheet.
 
+## The next batch (written 2026-11-18 for the batch of 2026-11-19)
+`Workflow({scriptPath: "<scratchpad>/wf/ideas3.js", args: {selftest: "195/195 checks passed", ideas: [
+{num: "059", slug: "large_earnings_shocks", row: "lead/DIRECTION3.md"},
+{num: "060", slug: "large_earnings_shocks_slow", row: "lead/DIRECTION3.md"},
+{num: "062", slug: "no_news_moves_fade", row: "lead/DIRECTION3.md"},
+{num: "021", slug: "coinbase_premium", scout: 7}, {num: "023", slug: "taker_flow_absorbed", scout: 9},
+{num: "042", slug: "bitfinex_margin_rate", scout: 28}, {num: "043", slug: "korean_premium", scout: 29}]}})`
+after bringing `<scratchpad>/explore_wt` to the pushed head. The three share ideas use the daily bars in
+`~/explore_data/d1/bars` and the filings in `~/explore_data/events_d1` (rebuild: `scout/universe_us.py`,
+`scout/prices_d1.py`, `scout/events_edgar.py`, each with `fetch`, `build`, `test`). If 059 passes in sample: re-run it,
+read its attack, then prepare the validation look yourself (2022-2025 daily bars from the same Yahoo reader, the
+8-K calendar and the dividends and splits for those years, the universe extended by the shares that joined the index
+in 2022-2025 from their dates; one declared, logged look), and before any talk of real money ask the user to read in
+MetaTrader the costs of US share CFDs at FP (spread at the open and a few minutes later, commission, swap, dividend
+credit) and which of these shares FP lists. Delete this section once the batch is merged and write the next one.
+
 ## Rules that do not move
 - In sample to 2021-12-31; one declared, logged look at 2022-2025 per finalist; never 2026.
 - Never edit `lab/robot`, `lab/live_ai`, earlier rounds' files. No market data, secrets or personal data in git.
