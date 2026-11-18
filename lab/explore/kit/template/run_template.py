@@ -3,7 +3,11 @@
 In a real idea folder: copy this file to lab/explore/ideas/NNN_slug/run.py, keep one_idea() and call it on the idea's
 own folder (declared.json and declared.sha256 written and COMMITTED before, from declared.template.json), replace
 build_signals() and the bars by real data (kit.data.load_bars, fred, binance_*, external, asof_join), and keep the
-order: hash -> truncation -> run -> verdict. run.py never writes declared.json: demo_declare() below is for this demo."""
+order: hash -> truncation -> run -> verdict. run.py never writes declared.json: demo_declare() below is for this demo.
+Kit v2 (README 'Pairs', 'Exit on a condition', 'Crypto venues'): a pair is one market, bk = {name: sim.pair_book(name,
+key_a, key_b, bars_a, bars_b, kind)}; an exit on a condition is exit=sim.event_exit(build_events(d), ("bdays", 5)) with
+tre = checks.truncation_test(build_events, d, ...) passed as judge.verdict(..., event_truncation=tre); bitcoin before
+2017-08: data.load_bars("btcusd", 2013, venue="bitstamp") (the declaration names the venue)."""
 import hashlib, json, os, sys, tempfile
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 import numpy as np, pandas as pd

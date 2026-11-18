@@ -18,13 +18,12 @@ Running total of configurations (before this search + this search): **2593**
   PF 1.42 net, 7 of 9 years, null at the 99.6th percentile, correlation with the ten 0.00, but t on daily sums 1.65
   against 2.5 (the four indices are one bet) and both 2020 and 2021 negative. Closed; testing a variant of it on the
   same years would be tuning.
-- **Kit backlog (the lead fixes these; until then work around them and say so):** the null draws each leg of a basket
-  on its own random day, which is too easy when all legs enter on the same day (write a same-day null, as idea 002
-  did); one exit rule per `sim.simulate` call and no "clock on a given weekday" exit (simulate group by group and
-  set `attrs['signals_sha']` from the whole build, as ideas 019 and 025 did); `judge.verdict` appends to
-  `trials.jsonl` at every call (run it once); `data.external` keeps one row per known-at time; `checks.shift_test`
-  does not pass `max_wait_h`; no exchange holiday calendar; early-2013 index bars are sparse (some signals dropped
-  as `no_d20`).
+- **Kit, fixed on 2026-11-18 (kit v2):** hedged pairs, exits on a condition (which also express "exit on a given
+  weekday and hour"), crypto venues before 2017-08, a same-day null for baskets whose legs are decided together
+  (the plain null was too easy for them: ideas judged as baskets before this date all failed anyway), no duplicate
+  rows in `trials.jsonl` on a re-run. **Still open:** `data.external` keeps one row per known-at time (build an
+  event calendar by hand with `data.known_at`); no exchange holiday calendar; early-2013 index bars are sparse (some
+  signals dropped as `no_d20`); a rule whose exit differs by leg needs one `simulate` call per leg.
 
 | N | Date | Idea | Markets | Data (in-sample years) | Configs | Verdict | Key figures (main configuration) |
 |---|---|---|---|---|---|---|---|

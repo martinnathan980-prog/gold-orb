@@ -411,6 +411,209 @@ def binance_funding(symbol="BTCUSDT", start="2019-09", end=None):
     return cut(s[~s.index.duplicated(keep="last")])
 
 
+# ---------------------------------------------------------------- crypto dollar venues (lead's ruling of 2026-11-18 (b))
+# scout/sources.md sections 13 (Bitfinex), 14 (Bitstamp), 15 (Coinbase): URLs, paging, limits and first dates (probed
+# 2026-11-17; re-probed 2026-11-18 with the kit's plain client name: all three answer 200 and honour in-sample bounds,
+# end inclusive). FP key -> (venue symbol, first month with hourly candles).
+VENUES = {
+    "bitstamp": {"btcusd": ("btcusd", "2012-11"), "ethusd": ("ethusd", "2017-08")},
+    "bitfinex": {"btcusd": ("tBTCUSD", "2013-03"), "ethusd": ("tETHUSD", "2016-03")},
+    "coinbase": {"btcusd": ("BTC-USD", "2015-07"), "ethusd": ("ETH-USD", "2016-05")},
+}
+VENUE_LIMIT = {"bitstamp": 1000, "bitfinex": 10000, "coinbase": 300}     # candles per call (the venues' maxima)
+VENUE_GAP_S = {"bitstamp": 0.3, "bitfinex": 2.0, "coinbase": 0.35}       # seconds between calls (Bitfinex: 30 a minute)
+_H = 3600
+# Longest run of hours without a candle a venue month may have before it is treated as incomplete (verifier V3: one
+# transient empty reply silently dropped 300 hours of a Coinbase month, cached as complete). Bitcoin and ether trade
+# every hour on these venues from their first month on; a real venue outage longer than this (for example Bitfinex in
+# August 2016) is accepted only with crypto_h1(..., allow_holes=True), which records it next to the cached month.
+VENUE_MAX_HOLE_H = 48
+
+
+def _venue_json(url, gap, empty):
+    """GET and decode a venue reply; an EMPTY reply is asked once more before it is believed (a transient empty page
+    or window must not end the paging or leave a hole: verifier V3). `empty(j)` says whether a decoded reply is empty."""
+    j = None
+    for k in range(2):
+        raw = http_get(url, min_interval=gap)
+        j = json.loads(raw) if raw else None
+        if j is not None and not empty(j):
+            return j
+        if k == 0:
+            _pause(gap)
+    return j
+
+
+def _venue_pages(venue, sym, s, e):
+    """Hourly candles with open time in [s, e) (unix seconds; e <= period end) from one venue, paged as
+    scout/sources.md describes. No request names a time at or after e. Returns a list of (t, o, h, l, c, v)."""
+    lim, gap, rows = VENUE_LIMIT[venue], VENUE_GAP_S[venue], []
+    last = e - _H                                                    # open time of the last wanted candle (inclusive)
+    if venue == "bitstamp":                                          # the `limit` candles ENDING at `end`: walk back
+        end, pages = last, 0
+        while end >= s:
+            r = _venue_json(f"https://www.bitstamp.net/api/v2/ohlc/{sym}/?step=3600&limit={lim}&start={s}&end={end}",
+                            gap, lambda x: not (x.get("data") or {}).get("ohlc"))
+            j = (r.get("data") or {}).get("ohlc") or [] if r else []
+            if not j:
+                break
+            ts = [int(x["timestamp"]) for x in j]
+            rows += [(int(x["timestamp"]), float(x["open"]), float(x["high"]), float(x["low"]), float(x["close"]),
+                      float(x["volume"])) for x in j]
+            nxt = min(ts) - _H
+            if nxt >= end:
+                raise RuntimeError(f"bitstamp {sym}: paging did not move back from {end} (end bound ignored?)")
+            end, pages = nxt, pages + 1
+            if pages > 60:
+                raise RuntimeError(f"bitstamp {sym}: more than 60 pages for one month")
+    elif venue == "bitfinex":                                        # ascending from `start`, sort=1
+        start, pages = s * 1000, 0
+        while start <= last * 1000:
+            j = _venue_json(f"https://api-pub.bitfinex.com/v2/candles/trade:1h:{sym}/hist?limit={lim}&start={start}"
+                            f"&end={last * 1000}&sort=1", gap, lambda x: len(x) == 0) or []
+            if j and not isinstance(j[0], list):
+                raise RuntimeError(f"bitfinex {sym}: unexpected reply {str(j)[:120]}")
+            if not j:
+                break
+            rows += [(int(x[0]) // 1000, float(x[1]), float(x[3]), float(x[4]), float(x[2]), float(x[5])) for x in j]
+            inside = [int(x[0]) for x in j if start <= int(x[0]) <= last * 1000]   # a row past the bounds must not
+            if not inside:                                                        # end the paging (it did: a server
+                break                                                             # ignoring end gave 300 h of 720)
+            mx = max(inside)
+            if mx >= last * 1000:                    # never stop on a short page: a capped reply would drop hours
+                break
+            if mx + 1 <= start:
+                raise RuntimeError(f"bitfinex {sym}: paging did not move forward")
+            start, pages = mx + 1, pages + 1
+            if pages > 60:
+                raise RuntimeError(f"bitfinex {sym}: more than 60 pages for one month")
+    elif venue == "coinbase":                                        # windows of at most `lim` candles, end inclusive
+        a = s
+        while a <= last:
+            b = min(a + (lim - 1) * _H, last)
+            fmt = lambda x: pd.Timestamp(x, unit="s", tz="UTC").strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
+            j = _venue_json(f"https://api.exchange.coinbase.com/products/{sym}/candles?granularity=3600&start={fmt(a)}"
+                            f"&end={fmt(b)}", gap, lambda x: isinstance(x, list) and len(x) == 0) or []
+            if isinstance(j, dict):
+                raise RuntimeError(f"coinbase {sym}: {str(j)[:120]}")
+            rows += [(int(x[0]), float(x[3]), float(x[2]), float(x[1]), float(x[4]), float(x[5])) for x in j]
+            a = b + _H
+    else:
+        raise ValueError(f"unknown venue {venue}: one of {sorted(VENUES)}")
+    return rows
+
+
+def _venue_holes(ts, s, e, first_month):
+    """Runs of more than VENUE_MAX_HOLE_H hours without a candle in [s, e) (unix s, ts sorted unique open times): between
+    candles, before the first one (except in the venue's first month, which starts when the venue does) and after the
+    last one. [(from, to)] as UTC strings."""
+    if not len(ts):
+        return [] if first_month else [(str(pd.Timestamp(s, unit="s", tz="UTC")), str(pd.Timestamp(e, unit="s", tz="UTC")))]
+    edges = ([] if first_month else [s - _H]) + list(ts) + [e]
+    out = []
+    for a, b in zip(edges[:-1], edges[1:]):
+        if (b - a) // _H - 1 > VENUE_MAX_HOLE_H:
+            out.append((str(pd.Timestamp(a + _H, unit="s", tz="UTC")), str(pd.Timestamp(b, unit="s", tz="UTC"))))
+    return out
+
+
+def _venue_month(venue, sym, y, m, first_month=False, allow_holes=False):
+    """One month of hourly candles of a venue, cached at <cache>/crypto/<venue>/<sym>/1h/YYYY-MM.csv. The rows outside
+    [month start, min(month end, period end)) are dropped BEFORE anything is cached or returned (a server that ignores
+    a bound cannot put a later row in the cache). None if the venue has no candle that month.
+    Completeness (verifier V3): an empty reply is asked once more (_venue_json); a month with a run of more than
+    VENUE_MAX_HOLE_H hours without a candle is NOT cached and raises DataGap, unless allow_holes=True (a real venue
+    outage): it is then cached with its holes in YYYY-MM.holes.json, and a later read without allow_holes raises again."""
+    if not _allowed(y, m):
+        return None
+    s0 = pd.Timestamp(year=y, month=m, day=1, tz="UTC")
+    e0 = min(s0 + pd.offsets.MonthBegin(1), period_end(), VAL_END)
+    path = os.path.join(cache_dir(), "crypto", venue, sym, "1h", f"{y}-{m:02d}.csv")
+    hpath = path[:-4] + ".holes.json"
+    if os.path.exists(path) and os.path.exists(hpath) and not allow_holes:
+        raise DataGap(f"{venue} {sym} {y}-{m:02d}: cached with holes {json.load(open(hpath))['holes'][:3]} (accepted "
+                      "earlier with allow_holes=True); pass allow_holes=True to read it")
+    if not os.path.exists(path):
+        s, e = int(s0.timestamp()), int(e0.timestamp())
+        rows = [r for r in _venue_pages(venue, sym, s, e) if s <= r[0] < e]
+        holes = _venue_holes(sorted({r[0] for r in rows}), s, e, first_month)
+        if holes and not allow_holes:
+            raise DataGap(f"{venue} {sym} {y}-{m:02d}: {len(holes)} run(s) of more than {VENUE_MAX_HOLE_H} h without a "
+                          f"candle after a second request, first {holes[:3]}; nothing cached. Fetch again later; if it is "
+                          "a real venue outage, pass allow_holes=True (the holes are recorded beside the cached month)")
+        if holes:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            json.dump({"holes": holes, "max_hole_h": VENUE_MAX_HOLE_H}, open(hpath, "w"))
+        txt = "t,open,high,low,close,volume\n" + "".join(f"{r[0]},{r[1]!r},{r[2]!r},{r[3]!r},{r[4]!r},{r[5]!r}\n"
+                                                           for r in sorted(set(rows)))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path + ".part", "w") as f:
+            f.write(txt if rows else "")
+        os.replace(path + ".part", path)
+    if os.path.getsize(path) == 0:
+        return None
+    d = pd.read_csv(path)
+    d.index = pd.to_datetime(d.pop("t").to_numpy(np.int64), unit="s", utc=True)
+    d = d[d.index < e0]
+    return d.astype(float)
+
+
+def crypto_h1(venue, symbol, start=None, end=None, allow_holes=False):
+    """Hourly candles of bitcoin or ether in dollars from a venue before (and after) Binance's 2017-08 start: venue
+    'bitstamp' | 'bitfinex' | 'coinbase', symbol an FP key ('btcusd', 'ethusd') or the venue's own symbol. Trade
+    prices (treated as mid), UTC bar-open index, columns open high low close volume; behind the period lock like every
+    reader (months requested only if they start before the period end, never 2026; each request ends before the
+    period end; the 'keep' filter of _venue_month runs before the cache). Bitfinex and Coinbase omit hours without a
+    trade, Bitstamp sends them flat with volume 0 (kept, as Binance's klines). A month without candles inside the
+    venue's history raises DataGap, and so does a month with a run of more than VENUE_MAX_HOLE_H (48) hours without a
+    candle after a second request (nothing is cached; allow_holes=True accepts a real venue outage and records it in
+    YYYY-MM.holes.json and attrs['holes']). attrs: venue, symbol, source."""
+    if venue not in VENUES:
+        raise ValueError(f"unknown venue {venue}: one of {sorted(VENUES)}")
+    tab = VENUES[venue]
+    key = symbol if symbol in tab else next((k for k, v in tab.items() if v[0] == symbol), None)
+    if key is None:
+        raise ValueError(f"{venue}: no symbol {symbol} (FP keys {sorted(tab)})")
+    sym, first = tab[key]
+    p0 = max(pd.Period(first, "M"), pd.Period(start, "M")) if start else pd.Period(first, "M")
+    months = [p for p in pd.period_range(p0, _last_month(end), freq="M") if _allowed(p.year, p.month)]
+    parts, t0 = [], time.time()
+    for q, p in enumerate(months):
+        parts.append(_venue_month(venue, sym, p.year, p.month, first_month=(p == pd.Period(first, "M")),
+                                  allow_holes=allow_holes))
+        if os.environ.get("EXPLORE_PROGRESS") and (q % 12 == 11 or q == len(months) - 1):
+            print(f"  {venue} {sym}: {q + 1}/{len(months)} months ({time.time() - t0:.0f} s)", flush=True)
+    have = [p for p, d in zip(months, parts) if d is not None and len(d)]
+    if have:
+        hole = [str(p) for p, d in zip(months, parts) if have[0] < p < have[-1] and (d is None or not len(d))]
+        if hole:
+            raise DataGap(f"{venue} {sym}: no candles for {len(hole)} month(s) inside its history, first {hole[:4]}: "
+                          f"delete those files under {os.path.join(cache_dir(), 'crypto', venue, sym)} and fetch again")
+    parts = [d for d in parts if d is not None and len(d)]
+    if not parts:
+        df = pd.DataFrame(columns=["open", "high", "low", "close", "volume"], dtype=float)
+        df.index = pd.DatetimeIndex([], tz="UTC")
+    else:
+        df = pd.concat(parts).sort_index()
+        df = df[~df.index.duplicated(keep="last")]
+        bad = ~((df.high >= df[["open", "close"]].max(axis=1) - 1e-9) & (df.low <= df[["open", "close"]].min(axis=1) + 1e-9)
+                & (df.low > 0))
+        if bad.mean() > 0.001:
+            raise ValueError(f"{venue} {sym}: {int(bad.sum())} candles with high/low inconsistent with open/close: "
+                             "columns decoded in the wrong order?")
+    df.index.name = "time"
+    df = cut(df[["open", "high", "low", "close", "volume"]])
+    df.attrs.update(venue=venue, symbol=sym, source=f"{venue} download")
+    hl = []
+    for p in months:
+        hp = os.path.join(cache_dir(), "crypto", venue, sym, "1h", f"{p.year}-{p.month:02d}.holes.json")
+        if os.path.exists(hp):
+            hl += [tuple(h) for h in json.load(open(hp))["holes"]]
+    if hl:
+        df.attrs["holes"] = hl
+    return df
+
+
 # ---------------------------------------------------------------- known-at rules and external series
 def known_at(obs_dates, lag_bdays=0, time="16:00", tz=NY, lag_days=0):
     """UTC time at which a value observed on each (naive) date is known: date + lag_bdays business days + lag_days
@@ -636,11 +839,24 @@ def local_h1(key, start_year=2013):
     return None
 
 
-def load_bars(key, start_year=2013):
+def load_bars(key, start_year=2013, venue=None, allow_holes=False):
     """FP-ready hourly bars of an FP cost key: prepared hourly BID bars if a folder of h1_dirs() has them (no
     download), else Dukascopy BID (price_is 'bid') or Binance 1h (price_is 'mid'), with the FP crypto closure removed.
-    Cut at the period end. b.attrs['source'] says where the bars came from."""
+    Cut at the period end. b.attrs['source'] says where the bars came from.
+    venue (btcusd / ethusd only): 'bitstamp' | 'bitfinex' | 'coinbase' reads crypto_h1 from start_year (or the venue's
+    first month) instead of Binance (lead's ruling of 2026-11-18 (b): the declaration names the venue that prices the
+    trades; costs stay FP's); price_is 'mid', FP's weekend closure removed, attrs['venue'] says which. None or
+    'binance': the default, unchanged. allow_holes: passed to crypto_h1 (a venue month with a run of more than 48 h
+    without a candle raises DataGap unless allowed)."""
     m = fp_markets()[key]
+    if venue not in (None, "binance"):
+        if m["source"] != "binance":
+            raise ValueError(f"venue= is for the crypto keys (btcusd, ethusd), not {key}")
+        b = crypto_h1(venue, key, start=f"{start_year}-01", allow_holes=allow_holes)
+        src = b.attrs["source"]
+        b = fp_hours(key, b)
+        b.attrs.update(price_is="mid", market=key, source=src, venue=venue)
+        return b
     b = local_h1(key, start_year) if m["source"] == "dukascopy" else None
     if b is not None:
         pass

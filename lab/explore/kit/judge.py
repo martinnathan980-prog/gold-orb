@@ -89,6 +89,9 @@ def sizing(main):
            "by_market": {}}
     for mk, g in main.groupby("market") if len(main) else []:
         sp = C.spec(mk)
+        if "pair" in sp:
+            out["by_market"][mk] = _pair_sizing(sp, g)
+            continue
         rate = EUR_PER.get(sp.get("quote", "USD"), 1 / 1.15)
         units = float(sp.get("min_lot", 0.01)) * float(sp.get("units_per_lot", 1))
         px, sd = float(g.entry_px.median()), float(g.stop_dist.median())
@@ -102,9 +105,50 @@ def sizing(main):
     return out
 
 
+def _pair_sizing(sp, g):
+    """Minimum-lot figures of a hedged pair (both legs, equal notional at entry): the notional per leg is the larger of
+    the two legs' minimum-lot notionals at their median entry prices (so each leg is at least one minimum lot); each
+    leg's lots for that notional (raw, then rounded UP to its lot step: equal notional is then only approximate);
+    margin = the sum of both legs' margins; loss at the median stop = notional per leg x median stop fraction (the
+    pair's result is per unit of one leg's notional). Reported, not judged, at the rough EUR_PER rates."""
+    legs = sp["pair"]["legs"]
+    sdf = float(g.stop_frac.median()) if "stop_frac" in g else float((g.stop_dist / g.entry_px).median())
+    info, need = {}, []
+    for key, col in zip(legs, ("entry_px_a", "entry_px_b")):
+        s = C.spec(key)
+        rate = EUR_PER.get(s.get("quote", "USD"), 1 / 1.15)
+        px = float(g[col].median())
+        unit_eur = px * rate                                                # one unit of the leg in EUR
+        info[key] = {"s": s, "unit_eur": unit_eur, "px": px}
+        need.append(float(s.get("min_lot", 0.01)) * float(s.get("units_per_lot", 1)) * unit_eur)
+    notional = max(need)
+    legs_out, margin = {}, 0.0
+    for key in legs:
+        s, ue = info[key]["s"], info[key]["unit_eur"]
+        lots = notional / ue / float(s.get("units_per_lot", 1))
+        step = float(s.get("lot_step", s.get("min_lot", 0.01)))
+        lots_r = max(float(s.get("min_lot", 0.01)), np.ceil(lots / step - 1e-9) * step)
+        m = lots_r * float(s.get("units_per_lot", 1)) * ue / float(s.get("leverage", 500))
+        margin += m
+        legs_out[key] = {"median_entry_px": info[key]["px"], "lots_for_equal_notional": lots, "lots_rounded_up": lots_r,
+                         "margin_eur": m}
+    return {"pair": True, "legs": legs_out, "notional_per_leg_eur": notional, "min_lot": None,
+            "margin_eur": margin, "loss_at_median_stop_eur": notional * sdf, "median_stop_frac": sdf}
+
+
+def _same_events(rep, main):
+    """Does an event truncation report test the events each simulated market of the main used? Compared per market
+    (verifier V2): the report's own set for that market, else its '*' set, against main.attrs['events_used']; falls back
+    to the exact events_sha when either side lacks the per-market record."""
+    used, by_key = main.attrs.get("events_used"), rep.get("events_by_key")
+    if isinstance(used, dict) and used and isinstance(by_key, dict):
+        return all(v is not None and v == by_key.get(m, by_key.get("*")) for m, v in used.items())
+    return rep.get("events_sha") is not None and rep.get("events_sha") == main.attrs.get("events_sha")
+
+
 def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr="compute", n_configs=None,
             basket=None, small_basket=True, write=True, idea=None, data_desc=None, ledger=LEDGER, ten=None, extra=None,
-            truncation=None):
+            truncation=None, event_truncation=None):
     """Judge the MAIN configuration. main / every_signal / neighbours[id]: trade tables of kit.sim.simulate (every_signal
     = the same rule with mode='every'); null: the dict of stats.null_test (>= 2000 draws); corr: 'compute' (reads the
     ten's trades from lab/results/r2/recalc/trades with the in-sample filter), a number, or None (bar fails as missing);
@@ -113,7 +157,16 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     main.attrs['signals_sha']); the declaration is checked here (bar 'declared_hash': declared.json must match
     declared.sha256 in idea_dir). More than MAX_CONFIGS (11) configurations fails (bar 'configs<=11').
     Years positive: every calendar year from the main's first entry year to 2021 counts; a year without a trade is
-    not positive. The minimum-lot sizing figures are reported in res['sizing'] and are NOT judged.
+    not positive. The minimum-lot sizing figures are reported in res['sizing'] and are NOT judged (a hedged pair:
+    both legs, judge._pair_sizing).
+    Exit on a condition: when the main was simulated with exit=('event', events, max_hold) (main.attrs['events_sha']),
+    bar 'event_truncation_test' is added: it passes only if event_truncation is the passing report of
+    checks.truncation_test on the EVENT build, with at least one cut at an event's own time stamp and its events_sha
+    equal to main.attrs['events_sha'] (compared per simulated market: main.attrs['events_used'] against the report's
+    events_by_key, so a table without market and {market: times} with the same times are the same events). Every
+    truncation report must carry the dense cuts of checks.cuts_ok (verifier V1). The null bar also requires
+    null['exit_key'] == main.attrs['exit_key'] (the null ran the main's own exit, stop, target and events; verifier V4).
+    A pair is one market (its name), several pairs a basket of pairs.
     Returns {'verdict', 'bars', 'ledger_line', ...}; with write=True writes results.json and appends trials.jsonl in
     idea_dir. Call it BEFORE ledger_add (N_all reads the running total as it stands)."""
     neighbours = neighbours or {}
@@ -127,12 +180,24 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
         sm["years_positive_frac"] = float((yr > 0).mean())
         sm["by_year_R"] = {int(k): float(v) for k, v in yr.items()}
     bars = {}
-    tr_ok = (isinstance(truncation, dict) and bool(truncation.get("pass")) and truncation.get("n_signal_cuts", 0) >= 1
+    dens = K.cuts_ok(truncation) if isinstance(truncation, dict) else (False, "")
+    tr_ok = (isinstance(truncation, dict) and bool(truncation.get("pass")) and dens[0]
              and truncation.get("signals_sha") is not None and truncation.get("signals_sha") == main.attrs.get("signals_sha"))
     why = ("missing" if not isinstance(truncation, dict) else "failed" if not truncation.get("pass") else
-           "no cut at a signal's time stamp" if truncation.get("n_signal_cuts", 0) < 1 else
+           dens[1] if not dens[0] else
            "built from other signals than the main's" if not tr_ok else "passed")
-    bars["truncation_test"] = _b(why, tr_ok, "checks.truncation_test on the main signal build passed (same signals)")
+    bars["truncation_test"] = _b(why, tr_ok, "checks.truncation_test on the main signal build passed (same signals, "
+                                             "dense cuts: checks.cuts_ok)")
+    if main.attrs.get("events_sha") is not None:
+        et = event_truncation
+        edens = K.cuts_ok(et) if isinstance(et, dict) else (False, "")
+        same_ev = isinstance(et, dict) and _same_events(et, main)
+        ev_ok = isinstance(et, dict) and bool(et.get("pass")) and edens[0] and same_ev
+        ewhy = ("missing" if not isinstance(et, dict) else "failed" if not et.get("pass") else
+                edens[1] if not edens[0] else
+                "built from other events than the main's exit" if not ev_ok else "passed")
+        bars["event_truncation_test"] = _b(ewhy, ev_ok, "checks.truncation_test on the exit-event build passed (same events "
+                                                        "per market, dense cuts)")
     try:
         K.declared_hash(idea_dir)
         dh = True
@@ -163,8 +228,12 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     bars["hold<=5d"] = _b(sm.get("hold_tdays_max"), sm.get("hold_tdays_max", 99) <= 5, "hold <= 5 trading days")
     npct = None if null is None else float(null["percentile"])
     nd = 0 if null is None else int(null["n_draws"])
-    bars["null>=97.5"] = _b(npct, npct is not None and nd >= 2000 and npct >= 97.5,
-                            "random-entry null (same market, side, clock; >= 2000 draws) >= 97.5th percentile")
+    n_bound = null is not None and null.get("exit_key") is not None and null.get("exit_key") == main.attrs.get("exit_key")
+    bars["null>=97.5"] = _b(npct if (null is None or n_bound) else
+                            f"{npct} but the null was run with another exit, stop, target or events than the main",
+                            npct is not None and nd >= 2000 and npct >= 97.5 and n_bound,
+                            "random-entry null (same market, side, clock, the main's own exit rule: exit_key; >= 2000 "
+                            "draws) >= 97.5th percentile")
     if isinstance(corr, str) and corr == "compute":
         corr = S.corr_with_ten(main, ten=ten)
     bars["corr<=0.30"] = _b(corr, corr is not None and corr <= 0.30,
@@ -217,7 +286,12 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     if write:
         with open(os.path.join(idea_dir, "results.json"), "w") as f:
             json.dump(res, f, indent=1, default=_js)
-        with open(os.path.join(idea_dir, "trials.jsonl"), "a") as f:
+        tp = os.path.join(idea_dir, "trials.jsonl")
+        if sha is not None and os.path.exists(tp):          # a re-run replaces this declaration's rows (no duplicates)
+            keep = [x for x in open(tp).read().splitlines() if x.strip() and f'"declared_sha256": "{sha}"' not in x]
+            with open(tp, "w") as f:
+                f.write("".join(x + "\n" for x in keep))
+        with open(tp, "a") as f:
             for cid, t in [("main", main)] + list(neighbours.items()):
                 s = S.summary(t)
                 f.write(json.dumps({"id": cid, "role": "main" if cid == "main" else "neighbour", "n": s.get("n", 0),

@@ -1,6 +1,7 @@
 """Self-tests of the kit: synthetic data only, no network, no lab data (about 2 minutes).
     PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py          (all offline tests)
     PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py --net    (+ one month of each source, decoded)
+    PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py --net-venues   (+ the three crypto venues only)
 """
 import io
 import json
@@ -360,7 +361,7 @@ def test_lookahead():
     cuts = [U("2016-03-02 15:00"), U("2018-07-11 15:00"), U("2020-11-04 15:00")]
     tb = checks.truncation_test(build_bad, b, cuts)
     tg = checks.truncation_test(build_good, b, cuts)
-    tb0 = checks.truncation_test(build_bad, b, cuts, n_signal_cuts=0)
+    tb0 = checks.truncation_test(build_bad, b, cuts, n_signal_cuts=0, n_random_cuts=0)   # the given cuts only
     check("trap 1, a signal stamped at its bar's open using that bar's close: the truncation test catches it",
           not tb["pass"] and tg["pass"], f"(cuts at bar ends only would miss it: {tb0['pass']}) bad PF {stats.pf(bad.R):.2f} (the trap is real), good PF {stats.pf(good.R):.2f}")
     check("trap 1, stamped at the bar's end (the kit's rule) it cannot be exploited",
@@ -1009,19 +1010,852 @@ def test_lead_v11():
         os.environ.pop("EXPLORE_H1_DIR", None)
         data.lock()
 
+
+# ------------------------------------------------------------------ kit v2 (2026-11-18): A pairs, B exits on a condition, C crypto venues
+SHC = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "spread_shape.json")))["shape_close"]
+
+
+def _sp(key, price, t, close=False):
+    """Hand spread: FP spread in bp of the reference price (fp_costs.json, or the FX fallback) x price x hour-of-week
+    shape at the bar's open (or close)."""
+    ref = FPC[key].get("spread_ref_price") or costs.REF_FALLBACK[key]
+    return FPC[key]["spread"] / ref * price * (SHC if close else SH)[key][_how(t)]
+
+
+def _flat_pair(name, ka, kb, pa, pb, kind="ratio", start="2019-05-01", end="2019-07-01"):
+    a, b = flat(ka, start, end, price=pa), flat(kb, start, end, price=pb)
+    return a, b, sim.pair_book(name, ka, kb, a, b, kind=kind)
+
+
+def test_pairs_costs():
+    """P1: one pair round trip by hand (ratio and product, long and short, across the Wednesday triple-swap night; a
+    scheduled exit in the Friday closure at the close-of-bar spread); the legs must share the triple weekday."""
+    ti, to = U("2019-06-12 10:00"), U("2019-06-13 10:00")            # Wednesday -> Thursday: 3 nights (triple Wed)
+    sl = lambda k, kind: FPC[k]["slip_mkt_bps" if kind == "mkt" else "slip_stop_bps"] * 1e-4  # noqa: E731
+    rows, ok = [], True
+    for name, ka, kb, pa, pb_, kind in (("eurusd/gbpusd", "eurusd", "gbpusd", 1.10, 1.30, "ratio"),
+                                        ("eurusd*usdchf", "eurusd", "usdchf", 1.10, 0.95, "product")):
+        a, b, pb = _flat_pair(name, ka, kb, pa, pb_, kind)
+        for side in (1, -1):
+            sides = (side, -side) if kind == "ratio" else (side, side)
+            res = gross = sw = 0.0
+            for k, p, s in zip((ka, kb), (pa, pb_), sides):
+                si, so = _sp(k, p, ti), _sp(k, p, to)
+                fill = (p + si) * (1 + sl(k, "mkt")) if s > 0 else p * (1 - sl(k, "mkt"))       # bid bars: ask = bid + spread
+                ex = p * (1 - sl(k, "mkt")) if s > 0 else (p + so) * (1 + sl(k, "mkt"))
+                res += s * (ex / fill - 1)
+                gross += s * ((p + so / 2) / (p + si / 2) - 1)
+                sw += (FPC[k]["swap_long"] if s > 0 else FPC[k]["swap_short"]) / 360 * 3
+            res -= sw
+            t = sim.simulate(pd.DataFrame({"known_at": [ti], "side": [side], "market": name}), {name: pb},
+                             exit=("hours", 24), stop=("bps", 500))
+            rt = costs.pair_round_trip(name, side, (pa, pb_), (pa, pb_), ti, to)
+            good = (len(t) == 1 and t.reason[0] == "time" and t.exit_time[0] == to and abs(t.net_bp[0] - res * 1e4) < 1e-8
+                    and abs(t.gross_bp[0] - gross * 1e4) < 1e-8 and abs(t.swap_bp[0] - sw * 1e4) < 1e-8
+                    and abs(t.R[0] - res / 0.05) < 1e-9 and abs(rt["net"] - res) < 1e-12 and rt["nights"] == 3)
+            ok &= good
+            rows.append(f"{name} {'long' if side > 0 else 'short'}: cost {(gross - res) * 1e4:.2f} bp (swap {sw * 1e4:.2f})")
+    check("P1: pair round trip by hand: each leg's spread x shape, slippage, the swap of the side held, 3 nights (Wed)",
+          ok, "; ".join(rows))
+    # a time exit falling in the Friday closure: both legs at the close of the last bar, close-of-bar spread shape
+    a, b, pb = _flat_pair("eurusd/gbpusd", "eurusd", "gbpusd", 1.10, 1.30)
+    tf = U("2019-06-14 14:00")
+    t = sim.simulate(pd.DataFrame({"known_at": [tf], "side": [1], "market": "eurusd/gbpusd"}), {"eurusd/gbpusd": pb},
+                     exit=("hours", 24), stop=("bps", 500))
+    lastbar = U("2019-06-14 20:00")
+    fa, fb = (1.10 + _sp("eurusd", 1.10, tf)) * (1 + 1e-5), 1.30 * (1 - 1e-5)
+    xa, xb = 1.10 * (1 - 1e-5), (1.30 + _sp("gbpusd", 1.30, lastbar, close=True)) * (1 + 1e-5)
+    want = (xa / fa - 1) - (xb / fb - 1)
+    check("P1: a scheduled pair exit in the Friday closure: both legs at the last close, close-of-bar spread shape",
+          t.reason[0] == "time_close" and t.exit_time[0] == U("2019-06-14 21:00") and abs(t.net_bp[0] - want * 1e4) < 1e-8
+          and abs(t.exit_px_b[0] - xb) < 1e-12, f"{t.net_bp[0]:.3f} bp")
+    try:
+        sim.pair_book("btc/xau", "btcusd", "xauusd", flat("btcusd", price=8000.0, hr=50.0), flat("xauusd", price=1300.0, hr=1.0))
+        e1 = False
+    except costs.CostError:
+        e1 = True
+    try:
+        costs.spread("eurusd/gbpusd", 0.85)
+        e2 = False
+    except costs.CostError:
+        e2 = True
+    check("P1: legs with different triple-swap days are refused; costs.spec(pair) works, a pair's spread is per leg",
+          e1 and e2 and costs.spec("eurusd/gbpusd")["pair"]["legs"] == ("eurusd", "gbpusd") and "eurusd/gbpusd" not in costs.SPEC)
+
+
+def test_pairs_stops():
+    """P2: stops and targets of a pair are seen at observed prices only (each bar's open and close), never at the level,
+    never on one leg's wick; a pair bar needs both legs."""
+    a0, b0, _ = _flat_pair("eurusd/gbpusd", "eurusd", "gbpusd", 1.10, 1.30)
+    T = U("2019-06-12 10:00")
+    i = a0.index.get_loc(T)
+    sig = pd.DataFrame({"known_at": [T], "side": [1], "market": "eurusd/gbpusd"})
+    fa, fb = (1.10 + _sp("eurusd", 1.10, T)) * (1 + 1e-5), 1.30 * (1 - 1e-5)
+
+    def run(a, b, **kw):
+        pb = sim.pair_book("eurusd/gbpusd", "eurusd", "gbpusd", a, b)
+        return sim.simulate(sig, {"eurusd/gbpusd": pb}, exit=("hours", 8), **kw), pb
+    a = a0.copy()
+    a.iloc[i + 1, a.columns.get_loc("low")] = 1.078                     # a wick 2 % down: not an observed pair price
+    a.iloc[i + 2, a.columns.get_loc("close")] = 1.10 * 0.992             # the bar closes 0.8 % down: beyond a 0.5 % stop
+    t, _ = run(a, b0, stop=("bps", 50))
+    xa = 1.10 * 0.992 * (1 - 0.3e-4)
+    xb = (1.30 + _sp("gbpusd", 1.30, a0.index[i + 2], close=True)) * (1 + 0.3e-4)
+    want = (xa / fa - 1) - (xb / fb - 1)
+    check("P2: a pair stop is filled at the observed close beyond the level (both legs, stop slippage, close spread): R < -1",
+          t.reason[0] == "stop" and t.exit_time[0] == a0.index[i + 2] + pd.Timedelta(hours=1) and
+          abs(t.R[0] - want / 0.005) < 1e-9 and t.R[0] < -1.4, f"R {t.R[0]:.3f} (a fill at the level would give about -1)")
+    a = a0.copy()
+    a.iloc[i + 2, a.columns.get_loc("open")] = 1.10 * 0.99
+    a.iloc[i + 2, a.columns.get_loc("close")] = 1.10 * 0.99
+    t, _ = run(a, b0, stop=("bps", 50))
+    xa = 1.10 * 0.99 * (1 - 0.3e-4)
+    xb = (1.30 + _sp("gbpusd", 1.30, a0.index[i + 2])) * (1 + 0.3e-4)
+    check("P2: a pair bar opening beyond the stop fills at that open ('stop_gap', open spread shape)",
+          t.reason[0] == "stop_gap" and t.exit_time[0] == a0.index[i + 2] and
+          abs(t.R[0] - ((xa / fa - 1) - (xb / fb - 1)) / 0.005) < 1e-9, f"R {t.R[0]:.3f}")
+    a = a0.copy()
+    a.iloc[i + 1, a.columns.get_loc("high")] = 1.13                      # a leg's wick far beyond the target: ignored
+    a.iloc[i + 3, a.columns.get_loc("close")] = 1.10 * 1.006
+    t, _ = run(a, b0, stop=("bps", 50), target=("bps", 30))
+    xa = 1.10 * 1.006 * (1 - 1e-5)
+    xb = (1.30 + _sp("gbpusd", 1.30, a0.index[i + 3], close=True)) * (1 + 1e-5)
+    want = (xa / fa - 1) - (xb / fb - 1)
+    check("P2: a pair target is a market exit at the observed close that crossed it (market slippage), not at the level; "
+          "a leg's wick does not trigger it", t.reason[0] == "target" and t.exit_time[0] == a0.index[i + 3] + pd.Timedelta(hours=1)
+          and abs(t.net_bp[0] - want * 1e4) < 1e-8 and t.net_bp[0] > 30 + 1, f"{t.net_bp[0]:.2f} bp against a 30 bp target")
+    a = a0.copy()
+    a.iloc[i + 2, a.columns.get_loc("close")] = 1.10 * 0.992
+    b = b0.drop(b0.index[i + 2])                                         # leg b has no bar at i + 2
+    t, pb = run(a, b, stop=("bps", 50))
+    check("P2: a pair bar needs both legs: an hour missing in one leg is no pair bar (the other leg's price there is never used)",
+          a0.index[i + 2] not in pb.index and len(pb.t) == len(a0) - 1 and t.reason[0] == "time", str(t.reason[0]))
+    # D20 of the pair from its observed opens and closes, by hand
+    bw = synth.bars("eurusd", seed=61), synth.bars("gbpusd", seed=62)
+    pb = sim.pair_book("eurusd/gbpusd", "eurusd", "gbpusd", *bw)
+    bka, bkb = sim.Book(bw[0], "eurusd"), sim.Book(bw[1], "gbpusd")
+    common = bka.index.intersection(bkb.index)
+    ia, ib = bka.index.get_indexer(common), bkb.index.get_indexer(common)
+    po, pc = bka.mid["o"][ia] / bkb.mid["o"][ib], bka.mid["c"][ia] / bkb.mid["c"][ib]
+    df = pd.DataFrame({"h": np.maximum(po, pc), "l": np.minimum(po, pc)}, index=common)
+    g = df.groupby(data.trading_day(common))
+    rng_ = (g.h.max() - g.l.min())[g.h.size() >= 10]
+    tq = U("2018-03-14 15:00")
+    days = rng_[rng_.index < pd.Timestamp("2018-03-14")]                 # trading days ended before 15:00 UTC on the 14th
+    check("P2: pair D20 = mean of the last 20 completed 17:00-NY days' range of the observed pair price (by hand)",
+          abs(pb.d20(np.array([tq.value]))[0] - days.iloc[-20:].mean()) < 1e-12)
+
+
+def _ou_legs(ka, kb, seed, kind="ratio", theta=0.02, sig=0.0012, vol=0.0005):
+    """Two synthetic legs whose ratio (or product) carries a planted mean-reverting part S (AR(1), half-life ~35 h)."""
+    from scipy.signal import lfilter
+    t = synth.calendar("fx")
+    eps = np.random.default_rng(seed + 77).standard_normal(len(t))
+    dS = pd.Series(np.diff(np.r_[0.0, lfilter([sig], [1, -(1 - theta)], eps)]), index=t)
+    sb = -0.5 if kind == "ratio" else 0.5
+    a = synth.bars(ka, seed=seed, vol_h=vol, edge=lambda i: 0.5 * dS.reindex(i).to_numpy())
+    b = synth.bars(kb, seed=seed + 1, vol_h=vol, edge=lambda i: sb * dS.reindex(i).to_numpy())
+    return a, b
+
+
+PAIRS_W = {"audusd/nzdusd": ("audusd", "nzdusd", "ratio"), "eurusd*usdchf": ("eurusd", "usdchf", "product")}
+
+
+def _pair_z(d, name):
+    ka, kb, kind = PAIRS_W[name]
+    a, b = d[ka].close, d[kb].close
+    c = a.index.intersection(b.index)
+    x = np.log(a[c] / b[c]) if kind == "ratio" else np.log(a[c] * b[c])
+    x = x[x.index.hour == 20]                                            # the 20:00 UTC bar's close, known at 21:00
+    return ((x - x.rolling(20).mean().shift(1)) / x.rolling(20).std().shift(1)).dropna()
+
+
+def _pair_build(names, thr=1.0):
+    def build(d):
+        out = []
+        for nm in names:
+            z = _pair_z(d, nm)
+            z = z[z.abs() >= thr]
+            out.append(pd.DataFrame({"known_at": z.index + pd.Timedelta(hours=1), "side": -np.sign(z.to_numpy()).astype(int),
+                                     "market": nm}))
+        return pd.concat(out, ignore_index=True)
+    return build
+
+
+def _pair_events(names, back=0.5):
+    def build(d):
+        out = []
+        for nm in names:
+            z = _pair_z(d, nm)
+            z = z[z.abs() <= back]
+            out.append(pd.DataFrame({"known_at": z.index + pd.Timedelta(hours=1), "market": nm}))
+        return pd.concat(out, ignore_index=True)
+    return build
+
+
+def test_pairs_planted_and_basket():
+    """P3: a planted mean-reverting pair (fade a 20-day z-score, exit when z is back inside 0.5) is found through the full
+    judge with both truncation reports; a basket of two pairs (a ratio and a product) is judged with the basket bars
+    across PAIRS (market = pair name), and the sizing reports both legs."""
+    d = {}
+    for nm, (ka, kb, kind) in PAIRS_W.items():
+        d[ka], d[kb] = _ou_legs(ka, kb, {"audusd/nzdusd": 3, "eurusd*usdchf": 13}[nm], kind)
+    rl = {k: pd.Timedelta(hours=1) for k in d}
+    bk = {nm: sim.pair_book(nm, ka, kb, d[ka], d[kb], kind=kind) for nm, (ka, kb, kind) in PAIRS_W.items()}
+    out = {}
+    for label, names in (("one", ["audusd/nzdusd"]), ("basket", list(PAIRS_W))):
+        bs, be = _pair_build(names), _pair_events(names)
+        sub = {k: v for k, v in d.items() if any(k in PAIRS_W[n][:2] for n in names)}
+        trs = checks.truncation_test(bs, sub, row_len={k: rl[k] for k in sub})
+        tre = checks.truncation_test(be, sub, row_len={k: rl[k] for k in sub})
+        sig, ev = bs(sub), be(sub)
+        books_ = {n: bk[n] for n in names}
+        rule = dict(exit=sim.event_exit(ev, ("bdays", 5)), stop=("d20", 1.5))
+        main = sim.simulate(sig, books_, **rule)
+        nb = {"mh3": sim.simulate(sig, books_, exit=sim.event_exit(ev, ("bdays", 3)), stop=("d20", 1.5)),
+              "s2": sim.simulate(sig, books_, exit=sim.event_exit(ev, ("bdays", 5)), stop=("d20", 2.0))}
+        evr = sim.simulate(sig, books_, mode="every", **rule)
+        nl = stats.null_test(main, books_, n_draws=2000, **rule)
+        idea = os.path.join(TMP, "ideas", f"92{len(names)}_pairs")
+        _declare(idea, {"idea": f"pairs {label}"})
+        res = judge.verdict(idea, main, nb, evr, nl, ten=TEN, write=False, truncation=trs, event_truncation=tre)
+        out[label] = (res, main, trs, tre)
+    r1, m1, trs, tre = out["one"]
+    NUMBERS["pair_planted"] = {k: v["value"] for k, v in r1["bars"].items()}
+    check("P3: a planted mean-reverting pair (event exit when z is back) passes every bar, guards included",
+          trs["pass"] and tre["pass"] and r1["verdict"] == "pass" and r1["main"]["markets"] == ["audusd/nzdusd"]
+          and not r1["basket"] and "event_truncation_test" in r1["bars"],
+          f"{r1['verdict']} {r1['failed_bars']}; n {r1['main']['n']}, t {r1['main']['t_trade']:.2f}, null {r1['null']['percentile']:.1f}")
+    rb = out["basket"][0]
+    bym = rb["main"]["by_market"]
+    check("P3: a basket of 2 pairs is judged across pairs (t on daily sums, markets = pairs, small-basket share 75 %)",
+          rb["basket"] and set(bym) == set(PAIRS_W) and "t_daily>=2.5" in rb["bars"] and
+          "max_market_share<=75%" in rb["bars"] and rb["verdict"] == "pass", f"{rb['verdict']} {rb['failed_bars']} "
+          f"{ {k: round(v['sum_R'], 1) for k, v in bym.items()} }")
+    sz = rb["sizing"]["by_market"]
+    pz = sz.get("eurusd*usdchf", {})
+    check("P3: the minimum-lot sizing of a pair reports both legs (lots for equal notional, margins, loss at median stop)",
+          set(pz.get("legs", {})) == {"eurusd", "usdchf"} and pz.get("margin_eur", 0) > 0 and
+          pz.get("loss_at_median_stop_eur", 0) > 0 and all(v["lots_rounded_up"] >= 0.01 for v in pz["legs"].values()),
+          json.dumps({k: round(v, 3) if isinstance(v, float) else v for k, v in pz.items() if k != "legs"}))
+    # exact two-leg result vs the synthetic price's result P_exit / P_entry - 1: second order, measured
+    ra = m1.exit_px_a / m1.entry_px_a - 1
+    rb_ = m1.exit_px_b / m1.entry_px_b - 1
+    exact = ra - rb_
+    synth_r = (m1.exit_px_a / m1.exit_px_b) / (m1.entry_px_a / m1.entry_px_b) - 1
+    diff_R = (exact - synth_r) * m1.side / m1.stop_frac
+    NUMBERS["pair_exact_vs_synthetic"] = {"mean_abs_diff_R": float(diff_R.abs().mean()), "max_abs_diff_R": float(diff_R.abs().max()),
+                                         "mean_diff_R": float(diff_R.mean()), "mean_abs_R": float(m1.R.abs().mean())}
+    check("P3: the synthetic price's result differs from the exact two-leg result by (r_a - r_b) r_b / (1 + r_b) only "
+          "(the kit uses the exact one)", np.allclose(exact - synth_r, exact * rb_ / (1 + rb_), atol=1e-13) and
+          float(diff_R.abs().mean()) < 0.05, json.dumps(NUMBERS["pair_exact_vs_synthetic"]))
+
+
+def test_pairs_noise():
+    """P4: pure-noise pairs (independent legs, random signals) through the full judge: gross t about N(0, 1), none passes,
+    the null percentile is uniform; with exits on random events too."""
+    t0 = time.time()
+    rng = np.random.default_rng(91)
+    combos = [("eurusd", "gbpusd", "ratio"), ("audusd", "nzdusd", "ratio"), ("eurusd", "usdchf", "product"),
+              ("audusd", "usdcad", "product"), ("xauusd", "xagusd", "ratio"), ("us100", "us30", "ratio"),
+              ("us500", "ger40", "ratio"), ("gbpusd", "usdjpy", "product")]
+    tg, pct, npass, pct_ev, tg_ev = [], [], 0, [], []
+    days = pd.bdate_range("2013-03-01", "2021-12-20", tz="UTC")
+    for w in range(16):
+        ka, kb, kind = combos[w % len(combos)]
+        nm = f"n{w}:{ka}{'/' if kind == 'ratio' else '*'}{kb}"
+        pb = sim.pair_book(nm, ka, kb, synth.bars(ka, seed=300 + w), synth.bars(kb, seed=400 + w), kind=kind)
+        bk = {nm: pb}
+        for r in range(6):
+            pick = days[rng.random(len(days)) < 0.15] + pd.Timedelta(hours=int(rng.integers(0, 24)))
+            sg = pd.DataFrame({"known_at": pick, "side": rng.choice([-1, 1], len(pick)), "market": nm})
+            if r < 4:
+                hold = int(rng.choice([3, 6, 12, 24]))
+                rule = dict(exit=("hours", hold), stop=("d20", 1.0))
+                nb = {"a": sim.simulate(sg, bk, exit=("hours", hold * 2), stop=("d20", 1.0)),
+                      "b": sim.simulate(sg, bk, exit=("hours", hold), stop=("d20", 2.0))}
+            else:                                                    # exits on random events (known times, no edge)
+                evt = pb.index[rng.random(len(pb.index)) < 0.03] + pd.Timedelta(hours=1)
+                rule = dict(exit=("event", evt, ("bdays", 3)), stop=("d20", 1.5))
+                nb = {"a": sim.simulate(sg, bk, exit=("event", evt, ("bdays", 2)), stop=("d20", 1.5))}
+            m = sim.simulate(sg, bk, **rule)
+            ev = sim.simulate(sg, bk, mode="every", **rule)
+            nl = stats.null_test(m, bk, n_draws=2000, seed=w * 10 + r, **rule)
+            res = judge.verdict(TMP, m, nb, ev, nl, ten=TEN, write=False)
+            core = [f for f in res["failed_bars"] if f not in GUARDS + ("event_truncation_test",)]
+            npass += not core
+            (tg if r < 4 else tg_ev).append(stats.t_stat(m.R_gross))
+            (pct if r < 4 else pct_ev).append(nl["percentile"])
+    tg, pct, allp = np.array(tg), np.array(pct), np.array(pct + pct_ev)
+    tall = np.r_[tg, tg_ev]
+    NUMBERS["pair_noise"] = {"rules": len(allp), "passed": int(npass), "t_gross_mean": float(tall.mean()),
+                             "t_gross_sd": float(tall.std()), "ks_normal_p": float(st.kstest(tall, "norm").pvalue),
+                             "null_pct_ks_uniform_p": float(st.kstest(allp / 100, "uniform").pvalue),
+                             "null_pct_ge_97.5": int((allp >= 97.5).sum()), "event_rules": len(pct_ev),
+                             "event_null_mean": float(np.mean(pct_ev)), "seconds": round(time.time() - t0, 1)}
+    nn = NUMBERS["pair_noise"]
+    check("P4: 96 pure-noise pair rules (32 with event exits) through the full judge: none passes", npass == 0, json.dumps(nn))
+    check("P4: noise pairs: gross t looks standard normal (observed fills keep the game fair)",
+          abs(nn["t_gross_mean"]) < 0.3 and 0.75 < nn["t_gross_sd"] < 1.3 and nn["ks_normal_p"] > 0.001)
+    check("P4: the null is calibrated on pairs (percentile uniform, >= 97.5 in about 2.5 % of rules), event exits included",
+          nn["null_pct_ks_uniform_p"] > 0.001 and nn["null_pct_ge_97.5"] <= 8 and 30 < nn["event_null_mean"] < 70)
+
+
+def test_event_mechanics():
+    """E1: exit on a condition: an event before, at and inside the entry bar; max_hold; an event in a closure; per-market
+    events; the causality invariant on random events."""
+    b = flat("eurusd")
+    T = U("2019-06-12 10:00")
+    sig = pd.DataFrame({"known_at": [T], "side": [1]})
+    H = pd.Timedelta(hours=1)
+    run = lambda ev, mh=("hours", 5), s=sig, bb=b: sim.simulate(s, bb, market="eurusd", exit=("event", pd.DatetimeIndex(ev), mh),  # noqa: E731
+                                                              stop=("d20", 1.0))
+    r1 = run([T - H, T, T + pd.Timedelta(minutes=30)])
+    r2 = run([T - H, T])
+    r3 = run([T + 2 * H])
+    r4 = run([T + 2 * H + pd.Timedelta(seconds=1)])
+    r5 = run([], ("bdays", 1))
+    check("E1: an event before or AT the entry bar's open is ignored; one inside the entry bar exits at the next open; "
+          "an event at a bar's open exits at that open; 1 s later at the next one; none: max_hold",
+          (r1.reason[0], r1.exit_time[0]) == ("event", T + H) and (r2.reason[0], r2.exit_time[0]) == ("time", T + 5 * H) and
+          (r3.reason[0], r3.exit_time[0]) == ("event", T + 2 * H) and r4.exit_time[0] == T + 3 * H and
+          (r5.reason[0], r5.exit_time[0]) == ("time", T + pd.Timedelta(days=1)),
+          f"{r1.exit_time[0]} {r2.exit_time[0]} {r3.exit_time[0]} {r4.exit_time[0]} {r5.exit_time[0]}")
+    s = 7.5e-5 / 1.16 * 1.10
+    fill = (1.10 + s * SH["eurusd"][_how(T)]) * (1 + 1e-5)
+    check("E1: an event exit is a market exit at the bar's open (bid, market slippage)",
+          abs(r3.exit_px[0] - 1.10 * (1 - 1e-5)) < 1e-12 and abs(r3.entry_px[0] - fill) < 1e-12)
+    fr = U("2019-06-14 14:00")
+    sat = U("2019-06-15 12:00")
+    sf = pd.DataFrame({"known_at": [fr], "side": [1]})
+    r6 = run([sat], ("bdays", 3), sf)
+    r7 = run([sat], ("hours", 24), sf)
+    check("E1: an event in the weekend closure exits at the reopening bar's open, never at the Friday close before it "
+          "(that close happens before the event is known); a max_hold falling in the closure still exits at the close",
+          (r6.reason[0], r6.exit_time[0]) == ("event", U("2019-06-16 21:00")) and
+          (r7.reason[0], r7.exit_time[0]) == ("time_close", U("2019-06-14 21:00")), f"{r6.exit_time[0]} / {r7.exit_time[0]}")
+    two = pd.concat([sig.assign(market="eurusd"), pd.DataFrame({"known_at": [T], "side": [1], "market": "gbpusd"})])
+    bk = sim.books({"eurusd": b, "gbpusd": flat("gbpusd", price=1.30)})
+    r8 = sim.simulate(two, bk, exit=("event", {"eurusd": pd.DatetimeIndex([T + 2 * H]), "gbpusd": pd.DatetimeIndex([T + 3 * H])},
+                                     ("hours", 5)), stop=("d20", 1.0))
+    try:
+        sim.simulate(two, bk, exit=("event", {"eurusd": pd.DatetimeIndex([T + 2 * H])}, ("hours", 5)), stop=("d20", 1.0))
+        e1 = False
+    except ValueError:
+        e1 = True
+    try:
+        run(pd.DatetimeIndex(["2019-06-12 12:00"]))
+        e2 = False
+    except ValueError:
+        e2 = True
+    check("E1: events per market; a market without events and tz-naive event times are refused",
+          dict(zip(r8.market, r8.exit_time)) == {"eurusd": T + 2 * H, "gbpusd": T + 3 * H} and e1 and e2)
+    # causality invariant on random events and synthetic bars (single market and a pair)
+    bw = synth.bars("us500", seed=71)
+    rng = np.random.default_rng(71)
+    pbk = sim.pair_book("us100/us30", "us100", "us30", synth.bars("us100", seed=72), synth.bars("us30", seed=73))
+    bad = 0
+    for mk, bkk in (("us500", sim.Book(bw, "us500")), ("us100/us30", pbk)):
+        evt = U("2013-01-01") + pd.to_timedelta(np.sort(rng.choice(4_730_000, 4000, replace=False)), unit="min")
+        days = pd.bdate_range("2013-03-01", "2021-12-20", tz="UTC") + pd.Timedelta(hours=15)
+        tr = sim.simulate(pd.DataFrame({"known_at": days, "side": rng.choice([-1, 1], len(days)), "market": mk}),
+                          {mk: bkk}, exit=("event", evt, ("bdays", 4)), stop=("d20", 3.0), mode="every")
+        en = tr.entry_time.astype("int64").to_numpy()
+        xt = tr.exit_time.astype("int64").to_numpy()
+        e_ns = evt.as_unit("ns").asi8
+        k = np.searchsorted(e_ns, en, side="right")
+        first = np.where(k < len(e_ns), e_ns[np.clip(k, 0, len(e_ns) - 1)], np.iinfo(np.int64).max)
+        nxt = bkk.t[np.clip(np.searchsorted(bkk.t, first, side="left"), 0, len(bkk.t) - 1)]
+        ise = (tr.reason == "event").to_numpy()
+        bad += int((ise & ((xt < first) | (xt != nxt))).sum())                   # an event exit before its event, or late
+        bad += int((~ise & (tr.reason.isin(["time", "time_close"])).to_numpy() & (nxt < xt) & (first < np.iinfo(np.int64).max)).sum())
+    check("E1: causality on random events: every event exit is at the first bar open at or after the first event after "
+          "entry, never before it; no time exit outlives an event", bad == 0, f"{bad} violations")
+
+
+def test_event_lookahead():
+    """E2: a look-ahead trap in an exit condition (an exit event stamped at its bar's open but computed from that bar's
+    close) gives a large fake edge; the truncation test on the event build catches it, and judge.verdict refuses a pass
+    without the passing event report bound to THOSE events."""
+    b = synth.bars("us500", seed=81)
+    bk = {"us500": sim.Book(b, "us500")}
+    days = pd.bdate_range("2013-03-01", "2021-12-20", tz="UTC") + pd.Timedelta(hours=14)
+    longs = pd.DataFrame({"known_at": days, "side": 1, "market": "us500"})
+
+    def ev_bad(d):                                     # 'the bar fell', stamped at the bar's OPEN: uses its own close
+        x = d[d.close < d.open]
+        return pd.DataFrame({"known_at": x.index})
+
+    def ev_good(d):                                    # the same condition, known at the bar's end
+        x = d[d.close < d.open]
+        return pd.DataFrame({"known_at": x.index + pd.Timedelta(hours=1)})
+    rule = lambda ev: dict(exit=("event", ev, ("hours", 48)), stop=("d20", 3.0))  # noqa: E731
+    tb = sim.simulate(longs, bk, **rule(ev_bad(b)))
+    tg = sim.simulate(longs, bk, **rule(ev_good(b)))
+    rb, rg = checks.truncation_test(ev_bad, b, [U("2016-03-02 15:00")]), checks.truncation_test(ev_good, b, [U("2016-03-02 15:00")])
+    check("E2: trap: an exit event stamped before it could be known gives a large fake edge; the truncation test on the "
+          "event build catches it; stamped at the bar's end there is no edge",
+          stats.t_stat(tb.R_gross) > 10 and abs(stats.t_stat(tg.R_gross)) < 3.5 and not rb["pass"] and rg["pass"] and
+          rb.get("events_sha") and rb.get("signals_sha") is None,
+          f"t gross bad {stats.t_stat(tb.R_gross):.1f}, good {stats.t_stat(tg.R_gross):.2f}")
+    # the judge: planted signal world, exit when the 18:00 bar has closed (known 19:00): a pass needs THOSE events' report
+    bp, sig0 = synth.signal_world("us500", seed=5, edge=0.0004)
+    bkp = {"us500": sim.Book(bp, "us500")}
+
+    def ev_clock(d):
+        x = d[d.index.hour == 18]
+        return pd.DataFrame({"known_at": x.index + pd.Timedelta(hours=1)})
+    trs = _tr_fixed(sig0)
+    tre = checks.truncation_test(ev_clock, bp, row_len=pd.Timedelta(hours=1))
+    other = checks.truncation_test(lambda d: ev_clock(d).iloc[::2].reset_index(drop=True), bp, row_len=pd.Timedelta(hours=1))
+    failed = checks.truncation_test(lambda d: pd.DataFrame({"known_at": d[d.index.hour == 18].index}), bp,
+                                    row_len=pd.Timedelta(hours=1))
+    ev = ev_clock(bp)
+    rl = dict(exit=("event", ev, ("hours", 24)), stop=("d20", 1.5))
+    main = sim.simulate(sig0, bkp, **rl)
+    nb = {"s2": sim.simulate(sig0, bkp, exit=("event", ev, ("hours", 24)), stop=("d20", 2.0))}
+    evr = sim.simulate(sig0, bkp, mode="every", **rl)
+    nl = stats.null_test(main, bkp, n_draws=2000, **rl)
+    idea = os.path.join(TMP, "ideas", "930_event")
+    _declare(idea, {"idea": "930 event"})
+    v = {k: judge.verdict(idea, main, nb, evr, nl, ten=TEN, write=False, truncation=trs, event_truncation=x)
+         for k, x in (("good", tre), ("none", None), ("other", other), ("failed", failed))}
+    plain = judge.verdict(idea, sim.simulate(sig0, bkp, exit=("hours", 5), stop=("d20", 1.5)), None, None, None,
+                          ten=TEN, write=False, truncation=trs)
+    check("E2: judge: an event-exit rule passes only with the passing truncation report of THOSE events (missing, other "
+          "events or a failed report: fail); a rule without event exits has no such bar",
+          v["good"]["verdict"] == "pass" and all(v[k]["verdict"] == "fail" and v[k]["failed_bars"] == ["event_truncation_test"]
+                                                 for k in ("none", "other", "failed"))
+          and failed["pass"] is False and "event_truncation_test" not in plain["bars"] and
+          (main.reason == "event").mean() > 0.9,
+          f"good {v['good']['verdict']} {v['good']['failed_bars']}; none {v['none']['failed_bars']}; "
+          f"other {v['other']['bars']['event_truncation_test']['value']}; failed {v['failed']['bars']['event_truncation_test']['value']}")
+
+
+def test_event_null_noise():
+    """E3: the null with event exits re-enters at random days and leaves on the same events: calibrated on noise
+    (single markets, dense signals whose trades overlap, default and one-position nulls)."""
+    rng = np.random.default_rng(97)
+    pe, po, tg = [], [], []
+    keys = ["us500", "eurusd", "xauusd", "btcusd", "gbpusd"]
+    days = pd.bdate_range("2013-03-01", "2021-12-20", tz="UTC")
+    for w in range(10):
+        key = keys[w % len(keys)]
+        bw = synth.bars(key, seed=500 + w)
+        bk = {key: sim.Book(bw, key)}
+        for r in range(6):
+            sg = pd.DataFrame({"known_at": days[rng.random(len(days)) < 0.5] + pd.Timedelta(hours=int(rng.integers(0, 24))),
+                               "market": key})
+            sg["side"] = rng.choice([-1, 1], len(sg))
+            evt = bw.index[rng.random(len(bw)) < float(rng.choice([0.01, 0.05]))] + pd.Timedelta(hours=1)
+            rule = dict(exit=("event", evt, ("bdays", int(rng.choice([2, 5])))), stop=("d20", 1.5))
+            m = sim.simulate(sg, bk, **rule)
+            tg.append(stats.t_stat(m.R_gross))
+            pe.append(stats.null_test(m, bk, n_draws=1000, seed=w * 10 + r, **rule)["percentile"])
+            if r < 2:
+                po.append(stats.null_test(m, bk, n_draws=1000, seed=w * 10 + r, mode="one", **rule)["percentile"])
+    pe, po, tg = np.array(pe), np.array(po), np.array(tg)
+    NUMBERS["event_null"] = {"rules": len(pe), "ge97.5": int((pe >= 97.5).sum()), "mean": float(pe.mean()),
+                             "ks_p": float(st.kstest(pe / 100, "uniform").pvalue), "rules_one": len(po),
+                             "mean_one": float(po.mean()), "ge97.5_one": int((po >= 97.5).sum()),
+                             "t_gross_mean": float(tg.mean()), "t_gross_sd": float(tg.std())}
+    n = NUMBERS["event_null"]
+    check("E3: the null with event exits is calibrated on noise (uniform, about 2.5 % at 97.5; gross t about N(0,1))",
+          n["ks_p"] > 0.001 and n["ge97.5"] <= 5 and 35 < n["mean"] < 65 and n["ge97.5_one"] <= 3 and
+          abs(n["t_gross_mean"]) < 0.4 and n["t_gross_sd"] < 1.4, json.dumps(n))
+
+
+VREQ = []
+VBAD = {"on": False}
+
+
+def _vpx(ts):
+    """Deterministic candle of hour ts (unix s): open, high, low, close distinct so a column swap is seen."""
+    base = 100.0 + (ts // 3600) % 50
+    return base, base + 3.0, base - 2.0, base + 1.0
+
+
+def _fake_venues(url, **kw):
+    """Fake Bitstamp / Bitfinex / Coinbase: honours the bounds but serves at most 200 / 300 / 300 candles per call (so the
+    kit must page), Bitfinex omits every 97th hour (no trade); with VBAD['on'] every reply also carries a candle of
+    2022-06 and one of 2026-02 (a server that ignores the bounds)."""
+    from urllib.parse import parse_qs, urlparse
+    VREQ.append(url)
+    q = {k: v[0] for k, v in parse_qs(urlparse(url).query).items()}
+    late = [int(U("2022-06-01").timestamp()), int(U("2026-02-01").timestamp())] if VBAD["on"] else []
+    if "bitstamp" in url:
+        end, start, lim = int(q["end"]), int(q["start"]), min(int(q["limit"]), 200)
+        ts = list(range(max(start, end - (lim - 1) * 3600), end + 1, 3600)) + late
+        rows = [{"timestamp": str(t), "open": f"{_vpx(t)[0]:.2f}", "high": f"{_vpx(t)[1]:.2f}", "low": f"{_vpx(t)[2]:.2f}",
+                 "close": f"{_vpx(t)[3]:.2f}", "volume": "1.5"} for t in ts]
+        return json.dumps({"data": {"pair": "BTC/USD", "ohlc": rows}}).encode()
+    if "bitfinex" in url:
+        s, e, lim = int(q["start"]) // 1000, int(q["end"]) // 1000, min(int(q["limit"]), 300)
+        ts = [t for t in range(-(-s // 3600) * 3600, e + 1, 3600) if (t // 3600) % 97][:lim] + late
+        return json.dumps([[t * 1000, _vpx(t)[0], _vpx(t)[3], _vpx(t)[1], _vpx(t)[2], 2.0] for t in ts]).encode()
+    if "coinbase" in url:
+        s, e = int(pd.Timestamp(q["start"]).timestamp()), int(pd.Timestamp(q["end"]).timestamp())
+        if (e - s) // 3600 + 1 > 300:
+            return json.dumps({"message": "granularity too small for the requested time range"}).encode()
+        ts = list(range(s, e + 1, 3600)) + late
+        return json.dumps([[t, _vpx(t)[2], _vpx(t)[1], _vpx(t)[0], _vpx(t)[3], 3.0] for t in ts][::-1]).encode()
+    return _fake(url, **kw)
+
+
+def _times_in(url):
+    """Every time named by a venue request, as UTC timestamps."""
+    from urllib.parse import parse_qs, urlparse
+    q = {k: v[0] for k, v in parse_qs(urlparse(url).query).items()}
+    out = []
+    for k in ("start", "end"):
+        if k in q:
+            v = q[k]
+            out.append(U(v.replace("Z", "")) if "T" in v else pd.Timestamp(int(v) // (1000 if "bitfinex" in url else 1),
+                                                                             unit="s", tz="UTC"))
+    return out
+
+
+def test_crypto_venues():
+    """C1-C4: data.crypto_h1 for bitstamp, bitfinex, coinbase behind the period lock (fake server): paging, complete
+    hours, nothing of 2022+ requested while locked, never 2026, a server ignoring the bounds cannot put a later row in
+    the cache, columns decoded in the right order, DataGap on a hole; load_bars(..., venue=) gives FP-ready bars."""
+    real = data.http_get
+    data.http_get = _fake_venues
+    os.environ["EXPLORE_CACHE"] = os.path.join(TMP, "cache_venues")
+    try:
+        data.lock()
+        res = {}
+        for v in ("bitstamp", "bitfinex", "coinbase"):
+            VREQ.clear()
+            d = data.crypto_h1(v, "btcusd", start="2021-10")
+            req_t = [x for u in VREQ for x in _times_in(u)]
+            hrs = pd.date_range("2021-10-01", "2022-01-01", freq="h", tz="UTC", inclusive="left")
+            want = hrs[(hrs.as_unit("s").asi8 // 3600) % 97 != 0] if v == "bitfinex" else hrs
+            o, h, l, c = _vpx(int(d.index[5].timestamp()))
+            res[v] = {"n": len(d), "calls": len(VREQ), "complete": d.index.equals(want),
+                      "max_req": max(req_t), "cols": (d.open.iloc[5], d.high.iloc[5], d.low.iloc[5], d.close.iloc[5]) == (o, h, l, c),
+                      "attrs": d.attrs.get("venue") == v}
+        check("C1: crypto venues page through each month (calls > months) and return every hour once, in the right columns",
+              all(r["complete"] and r["cols"] and r["attrs"] and r["calls"] > 3 for r in res.values()),
+              json.dumps({k: {kk: str(vv) for kk, vv in r.items()} for k, r in res.items()}))
+        check("C1: locked: no venue request names a time at or after 2022-01-01",
+              all(r["max_req"] < U("2022-01-01") for r in res.values()), str({k: str(r["max_req"]) for k, r in res.items()}))
+        shutil.rmtree(os.environ["EXPLORE_CACHE"], ignore_errors=True)
+        VBAD["on"] = True
+        out = {v: data.crypto_h1(v, "ethusd", start="2021-11") for v in ("bitstamp", "bitfinex", "coinbase")}
+        cached = [os.path.join(r, x) for r, _, fs in os.walk(os.path.join(data.cache_dir(), "crypto")) for x in fs]
+        mx = max(int(pd.read_csv(p).t.max()) for p in cached if os.path.getsize(p))
+        check("C2: a server that ignores the bounds (rows of 2022 and 2026 in every reply): nothing past 2021 is returned "
+              "or cached", all(x.index.max() < U("2022-01-01") and len(x) for x in out.values()) and
+              mx < int(U("2022-01-01").timestamp()) and not any("2022" in os.path.basename(p) or "2026" in p for p in cached),
+              f"{len(cached)} cache files, last cached hour {pd.Timestamp(mx, unit='s')}")
+        VBAD["on"] = False
+        idea = os.path.join(TMP, "ideas", "940_crypto")
+        os.makedirs(idea, exist_ok=True)
+        json.dump(VALDECL, open(os.path.join(idea, "val_declared.json"), "w"))
+        json.dump({"verdict": "pass"}, open(os.path.join(idea, "results.json"), "w"))
+        data.unlock_val(idea)
+        VREQ.clear()
+        late = {v: data.crypto_h1(v, "btcusd", start="2025-11") for v in ("bitstamp", "bitfinex", "coinbase")}
+        req_t = [x for u in VREQ for x in _times_in(u)]
+        data.lock()
+        cached = [os.path.join(r, x) for r, _, fs in os.walk(os.path.join(data.cache_dir(), "crypto")) for x in fs]
+        check("C3: unlocked: venue rows to 2025-12-31, no request names 2026, no 2026 month cached",
+              all(x.index.max() < U("2026-01-01") and x.index.max() >= U("2025-12-31") for x in late.values()) and
+              max(req_t) < U("2026-01-01") and not any("2026-" in os.path.basename(p) for p in cached),
+              f"last request time {max(req_t)}")
+        hole = os.path.join(data.cache_dir(), "crypto", "bitstamp", "btcusd", "1h", "2021-08.csv")
+        open(hole, "w").write("")
+        try:
+            data.crypto_h1("bitstamp", "btcusd", start="2021-06")
+            check("C4: a month without candles inside a venue's history raises DataGap", False)
+        except data.DataGap:
+            check("C4: a month without candles inside a venue's history raises DataGap", True)
+        os.remove(hole)
+        VREQ.clear()
+        lb = data.load_bars("btcusd", 2021, venue="bitstamp")
+        dflt = data.load_bars("btcusd", 2021)
+        srv = data.server_time(lb.index)
+        try:
+            data.load_bars("eurusd", 2021, venue="bitstamp")
+            e1 = False
+        except ValueError:
+            e1 = True
+        check("C4: load_bars('btcusd', venue='bitstamp'): FP-ready (price 'mid', FP weekend closure removed, venue in attrs); "
+              "the default is still Binance; venue= on a non-crypto key is refused",
+              lb.attrs.get("price_is") == "mid" and lb.attrs.get("venue") == "bitstamp" and not (srv.dayofweek >= 5).any()
+              and lb.index.min() >= U("2021-01-01") and lb.index.max() < U("2022-01-01") and
+              any("bitstamp" in u for u in VREQ) and any("binance" in u for u in VREQ) and
+              dflt.attrs.get("source") == "binance download" and "venue" not in dflt.attrs and e1,
+              f"{len(lb)} bitstamp bars, {len(dflt)} binance bars")
+    finally:
+        VBAD["on"] = False
+        data.http_get = real
+        data.lock()
+
+
+def test_net_venues():
+    """--net: one in-sample month of each venue decoded and compared with Binance's BTCUSDT for the same month."""
+    os.environ["EXPLORE_CACHE"] = os.path.join(TMP, "netcache")
+    data.lock()
+    try:
+        bn = data.binance_klines("BTCUSDT", "1h", start="2019-06", end="2019-06-30")
+    except Exception as e:
+        check("net: Binance BTCUSDT 2019-06 for the venue comparison", False, repr(e))
+        return
+    for v in ("bitstamp", "bitfinex", "coinbase"):
+        try:
+            x = data.crypto_h1(v, "btcusd", start="2019-06", end="2019-06-30")
+            j = x.close.reindex(bn.index).dropna()
+            rel = float((j / bn.close.reindex(j.index) - 1).abs().median())
+            check(f"net: {v} BTC/USD 2019-06 decoded (hourly, columns in order) and within 1 % of Binance BTCUSDT",
+                  len(x) >= 650 and rel < 0.01 and (x.high >= x[["open", "close"]].max(axis=1)).all() and
+                  x.index.max() < U("2019-07-01"), f"{len(x)} bars, median |venue / Binance - 1| = {rel:.4%}")
+        except Exception as e:
+            check(f"net: {v} reachable", False, repr(e))
+
+
+# ------------------------------------------------------------------ fixes after the extension's review (2026-11-18)
+def _supp_world():
+    """Two independent noise legs (eurusd, gbpusd) and the verifier's z-score of their ratio (scratchpad
+    kit_v2/verify/suppress_*.py): the pair has no edge."""
+    H = pd.Timedelta(hours=1)
+    a, b = synth.bars("eurusd", seed=71), synth.bars("gbpusd", seed=72)
+
+    def pc(d):
+        i = d["a"].index.intersection(d["b"].index)
+        return d["a"].close.reindex(i) / d["b"].close.reindex(i)
+
+    def z_(d):
+        lp = np.log(pc(d))
+        return (lp - lp.rolling(120).mean()) / lp.rolling(120).std()
+
+    def ev_build(d, k=6):            # exits back inside 1.5 (+ 6-hourly 'still inside'); k > 0: DROPPED when |z| will
+        z = z_(d)                    # fall further in k bars, written so that a NaN at the end of a cut KEEPS it
+        e = ((z.abs() < 1.5) & (z.shift(1).abs() >= 1.5)) | ((z.abs() < 1.5) & (np.arange(len(z)) % 6 == 0))
+        if k:
+            e = e & ~(z.abs().shift(-k) < z.abs() - 0.3)
+        return pd.DataFrame({"known_at": z.index[e.values] + H})
+
+    def sig_build(d, k=6):           # fade |z| > 1.5; k > 0: a signal DROPPED when the next k bars go against it
+        z, lp = z_(d), np.log(pc(d))
+        up = (z < -1.5) & (z.shift(1) >= -1.5)
+        dn = (z > 1.5) & (z.shift(1) <= 1.5)
+        if k:
+            fut = lp.shift(-k - 1) - lp.shift(-1)
+            up, dn = up & ~(fut < 0), dn & ~(fut > 0)
+        return pd.DataFrame({"known_at": z.index[(up | dn).values] + H,
+                             "side": np.where(up[up | dn], 1, -1)}).reset_index(drop=True)
+    return {"a": a, "b": b}, {"a": H, "b": H}, ev_build, sig_build
+
+
+def test_fix_v1_suppression():
+    """FIX V1 (blocking): a build that DROPS an exit event (or a signal) when the future is favourable, with a NaN at the
+    end of a cut keeping it, passed the event guard with its 8 cuts at kept events' stamps (9 seeds of 10) and the
+    full judge on pure noise. The guard now cuts densely by default (50 stamp cuts, 50 cuts 1-24 bars after stamps,
+    100 random bar-end cuts) and the judge refuses a report with fewer (checks.cuts_ok)."""
+    D, RL, ev_build, sig_build = _supp_world()
+    seeds = range(4)
+    ev_bad = [checks.truncation_test(ev_build, D, row_len=RL, seed=s) for s in seeds]
+    sg_bad = [checks.truncation_test(sig_build, D, row_len=RL, seed=s) for s in seeds]
+    ev_ok = checks.truncation_test(lambda d: ev_build(d, 0), D, row_len=RL)
+    sg_ok = checks.truncation_test(lambda d: sig_build(d, 0), D, row_len=RL)
+    pb = {"eurusd/gbpusd": sim.pair_book("eurusd/gbpusd", "eurusd", "gbpusd", D["a"], D["b"])}
+    sgx = sig_build(D, 0).assign(market="eurusd/gbpusd")
+    t_bad = stats.t_stat(sim.simulate(sgx, pb, exit=("event", ev_build(D), ("bdays", 5)), stop=("d20", 1.5)).R_gross)
+    t_hon = stats.t_stat(sim.simulate(sgx, pb, exit=("event", ev_build(D, 0), ("bdays", 5)), stop=("d20", 1.5)).R_gross)
+    check("FIX V1: the suppression trap is real on a noise pair (dropping exit events that the future would improve "
+          "gives a fake gross t; honest events give none)", t_bad > 3 and abs(t_hon) < 3,
+          f"gross t suppressed {t_bad:.2f}, honest {t_hon:.2f}")
+    check("FIX V1: the default truncation test now catches the NaN-polarity suppression in an EVENT build (every seed)",
+          all(not r["pass"] for r in ev_bad) and ev_ok["pass"] and ev_ok.get("density_ok"),
+          f"failed cuts per seed {[sum(not c['equal'] for c in r['cuts']) for r in ev_bad]}; honest {ev_ok['pass']}, "
+          f"{len(ev_ok['cuts'])} cuts")
+    check("FIX V1: ... and in a SIGNAL build (the older guard had the same blind spot)",
+          all(not r["pass"] for r in sg_bad) and sg_ok["pass"] and sg_ok.get("density_ok"),
+          f"failed cuts per seed {[sum(not c['equal'] for c in r['cuts']) for r in sg_bad]}")
+    sparse = checks.truncation_test(ev_build, D, row_len=RL, n_signal_cuts=8, n_random_cuts=0, n_after_cuts=0)
+    ok_d, why_d = checks.cuts_ok(sparse)
+    check("FIX V1: a report with the old density (8 stamp cuts, no after- or random cuts) is refused by checks.cuts_ok "
+          "(whether or not its few cuts happened to see the trap)", not ok_d and "too few" in why_d,
+          f"{why_d}; the sparse report itself {'passed' if sparse['pass'] else 'failed'}")
+
+
+def test_fix_v2_v4_judge_binding():
+    """FIX V2: the event report is compared with the events each simulated market USED ('*' resolved), so the same
+    times given as a table or as {market: times} are the same events. FIX V4: the null carries exit_key and the judge
+    fails the null bar when the null ran another exit, stop, target or other events than the main. FIX V1 in the
+    judge: a sparse report fails the truncation bars."""
+    bp, sig0 = synth.signal_world("us500", seed=5, edge=0.0004)
+    bkp = {"us500": sim.Book(bp, "us500")}
+
+    def ev_clock(d):
+        x = d[d.index.hour == 18]
+        return pd.DataFrame({"known_at": x.index + pd.Timedelta(hours=1)})
+    trs = _tr_fixed(sig0)
+    tre = checks.truncation_test(ev_clock, bp, row_len=pd.Timedelta(hours=1))
+    ev = ev_clock(bp)
+    as_dict = {"us500": pd.DatetimeIndex(ev.known_at)}
+    rl = dict(exit=("event", ev, ("hours", 24)), stop=("d20", 1.5))
+    rd = dict(exit=("event", as_dict, ("hours", 24)), stop=("d20", 1.5))
+    main, maind = sim.simulate(sig0, bkp, **rl), sim.simulate(sig0, bkp, **rd)
+    nb = {"s2": sim.simulate(sig0, bkp, exit=("event", ev, ("hours", 24)), stop=("d20", 2.0))}
+    evr = sim.simulate(sig0, bkp, mode="every", **rl)
+    nl = stats.null_test(main, bkp, n_draws=2000, **rl)
+    idea = os.path.join(TMP, "ideas", "950_fixes")
+    _declare(idea, {"idea": "950 fixes"})
+    kw = dict(ten=TEN, write=False)
+    vd = judge.verdict(idea, maind, nb, evr, stats.null_test(maind, bkp, n_draws=2000, **rd), truncation=trs,
+                       event_truncation=tre, **kw)
+    cols = ["entry_time", "exit_time", "R"]
+    check("FIX V2: events given as {market: times} with the table's times: same trades, and the table's event report "
+          "binds them (verdict pass)", maind[cols].equals(main[cols]) and vd["verdict"] == "pass",
+          f"{vd['verdict']} {vd['failed_bars']}")
+    shifted = {"us500": pd.DatetimeIndex(ev.known_at) + pd.Timedelta(hours=1)}
+    m_sh = sim.simulate(sig0, bkp, exit=("event", shifted, ("hours", 24)), stop=("d20", 1.5))
+    v_sh = judge.verdict(idea, m_sh, nb, evr, stats.null_test(m_sh, bkp, n_draws=2000, exit=("event", shifted, ("hours", 24)),
+                                                             stop=("d20", 1.5)), truncation=trs, event_truncation=tre, **kw)
+    check("FIX V2: ... but other times per market are still refused", v_sh["failed_bars"] == ["event_truncation_test"],
+          str(v_sh["failed_bars"]))
+    good = judge.verdict(idea, main, nb, evr, nl, truncation=trs, event_truncation=tre, **kw)
+    n_time = stats.null_test(main, bkp, n_draws=2000, exit=("hours", 24), stop=("d20", 1.5))
+    n_oth = stats.null_test(main, bkp, n_draws=2000, exit=("event", ev.iloc[::2], ("hours", 24)), stop=("d20", 1.5))
+    n_stop = stats.null_test(main, bkp, n_draws=2000, exit=("event", ev, ("hours", 24)), stop=("d20", 3.0))
+    n_int = stats.null_test(main, bkp, n_draws=2000, exit=("event", as_dict, ("hours", 24.0)), stop=("d20", 1.5))
+    vs = {k: judge.verdict(idea, main, nb, evr, x, truncation=trs, event_truncation=tre, **kw)
+          for k, x in (("time", n_time), ("other_events", n_oth), ("stop", n_stop), ("same_as_dict", n_int))}
+    check("FIX V4: the null must be run with the main's own exit: a null with the max_hold time exit, other events or "
+          "another stop fails the null bar; the same rule written differently (dict events, 24.0 h) is accepted",
+          good["verdict"] == "pass" and all(vs[k]["failed_bars"] == ["null>=97.5"] for k in ("time", "other_events", "stop"))
+          and vs["same_as_dict"]["verdict"] == "pass" and nl.get("exit_key") == main.attrs.get("exit_key"),
+          f"good {good['verdict']}; time {vs['time']['bars']['null>=97.5']['value']}; "
+          f"other {vs['other_events']['failed_bars']}; stop {vs['stop']['failed_bars']}; dict {vs['same_as_dict']['verdict']}")
+    sp_e = checks.truncation_test(ev_clock, bp, row_len=pd.Timedelta(hours=1), n_signal_cuts=8, n_random_cuts=0)
+    d_sp = pd.DataFrame({"side": sig0.side.to_numpy()}, index=pd.DatetimeIndex(sig0.known_at))
+    sp_s = checks.truncation_test(lambda x: pd.DataFrame({"known_at": x.index, "side": x.side.to_numpy()}), d_sp,
+                                  row_len=pd.Timedelta(0), n_signal_cuts=8, n_random_cuts=0)
+    v1 = judge.verdict(idea, main, nb, evr, nl, truncation=sp_s, event_truncation=sp_e, **kw)
+    check("FIX V1: the judge refuses passing truncation reports cut too sparsely (signal and event bars fail)",
+          sp_e["pass"] and sp_s["pass"] and sorted(v1["failed_bars"]) == ["event_truncation_test", "truncation_test"]
+          and "too few" in str(v1["bars"]["event_truncation_test"]["value"]),
+          f"{v1['failed_bars']}: {v1['bars']['event_truncation_test']['value']}")
+
+
+def test_fix_v3_venue_holes():
+    """FIX V3: a transient empty venue reply is asked again (the month comes back whole); a hole that persists raises
+    DataGap and nothing is cached; allow_holes=True accepts it, records it beside the month and in attrs; a later read
+    without allow_holes raises again. Also: a Bitfinex server that sends rows past the bounds no longer stops the
+    paging after one page (it returned 300 of 720 hours before)."""
+    real = data.http_get
+    os.environ["EXPLORE_CACHE"] = os.path.join(TMP, "cache_holes")
+    st_ = {"n": 0, "mode": "once"}
+
+    def flaky(url, **kw):
+        if "coinbase" in url:
+            st_["n"] += 1
+            if st_["n"] == 2 or (st_["mode"] == "always" and "start=2019-07-13T12" in url):
+                return b"[]"
+        return _fake_venues(url, **kw)
+    data.http_get = flaky
+    try:
+        data.lock()
+        d1 = data.crypto_h1("coinbase", "btcusd", start="2019-06", end="2019-06-30")
+        d1b = data.crypto_h1("coinbase", "btcusd", start="2019-06", end="2019-06-30")
+        check("FIX V3: one transient empty Coinbase window is asked again: 720 of 720 hours, also when re-read from the cache",
+              len(d1) == 720 and len(d1b) == 720, f"{len(d1)} / {len(d1b)} hours, {st_['n']} calls")
+        st_.update(n=10, mode="always")
+        mpath = os.path.join(data.cache_dir(), "crypto", "coinbase", "BTC-USD", "1h", "2019-07.csv")
+        try:
+            data.crypto_h1("coinbase", "btcusd", start="2019-07", end="2019-07-31")
+            raised = False
+        except data.DataGap:
+            raised = not os.path.exists(mpath)            # and nothing was cached
+        st_["n"] = 10
+        okh = data.crypto_h1("coinbase", "btcusd", start="2019-07", end="2019-07-31", allow_holes=True)
+        try:
+            data.crypto_h1("coinbase", "btcusd", start="2019-07", end="2019-07-31")
+            again = False
+        except data.DataGap:
+            again = True
+        check("FIX V3: a window that stays empty raises DataGap and caches nothing; allow_holes=True accepts the hole, "
+              "records it (attrs['holes'], YYYY-MM.holes.json); a later read without allow_holes raises again",
+              raised and len(okh) < 744 and okh.attrs.get("holes") and os.path.exists(mpath[:-4] + ".holes.json") and again,
+              f"raised {raised}; {len(okh)} hours with allow_holes, holes {okh.attrs.get('holes')}; again {again}")
+        data.http_get = _fake_venues
+        VBAD["on"] = True
+        shutil.rmtree(os.environ["EXPLORE_CACHE"], ignore_errors=True)
+        out = {v: data.crypto_h1(v, "ethusd", start="2021-11") for v in ("bitstamp", "bitfinex", "coinbase")}
+        hrs = pd.date_range("2021-11-01", "2022-01-01", freq="h", tz="UTC", inclusive="left")
+        want = {v: (hrs[(hrs.as_unit("s").asi8 // 3600) % 97 != 0] if v == "bitfinex" else hrs) for v in out}
+        check("FIX V3: servers that send rows past the bounds still give every hour of the month (Bitfinex stopped "
+              "paging after one page)", all(out[v].index.equals(want[v]) for v in out),
+              str({v: len(x) for v, x in out.items()}))
+    finally:
+        VBAD["on"] = False
+        data.http_get = real
+        data.lock()
+
+
+def test_lead_joint_null():
+    """Lead (2026-11-18): a basket whose legs are decided at the same time is one bet per day. Four identical legs
+    (the extreme case) on pure noise: the plain null, which draws each leg on its own day, passes far too often; the
+    same-day null is calibrated. A re-run of the judge does not duplicate trials.jsonl."""
+    rng = np.random.default_rng(31)
+    keys = ["us500", "us100", "us30", "ger40"]
+    pj, pp = [], []
+    for w in range(6):
+        b = synth.bars("us500", seed=400 + w)
+        bk = {k: sim.Book(b, k) for k in keys}                       # the same path under four names
+        days = pd.bdate_range("2013-03-01", "2021-12-20", tz="UTC") + pd.Timedelta(hours=15)
+        for r in range(10):
+            pick = np.sort(rng.choice(len(days), 400, replace=False))
+            side = rng.choice([-1, 1], len(pick))
+            sg = pd.concat([pd.DataFrame({"known_at": days[pick], "side": side, "market": k}) for k in keys], ignore_index=True)
+            rule = dict(exit=("hours", 5), stop=("d20", 2.0))
+            m = sim.simulate(sg, bk, **rule)
+            nj = stats.null_test(m, bk, n_draws=600, seed=w * 10 + r, **rule)
+            pj.append(nj["percentile"])
+            pp.append(stats.null_test(m, bk, n_draws=600, seed=w * 10 + r, joint=False, **rule)["percentile"])
+    pj, pp = np.array(pj), np.array(pp)
+    NUMBERS["null_joint"] = {"rules": len(pj), "ge97.5_joint": int((pj >= 97.5).sum()), "ge97.5_plain": int((pp >= 97.5).sum()),
+                             "ks_p_joint": float(st.kstest(pj / 100, "uniform").pvalue),
+                             "ks_p_plain": float(st.kstest(pp / 100, "uniform").pvalue), "joint_groups": int(nj["joint_groups"])}
+    check("L6: the plain null is too easy for a basket of legs decided together (four identical legs on noise)",
+          (pp >= 97.5).sum() >= 5 and NUMBERS["null_joint"]["ks_p_plain"] < 0.01, json.dumps(NUMBERS["null_joint"]))
+    check("L6: the same-day null (default for such baskets) is calibrated: about 2.5 % reach 97.5, uniform",
+          (pj >= 97.5).sum() <= 5 and NUMBERS["null_joint"]["ks_p_joint"] > 0.001 and 35 < pj.mean() < 65 and
+          nj["joint_groups"] > 300 and nj["joint_no_common_day"] == 0)
+    one = sim.simulate(sg[sg.market == "us500"], bk, **rule)
+    a = stats.null_test(one, bk, n_draws=300, seed=1, **rule)
+    b2 = stats.null_test(one, bk, n_draws=300, seed=1, joint=False, **rule)
+    check("L6: a table without legs decided together takes the plain path unchanged",
+          a["joint_groups"] == 0 and a["percentile"] == b2["percentile"] and a["null_mean"] == b2["null_mean"])
+    idea = os.path.join(TMP, "ideas", "912_rerun")
+    _declare(idea, {"idea": "912 rerun"})
+    for _ in range(2):
+        judge.verdict(idea, one, {"n": one}, one, a, corr=0.0, truncation=None, write=True)
+    rows = [x for x in open(os.path.join(idea, "trials.jsonl")) if x.strip()]
+    check("L7: running the judge twice leaves one set of rows in trials.jsonl", len(rows) == 2, f"{len(rows)} rows")
+
+
 if __name__ == "__main__":
     T0 = time.time()
     tests = [test_period_lock, test_asof_and_known, test_daily_bars_dst, test_costs, test_sim_mechanics, test_lookahead,
              test_correlation_fixture, test_basket_and_lock_in_sim, test_dsr_monte_carlo, test_long_drift_guard, test_hash_ledger_speed,
              test_planted_and_noise, test_review_v1_same_bar, test_review_v2_null_dense, test_review_v3_v9_guards_in_judge,
              test_review_v4_external, test_review_v5_val_judge, test_review_v6_synth_fair, test_review_v7_budget,
-             test_review_v8_template, test_review_v9_unlock, test_lead_v11]
+             test_review_v8_template, test_review_v9_unlock, test_lead_v11,
+             test_pairs_costs, test_pairs_stops, test_pairs_planted_and_basket, test_pairs_noise, test_event_mechanics,
+             test_event_lookahead, test_event_null_noise, test_crypto_venues,
+             test_fix_v1_suppression, test_fix_v2_v4_judge_binding, test_fix_v3_venue_holes, test_lead_joint_null]
     if "--review" in sys.argv:
         tests = [t for t in tests if t.__name__.startswith("test_review")]
     if "--only" in sys.argv:                 # --only <substring of a test name>
         tests = [t for t in tests if sys.argv[sys.argv.index("--only") + 1] in t.__name__]
     if "--net" in sys.argv:
-        tests.append(test_net)
+        tests += [test_net, test_net_venues]
+    elif "--net-venues" in sys.argv:         # the crypto venues only (no Dukascopy request)
+        tests.append(test_net_venues)
     for t in tests:
         try:
             t()

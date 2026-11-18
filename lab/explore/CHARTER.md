@@ -82,11 +82,11 @@ Cache folder: `~/explore_data` (outside the repository; it may survive between r
 - `lab/explore/fetch.py` is the first runs' helper; the kit's `data.py` replaces it.
 
 ## The kit (`lab/explore/kit`): use it; do not rewrite fetch, backtest or statistics
-Built and attacked on 2026-11-17/18 (README.md in the folder; 78 self-tests). It holds the period lock, FP costs in
-the lab's conventions, an hourly simulator, every bar below, the random-entry null, the correlation with the ten, the
-deflated Sharpe and the guards against look-ahead.
+Built and attacked on 2026-11-17/18 (README.md in the folder; 122 self-tests). It holds the period lock, FP costs in
+the lab's conventions, an hourly simulator, hedged pairs, exits on a condition, every bar below, the random-entry
+null (same-day for baskets), the correlation with the ten, the deflated Sharpe and the guards against look-ahead.
 1. Check first: `PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py` must end `N/N checks passed`
-   (about 50 s). If it does not, run no idea and write the failure in the ledger.
+   (about 2 minutes). If it does not, run no idea and write the failure in the ledger.
 2. Write `ideas/NNN_slug/declared.json` from `kit/template/declared.template.json` (at most 11 configurations, the
    publication lag of every external series), its sha256 in `declared.sha256`, commit and push. Copy
    `kit/template/run_template.py` to the idea's `run.py`: it READS the declaration and never writes it. Run it with
@@ -104,9 +104,28 @@ deflated Sharpe and the guards against look-ahead.
    (frozen_rule, bars, attack, cut "2025-12-31"), `data.unlock_val(folder)`, the frozen main on 2022-2025 and
    `judge.val_verdict(folder, trades, every)`, once.
 6. Sizing is reported, not judged (`res["sizing"]`, for the lead). Never edit the kit inside an idea run. If the kit
-   cannot express your rule (limit orders, trailing stops, two-legged pairs and exits on a condition until kit v2),
-   take another idea, or write the missing piece in the idea folder on top of `kit.costs` and `kit.data` and say so
-   in the ledger; a kit bug goes in the ledger for the lead.
+   cannot express your rule (limit orders, trailing stops), take another idea, or write the missing piece in the
+   idea folder on top of `kit.costs` and `kit.data` and say so in the ledger; a kit bug goes in the ledger for the
+   lead.
+7. **Hedged pairs:** `bk = {name: sim.pair_book(name, key_a, key_b, bars_a, bars_b, kind='ratio'|'product')}`
+   (ratio: P = a/b, long = long a and short b; product: P = a x b, long = long both, for a cross built from two dollar
+   pairs quoted opposite ways). Equal notional per leg; the pair is ONE market in simulate, null_test and judge, and a
+   basket of pairs is a dict of several pair books. The pair is observed at bar opens and closes only: a stop or
+   target is filled at the observation that crosses it, never at the level, so R can be worse than -1. Each leg pays
+   its own FP costs; the legs must share the triple-swap weekday.
+8. **Exit on a condition:** write `build_events(data)` like `build(data)`: a table with `known_at` = when the
+   condition is KNOWN (a value from a bar's close is known at the bar's end), optional `market`. Then
+   `tre = checks.truncation_test(build_events, data, row_len={...})`, `rule = dict(exit=sim.event_exit(ev, ('bdays',
+   N)), stop=...)`, simulate and null with `**rule`, and `judge.verdict(..., truncation=tr, event_truncation=tre)`.
+   A trade leaves at the open after the first event strictly after its entry bar's open, or at max_hold. A weekly
+   "exit on Friday 20:00" is an event exit whose events are the Fridays 20:00.
+9. **Keep the default cut counts of both truncation tests** (about 200 rebuilds: make `build` fast): the verdict
+   refuses sparser reports. It also fails the null bar unless the null ran the main's own exit, stop, target and
+   events (pass the same `**rule` to `simulate` and `null_test`). For a basket whose legs are decided at the same
+   time the null is the same-day null, automatically.
+10. **Crypto before 2017-08:** `data.load_bars('btcusd'|'ethusd', start_year, venue='bitstamp'|'bitfinex'|
+   'coinbase')`; declare the venue. A venue month with more than 48 h without a candle raises `DataGap` (fetch
+   again later; `allow_holes=True` only for a checked real outage, named in the idea's notes).
 
 ## Costs (always on, always FP Markets Raw)
 `lab/r2/fp_costs.json` (spread in price units at a reference price, Raw commission folded in, slippage per side for
@@ -145,7 +164,8 @@ does not pass.
   verification, with the number of VAL looks this search has taken in view; the 2026 holdout, which stays closed.
 - VAL (rule 5): PF >= 1.06, expectancy > 0, every-signal expectancy > 0, positive in at least 3 of the 4 years.
 - **Rulings of the lead (2026-11-18):** (a) a hedged pair (two legs of equal notional) is ONE synthetic market, and
-  several pairs form a basket of pairs: the basket bars are read across pairs, never across the two legs of a hedge;
+  several pairs form a basket of pairs: the basket bars are read across pairs, never across the two legs of a hedge
+  (the scout's ideas 1, 3 and 4 are run as ONE basket of seven pairs, idea 015; not both ways);
   (b) crypto signals and in-sample trade prices may come from the dollar venues Bitstamp, Bitfinex or Coinbase before
   Binance's 2017-08 start (scout/sources.md): the declaration names the venue that prices the trades, costs stay FP's;
   (c) a source that exists only as one file of its whole history may be read with a streamed download stopped at the

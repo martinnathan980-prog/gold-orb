@@ -8,7 +8,7 @@ import pandas as pd
 from scipy import stats as st
 
 from . import costs as C
-from .sim import Book, NS_H, outcomes
+from .sim import Book, NS_H, exit_key, outcomes
 
 KIT = os.path.dirname(os.path.abspath(__file__))
 LAB = os.path.abspath(os.path.join(KIT, "..", ".."))
@@ -77,7 +77,62 @@ def summary(t):
 
 
 # ------------------------------------------------------------------ random-entry null
-def null_test(trades, books, exit, stop, target=None, mode="every", n_draws=2000, seed=0):
+def _null_joint(trades, books, exit, stop, target, n_draws, rng):
+    """Same-day null for a basket (lead, 2026-11-18): trades of several markets that were decided at the same time
+    (same known_at; entry_time if the table has no known_at) are re-entered together on ONE random day, each leg on
+    its own market, with its own side and New York clock time, the day drawn uniformly among the days on which every
+    leg of the group has a complete trade. Drawing each leg on its own day (the plain null) treats correlated legs
+    as independent bets: the null distribution comes out too narrow and noise passes too often (idea 002's run
+    measured it; test_lead_joint_null shows 4 identical legs passing the plain null about one time in six).
+    Returns (draw means, number of groups with several markets, groups that had no common day and were drawn leg by
+    leg)."""
+    pool, tkey = {}, [None] * len(trades)
+    pos = {ix: k for k, ix in enumerate(trades.index)}
+    for mk, g in trades.groupby("market"):
+        bk = books[mk] if isinstance(books[mk], Book) else Book(books[mk], mk)
+        ny = bk.index.tz_convert(NY)
+        clock = np.asarray(ny.hour * 60 + ny.minute)
+        day = np.asarray(ny.tz_localize(None).normalize().as_unit("ns").asi8 // (24 * NS_H))
+        eny = pd.DatetimeIndex(g.entry_time).tz_convert(NY)
+        gclock = np.asarray(eny.hour * 60 + eny.minute)
+        gside = g.side.to_numpy()
+        for c, s in set(zip(gclock.tolist(), gside.tolist())):
+            cand = np.flatnonzero(clock == c)
+            o = outcomes(bk, cand, np.full(len(cand), s), exit, stop, target, scenarios=("net",))
+            ok = o["ok"]
+            if not ok.any():
+                raise ValueError(f"null: no usable random entry for {mk} at clock {c}")
+            u, first = np.unique(day[cand[ok]], return_index=True)        # one candidate per day (the first)
+            pool[(mk, c, s)] = (u, o["net"]["R"][ok][first])
+        for ix, c, s in zip(g.index, gclock.tolist(), gside.tolist()):
+            tkey[pos[ix]] = (mk, c, s)
+    gk = trades["known_at"] if "known_at" in trades else trades["entry_time"]
+    gk = pd.DatetimeIndex(gk)
+    gk = (gk.tz_convert("UTC") if gk.tz is not None else gk.tz_localize("UTC")).as_unit("ns").asi8
+    order = np.argsort(gk, kind="stable")
+    cuts = np.flatnonzero(np.diff(gk[order])) + 1
+    tot = np.zeros(n_draws)
+    n_joint = n_fallback = 0
+    mk_arr = trades["market"].astype(str).to_numpy()
+    for idxs in np.split(order, cuts):
+        legs = [pool[tkey[i]] for i in idxs]
+        several = len(set(mk_arr[idxs])) > 1
+        n_joint += several
+        common = legs[0][0]
+        for u, _ in legs[1:]:
+            common = np.intersect1d(common, u, assume_unique=True)
+        if len(common) == 0:
+            n_fallback += several
+            for u, R in legs:
+                tot += R[rng.integers(0, len(u), n_draws)]
+            continue
+        pick = common[rng.integers(0, len(common), n_draws)]
+        for u, R in legs:
+            tot += R[np.searchsorted(u, pick)]
+    return tot / len(trades), int(n_joint), int(n_fallback)
+
+
+def null_test(trades, books, exit, stop, target=None, mode="every", n_draws=2000, seed=0, joint="auto"):
     """Random-entry null (PROTOCOL_V3 section 4; lab round6 null.py, at hourly resolution): each real trade is re-entered
     on its market, with its side, at the open of a bar with the same New York clock time (hh:mm) on a random day (uniform
     with replacement among that market's bars at that clock time that give a complete trade), with the same exit, stop
@@ -86,9 +141,24 @@ def null_test(trades, books, exit, stop, target=None, mode="every", n_draws=2000
     market's drift alone.
     mode 'every' (default, as round6 null.py no_overlap=False): every draw is a trade. mode 'one': the one-position
     filter is applied to each draw, with draws that share an entry bar ordered AT RANDOM (never by exit: verifier V2,
-    ordering by exit kept the first-stopped loser among colliding opposite draws and pushed the null mean down)."""
+    ordering by exit kept the first-stopped loser among colliding opposite draws and pushed the null mean down).
+    The result carries `exit_key` (sim.exit_key of exit, stop, target, event times per market): judge.verdict fails the
+    null bar unless it equals trades.attrs['exit_key'] (verifier V4: the null must use the main's own exit).
+    joint ('auto' by default, mode 'every' only): when trades of several markets were decided at the same time (same
+    known_at), the legs of each such group are re-entered together on one random day (_null_joint): a basket whose
+    legs move together is one bet per day, not several. A table without such groups takes the plain path below,
+    unchanged. joint=False forces the plain null (reported as 'joint_groups': 0)."""
     rng = np.random.default_rng(seed)
     real = float(trades["R"].mean())
+    if mode == "every" and joint in ("auto", True) and len(trades):
+        gk = pd.DatetimeIndex(trades["known_at"] if "known_at" in trades else trades["entry_time"])
+        per_time = pd.Series(trades["market"].astype(str).to_numpy(), index=gk.as_unit("ns").asi8).groupby(level=0).nunique()
+        if (per_time > 1).any():
+            means, n_joint, n_fb = _null_joint(trades, books, exit, stop, target, n_draws, rng)
+            ek = exit_key(exit, stop, target, sorted(trades["market"].astype(str).unique()))
+            return {"real_mean_R": real, "percentile": float((means < real).mean() * 100), "n_draws": int(n_draws),
+                    "seed": seed, "exit_key": ek, "mode": mode, "joint_groups": n_joint, "joint_no_common_day": n_fb,
+                    "null_mean": float(means.mean()), "null_sd": float(means.std(ddof=1)), "means": means}
     per_mk = []
     for mk, g in trades.groupby("market"):
         bk = books[mk] if isinstance(books[mk], Book) else Book(books[mk], mk)
@@ -134,8 +204,10 @@ def null_test(trades, books, exit, stop, target=None, mode="every", n_draws=2000
             raise ValueError("mode is 'every' or 'one'")
     means = tot / cnt
     pct = float((means < real).mean() * 100)
-    return {"real_mean_R": real, "percentile": pct, "n_draws": int(n_draws), "seed": seed,
-            "mode": mode, "null_mean": float(means.mean()), "null_sd": float(means.std(ddof=1)), "means": means}
+    ek = exit_key(exit, stop, target, sorted(trades["market"].astype(str).unique()))
+    return {"real_mean_R": real, "percentile": pct, "n_draws": int(n_draws), "seed": seed, "exit_key": ek,
+            "mode": mode, "joint_groups": 0, "joint_no_common_day": 0,
+            "null_mean": float(means.mean()), "null_sd": float(means.std(ddof=1)), "means": means}
 
 
 # ------------------------------------------------------------------ correlation with the ten
