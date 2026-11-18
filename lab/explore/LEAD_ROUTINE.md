@@ -13,8 +13,9 @@ are the costly part; the idea agents are cheap.
    ideas already handled today (ledger lines with today's date): 8 a day in all.
 3. Bring the batch working copy to the pushed head (`git -C <scratchpad>/explore_wt checkout --detach <head>`, after
    `git clean -fdq lab/explore`), then launch the batch: `Workflow({scriptPath: "<scratchpad>/wf/ideas3.js", args:
-   {ideas: [...], selftest: "<the self-test's last line>"}})`. Each entry: `{num, slug, custom: "<the full brief: the
-   row of DIRECTION2.md or of IDEAS.md, with its family, data, rule, why and power>"}`, or `{num, slug, scout: k}` for
+   {ideas: [...], selftest: "<the self-test's last line>"}})`. Each entry: `{num, slug, row: "lead/DIRECTION2.md"}`
+   (or `row: "IDEAS.md"`): the agent reads the table row that starts with `| <num> |` as its full brief, so write that
+   row completely first (family, data, the exact rule, why, power); or `{num, slug, scout: k}` for
    a scout idea (row k of scout/ideas.md); `note` adds a remark. If the script is gone (the scratchpad was cleaned),
    copy it back from `lab/explore/lead/batch_ideas.js` (its paths name the scratchpad folders: recreate the worktree
    with `git worktree prune && git worktree add --detach <scratchpad>/explore_wt <head>`).

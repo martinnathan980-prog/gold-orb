@@ -6,7 +6,7 @@ export const meta = {
   ],
 }
 
-// args: { ideas: [ { num, slug, scout: k } | { num, slug, custom: "<full brief>" }, optional note ], selftest: "148/148" }
+// args: { ideas: [ { num, slug, row: "lead/DIRECTION2.md" | "IDEAS.md" } | { num, slug, scout: k } | { num, slug, custom: "<full brief>" }, optional note ], selftest: "148/148 checks passed" }
 const SP = '/tmp/claude-0/-home-user-gold-orb/340d9f5a-4d28-5733-90cb-10a10699d00b/scratchpad'
 const BW = SP + '/explore_wt'
 const MAIN = '/home/user/gold-orb'
@@ -58,6 +58,8 @@ const IDEA_SCHEMA = {
 function ideaPrompt(i) {
   const what = i.custom
     ? `YOUR IDEA: number ${i.num}. THE BRIEF (the lead's; it is the idea you test, not a suggestion): ${i.custom} Folder to create: ${BW}/lab/explore/ideas/${i.num}_${i.slug}/.${i.note ? ' ' + i.note : ''}`
+    : i.row
+    ? `YOUR IDEA: number ${i.num} = the row of ${BW}/lab/explore/${i.row} that starts with "| ${i.num} |". That row is the lead's full brief (family, data, the rule, why it may hold, power): it is the idea you test, not a suggestion. Read also the notes under that table. Folder to create: ${BW}/lab/explore/ideas/${i.num}_${i.slug}/.${i.note ? ' ' + i.note : ''}`
     : `YOUR IDEA: number ${i.num} = the scout's idea ${i.scout} (the row of ${BW}/lab/explore/scout/ideas.md that starts with "| ${i.scout}. "). Folder to create: ${BW}/lab/explore/ideas/${i.num}_${i.slug}/.${i.note ? ' ' + i.note : ''}`
   return `You are one run of a trading lab's open search for new trading rules, started by the lead (not by the scheduler). You test ONE idea in sample, honestly, and report. "Nothing works" is a normal and acceptable result; a dressed-up result is the only failure.
 
