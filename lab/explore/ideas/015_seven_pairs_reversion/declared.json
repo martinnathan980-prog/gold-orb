@@ -1,0 +1,51 @@
+{
+  "idea": "015 Seven hedged pairs: fade a 20-day z-score stretch (scout ideas 1, 3 and 4 as one basket)",
+  "date_declared": "2026-11-18",
+  "family": "relative-value",
+  "hypothesis": "When the log price of a hedged pair of related markets (two currencies of one bloc against the dollar, gold against silver, one equity index against another) closes at 16:00 New York at least 2 standard deviations away from the mean of its 20 previous 16:00 values, it moves back toward that mean over the next 1 to 5 trading days by more than the two legs' costs.",
+  "mechanism": "The two legs share their macro drivers; a stretch of the pair over days comes mostly from one-sided flow (hedging, issuance, sector rotation, silver's thinner market) that is not information and fades. Market-neutral against the dollar or the equity market, held over days: not the closed families 'night mean reversion on FX crosses' (round 6, intraday hours), 'index relative strength intraday' or 'lead-lag between markets'. Round 4's BLOC_MR was dropped before any test; the lab never tested two-legged spreads over days. Lead's ruling (CHARTER 'Rulings' (a)): scout ideas 1, 3 and 4 are ONE rule, run as ONE basket of seven pairs, each pair one market.",
+  "data": {
+    "signal": "prices only: the legs' prepared hourly BID bars (kit.data.load_bars, ~/explore_data/h1, aggregated from the lab's one-minute Dukascopy BID bars). Daily value of a pair = log of (close_a / close_b) for a ratio, log of (close_a x close_b) for a product, from the two legs' BID closes of the hourly bar that OPENS at 15:00 New York wall-clock time (DST-correct, Monday to Friday), i.e. the bar that closes at 16:00 New York; KNOWN at that bar's end = 16:00 New York (20:00 or 21:00 UTC). A day counts only if BOTH legs have that bar.",
+    "publication_lag": "none: no external series; every value is a bar close known at the bar's end (bars indexed by their open, row length 1 h in the truncation test).",
+    "prices": "kit.data.load_bars(<fp key>) = prepared H1 BID bars 2013-2021 for eurusd, gbpusd, audusd, nzdusd, usdchf, usdcad, xauusd, xagusd, us100, us30, ger40, us500; pairs by kit.sim.pair_book (ratio: P = a/b, long = long a short b; product: P = a x b, long = long both); equal notional per leg",
+    "in_sample_years": "2013-2021 (9 years; us100/us30 and ger40/us500 from 2013-11, us30 and ger40 bars start 2013-09/10). Power check from the signal data alone (the pair's own z, no return): days with |z| >= 2: 361 to 410 per pair; first crossings of 2: 147 to 184 per pair; a flat-gated count with the z exit or 5 days gives about 140 to 168 entries per pair, about 1,060 in all on about 850 distinct entry days: the basket bars can be reached.",
+    "nothing_after": "2021-12-31"
+  },
+  "markets": ["eurusd/gbpusd", "audusd/nzdusd", "eurusd*usdchf", "audusd*usdcad", "xauusd/xagusd", "us100/us30", "ger40/us500"],
+  "pairs": {
+    "eurusd/gbpusd": ["eurusd", "gbpusd", "ratio", "currency crosses (EURGBP)"],
+    "audusd/nzdusd": ["audusd", "nzdusd", "ratio", "currency crosses (AUDNZD)"],
+    "eurusd*usdchf": ["eurusd", "usdchf", "product", "currency crosses (EURCHF)"],
+    "audusd*usdcad": ["audusd", "usdcad", "product", "currency crosses (AUDCAD)"],
+    "xauusd/xagusd": ["xauusd", "xagusd", "ratio", "metals"],
+    "us100/us30": ["us100", "us30", "ratio", "indices"],
+    "ger40/us500": ["ger40", "us500", "ratio", "indices"]
+  },
+  "rule_main": {
+    "signal": "per pair, c_d = the daily value above on each day d where both legs have the 15:00-NY bar; z_d = (c_d - mean(c over the 20 previous such days)) / sample std (ddof 1) of those 20 values (current day never in the window); known_at = 16:00 New York of day d (end of the 15:00-NY bar). Every day with |z_d| >= 2 is a signal (one position per pair: a signal while the pair holds a trade is skipped).",
+    "side": "-sign(z): z >= +2 sells the pair (ratio: short a, long b; product: short both), z <= -2 buys it",
+    "entry": "open of the first H1 bar of the pair (both legs) opening at or after known_at (normally the 16:00-NY bar)",
+    "exit": ["event", "z back inside +/-0.5: events = known_at of every day with |z_d| <= 0.5 (16:00 NY), per pair; the trade leaves at the open of the first bar at or after the first event strictly after its entry bar's open", ["bdays", 5]],
+    "stop": ["d20", 1.5],
+    "target": null,
+    "overlap": "one position per pair (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+  },
+  "changes_vs_scout": "None of substance. Made explicit: the 16:00-NY value is the BID close of the 15:00-16:00 NY hourly bar of each leg (mid would differ by the modelled spread only); days missing either leg's 15:00-NY bar (holidays, index closures, data gaps) are not in the 20-day window; the stop and D20 follow kit.sim.PairBook (the pair is observed at bar opens and closes only, D20 from those observations, a stop is filled at the observation that crosses it, not at the level); the 5-trading-day maximum is pandas BDay from the entry bar (kit 'bdays'); scout ideas 3 and 4 used the same parameters and are merged per the lead's ruling.",
+  "configurations": [
+    {"id": "01_main", "lookback": 20, "z_in": 2.0, "z_out": 0.5, "max_hold": ["bdays", 5], "stop": ["d20", 1.5]},
+    {"id": "02_zin1.5", "lookback": 20, "z_in": 1.5, "z_out": 0.5, "max_hold": ["bdays", 5], "stop": ["d20", 1.5]},
+    {"id": "03_zin2.5", "lookback": 20, "z_in": 2.5, "z_out": 0.5, "max_hold": ["bdays", 5], "stop": ["d20", 1.5]},
+    {"id": "04_zout0.25", "lookback": 20, "z_in": 2.0, "z_out": 0.25, "max_hold": ["bdays", 5], "stop": ["d20", 1.5]},
+    {"id": "05_zout1.0", "lookback": 20, "z_in": 2.0, "z_out": 1.0, "max_hold": ["bdays", 5], "stop": ["d20", 1.5]},
+    {"id": "06_hold3", "lookback": 20, "z_in": 2.0, "z_out": 0.5, "max_hold": ["bdays", 3], "stop": ["d20", 1.5]},
+    {"id": "07_hold10", "lookback": 20, "z_in": 2.0, "z_out": 0.5, "max_hold": ["bdays", 10], "stop": ["d20", 1.5]},
+    {"id": "08_stop1.0", "lookback": 20, "z_in": 2.0, "z_out": 0.5, "max_hold": ["bdays", 5], "stop": ["d20", 1.0]},
+    {"id": "09_stop2.0", "lookback": 20, "z_in": 2.0, "z_out": 0.5, "max_hold": ["bdays", 5], "stop": ["d20", 2.0]},
+    {"id": "10_lb15", "lookback": 15, "z_in": 2.0, "z_out": 0.5, "max_hold": ["bdays", 5], "stop": ["d20", 1.5]},
+    {"id": "11_lb30", "lookback": 30, "z_in": 2.0, "z_out": 0.5, "max_hold": ["bdays", 5], "stop": ["d20", 1.5]}
+  ],
+  "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw), each leg its own spread (bp of its reference price x hour-of-week shape), slippage and swap (side held on each leg); gross, net, spread and slippage x1.5",
+  "bars": "CHARTER.md 'The bars' for a BASKET of 7 pairs (each pair one market) on 01_main, computed by kit.judge.verdict: t on daily sums >= 2.5, pooled PF >= 1.12 and >= 1.04 at costs x1.5, >= 60 % of years positive, >= 65 % of pairs positive, no pair above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days, random-entry null (same-day for pairs decided at the same 16:00 NY time) >= 97.5th percentile with 2000 draws and the main's own exit, events and stop; truncation tests of the signal build and the event build with the default cuts; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (label). Reported apart, not judged: each pair, the three groups (currency crosses, metals, indices), long and short sides, gross figures.",
+  "split": "IS only (to 2021-12-31). No VAL look in this run (lead's instruction); if every IS bar passes, the attack of charter rule 5 (attack.py) is done and the lead does the VAL look.",
+  "kit": "lab/explore/kit v2, unchanged"
+}

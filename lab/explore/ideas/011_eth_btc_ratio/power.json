@@ -1,0 +1,13 @@
+{
+ "idea": "011 ETH/BTC ratio stretch, hedged pair (ethusd/btcusd, ratio, equal notional)",
+ "status": "insufficient_data (donnees insuffisantes): closed before any declaration, no return computed",
+ "data": "kit.data.load_bars('ethusd'), load_bars('btcusd') = Binance ETHUSDT/BTCUSDT 1h, 2017-08-17 04:00 to 2021-12-31 21:00 UTC, FP weekend closure removed; 27,285 hourly bars each",
+ "signal_counted": "c_d = log(close_ETH / close_BTC) of the hourly bar opening 15:00 New York, Mon-Fri (known 16:00 NY); z_d against the 20 previous daily values (ddof 1); 1,139 daily values",
+ "main_configuration": {"lookback": 20, "z_in": 2.0, "z_out": 0.5, "max_hold_days": 5,
+   "days_with_abs_z_ge_2": 220, "first_crossings": 77, "flat_gated_entries_approx": 72},
+ "grid_gated_entries_approx": {"lb15": {"1.5": 134, "2.0": 84, "2.5": 56}, "lb20": {"1.5": 122, "2.0": 72, "2.5": 48}, "lb30": {"1.5": 104, "2.0": 65, "2.5": 32}},
+ "information_only": {"four_clocks_a_day_zin2_gated_entries": 83,
+   "bitfinex_from_2016_03_estimate": "about 95 main entries (72 x 5.8 / 4.4 years), not fetched"},
+ "bar": "one pair = one market: n >= 250 needed; best variant ~134, main ~72; every-signal days 220 < 250",
+ "nothing_after": "2021-12-31"
+}

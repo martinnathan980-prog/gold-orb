@@ -1,0 +1,180 @@
+{
+ "idea": "026 Rate shock, then rotation: Dow against Nasdaq after a large 5-day move in the 10-year yield",
+ "date_declared": "2026-11-18",
+ "family": "macro",
+ "hypothesis": "A large 5-day rise (fall) of the US 10-year Treasury yield, scaled by its own past volatility, is followed over the next two trading days by the Dow outperforming (underperforming) the Nasdaq 100.",
+ "mechanism": "Nasdaq shares carry distant cash flows (long duration) and react more to yields than the Dow; slow money (pension rebalancing, style funds) rotates over several days after a rate shock. Information from the bond market, not from index charts; market-neutral hedged pair. Not a closed family: not intraday index opening rules, not a lead-lag between markets' prices (signal is a rate level change, traded days later), not macro event days. Practitioner evidence only; prior very low to low; the sign may differ across 2013-2019 and 2020-2021.",
+ "data": {
+  "signal": "FRED DGS10 (10-year constant-maturity Treasury yield, daily, percent), fredgraph.csv via kit.data.fred from 2011-01-01 (warm-up), cut 2021-12-31. KNOWN-AT rule: observation date D + 1 business day 13:00 UTC (data.rule_next_bday_utc(13, 1)); the Treasury posts D's curve on D 15:30-18:00 New York, so a live robot reading treasury.gov has it before 08:00 NY on D+1.",
+  "publication_lag": "min lag 1 business day + 13 h (rule above); DGS10 is a market series, not revised (sources.md section 1).",
+  "prices": "kit.data.load_bars('us30'), load_bars('us100'): prepared H1 BID bars (~/explore_data/h1, aggregated from the lab's one-minute bars); us30 starts 2013-09-30. Pair = sim.pair_book('us30/us100', 'us30', 'us100', kind='ratio'): long pair = long us30 and short us100, equal notional; both swap triple Friday.",
+  "in_sample_years": "2013-10 .. 2021 (8.25 years); power check from DGS10 alone: 2,063 observation days from 2013-10-01, 605 with |z| >= 1 (250 with |z| >= 1.5); with one position at a time and a 2-trading-day hold about 393 signals can be taken (196 up, 197 down) >= 250.",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": [
+  "us30/us100"
+ ],
+ "rule_main": {
+  "signal": "y_D = DGS10 on observation day D (FRED rows, missing days dropped). d_D = y_D - y of the 5th previous observation (5 trading days). s_D = sample sd of d over the 250 observations BEFORE D (d shifted by one, rolling 250, past only). z_D = d_D / s_D. Known at D + 1 business day 13:00 UTC.",
+  "side": "z_D >= +1: +1 (long us30, short us100); z_D <= -1: -1 (short us30, long us100); else no signal.",
+  "entry": "known_at = 10:00 New York (DST-correct) of the next business day (Mon-Fri) after D, which is always after the 13:00 UTC known-at time; entry at the open of the first pair H1 bar opening at or after known_at, max_wait_h = 1 (signal dropped if no pair bar by 11:00 NY, e.g. a US holiday).",
+  "exit": [
+   "bdays",
+   2
+  ],
+  "stop": [
+   "d20",
+   1.5
+  ],
+  "target": null,
+  "overlap": "one position at a time on the pair (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+ },
+ "changes_vs_scout": "Scout: entry 09:30 NY on D+1, exit 16:00 NY on D+3. With hourly bars aligned on the UTC hour, 09:30 NY is mid-bar: the nearest computable entry without anticipation is the 10:00 NY bar open. The kit's clock exit takes the next HH:MM after entry (same day) and an event exit cannot tie an exit to each trade's own day, so the exit is ('bdays', 2) from entry = 10:00 NY on D+3 (6 h earlier than the scout's 16:00; the nearest computable). Everything else (z definition, thresholds, no overlap, stop 1.5 x D20 of the spread) as the scout wrote it.",
+ "configurations": [
+  {
+   "id": "01_main",
+   "z_thr": 1.0,
+   "chg_days": 5,
+   "sd_window": 250,
+   "exit": [
+    "bdays",
+    2
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "02_z075",
+   "z_thr": 0.75,
+   "chg_days": 5,
+   "sd_window": 250,
+   "exit": [
+    "bdays",
+    2
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "03_z125",
+   "z_thr": 1.25,
+   "chg_days": 5,
+   "sd_window": 250,
+   "exit": [
+    "bdays",
+    2
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "04_z150",
+   "z_thr": 1.5,
+   "chg_days": 5,
+   "sd_window": 250,
+   "exit": [
+    "bdays",
+    2
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "05_hold1",
+   "z_thr": 1.0,
+   "chg_days": 5,
+   "sd_window": 250,
+   "exit": [
+    "bdays",
+    1
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "06_hold3",
+   "z_thr": 1.0,
+   "chg_days": 5,
+   "sd_window": 250,
+   "exit": [
+    "bdays",
+    3
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "07_stop10",
+   "z_thr": 1.0,
+   "chg_days": 5,
+   "sd_window": 250,
+   "exit": [
+    "bdays",
+    2
+   ],
+   "stop": [
+    "d20",
+    1.0
+   ]
+  },
+  {
+   "id": "08_stop20",
+   "z_thr": 1.0,
+   "chg_days": 5,
+   "sd_window": 250,
+   "exit": [
+    "bdays",
+    2
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "09_chg3",
+   "z_thr": 1.0,
+   "chg_days": 3,
+   "sd_window": 250,
+   "exit": [
+    "bdays",
+    2
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "10_chg10",
+   "z_thr": 1.0,
+   "chg_days": 10,
+   "sd_window": 250,
+   "exit": [
+    "bdays",
+    2
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  }
+ ],
+ "configuration_notes": "Neighbours fixed before any result: z threshold 0.75 / 1.25 / 1.5; hold 1 or 3 business days; stop 1.0 or 2.0 x D20; yield change over 3 or 10 trading days (sd window 250 of the same change). Every configuration on the same pair, entry 10:00 NY next business day.",
+ "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw), each leg its own costs: gross, net, spread and slippage x1.5",
+ "bars": "CHARTER.md 'The bars' for one market (the pair is ONE market, lead's ruling (a)) on 01_main, computed by kit.judge.verdict; random-entry null 2000 draws with the main's exit and stop; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported)",
+ "split": "IS only (to 2021-12-31). No VAL look in this run (lead's instruction); an attack (attack.py) only if every IS bar passes.",
+ "kit": "lab/explore/kit v2, unchanged"
+}
