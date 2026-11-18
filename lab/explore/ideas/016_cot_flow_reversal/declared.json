@@ -1,0 +1,168 @@
+{
+ "idea": "016 Speculators' weekly COT flow reverses (trade against the change in net positioning)",
+ "date_declared": "2026-11-18",
+ "family": "positioning",
+ "hypothesis": "A large weekly change in non-commercial (speculative) net futures positioning, scaled by open interest and standardised on its own past 156 weeks, is followed by a move of the underlying AGAINST that flow over the next trading week (Monday 08:00 to Friday 20:00 UTC).",
+ "mechanism": "Kang, Rouwenhorst and Tang (2020, JF, 'A tale of two premiums'): speculators' short-term position changes demand liquidity; hedgers and dealers who take the other side are paid by a later reversal. Shown on commodity futures; for currencies the evidence is mixed (positions follow past returns). Weekly, slow, informed positioning data: not one of the closed families (no intraday, calendar, lead-lag or mean reversion on prices alone). Built from the scout's idea 2, unchanged except where noted in 'changes_vs_scout'.",
+ "data": {
+  "signal": "CFTC Commitments of Traders, legacy futures-only report, Socrata https://publicreporting.cftc.gov/resource/6dca-aqww.json (fields report_date_as_yyyy_mm_dd, noncomm_positions_long_all, noncomm_positions_short_all, open_interest_all), 12 contracts: EUR 099741, JPY 097741, GBP 096742, AUD 232741, CAD 090741, CHF 092741, NZD 112741, gold 088691, silver 084691, E-mini S&P 500 13874A, Nasdaq-100 mini 209742, Dow x$5 124603; report dates 2009-01-06..2021-12-28 fetched in one request with the cut in the query (fetch_cot.py, cache ~/explore_data/idea_016/cot_legacy.json, 8,136 rows). KNOWN-AT rule (cot_lib.known_rule): positions of the report date (normally Tuesday) are released Friday 15:30 New York of the same week; the value is used from the MONDAY 08:00 UTC after that Friday, or from the TUESDAY 08:00 UTC when a US federal holiday (pandas USFederalHolidayCalendar), Good Friday or the federal closure of 2018-12-05 falls on Monday..Friday of the report week (release slips, usually to Monday 15:30 NY). Report dates 2013-10-01..2013-11-12 and 2018-12-18..2019-03-05 (shutdown backlogs, published weeks late) are dropped entirely (neither signal nor history). Values as served today (corrected reports replace the old ones; corrections are rare).",
+  "publication_lag": "data.external min_lag = 6 days from the report date (actual: 6 d 08 h for 6,240 rows, 7 d 08 h for 1,596, 8 d 08 h for 60); revised values: the API's current values (rare corrections), stated here.",
+  "prices": "kit.data.load_bars(<fp key>) = prepared hourly BID bars from ~/explore_data/h1 (lab one-minute BID aggregated), 2013-2021",
+  "in_sample_years": "signals 2013-02-01..2021-12-31 (9 years; the z needs 157 weekly changes, so history from 2009 is read). Power check from the COT data alone: main configuration 1,249 signals on 404 distinct weeks, 80 to 143 per market (audusd 84, eurusd 86, gbpusd 110, nzdusd 80, us100 113, us30 112, us500 118, usdcad 92, usdchf 90, usdjpy 90, xagusd 131, xauusd 143); basket of 12 markets.",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": [
+  "eurusd",
+  "usdjpy",
+  "gbpusd",
+  "audusd",
+  "usdcad",
+  "usdchf",
+  "nzdusd",
+  "xauusd",
+  "xagusd",
+  "us500",
+  "us100",
+  "us30"
+ ],
+ "rule_main": {
+  "signal": "Per contract and report week t: net_t = (noncomm long - noncomm short) / open interest; d_t = net_t - net of the previous report (only if the previous report is 4..10 days earlier, else no d_t); z_t = (d_t - mean of the previous 156 valid d) / std (ddof 1) of the previous 156 valid d (past only, the current d excluded; no z before 156 past values). Signal when |z_t| >= 1.0, known at the known-at time above (Monday 08:00 UTC, or Tuesday 08:00 UTC in holiday weeks). Only signals with known_at >= 2013-02-01.",
+  "side": "against the flow: z >= +1 -> sell the CFD, z <= -1 -> buy; the sign flips for usdjpy, usdcad, usdchf (JPY, CAD, CHF futures are quoted in USD per foreign unit, the CFD is the inverse).",
+  "entry": "open of the first H1 bar opening at or after known_at (Monday 08:00 UTC; Tuesday 08:00 UTC in holiday weeks)",
+  "exit": [
+   "hours",
+   108
+  ],
+  "stop": [
+   "d20",
+   2.0
+  ],
+  "target": null,
+  "overlap": "one position per market (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+ },
+ "changes_vs_scout": "(1) Exit as ('hours', 108): Monday 08:00 + 108 h = Friday 20:00 UTC as the scout wrote; for the holiday-week entries (Tuesday 08:00, about 21 % of the weeks) 108 h falls on Saturday 20:00, inside the weekend closure, so the kit exits at the close of the last bar before it (Friday's last hourly bar, 1 to 2 h after 20:00 UTC) instead of Friday 20:00: the kit's exit rule is one per simulation and its 'clock' exit takes the next 20:00 after entry (Monday 20:00). (2) The holiday test covers Monday..Friday of the report week plus Good Friday and the 2018-12-05 closure (the scout: a holiday between the report Tuesday and Friday): safer, since a Monday holiday or Good Friday can also push the release to the next Monday. (3) The z window excludes the current week (past-only), the scout wrote z(d, 156 weeks) without saying. (4) Signals start 2013-02-01 (bars start 2013-01, D20 needs 20 days).",
+ "configurations": [
+  {
+   "id": "01_main",
+   "z_threshold": 1.0,
+   "z_window_weeks": 156,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "02_thr075",
+   "z_threshold": 0.75,
+   "z_window_weeks": 156,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "03_thr125",
+   "z_threshold": 1.25,
+   "z_window_weeks": 156,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "04_thr150",
+   "z_threshold": 1.5,
+   "z_window_weeks": 156,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "05_stop15",
+   "z_threshold": 1.0,
+   "z_window_weeks": 156,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "06_stop30",
+   "z_threshold": 1.0,
+   "z_window_weeks": 156,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    3.0
+   ]
+  },
+  {
+   "id": "07_win104",
+   "z_threshold": 1.0,
+   "z_window_weeks": 104,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "08_win208",
+   "z_threshold": 1.0,
+   "z_window_weeks": 208,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "09_exit84",
+   "z_threshold": 1.0,
+   "z_window_weeks": 156,
+   "exit": [
+    "hours",
+    84
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  }
+ ],
+ "neighbours_note": "09_exit84: Monday 08:00 to Thursday 20:00 UTC (holiday weeks: Tuesday 08:00 to Friday 20:00).",
+ "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw): gross, net, spread and slippage x1.5; swaps for the 4 nights held",
+ "bars": "CHARTER.md 'The bars' on 01_main as a BASKET of 12 markets, computed by kit.judge.verdict (t on daily sums >= 2.5, pooled PF >= 1.12 and >= 1.04 at x1.5, >= 60 % years positive, >= 65 % markets positive, no market above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days); random-entry null 2000 draws on the pooled trades; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported)",
+ "split": "IS only (to 2021-12-31). No VAL look in this run (the lead does it).",
+ "kit": "lab/explore/kit unchanged (sha256 prefixes: checks 08c2a805ae3b736a, costs cc5bc6e01d14b448, data de8ed3ad53a7e135, judge 43615493f72db0da, sim c88444f14747f481, stats b29eae9e03028d91); helper files of this idea: fetch_cot.py, cot_lib.py, run.py"
+}

@@ -1,0 +1,44 @@
+{
+  "idea": "036 Rich option prices: VIX far above realised volatility (buy the next US cash session)",
+  "date_declared": "2026-11-18",
+  "family": "volatility-surface",
+  "scout_ref": "lab/explore/scout/ideas.md row '| 22. ' (scout idea 22)",
+  "hypothesis": "When the VIX close is far above the S&P 500's own recent realised volatility (variance risk premium high against its past), the next US cash session of us500 rises on average.",
+  "mechanism": "A wide gap between implied and realised volatility means hedgers pay a large premium for protection: fear is priced above what the market has actually delivered. Option dealers who sold that protection hedge it, and the premium is the compensation for bearing risk that equity holders also earn (Bollerslev, Tauchen and Zhou 2009, RFS: the implied-minus-realised variance gap predicts index returns, mostly at a quarterly horizon; at one day the effect is expected small). Not the closed 'selling volatility insurance' track (no volatility product is traded, only the index, long), not an opening rule (the volatility gap is the signal, the clock is fixed), not daily dip-buying (the signal is the option premium, not a price fall). Prior: very low.",
+  "data": {
+    "signal": "FRED VIXCLS (CBOE VIX daily close), fredgraph.csv via kit.data.fred, current vintage (never revised). Known at 16:30 New York of its date D (index closes 16:15 NY; rule_local_close('16:30'), sources.md section 1). Realised volatility from Yahoo ^GSPC daily close (the official S&P 500 16:00 NY close) via kit.data.yahoo_daily, known at 16:30 NY of its date (rule_local_close('16:30')). Neighbour 10_rv_us500_bars computes realised volatility from the us500 H1 BID bars instead: close of the bar opening 15:00 NY (= the 16:00 NY level), known at 16:00 NY.",
+    "publication_lag": "VIXCLS and ^GSPC: min lag 16 h 30 min (local) after the observation date's midnight, i.e. 16:30 NY of the same day; both are daily market series, not revised. The signal is used only at the next session's 10:00 NY, at least 17.5 hours after it is known.",
+    "calendar": "D+1 = the next weekday that is not an NYSE full-day closure. NYSE closures (holidays published years ahead, plus the 2018-12-05 closure announced 2018-12-01) are taken as a fixed list: the weekdays 2013-01-01..2021-12-31 without a ^GSPC close. This list is calendar knowledge, passed to build() as a constant.",
+    "prices": "kit.data.load_bars('us500') = prepared H1 BID bars (from the lab's one-minute Dukascopy bars), 2013-2021; no download",
+    "in_sample_years": "signals 2013-01..2021-12 (9 years; the 500-day percentile window is filled from VIX and ^GSPC history since 1990). Power check (power.py, from VIXCLS and ^GSPC only, no price after a signal, no return): main = 516 signal days 2013-2021 (22, 58, 25, 74, 56, 48, 68, 99, 66 per year); p75 634, p85 394, window 250: 500. n >= 250 reachable on one market.",
+    "nothing_after": "2021-12-31"
+  },
+  "markets": ["us500"],
+  "rule_main": {
+    "signal": "On each day D that has both a VIXCLS and a ^GSPC close: RV20_D = standard deviation of the last 20 daily log returns of ^GSPC closes (ending at D's close) x sqrt(252) x 100 (annualised, VIX points). v_D = VIX_D - RV20_D. Threshold_D = 80th percentile (numpy linear interpolation, pandas rolling quantile) of v over the 500 previous days with a value (D-500..D-1, D excluded; 500 values required). Signal if v_D > Threshold_D. Known at 16:30 NY of D.",
+    "side": "+1 (long us500 only; never short volatility, closed track)",
+    "entry": "known_at = 10:00 New York of D+1 (next NYSE trading day); entry at the open of the H1 bar opening at 10:00 NY (max_wait_h = 1: if no bar opens by 11:00 NY the signal is dropped)",
+    "exit": ["clock", "16:00", "America/New_York"],
+    "stop": ["d20", 1.0],
+    "target": null,
+    "overlap": "one position per market (kit.sim mode 'one'; trades never overlap: each ends the same day); every-signal variant for the every-signal bar",
+    "changed_vs_scout": "Scout: buy the cash session 09:30 to 16:00 NY, realised volatility from us500 bars at 16:00 NY levels. (1) 09:30 is mid-bar on hourly bars: the main enters at the 10:00 NY bar open (first full hour of the cash session, no pre-market minutes); neighbour 07 enters at the 09:00 NY bar open (30 min before the cash open). (2) Realised volatility from the official ^GSPC 16:00 close (the same 16:00 NY level, exact, and with history before 2013 so the 500-day window is full from 2013); neighbour 10 uses the us500 bars as the scout wrote (signals from about 2015 only)."
+  },
+  "configurations": [
+    {"id": "01_main", "rv_days": 20, "window": 500, "pct": 0.80, "gap": "difference", "rv_source": "gspc", "entry_ny": "10:00", "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "02_p75", "rv_days": 20, "window": 500, "pct": 0.75, "gap": "difference", "rv_source": "gspc", "entry_ny": "10:00", "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "03_p85", "rv_days": 20, "window": 500, "pct": 0.85, "gap": "difference", "rv_source": "gspc", "entry_ny": "10:00", "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "04_rv15", "rv_days": 15, "window": 500, "pct": 0.80, "gap": "difference", "rv_source": "gspc", "entry_ny": "10:00", "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "05_rv30", "rv_days": 30, "window": 500, "pct": 0.80, "gap": "difference", "rv_source": "gspc", "entry_ny": "10:00", "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "06_win250", "rv_days": 20, "window": 250, "pct": 0.80, "gap": "difference", "rv_source": "gspc", "entry_ny": "10:00", "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "07_entry09", "rv_days": 20, "window": 500, "pct": 0.80, "gap": "difference", "rv_source": "gspc", "entry_ny": "09:00", "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "08_stop075", "rv_days": 20, "window": 500, "pct": 0.80, "gap": "difference", "rv_source": "gspc", "entry_ny": "10:00", "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 0.75]},
+    {"id": "09_stop150", "rv_days": 20, "window": 500, "pct": 0.80, "gap": "difference", "rv_source": "gspc", "entry_ny": "10:00", "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.5]},
+    {"id": "10_rv_us500_bars", "rv_days": 20, "window": 500, "pct": 0.80, "gap": "difference", "rv_source": "us500_bars", "entry_ny": "10:00", "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "11_ratio", "rv_days": 20, "window": 500, "pct": 0.80, "gap": "ratio VIX/RV20", "rv_source": "gspc", "entry_ny": "10:00", "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0]}
+  ],
+  "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw us500): gross, net, spread and slippage x1.5; no swap (intraday)",
+  "bars": "CHARTER.md 'The bars' on 01_main, one market, computed by kit.judge.verdict; random-entry null 2000 draws (same clock time, side, exit); weekly corr with the ten <= 0.30; deflated Sharpe on N_all (label, not gate). Reported besides: gross figures, by year.",
+  "split": "IS only (to 2021-12-31). No validation look in this run (lead's instruction); if every IS bar passes, an independent attack (attack.py) only.",
+  "kit": "lab/explore/kit as in the checkout (unchanged)"
+}

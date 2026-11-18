@@ -1,0 +1,584 @@
+{
+ "idea": "025 Options-expiry week on the indices",
+ "declared_sha256": "b51a74df33c45aa3b811a0d3f5d9089c549bcee89e83636c386982f6342cb9c5",
+ "verdict": "fail",
+ "failed_bars": [
+  "t_daily>=2.5"
+ ],
+ "basket": true,
+ "bars": {
+  "truncation_test": {
+   "value": "passed",
+   "bar": "checks.truncation_test on the main signal build passed (same signals)",
+   "pass": true
+  },
+  "declared_hash": {
+   "value": "matches declared.sha256",
+   "bar": "declared.json matches declared.sha256",
+   "pass": true
+  },
+  "configs<=11": {
+   "value": 8,
+   "bar": "at most 11 configurations",
+   "pass": true
+  },
+  "t_daily>=2.5": {
+   "value": 1.6491015940922271,
+   "bar": "t on daily sums of R >= 2.5",
+   "pass": false
+  },
+  "markets_positive>=65%": {
+   "value": 1.0,
+   "bar": ">= 65 % of markets with positive expectancy",
+   "pass": true
+  },
+  "max_market_share<=50%": {
+   "value": 0.32156752581815173,
+   "bar": "no market above 50% of the profit",
+   "pass": true
+  },
+  "PF>=1.12": {
+   "value": 1.4248216074619278,
+   "bar": "PF net >= 1.12",
+   "pass": true
+  },
+  "years>=60%": {
+   "value": 0.7777777777777778,
+   "bar": ">= 60 % of years positive",
+   "pass": true
+  },
+  "PF_stress>=1.04": {
+   "value": 1.4152847125430532,
+   "bar": "PF with spread and slippage x1.5 >= 1.04",
+   "pass": true
+  },
+  "neighbours_median_PF>=1.06": {
+   "value": 1.4860497023226065,
+   "bar": "median PF of the neighbours >= 1.06",
+   "pass": true
+  },
+  "every_signal_exp>0": {
+   "value": 0.07670238042220537,
+   "bar": "every-signal expectancy > 0",
+   "pass": true
+  },
+  "hold<=5d": {
+   "value": 4,
+   "bar": "hold <= 5 trading days",
+   "pass": true
+  },
+  "null>=97.5": {
+   "value": 99.55000000000001,
+   "bar": "random-entry null (same market, side, clock; >= 2000 draws) >= 97.5th percentile",
+   "pass": true
+  },
+  "corr<=0.30": {
+   "value": -0.0009569640581094401,
+   "bar": "weekly corr with the sum of the ten <= 0.30 (CHARTER 'Independence'; a negative one passes)",
+   "pass": true
+  }
+ },
+ "selection": {
+  "N_all": 2518,
+  "N_main": 162,
+  "dsr_N_all": {
+   "dsr": 0.034053351601131474,
+   "sr": 0.16328538915093357,
+   "sr0": 0.34916772738642293,
+   "T": 102,
+   "n_trials": 2518,
+   "skew": -0.22587608623356448,
+   "kurtosis": 2.756211322350063,
+   "var_sr_used": 0.009900990099009901
+  },
+  "dsr_N_main": {
+   "dsr": 0.15146280057599443,
+   "sr": 0.16328538915093357,
+   "sr0": 0.26825289161389676,
+   "T": 102,
+   "n_trials": 162,
+   "skew": -0.22587608623356448,
+   "kurtosis": 2.756211322350063,
+   "var_sr_used": 0.009900990099009901
+  },
+  "dsr_N_all_V_noise": {
+   "dsr": 0.034053351601131474,
+   "sr": 0.16328538915093357,
+   "sr0": 0.34916772738642293,
+   "T": 102,
+   "n_trials": 2518,
+   "skew": -0.22587608623356448,
+   "kurtosis": 2.756211322350063,
+   "var_sr_used": 0.009900990099009901
+  },
+  "pass": false
+ },
+ "main": {
+  "n": 397,
+  "markets": [
+   "ger40",
+   "us100",
+   "us30",
+   "us500"
+  ],
+  "PF_gross": 1.6069594004963688,
+  "PF": 1.4248216074619278,
+  "PF_stress": 1.4152847125430532,
+  "mean_R": 0.07670238042220537,
+  "mean_R_gross": 0.10287052363844797,
+  "mean_R_stress": 0.07522134718169704,
+  "mean_net_bp": 18.00914514940528,
+  "mean_gross_bp": 25.74594256248459,
+  "t_trade": 2.7807465935247184,
+  "t_daily": 1.6491015940922271,
+  "n_days": 102,
+  "years_positive_frac": 0.7777777777777778,
+  "by_year_R": {
+   "2013": 3.5064286249739958,
+   "2014": 8.088114419322242,
+   "2015": 6.605265406972604,
+   "2016": 2.5672918484530904,
+   "2017": 1.3218387599362285,
+   "2018": 1.0439860280097564,
+   "2019": 14.698408538800706,
+   "2020": -0.6545324999568912,
+   "2021": -6.725956098896203
+  },
+  "hold_tdays_max": 4,
+  "hold_h_mean": 99.48614609571788,
+  "exit_reasons": {
+   "time": 333,
+   "time_close": 34,
+   "stop": 27,
+   "stop_gap": 3
+  },
+  "long_n": 397,
+  "long_R": 30.45084502761553,
+  "short_n": 0,
+  "short_R": 0.0,
+  "by_market": {
+   "ger40": {
+    "n": 97,
+    "sum_R": 8.605431502395355,
+    "mean_R": 0.08871578868448819
+   },
+   "us100": {
+    "n": 101,
+    "sum_R": 9.792002894602295,
+    "mean_R": 0.0969505237089336
+   },
+   "us30": {
+    "n": 97,
+    "sum_R": 7.657640512667539,
+    "mean_R": 0.0789447475532736
+   },
+   "us500": {
+    "n": 102,
+    "sum_R": 4.395770117950338,
+    "mean_R": 0.04309578547010135
+   }
+  },
+  "markets_positive_frac": 1.0,
+  "max_market_share_of_profit": 0.32156752581815173
+ },
+ "sizing": {
+  "judged": false,
+  "note": "reported only: the charter's sizing bar is checked by the lead (risk plan)",
+  "by_market": {
+   "ger40": {
+    "min_lot": 0.1,
+    "margin_eur": 5.8823619134300635,
+    "loss_at_median_stop_eur": 41.15815000000075
+   },
+   "us100": {
+    "min_lot": 0.1,
+    "margin_eur": 2.657738475126235,
+    "loss_at_median_stop_eur": 16.71393478260863
+   },
+   "us30": {
+    "min_lot": 0.1,
+    "margin_eur": 10.149493217297026,
+    "loss_at_median_stop_eur": 50.256543478261655
+   },
+   "us500": {
+    "min_lot": 0.1,
+    "margin_eur": 1.074593975328101,
+    "loss_at_median_stop_eur": 5.420065217391312
+   }
+  },
+  "min_lot_margin_eur": 10.149493217297026,
+  "min_lot_loss_at_median_stop_eur": 50.256543478261655,
+  "min_lot_loss_pct_of_1000_eur": 5.0256543478261655
+ },
+ "neighbours": {
+  "02_stop2.0": {
+   "n": 397,
+   "PF": 1.307310686880086,
+   "mean_R": 0.07351377446682103
+  },
+  "03_stop3.0": {
+   "n": 397,
+   "PF": 1.4860497023226065,
+   "mean_R": 0.07139197200254017
+  },
+  "04_exit_thu": {
+   "n": 397,
+   "PF": 1.580225891524422,
+   "mean_R": 0.08732072650709732
+  },
+  "05_entry_tue": {
+   "n": 400,
+   "PF": 1.2358641810906246,
+   "mean_R": 0.04420285076795447
+  },
+  "06_entry_prev_fri": {
+   "n": 390,
+   "PF": 1.5441796029905575,
+   "mean_R": 0.10742179851210064
+  },
+  "07_entry_1h_later": {
+   "n": 397,
+   "PF": 1.3949433836909175,
+   "mean_R": 0.07262978044298522
+  },
+  "08_exit_1h_earlier": {
+   "n": 397,
+   "PF": 1.5086337941890664,
+   "mean_R": 0.08772841325775782
+  }
+ },
+ "every_signal": {
+  "n": 397,
+  "mean_R": 0.07670238042220537
+ },
+ "null": {
+  "real_mean_R": 0.07670238042220537,
+  "percentile": 99.55000000000001,
+  "n_draws": 2000,
+  "seed": "0..k per group",
+  "mode": "every",
+  "null_mean": 0.010550524878353387,
+  "null_sd": 0.025917852092358137,
+  "pooled_from_groups": [
+   {
+    "market": "ger40",
+    "exit_h": 104.0,
+    "n": 97,
+    "real_mean_R": 0.08871578868448818,
+    "percentile": 97.3,
+    "null_mean": -0.009610863090739226
+   },
+   {
+    "market": "us100",
+    "exit_h": 102.0,
+    "n": 101,
+    "real_mean_R": 0.09695052370893363,
+    "percentile": 90.5,
+    "null_mean": 0.02664310567551805
+   },
+   {
+    "market": "us30",
+    "exit_h": 102.0,
+    "n": 97,
+    "real_mean_R": 0.0789447475532736,
+    "percentile": 89.75,
+    "null_mean": 0.015041770603335352
+   },
+   {
+    "market": "us500",
+    "exit_h": 102.0,
+    "n": 102,
+    "real_mean_R": 0.043095785470101344,
+    "percentile": 74.45,
+    "null_mean": 0.009517712497619098
+   }
+  ]
+ },
+ "counts": {
+  "ger40": {
+   "signals": 99,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 1,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 97
+  },
+  "us100": {
+   "signals": 108,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 6,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 101
+  },
+  "us30": {
+   "signals": 99,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 1,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 97
+  },
+  "us500": {
+   "signals": 108,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 5,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 102
+  }
+ },
+ "rule": {
+  "exit": "hours per (market, row): Friday 16:00 NY / 17:00 Berlin",
+  "stop": [
+   "d20",
+   2.5
+  ],
+  "max_wait_h": 1,
+  "mode": "one"
+ },
+ "ledger_line": "| 025 | 2026-11-18 | 025 Options-expiry week on the indices | ger40, us100, us30, us500 | computed calendar; prepared H1 BID bars 2013-2021 (us30, ger40 from 2013-10) | 8 | fermee : echoue (t_daily>=2.5) | n 397, PF net 1.42, t 1.65 (daily sums), PF x1.5 1.42, years + 7/9, null 99.6 pct, corr -0.00, DSR 0.034 (N_all 2518) / 0.151 (N_main 162), sizing not judged (min lot: margin 10 EUR, loss at median stop 50.3 EUR) |",
+ "written_utc": "2026-11-18T01:17:04Z",
+ "extra": {
+  "by_market_main": {
+   "ger40": {
+    "n": 97,
+    "PF_gross": 1.771271567204233,
+    "PF": 1.5099890124651942,
+    "PF_stress": 1.5000612264305064,
+    "mean_R_gross": 0.12115996746717968,
+    "mean_R": 0.08871578868448818,
+    "sum_R": 8.605431502395353,
+    "mean_gross_bp": 45.57150713738898,
+    "mean_net_bp": 33.503810757296606,
+    "t_trade": 1.5830126775861004,
+    "by_year_R": {
+     "2013": 2.100873002209037,
+     "2014": 4.270335000097901,
+     "2015": 0.22556143544298396,
+     "2016": 0.9508102703571232,
+     "2017": -2.4998057853869535,
+     "2018": 1.2017728097291247,
+     "2019": 3.4646227322962875,
+     "2020": -0.16309081950881477,
+     "2021": -0.9456471428413339
+    }
+   },
+   "us100": {
+    "n": 101,
+    "PF_gross": 1.690390265860618,
+    "PF": 1.5599158028173776,
+    "PF_stress": 1.5517944712054925,
+    "mean_R_gross": 0.11536219572917233,
+    "mean_R": 0.09695052370893363,
+    "sum_R": 9.792002894602296,
+    "mean_gross_bp": 31.316451090786533,
+    "mean_net_bp": 25.502902602060214,
+    "t_trade": 1.7841474733023186,
+    "by_year_R": {
+     "2013": 0.5518328743083597,
+     "2014": 0.4154357941328275,
+     "2015": 3.2686639409299505,
+     "2016": 1.6059522890889601,
+     "2017": 1.0322842586946963,
+     "2018": -0.3845234843862544,
+     "2019": 3.6723555940942663,
+     "2020": 0.11204619080988382,
+     "2021": -0.48204456307039456
+    }
+   },
+   "us30": {
+    "n": 97,
+    "PF_gross": 1.5928629885761705,
+    "PF": 1.4195361258702097,
+    "PF_stress": 1.4105400978431437,
+    "mean_R_gross": 0.10525639664843356,
+    "mean_R": 0.0789447475532736,
+    "sum_R": 7.657640512667539,
+    "mean_gross_bp": 14.312770057384757,
+    "mean_net_bp": 7.948211829858932,
+    "t_trade": 1.331779220667574,
+    "by_year_R": {
+     "2013": 1.0717452486557204,
+     "2014": 2.7542380048410617,
+     "2015": 1.2476255335802091,
+     "2016": -0.08893715325510076,
+     "2017": 2.0406212893430866,
+     "2018": 0.25640743001564825,
+     "2019": 3.753174798786167,
+     "2020": -0.4522364803684093,
+     "2021": -2.9249981589308436
+    }
+   },
+   "us500": {
+    "n": 102,
+    "PF_gross": 1.4025509042595345,
+    "PF": 1.2305749160056396,
+    "PF_stress": 1.2198179973571732,
+    "mean_R_gross": 0.07083949800591127,
+    "mean_R": 0.043095785470101344,
+    "sum_R": 4.395770117950337,
+    "mean_gross_bp": 12.249046561214614,
+    "mean_net_bp": 5.421483044624783,
+    "t_trade": 0.831835105467394,
+    "by_year_R": {
+     "2013": -0.21802250019912128,
+     "2014": 0.6481056202504509,
+     "2015": 1.863414497019461,
+     "2016": 0.09946644226210744,
+     "2017": 0.748738997285399,
+     "2018": -0.029670727348762416,
+     "2019": 3.808255413623986,
+     "2020": -0.15125139088955106,
+     "2021": -2.3732662340536317
+    }
+   }
+  },
+  "gross_main": {
+   "PF_gross": 1.6069594004963688,
+   "mean_R_gross": 0.10287052363844797,
+   "t_daily_gross": 2.2140757934332007
+  },
+  "neighbours_detail": {
+   "02_stop2.0": {
+    "n": 397,
+    "PF_gross": 1.4434512207743555,
+    "PF": 1.307310686880086,
+    "PF_stress": 1.2989317923622488,
+    "mean_R": 0.07351377446682103,
+    "t_daily": 1.2815687855246505
+   },
+   "03_stop3.0": {
+    "n": 397,
+    "PF_gross": 1.6449091174024826,
+    "PF": 1.4860497023226065,
+    "PF_stress": 1.4760103166401648,
+    "mean_R": 0.07139197200254017,
+    "t_daily": 1.8193190971728814
+   },
+   "04_exit_thu": {
+    "n": 397,
+    "PF_gross": 1.767292047948202,
+    "PF": 1.580225891524422,
+    "PF_stress": 1.568372899973508,
+    "mean_R": 0.08732072650709732,
+    "t_daily": 2.1520584145410364
+   },
+   "05_entry_tue": {
+    "n": 400,
+    "PF_gross": 1.3392429830802692,
+    "PF": 1.2358641810906246,
+    "PF_stress": 1.2224969469078775,
+    "mean_R": 0.04420285076795447,
+    "t_daily": 0.9799647474776457
+   },
+   "06_entry_prev_fri": {
+    "n": 390,
+    "PF_gross": 1.78836634758524,
+    "PF": 1.5441796029905575,
+    "PF_stress": 1.535103169088201,
+    "mean_R": 0.10742179851210064,
+    "t_daily": 1.96099579652333
+   },
+   "07_entry_1h_later": {
+    "n": 397,
+    "PF_gross": 1.5407342301444236,
+    "PF": 1.3949433836909175,
+    "PF_stress": 1.3858040108955478,
+    "mean_R": 0.07262978044298522,
+    "t_daily": 1.5723462163981758
+   },
+   "08_exit_1h_earlier": {
+    "n": 397,
+    "PF_gross": 1.6997526355491248,
+    "PF": 1.5086337941890664,
+    "PF_stress": 1.498718569293477,
+    "mean_R": 0.08772841325775782,
+    "t_daily": 1.8993711315851867
+   }
+  },
+  "null_groups": [
+   {
+    "market": "ger40",
+    "exit_h": 104.0,
+    "n": 97,
+    "real_mean_R": 0.08871578868448818,
+    "percentile": 97.3,
+    "null_mean": -0.009610863090739226
+   },
+   {
+    "market": "us100",
+    "exit_h": 102.0,
+    "n": 101,
+    "real_mean_R": 0.09695052370893363,
+    "percentile": 90.5,
+    "null_mean": 0.02664310567551805
+   },
+   {
+    "market": "us30",
+    "exit_h": 102.0,
+    "n": 97,
+    "real_mean_R": 0.0789447475532736,
+    "percentile": 89.75,
+    "null_mean": 0.015041770603335352
+   },
+   {
+    "market": "us500",
+    "exit_h": 102.0,
+    "n": 102,
+    "real_mean_R": 0.043095785470101344,
+    "percentile": 74.45,
+    "null_mean": 0.009517712497619098
+   }
+  ],
+  "counts_every": {
+   "ger40": {
+    "signals": 99,
+    "stale": 1,
+    "no_bar": 0,
+    "open_at_end": 0,
+    "no_d20": 1,
+    "taken": 97
+   },
+   "us100": {
+    "signals": 108,
+    "stale": 1,
+    "no_bar": 0,
+    "open_at_end": 0,
+    "no_d20": 6,
+    "taken": 101
+   },
+   "us30": {
+    "signals": 99,
+    "stale": 1,
+    "no_bar": 0,
+    "open_at_end": 0,
+    "no_d20": 1,
+    "taken": 97
+   },
+   "us500": {
+    "signals": 108,
+    "stale": 1,
+    "no_bar": 0,
+    "open_at_end": 0,
+    "no_d20": 5,
+    "taken": 102
+   }
+  },
+  "truncation": {
+   "pass": true,
+   "signals_sha": "f2394bdb7479f0d949945bd333657bfc3dae9ff6a4ca16ab2b39e7a620e794fb",
+   "n_signals": 414,
+   "n_signal_cuts": 8
+  },
+  "sides": "long only by construction"
+ }
+}

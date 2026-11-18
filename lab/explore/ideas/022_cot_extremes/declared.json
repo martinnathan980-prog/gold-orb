@@ -1,0 +1,156 @@
+{
+ "idea": "022 Crowded speculators: fade COT net positioning at a three-year extreme",
+ "date_declared": "2026-11-18",
+ "declared_after": "declared after the result of idea 016 was seen (fail: PF net 0.99, t -0.19 on daily sums); parameters are the scout's, unchanged",
+ "family": "positioning",
+ "hypothesis": "When speculators' net futures position (non-commercial long minus short over open interest) is in the top or bottom decile of its own previous 156 weeks, the underlying moves against the crowded side over the next trading week (Monday 08:00 to Friday 20:00 UTC).",
+ "mechanism": "Extreme speculative positioning leaves few buyers (or sellers) to come; Tornell and Yuan (2012, Journal of Futures Markets) report that peaks and troughs of speculators' net positions are informative for spot currencies (recalled by the scout, not re-read). Level of positioning, not its change (idea 016). Weekly, slow positioning data; not a closed family. The trades repeat while an extreme lasts, so the t on daily sums (one entry day per week) is the honest reading.",
+ "data": {
+  "signal": "Same data and timing as idea 016 (files fetch_cot.py and cot_lib.py copied unchanged from 016_cot_flow_reversal; cache ~/explore_data/idea_016/cot_legacy.json): CFTC COT legacy futures-only via Socrata 6dca-aqww, 12 contracts (EUR 099741, JPY 097741, GBP 096742, AUD 232741, CAD 090741, CHF 092741, NZD 112741, gold 088691, silver 084691, E-mini S&P 13874A, Nasdaq-100 mini 209742, Dow x$5 124603), report dates 2009-01-06..2021-12-28. KNOWN-AT: Monday 08:00 UTC after the report week's Friday (release Friday 15:30 New York), Tuesday 08:00 UTC when a US federal holiday, Good Friday or the 2018-12-05 closure falls on Monday..Friday of the report week. Report dates 2013-10-01..2013-11-12 and 2018-12-18..2019-03-05 dropped (shutdown backlogs).",
+  "publication_lag": "data.external min_lag = 6 days from the report date; values as served today (rare corrections).",
+  "prices": "kit.data.load_bars(<fp key>) = prepared hourly BID bars from ~/explore_data/h1, 2013-2021",
+  "in_sample_years": "signals 2013-02-01..2021-12-31 (9 years). Power check from the COT data alone: main configuration 1,436 market-weeks in an extreme decile on 415 distinct weeks, 78 to 145 per market (audusd 122, eurusd 78, gbpusd 100, nzdusd 130, us100 111, us30 115, us500 141, usdcad 101, usdchf 119, usdjpy 136, xagusd 145, xauusd 138); basket of 12.",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": [
+  "eurusd",
+  "usdjpy",
+  "gbpusd",
+  "audusd",
+  "usdcad",
+  "usdchf",
+  "nzdusd",
+  "xauusd",
+  "xagusd",
+  "us500",
+  "us100",
+  "us30"
+ ],
+ "rule_main": {
+  "signal": "Per contract and report week t: net_t = (noncomm long - noncomm short) / open interest; p_t = (number of the previous 156 reports' net strictly below net_t + half the ties) / 156 (past only, current excluded; no p before 156 past reports). Signal when p_t >= 0.90 or p_t <= 0.10, known at the known-at time (Monday 08:00 UTC, Tuesday 08:00 UTC in holiday weeks); re-entered every week the extreme lasts. Only known_at >= 2013-02-01.",
+  "side": "p >= 0.90 -> sell the CFD, p <= 0.10 -> buy; flipped for usdjpy, usdcad, usdchf (futures quoted in USD per foreign unit).",
+  "entry": "open of the first H1 bar opening at or after known_at",
+  "exit": [
+   "hours",
+   108
+  ],
+  "stop": [
+   "d20",
+   2.0
+  ],
+  "target": null,
+  "overlap": "one position per market (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+ },
+ "changes_vs_scout": "As idea 016: (1) exit ('hours', 108) = Friday 20:00 UTC for Monday entries; holiday-week entries (Tuesday 08:00) exit at the close of Friday's last hourly bar (108 h lands in the weekend closure); (2) holiday test on Monday..Friday of the report week plus Good Friday and 2018-12-05; (3) rank on the previous 156 reports, current excluded; (4) signals from 2013-02-01.",
+ "configurations": [
+  {
+   "id": "01_main",
+   "p_extreme": 0.1,
+   "p_window_weeks": 156,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "02_q015",
+   "p_extreme": 0.15,
+   "p_window_weeks": 156,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "03_q005",
+   "p_extreme": 0.05,
+   "p_window_weeks": 156,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "04_stop15",
+   "p_extreme": 0.1,
+   "p_window_weeks": 156,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "05_stop30",
+   "p_extreme": 0.1,
+   "p_window_weeks": 156,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    3.0
+   ]
+  },
+  {
+   "id": "06_win104",
+   "p_extreme": 0.1,
+   "p_window_weeks": 104,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "07_win208",
+   "p_extreme": 0.1,
+   "p_window_weeks": 208,
+   "exit": [
+    "hours",
+    108
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "08_exit84",
+   "p_extreme": 0.1,
+   "p_window_weeks": 156,
+   "exit": [
+    "hours",
+    84
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  }
+ ],
+ "neighbours_note": "08_exit84: Monday 08:00 to Thursday 20:00 UTC (holiday weeks: Tuesday 08:00 to Friday 20:00). Neighbours fixed now, before any return of this idea.",
+ "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw): gross, net, spread and slippage x1.5; swaps",
+ "bars": "CHARTER.md 'The bars' on 01_main as a BASKET of 12 markets via kit.judge.verdict (t on daily sums >= 2.5, pooled PF >= 1.12 and >= 1.04 at x1.5, >= 60 % years positive, >= 65 % markets positive, no market above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days); null 2000 draws; corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported)",
+ "split": "IS only (to 2021-12-31). No VAL look in this run (the lead does it).",
+ "kit": "lab/explore/kit unchanged (sha256 prefixes: checks 08c2a805ae3b736a, costs cc5bc6e01d14b448, data de8ed3ad53a7e135, judge 43615493f72db0da, sim c88444f14747f481, stats b29eae9e03028d91); helper files: fetch_cot.py, cot_lib.py (copies of 016's), run.py"
+}

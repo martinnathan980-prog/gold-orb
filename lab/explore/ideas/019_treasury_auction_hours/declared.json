@@ -1,0 +1,44 @@
+{
+ "idea": "019 US Treasury long auctions: USDJPY up in the hours before, down after",
+ "date_declared": "2026-11-18",
+ "family": "macro-supply (rates, Treasury auction calendar)",
+ "hypothesis": "On the day of a nominal 7-, 10-, 20- or 30-year Treasury auction, USDJPY rises from about 5 hours before the auction close to 1 hour before it (yields pushed up while dealers make room for the supply) and falls from 1 hour after the close to 16:00 New York (yields recover once the supply is placed).",
+ "mechanism": "Lou, Yan and Zhang (2013, Review of Financial Studies): Treasury prices fall before auctions and recover after, because primary dealers with limited risk capacity must absorb the new supply; Fleming, Liu and Nguyen (NY Fed staff report, quoted by the scout, not read) find a V of 0.7-1.2 bp of yield in the hours around auctions, smaller since 2015. USDJPY is the FX pair most tied to US yields. The signal is the Treasury's published calendar (known days ahead), not a price pattern; auction-day FX was never tested by the lab (macro event days closed family = data releases; idea 013 uses auction results, this idea does not).",
+ "data": {
+  "signal": "fiscaldata.treasury.gov API v1/accounting/od/auctions_query (scout/sources.md section 7), fetched once 2026-11-18 with filter auction_date 2012-01-01..2021-12-31, security_type Note/Bond; cached ~/explore_data/idea_019/auctions_2012_2021.csv (960 rows). Kept: inflation_index_security = No, floating_rate = No, offering_amt >= 1e9 (drops the 25-million test auctions), security_term with a leading year count >= 6 (7-Year, 9-Year 10/11-Month, 10-Year, 19-Year 10/11-Month, 20-Year, 29-Year 10/11-Month, 30-Year; reopenings of old 7-year notes auctioned as 2- or 5-year securities are excluded), auction_date 2013-01-01..2021-12-31. Auction time T = auction_date at closing_time_comp (competitive close, New York wall clock: 13:00 for 336, 11:30 for 8). KNOWN-AT of each calendar row: announcemt_date + 1 calendar day at 00:00 New York (announcements are made 2 to 6 business days before the auction, usually around 11:00 New York; midnight after the announcement day is conservative). Only the calendar (date, time, term, size) is used; no auction result.",
+  "publication_lag": "calendar rows: known >= 1 day after announcemt_date (checked on every row in run.py, and every signal enters >= 1 business day after its row is known); not revised (scout: Revised: no).",
+  "prices": "kit.data.load_bars('usdjpy') and load_bars('xauusd') = prepared hourly BID bars from ~/explore_data/h1 (lab M1 Dukascopy BID, in sample)",
+  "in_sample_years": "2013..2021 (9 years). Power check from the calendar alone: 344 long auctions on 344 distinct days (36 a year 2013-2019, 44 in 2020, 48 in 2021) -> 688 signals on USDJPY (344 PRE long, 344 POST short), n >= 250 reachable on one market.",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": ["usdjpy"],
+ "rule_main": {
+  "signal": "For each kept auction with close T (New York wall clock, converted to UTC with DST): PRE signal known_at = T - 5 h floored to the full UTC hour; POST signal known_at = T + 1 h ceiled to the full UTC hour. Both are known from the calendar at least one business day earlier.",
+  "side": "PRE: +1 (buy USDJPY); POST: -1 (sell USDJPY)",
+  "entry": "open of the first H1 bar opening at or after known_at (delay_h 0): PRE 08:00 New York (06:00 for 11:30 auctions), POST 14:00 New York (13:00 for 11:30 auctions)",
+  "exit": "PRE: ['hours', 4] (12:00 New York = T - 1 h; 10:00 for 11:30 auctions = T - 1.5 h). POST: ['clock', '16:00', 'America/New_York'].",
+  "stop": ["d20", 1.0],
+  "target": null,
+  "overlap": "one position per market (kit.sim mode 'one'); PRE and POST never overlap (PRE exits before T, POST enters after T, POST exits 16:00, next PRE at 06:00 or later the next day), so the two legs are simulated with kit.sim.simulate separately (one exit rule per call) and their trade tables concatenated; every-signal variant = mode 'every' on both legs.",
+  "changes_vs_scout": "Scout: buy T-5h, exit T-1h; sell T+1h, exit 16:00 NY; stop 1 x D20. Identical for the 336 auctions closing at 13:00 (hours are full). For the 8 auctions closing at 11:30 the hourly bars force T-5h -> 06:00 (floor), exit 4 h later at 10:00 (T-1.5h, still before the auction), and T+1h -> 13:00 (ceil). Gold, the scout's mirrored second market, is not in the main configuration (USDJPY alone reaches n >= 250, and the scout calls USDJPY the test); it is declared as side configurations 10 and 11 below."
+ },
+ "configurations": [
+  {"id": "01_main", "markets": ["usdjpy"], "pre_in_h": -5, "pre_exit": ["hours", 4], "post_in_h": 1, "post_exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0], "role": "main"},
+  {"id": "02_pre_in_T-4", "markets": ["usdjpy"], "pre_in_h": -4, "pre_exit": ["hours", 3], "post_in_h": 1, "post_exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0], "role": "neighbour"},
+  {"id": "03_pre_in_T-6", "markets": ["usdjpy"], "pre_in_h": -6, "pre_exit": ["hours", 5], "post_in_h": 1, "post_exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0], "role": "neighbour"},
+  {"id": "04_pre_out_T", "markets": ["usdjpy"], "pre_in_h": -5, "pre_exit": ["hours", 5], "post_in_h": 1, "post_exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0], "role": "neighbour"},
+  {"id": "05_post_in_T", "markets": ["usdjpy"], "pre_in_h": -5, "pre_exit": ["hours", 4], "post_in_h": 0, "post_exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0], "role": "neighbour"},
+  {"id": "06_post_out_15", "markets": ["usdjpy"], "pre_in_h": -5, "pre_exit": ["hours", 4], "post_in_h": 1, "post_exit": ["clock", "15:00", "America/New_York"], "stop": ["d20", 1.0], "role": "neighbour"},
+  {"id": "07_post_out_17", "markets": ["usdjpy"], "pre_in_h": -5, "pre_exit": ["hours", 4], "post_in_h": 1, "post_exit": ["clock", "17:00", "America/New_York"], "stop": ["d20", 1.0], "role": "neighbour"},
+  {"id": "08_stop_0.75", "markets": ["usdjpy"], "pre_in_h": -5, "pre_exit": ["hours", 4], "post_in_h": 1, "post_exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 0.75], "role": "neighbour"},
+  {"id": "09_stop_1.5", "markets": ["usdjpy"], "pre_in_h": -5, "pre_exit": ["hours", 4], "post_in_h": 1, "post_exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.5], "role": "neighbour"},
+  {"id": "10_gold_mirrored", "markets": ["xauusd"], "mirrored": true, "pre_in_h": -5, "pre_exit": ["hours", 4], "post_in_h": 1, "post_exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0], "role": "side configuration: sell gold PRE, buy gold POST; counted in n_configs and trials.jsonl, reported, NOT in the neighbours' median (another market, not a parameter change)"},
+  {"id": "11_basket_usdjpy_gold", "markets": ["usdjpy", "xauusd"], "mirrored_gold": true, "pre_in_h": -5, "pre_exit": ["hours", 4], "post_in_h": 1, "post_exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0], "role": "side configuration: the scout's two-market version (basket figures reported, t on daily sums); counted, NOT in the neighbours' median"}
+ ],
+ "neighbours_median": "configurations 02..09 (8 parameter neighbours of the main)",
+ "null": "stats.null_test on each leg of the main with its own exit and stop (mode 'every', 2,000 draws, seeds 0 and 1), combined per draw into the pooled mean net R of all main trades ((mean_PRE x n_PRE + mean_POST x n_POST) / n); percentile = share of combined draw means below the real pooled mean. Shift test per leg reported.",
+ "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw): gross, net, spread and slippage x1.5",
+ "bars": "CHARTER.md 'The bars' on 01_main (one market usdjpy), computed by kit.judge.verdict; random-entry null as above, 2,000 draws; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported). Reported also: gross figures, PRE (long) and POST (short) legs apart, by year.",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead does it if the main passes and survives the attack).",
+ "kit": "lab/explore/kit unchanged"
+}

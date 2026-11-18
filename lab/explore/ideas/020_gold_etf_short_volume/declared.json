@@ -1,0 +1,40 @@
+{
+ "idea": "020 Gold ETF off-exchange short-volume share (scout idea 6)",
+ "date_declared": "2026-11-18",
+ "family": "flows (ETF short volume, off-exchange)",
+ "hypothesis": "A high share of short volume in the off-exchange trades of the two big gold ETFs (GLD + IAU), relative to its own recent 60 days, predicts a rise of gold over the next session; a low share predicts a fall.",
+ "mechanism": "The 'DIX' reading (SqueezeMetrics, 'short is long'): most short volume reported to FINRA's trade reporting facilities is dealers and market makers selling short to fill customers who BUY, so an unusually high short share marks unusual investor buying of gold ETFs, which the authorised participants must later cover by buying bullion (creations). The opposite reading (informed short sellers, Boehmer, Jones and Zhang 2008) is NOT tested here: this declaration picks the DIX sign. Not a closed family: no positioning or volume-flow rule on gold was tested by the lab; the entry hour is the gold reopening, which round 5 traded unconditionally without success, so the random-entry null (same hour, random days) is the key control.",
+ "data": {
+  "signal": "FINRA daily short-sale volume files https://cdn.finra.org/equity/regsho/daily/<FAC>shvol<YYYYMMDD>.txt ('|' separated; fields Symbol, ShortVolume, TotalVolume). Facilities: FNSQ + FNYX summed for dates 2012-10-01 .. 2018-07-31 (CNMS does not exist before 2018-08-01), CNMS (all facilities) for 2018-08-01 .. 2021-12-31. Rows GLD and IAU. A day counts only if every facility file of that day exists (holidays have no file). Downloaded once to ~/explore_data/idea_020/raw_rows (GLD and IAU rows only; fetch_finra.py). KNOWN-AT: the file of day D is posted by 18:00 New York on D itself (scout probe: 17:18-17:23 New York): known_at = D 18:30 New York (kit.data.rule_local_close('18:30')), DST handled by the tz.",
+  "publication_lag": "data.external min_lag = 18 hours after the observation date's midnight (the rule gives 18.5 h). Values are not revised (scout: re-uploaded files unchanged).",
+  "prices": "kit.data.load_bars('xauusd') = the lab's prepared hourly BID bars (~/explore_data/h1, aggregated from the lab's one-minute Dukascopy BID bars), in sample only",
+  "in_sample_years": "2013 .. 2021 (9 years; signal data from 2012-10-01 for the z warm-up). Power check from the signal data alone (no price read): 2,328 daily values (2012-10-01 .. 2021-12-31, holidays only missing); main configuration (60-day z, |z| >= 1.25) gives 510 signals in 2013-2021 (228 long, 282 short). Neighbours: k 1.0 -> 739, k 1.5 -> 339, window 40 -> 511, window 120 -> 479.",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": ["xauusd"],
+ "rule_main": {
+  "signal": "For each FINRA day D: s_D = (ShortVolume_GLD + ShortVolume_IAU) / (TotalVolume_GLD + TotalVolume_IAU), summed over the day's facility files. z_D = (s_D - mean) / std (ddof 1) over the 60 daily values ending at D inclusive (past and present only; NaN until 60 values exist). known_at = D 18:30 New York.",
+  "side": "+1 (buy xauusd) if z_D >= +1.25; -1 (sell) if z_D <= -1.25; no signal otherwise",
+  "entry": "open of the first H1 bar opening at or after known_at (= the 19:00 New York bar on Monday-Thursday; for a Friday file, the Sunday 18:00 New York reopening bar, the first bar after the weekend closure)",
+  "exit": ["clock", "16:00", "America/New_York"],
+  "stop": ["d20", 1.5],
+  "target": null,
+  "overlap": "one position per market (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+ },
+ "what_changed_vs_scout": "The scout's rule is kept: the file known at 18:30 New York (safe rule of scout/sources.md 6) makes the entry the 19:00 New York bar, as the scout wrote. Exit 16:00 New York the next weekday (kit 'clock' exit: next 16:00 NY weekday strictly after the entry bar's open; a Friday signal enters at the Sunday reopening and exits Monday 16:00). The z window includes day D itself (declared here, the scout did not say).",
+ "configurations": [
+  {"id": "01_main", "window": 60, "k": 1.25, "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.5]},
+  {"id": "02_k1.0", "window": 60, "k": 1.0, "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.5]},
+  {"id": "03_k1.5", "window": 60, "k": 1.5, "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.5]},
+  {"id": "04_w40", "window": 40, "k": 1.25, "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.5]},
+  {"id": "05_w120", "window": 120, "k": 1.25, "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.5]},
+  {"id": "06_stop1.0", "window": 60, "k": 1.25, "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 1.0]},
+  {"id": "07_stop2.0", "window": 60, "k": 1.25, "exit": ["clock", "16:00", "America/New_York"], "stop": ["d20", 2.0]},
+  {"id": "08_h12", "window": 60, "k": 1.25, "exit": ["hours", 12], "stop": ["d20", 1.5]},
+  {"id": "09_h45", "window": 60, "k": 1.25, "exit": ["hours", 45], "stop": ["d20", 1.5]}
+ ],
+ "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw): gross, net, spread and slippage x1.5; long and short sides reported apart",
+ "bars": "CHARTER.md 'The bars' (one market) on 01_main, computed by kit.judge.verdict; random-entry null 2000 draws (same side, same New York clock, random day); weekly corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported)",
+ "split": "IS only (to 2021-12-31). No validation look in this run (lead's instruction); a pass gets the attack of charter rule 5 (attack.py) and stops there.",
+ "kit": "lab/explore/kit unchanged (self-test 78/78 run by the lead)"
+}

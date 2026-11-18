@@ -1,0 +1,42 @@
+{
+  "idea": "025 Options-expiry week on the indices",
+  "date_declared": "2026-11-18",
+  "family": "calendar",
+  "hypothesis": "Large-cap equity indices earn more in the week that holds the monthly options expiration (third Friday) than in other weeks: a long position from Monday morning to the expiry Friday afternoon earns a positive net expectancy above the drift of random weeks.",
+  "mechanism": "Stivers and Sun (2013, Journal of Banking and Finance): large US shares earn higher returns in option-expiration weeks (1983-2008), linked to the hedging of option positions by market makers (delta hedges unwound as open interest decays into expiry, pinning and put-heavy open interest lifted). The lab never tested expiry weeks (the record lists expiry Fridays among the untested calendar days); it is a weekly swing, not an intraday index rule nor a night/calendar window already closed.",
+  "data": {
+    "signal": "Computed calendar only, no external series: the third Friday of each month (pandas WOM-3FRI) from 2013 to 2021. The signal for the week is known in advance (a date rule); known_at is set to the scheduled entry time itself (Monday of that week, see rule_main).",
+    "publication_lag": "none (calendar rule, known years in advance); no external series, no revisions",
+    "prices": "kit.data.load_bars(us500, us100, us30, ger40) = prepared hourly BID bars from the lab's Dukascopy one-minute bars (~/explore_data/h1), in sample only; us500/us100 from 2013-01, us30/ger40 from 2013-09-30",
+    "in_sample_years": "2013 (us30, ger40: 2013-10) .. 2021 = 9 years (8.25 for us30 and ger40); power check from the calendar alone: 108 expiry weeks 2013-2021; weeks whose Monday is at least 30 days after the market's first bar (D20 needs 20 completed days): us500 107, us100 107, us30 98, ger40 98 = 410 signals on 107 Mondays (basket; there is no n >= 250 bar for a basket, the t bar is read on about 107 daily sums, which is thin)",
+    "nothing_after": "2021-12-31"
+  },
+  "markets": ["us500", "us100", "us30", "ger40"],
+  "basket": "one rule, same parameters, small-basket amendment (4 markets: no market above 50 % of the profit)",
+  "rule_main": {
+    "signal": "For every month, F = third Friday; M = F - 4 days (the Monday of that week). US indices (us500, us100, us30): known_at = M 10:00 America/New_York (in UTC). ger40: known_at = M 09:00 Europe/Berlin (in UTC). Scheduled exit: US = F 16:00 New York, ger40 = F 17:00 Berlin. The table is built per market only for weeks whose known_at is not after the end of that market's bars.",
+    "side": "+1 always (long only)",
+    "entry": "open of the H1 bar opening at known_at (kit.sim delay_h 0); max_wait_h = 1: if neither that bar nor the next one exists (holiday, missing hours), the week is dropped for that market",
+    "exit": "('hours', H) with H = scheduled exit - known_at in hours, per row (US main 102 h, ger40 main 104 h; constant within a market for the main since no DST change happens between a Monday and a Friday). A scheduled exit in a closure (e.g. Good Friday) is done at the close of the last bar before it (kit rule).",
+    "stop": ["d20", 2.5],
+    "target": null,
+    "overlap": "one position per market (kit.sim mode 'one'; signals are 4+ weeks apart so nothing overlaps); every-signal variant = same rule mode 'every'",
+    "implementation": "kit.sim.simulate cannot take a per-row exit, so run.py simulates each (market, H) group with kit.sim.simulate and concatenates the trade tables (signals_sha set to that of the whole build(data) table, counts merged). The null is kit.stats.null_test run per (market, H) group (2000 draws each, seeds 0,1,2,...) and pooled draw by draw: pooled draw mean = sum of the groups' draw sums / total trades; percentile = share of pooled draw means strictly below the real pooled mean R."
+  },
+  "what_changed_vs_scout": "Scout: entry Monday 09:30 New York (09:00 Berlin for ger40), exit Friday 16:00 New York (17:30 Berlin), stop 2.5 x D20. Hourly bars cannot enter at 09:30: US entry moved to the open of the 10:00 New York bar (first bar opening at or after 09:30; the 09:00 bar holds the pre-open). ger40 exit 17:30 Berlin is mid-bar: moved to the open of the 17:00 Berlin bar (the last full hour inside the Xetra session). The ger40 entry 09:00 Berlin and US exit 16:00 New York are exact. Weeks with no bar within 1 h of the entry are dropped.",
+  "configurations": [
+    {"id": "01_main", "entry_shift_h": 0, "exit_shift_h": 0, "stop": ["d20", 2.5], "note": "as rule_main"},
+    {"id": "02_stop2.0", "entry_shift_h": 0, "exit_shift_h": 0, "stop": ["d20", 2.0]},
+    {"id": "03_stop3.0", "entry_shift_h": 0, "exit_shift_h": 0, "stop": ["d20", 3.0]},
+    {"id": "04_exit_thu", "entry_shift_h": 0, "exit_shift_h": -24, "stop": ["d20", 2.5], "note": "exit Thursday at the same clock time"},
+    {"id": "05_entry_tue", "entry_shift_h": 24, "exit_shift_h": 0, "stop": ["d20", 2.5], "note": "entry Tuesday at the same clock time"},
+    {"id": "06_entry_prev_fri", "entry": "previous Friday (F - 7 days) 15:00 New York (US) / 17:00 Berlin (ger40)", "exit_shift_h": 0, "stop": ["d20", 2.5], "note": "the Friday-to-Friday expiry week of the literature; holds the weekend (7 swap nights with the Friday triple); exit hours computed per row in local time"},
+    {"id": "07_entry_1h_later", "entry_shift_h": 1, "exit_shift_h": 0, "stop": ["d20", 2.5], "note": "Monday 11:00 New York / 10:00 Berlin"},
+    {"id": "08_exit_1h_earlier", "entry_shift_h": 0, "exit_shift_h": -1, "stop": ["d20", 2.5], "note": "Friday 15:00 New York / 16:00 Berlin"}
+  ],
+  "shifts_meaning": "entry_shift_h / exit_shift_h are added to the main's local wall-clock entry / scheduled exit (Monday + 24 h = Tuesday same clock)",
+  "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw): gross, net, spread and slippage x1.5; swaps for every 17:00 New York rollover held (main: 4 nights Monday to Thursday; triple day Friday not crossed)",
+  "bars": "CHARTER.md 'The bars' on 01_main as a basket of 4 markets, computed by kit.judge.verdict (t on daily sums >= 2.5, PF >= 1.12, PF x1.5 >= 1.04, years >= 60 %, markets positive >= 65 %, no market above 50 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days, random-entry null >= 97.5th percentile on pooled trades with 2000 draws, weekly corr with the ten <= 0.30); deflated Sharpe on N_all (N_main reported). Reported too: gross figures, each market, long side only (no shorts by construction).",
+  "split": "IS only (to 2021-12-31). No validation look in this run (the lead does it if the main passes and survives the attack).",
+  "kit": "lab/explore/kit unchanged (lead's self-test 78/78)"
+}

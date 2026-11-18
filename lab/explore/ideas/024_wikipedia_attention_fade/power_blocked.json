@@ -1,0 +1,9 @@
+{"idea": "024 Wikipedia attention spike then fade (scout idea 10)",
+ "status": "blocked",
+ "why": "wikimedia.org per-article API answered HTTP 429 three times from the shared address (Silver at the first try, Euro after a 5-minute pause); only Gold and Silver were fetched, the other 7 pages of the declared basket were not, and the run stopped fetching as instructed",
+ "fetched": {"Gold": "2015-07-01..2021-12-31, 2376 days, median 3971 views", "Silver": "2015-07-01..2021-12-31, 2376 days, median 2112 views"},
+ "not_fetched": ["Euro", "Japanese_yen", "S&P_500", "S&P_500_Index", "DAX", "Pound_sterling", "Bitcoin", "Ethereum"],
+ "power_from_views_only": {"Gold": {"z>=2_days": 56, "distinct_entries": 53, "approx_non_overlapping_3bd": 40},
+                           "Silver": {"z>=2_days": 56, "distinct_entries": 56, "approx_non_overlapping_3bd": 42}},
+ "declared": false, "returns_computed": false, "configs_run": 0,
+ "cache": "~/explore_data/idea_024/wiki (Gold.json, Silver.json); fetch script ~/explore_data/idea_024/fetch_wiki.py skips cached titles"}

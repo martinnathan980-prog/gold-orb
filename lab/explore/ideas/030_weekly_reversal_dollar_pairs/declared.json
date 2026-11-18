@@ -1,0 +1,44 @@
+{
+ "idea": "030 Weekly reversal across the seven dollar pairs",
+ "date_declared": "2026-11-18",
+ "family": "relative-value",
+ "hypothesis": "Among the seven major currencies measured against the US dollar (EUR, GBP, JPY, AUD, CAD, CHF, NZD), the two that fell most over the past week (Friday to Friday) outperform the two that rose most over the following week: buying the two weakest and selling the two strongest earns a positive net expectancy.",
+ "mechanism": "Short-term cross-sectional reversal: weekly flow imbalances (portfolio rebalancing, hedging and fixing-related flows, over-extended speculative positioning) push a currency away from its peers and are partly undone the next week, as liquidity providers who absorbed them are repaid. The dollar leg is hedged away by trading the ranking, so what is traded is pure relative flow. A ranking across markets is a structure the lab's record lists as never tested (round 3 FX majors tested single-pair rules, round 6 night mean reversion on crosses was intraday; this is a weekly cross-sectional rank). Published evidence for short-term currency reversal is weak (Menkhoff, Sarno, Schmeling and Schrimpf 2012 study momentum); prior very low.",
+ "data": {
+  "signal": "Prices only: kit.data.load_bars for the seven pairs (prepared hourly BID bars, ~/explore_data/h1, from the lab's Dukascopy one-minute bars). For each week, T = Friday 20:00 UTC. P_pair(T) = close of the last H1 bar whose END (open + 1 h) is <= T and > T - 72 h (else missing). The close of a bar is known at the bar's end, so every input is known by T. Ranking value of each currency c: r_c = ln(P(T) / P(T - L)) for EUR, GBP, AUD, NZD (pairs xxxusd) and r_c = -ln(P(T) / P(T - L)) for JPY, CAD, CHF (pairs usdxxx), L = 7 calendar days for the main. The signal is computed at T and acted on at the next Monday 08:00 UTC (known_at = Monday 08:00 UTC, 60 hours after it is known).",
+  "publication_lag": "none: no external series; prices are known at each bar's end; no revisions",
+  "prices": "kit.data.load_bars(eurusd, gbpusd, usdjpy, audusd, usdcad, usdchf, nzdusd) = prepared H1 BID bars 2013-01 .. 2021-12 (audusd, usdcad, usdchf, nzdusd from 2013-01-01 22:00)",
+  "in_sample_years": "2013 .. 2021 = 9 years; power check from the bars' existence alone (no return looked at): 466 Friday 19:00 UTC bars and 466-467 Monday 08:00 UTC bars per pair, so about 462 weekly rebalances after the 20-day D20 warm-up, 4 legs each = about 1,850 trades on about 462 entry days, basket of 7 markets (about 265 trades per market)",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": ["eurusd", "gbpusd", "usdjpy", "audusd", "usdcad", "usdchf", "nzdusd"],
+ "basket": "one rule, same parameters, seven markets (the 7 dollar pairs); basket bars of CHARTER 'The bars' (7 markets: no market above 25 % of the profit, >= 65 % of markets positive, t on daily sums of R)",
+ "rule_main": {
+  "signal": "Every Friday T = 20:00 UTC from 2013-01-04 to 2021-12-24: r_c for the 7 currencies as in data.signal with L = 7 days. If any of the 14 prices (7 pairs at T and at T - L) is missing, the week is skipped. Rank r_c (ties broken by the fixed order EUR, GBP, JPY, AUD, CAD, CHF, NZD; ties are not expected with real-valued returns).",
+  "side": "The K = 2 currencies with the LOWEST r_c are bought: long xxxusd (side +1) for EUR/GBP/AUD/NZD, short usdxxx (side -1) for JPY/CAD/CHF. The K = 2 currencies with the HIGHEST r_c are sold: short xxxusd (-1), long usdxxx (+1). The 3 middle currencies are not traded. Each leg is its own trade on its own pair, with its own stop: equal risk per leg in R units (R = net result / stop distance).",
+  "entry": "known_at = the Monday after T, 08:00 UTC; open of the first H1 bar opening at or after known_at (kit.sim delay_h 0), max_wait_h = 1 (a leg whose market has no bar opening within 1 h of known_at is dropped)",
+  "exit": ["hours", 108],
+  "exit_note": "108 h after the entry bar's open = Friday 20:00 UTC when entered Monday 08:00 (kit 'hours' exit: first bar opening at or after entry + 108 h; inside a closure, the close of the last bar before)",
+  "stop": ["d20", 2.0],
+  "target": null,
+  "overlap": "one position per market (kit.sim mode 'one'); weekly legs do not overlap by construction; every-signal variant (mode 'every') for the every-signal bar",
+  "implementation": "build(d, lookback_days, k, ka_hour) returns the whole signal table (known_at, side, market); each configuration = kit.sim.simulate on its own table with its own exit and stop; null = kit.stats.null_test on the main trades (all 7 markets in one call, same market, side and New York clock time, random day, same exit and stop), 2000 draws."
+ },
+ "configurations": [
+  {"id": "01_main", "lookback_days": 7, "k": 2, "ka_hour_monday_utc": 8, "exit": ["hours", 108], "stop": ["d20", 2.0]},
+  {"id": "02_lb14", "lookback_days": 14, "k": 2, "ka_hour_monday_utc": 8, "exit": ["hours", 108], "stop": ["d20", 2.0]},
+  {"id": "03_lb3", "lookback_days": 3, "k": 2, "ka_hour_monday_utc": 8, "exit": ["hours", 108], "stop": ["d20", 2.0]},
+  {"id": "04_k1", "lookback_days": 7, "k": 1, "ka_hour_monday_utc": 8, "exit": ["hours", 108], "stop": ["d20", 2.0]},
+  {"id": "05_k3", "lookback_days": 7, "k": 3, "ka_hour_monday_utc": 8, "exit": ["hours", 108], "stop": ["d20", 2.0]},
+  {"id": "06_s15", "lookback_days": 7, "k": 2, "ka_hour_monday_utc": 8, "exit": ["hours", 108], "stop": ["d20", 1.5]},
+  {"id": "07_s3", "lookback_days": 7, "k": 2, "ka_hour_monday_utc": 8, "exit": ["hours", 108], "stop": ["d20", 3.0]},
+  {"id": "08_entry12", "lookback_days": 7, "k": 2, "ka_hour_monday_utc": 12, "exit": ["hours", 104], "stop": ["d20", 2.0]},
+  {"id": "09_exit_thu", "lookback_days": 7, "k": 2, "ka_hour_monday_utc": 8, "exit": ["hours", 84], "stop": ["d20", 2.0]}
+ ],
+ "neighbours_note": "02 lookback two weeks; 03 lookback three days (Tuesday 20:00 to Friday 20:00 UTC); 04 one currency each side; 05 three each side; 06/07 stop 1.5 and 3 D20; 08 entry Monday 12:00 UTC, same Friday 20:00 exit (104 h); 09 exit Thursday 20:00 UTC (84 h).",
+ "what_changed_vs_scout": "Nothing of substance: the scout's rule (Friday 20:00 UTC 5-day return of each currency against the dollar, inverse for usdjpy/usdcad/usdchf; Monday 08:00 UTC buy the two weakest, sell the two strongest, equal risk per leg; exit Friday 20:00 UTC; stop 2 x D20 per leg) is the main. Made precise: '5-day return' = Friday 20:00 UTC to the previous Friday 20:00 UTC (7 calendar days = 5 trading days), log returns, prices = close of the last bar ending by 20:00 UTC; exit = 108 h after the entry bar (kit 'hours' exit).",
+ "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw, forward-looking bp model for FX): gross, net, spread and slippage x1.5; swaps per rollover (4 nights incl. the triple day per leg)",
+ "bars": "CHARTER.md 'The bars' on 01_main as a basket of 7 markets, computed by kit.judge.verdict: t on daily sums of R >= 2.5, PF net >= 1.12, PF x1.5 >= 1.04, >= 60 % years positive, >= 65 % markets positive, no market above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days, random-entry null >= 97.5th percentile (2000 draws), weekly corr with the ten <= 0.30, deflated Sharpe on N_all (label) and N_main (reported)",
+ "split": "IS only (to 2021-12-31). No VAL look in this run (the lead does it, charter rule 5).",
+ "kit": "lab/explore/kit unchanged (self-test 78/78 run by the lead)"
+}

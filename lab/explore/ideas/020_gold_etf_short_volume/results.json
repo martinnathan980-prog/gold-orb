@@ -1,0 +1,382 @@
+{
+ "idea": "020 Gold ETF off-exchange short-volume share (scout idea 6)",
+ "declared_sha256": "4a6c5aab986bb00e515d613e6c197a42c1143b6722619f5128d55353fce6cd30",
+ "verdict": "fail",
+ "failed_bars": [
+  "t>=2.5",
+  "PF>=1.12",
+  "years>=60%",
+  "PF_stress>=1.04",
+  "neighbours_median_PF>=1.06",
+  "null>=97.5"
+ ],
+ "basket": false,
+ "bars": {
+  "truncation_test": {
+   "value": "passed",
+   "bar": "checks.truncation_test on the main signal build passed (same signals)",
+   "pass": true
+  },
+  "declared_hash": {
+   "value": "matches declared.sha256",
+   "bar": "declared.json matches declared.sha256",
+   "pass": true
+  },
+  "configs<=11": {
+   "value": 9,
+   "bar": "at most 11 configurations",
+   "pass": true
+  },
+  "n>=250": {
+   "value": 507,
+   "bar": ">= 250 trades",
+   "pass": true
+  },
+  "t>=2.5": {
+   "value": 0.4547761518951343,
+   "bar": "t per trade >= 2.5",
+   "pass": false
+  },
+  "PF>=1.12": {
+   "value": 1.0587727370364266,
+   "bar": "PF net >= 1.12",
+   "pass": false
+  },
+  "years>=60%": {
+   "value": 0.4444444444444444,
+   "bar": ">= 60 % of years positive",
+   "pass": false
+  },
+  "PF_stress>=1.04": {
+   "value": 1.0265650549336662,
+   "bar": "PF with spread and slippage x1.5 >= 1.04",
+   "pass": false
+  },
+  "neighbours_median_PF>=1.06": {
+   "value": 1.042201352696723,
+   "bar": "median PF of the neighbours >= 1.06",
+   "pass": false
+  },
+  "every_signal_exp>0": {
+   "value": 0.009368949675813714,
+   "bar": "every-signal expectancy > 0",
+   "pass": true
+  },
+  "hold<=5d": {
+   "value": 0,
+   "bar": "hold <= 5 trading days",
+   "pass": true
+  },
+  "null>=97.5": {
+   "value": 76.55,
+   "bar": "random-entry null (same market, side, clock; >= 2000 draws) >= 97.5th percentile",
+   "pass": false
+  },
+  "corr<=0.30": {
+   "value": -0.002828796249532187,
+   "bar": "weekly corr with the sum of the ten <= 0.30 (CHARTER 'Independence'; a negative one passes)",
+   "pass": true
+  }
+ },
+ "selection": {
+  "N_all": 2519,
+  "N_main": 162,
+  "dsr_N_all": {
+   "dsr": 0.0009743929589536652,
+   "sr": 0.02019731797828292,
+   "sr0": 0.1560028770316383,
+   "T": 507,
+   "n_trials": 2519,
+   "skew": 1.4260969992995305,
+   "kurtosis": 12.754295169399114,
+   "var_sr_used": 0.001976284584980237
+  },
+  "dsr_N_main": {
+   "dsr": 0.011507806878822666,
+   "sr": 0.02019731797828292,
+   "sr0": 0.11984773772049763,
+   "T": 507,
+   "n_trials": 162,
+   "skew": 1.4260969992995305,
+   "kurtosis": 12.754295169399114,
+   "var_sr_used": 0.001976284584980237
+  },
+  "dsr_N_all_V_noise": {
+   "dsr": 0.0009743929589536652,
+   "sr": 0.02019731797828292,
+   "sr0": 0.1560028770316383,
+   "T": 507,
+   "n_trials": 2519,
+   "skew": 1.4260969992995305,
+   "kurtosis": 12.754295169399114,
+   "var_sr_used": 0.001976284584980237
+  },
+  "pass": false
+ },
+ "main": {
+  "n": 507,
+  "markets": [
+   "xauusd"
+  ],
+  "PF_gross": 1.1007574443428765,
+  "PF": 1.0587727370364266,
+  "PF_stress": 1.0265650549336662,
+  "mean_R": 0.009368949675813714,
+  "mean_R_gross": 0.015740454779532665,
+  "mean_R_stress": 0.004327268830370712,
+  "mean_net_bp": 2.3071539492909223,
+  "mean_gross_bp": 3.469601533924467,
+  "t_trade": 0.4547761518951343,
+  "t_daily": 0.4547761518951343,
+  "n_days": 507,
+  "years_positive_frac": 0.4444444444444444,
+  "by_year_R": {
+   "2013": 4.80837440010298,
+   "2014": 1.775832412868005,
+   "2015": -2.114793511358473,
+   "2016": 1.3856507656675845,
+   "2017": -1.3321285331485895,
+   "2018": 3.4241447308105553,
+   "2019": -0.3535471497556263,
+   "2020": -2.3288956046776095,
+   "2021": -0.5145800248712744
+  },
+  "hold_tdays_max": 0,
+  "hold_h_mean": 20.696252465483234,
+  "exit_reasons": {
+   "time": 466,
+   "time_close": 28,
+   "stop": 13
+  },
+  "long_n": 226,
+  "long_R": 1.6379182759834414,
+  "short_n": 281,
+  "short_R": 3.11213920965411,
+  "by_market": {
+   "xauusd": {
+    "n": 507,
+    "sum_R": 4.750057485637552,
+    "mean_R": 0.009368949675813712
+   }
+  },
+  "markets_positive_frac": 1.0,
+  "max_market_share_of_profit": 0.9999999999999998
+ },
+ "sizing": {
+  "judged": false,
+  "note": "reported only: the charter's sizing bar is checked by the lead (risk plan)",
+  "by_market": {
+   "xauusd": {
+    "min_lot": 0.01,
+    "margin_eur": 2.2466317294608698,
+    "loss_at_median_stop_eur": 21.25976086956517
+   }
+  },
+  "min_lot_margin_eur": 2.2466317294608698,
+  "min_lot_loss_at_median_stop_eur": 21.25976086956517,
+  "min_lot_loss_pct_of_1000_eur": 2.125976086956517
+ },
+ "neighbours": {
+  "02_k1.0": {
+   "n": 735,
+   "PF": 1.0156841146329405,
+   "mean_R": 0.0025767117740088407
+  },
+  "03_k1.5": {
+   "n": 336,
+   "PF": 1.0536578977922773,
+   "mean_R": 0.008692367997365391
+  },
+  "04_w40": {
+   "n": 508,
+   "PF": 0.9328474436857812,
+   "mean_R": -0.011162906241982714
+  },
+  "05_w120": {
+   "n": 478,
+   "PF": 0.9602054314683078,
+   "mean_R": -0.006963700752808607
+  },
+  "06_stop1.0": {
+   "n": 507,
+   "PF": 1.0516417719618687,
+   "mean_R": 0.012427139478257885
+  },
+  "07_stop2.0": {
+   "n": 507,
+   "PF": 1.0493346389441738,
+   "mean_R": 0.005951369954088357
+  },
+  "08_h12": {
+   "n": 507,
+   "PF": 1.0487155791751726,
+   "mean_R": 0.004602295445562554
+  },
+  "09_h45": {
+   "n": 414,
+   "PF": 1.0356871262182736,
+   "mean_R": 0.007850540792691168
+  }
+ },
+ "every_signal": {
+  "n": 507,
+  "mean_R": 0.009368949675813714
+ },
+ "null": {
+  "real_mean_R": 0.009368949675813714,
+  "percentile": 76.55,
+  "n_draws": 2000,
+  "seed": 0,
+  "mode": "every",
+  "null_mean": -0.004147362772412257,
+  "null_sd": 0.019413753059498946
+ },
+ "counts": {
+  "xauusd": {
+   "signals": 510,
+   "stale": 0,
+   "no_bar": 1,
+   "open_at_end": 0,
+   "no_d20": 2,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 507
+  }
+ },
+ "rule": {
+  "exit": [
+   "clock",
+   "16:00",
+   "America/New_York"
+  ],
+  "stop": [
+   "d20",
+   1.5
+  ],
+  "target": null,
+  "delay_h": 0.0,
+  "mode": "one"
+ },
+ "ledger_line": "| 020 | 2026-11-18 | 020 Gold ETF off-exchange short-volume share (scout idea 6) | xauusd | FINRA GLD+IAU short volume 2012-10..2021; xauusd H1 2013-2021 (9 years) | 9 | fermee : echoue (t>=2.5, PF>=1.12, years>=60%, PF_stress>=1.04, neighbours_median_PF>=1.06, null>=97.5) | n 507, PF net 1.06, t 0.45, PF x1.5 1.03, years + 4/9, null 76.5 pct, corr -0.00, DSR 0.001 (N_all 2519) / 0.012 (N_main 162), sizing not judged (min lot: margin 2 EUR, loss at median stop 21.3 EUR) |",
+ "written_utc": "2026-11-18T01:24:35Z",
+ "extra": {
+  "shift_test": {
+   "base": {
+    "n": 507,
+    "PF": 1.0587727370364266,
+    "mean_R": 0.009368949675813714,
+    "PF_gross": 1.1007574443428765
+   },
+   "shifted": {
+    "n": 507,
+    "PF": 1.0419354895469146,
+    "mean_R": 0.00676409507364936,
+    "PF_gross": 1.081771908994963
+   },
+   "delay_extra_h": 1.0
+  },
+  "sides": {
+   "long": {
+    "n": 226,
+    "PF_gross": 1.0857266728553254,
+    "PF_net": 1.0445508753021255,
+    "PF_stress": 1.016767182989292,
+    "mean_R_gross": 0.013686715474723358,
+    "mean_R": 0.007247425999926732,
+    "t_net": 0.24320742276331522,
+    "mean_gross_bp": 2.4651082580036845
+   },
+   "short": {
+    "n": 281,
+    "PF_gross": 1.11333433307955,
+    "PF_net": 1.0706411019111095,
+    "PF_stress": 1.0346723451016586,
+    "mean_R_gross": 0.017392216640340154,
+    "mean_R": 0.011075228504107153,
+    "t_net": 0.3891693119369795,
+    "mean_gross_bp": 4.277485805661466
+   }
+  },
+  "entry_clock_ny": {
+   "Thu 19": 110,
+   "Wed 19": 101,
+   "Sun 18": 99,
+   "Tue 19": 96,
+   "Mon 19": 95,
+   "Sun 19": 4,
+   "Sun 20": 2
+  },
+  "neighbours_fig": {
+   "02_k1.0": {
+    "n": 735,
+    "PF_gross": 1.0552515330804666,
+    "PF": 1.0156841146329405,
+    "PF_stress": 0.9888495092314157,
+    "t": 0.15085906460288862
+   },
+   "03_k1.5": {
+    "n": 336,
+    "PF_gross": 1.094865963748462,
+    "PF": 1.0536578977922773,
+    "PF_stress": 1.0336510022270613,
+    "t": 0.357389837009736
+   },
+   "04_w40": {
+    "n": 508,
+    "PF_gross": 0.9702082112961202,
+    "PF": 0.9328474436857812,
+    "PF_stress": 0.9147327128699245,
+    "t": -0.5799289237911192
+   },
+   "05_w120": {
+    "n": 478,
+    "PF_gross": 0.9966447776875293,
+    "PF": 0.9602054314683078,
+    "PF_stress": 0.9393533365305317,
+    "t": -0.3162699710086414
+   },
+   "06_stop1.0": {
+    "n": 507,
+    "PF_gross": 1.1022200813907141,
+    "PF": 1.0516417719618687,
+    "PF_stress": 1.0317314751143285,
+    "t": 0.4080155135435434
+   },
+   "07_stop2.0": {
+    "n": 507,
+    "PF_gross": 1.0920763908855553,
+    "PF": 1.0493346389441738,
+    "PF_stress": 1.0292002668081057,
+    "t": 0.38069947651514596
+   },
+   "08_h12": {
+    "n": 507,
+    "PF_gross": 1.118902578086243,
+    "PF": 1.0487155791751726,
+    "PF_stress": 1.004920252803744,
+    "t": 0.3636980466794184
+   },
+   "09_h45": {
+    "n": 414,
+    "PF_gross": 1.0875248776686786,
+    "PF": 1.0356871262182736,
+    "PF_stress": 1.007357338682448,
+    "t": 0.26952784664110035
+   }
+  },
+  "counts": {
+   "xauusd": {
+    "signals": 510,
+    "stale": 0,
+    "no_bar": 1,
+    "open_at_end": 0,
+    "no_d20": 2,
+    "overlap_skipped": 0,
+    "same_bar_skipped": 0,
+    "taken": 507
+   }
+  },
+  "every_n": 507,
+  "every_mean_R": 0.009368949675813714
+ }
+}
