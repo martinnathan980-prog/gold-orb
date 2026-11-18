@@ -188,92 +188,97 @@
    "pourquoi": "Wikipédia a refusé nos téléchargements. À refaire plus lentement (voir À faire)."
   },
   {
+   "id": "robot",
+   "type": "robot",
+   "texte": "Le robot actuel (10 règles) est prêt. La démo n'est pas encore lancée : c'est la prochaine étape de ton côté, avec le guide déjà envoyé."
+  },
+  {
    "id": "a01",
    "type": "afaire",
    "ordre": 1,
-   "idee": "Résultats d'entreprises : suivre le sens du saut après la publication",
+   "idee": "Résultats d'entreprises : suivre le sens du saut pendant quelques jours",
    "famille": "Actions américaines",
-   "quand": "Jeudi 19 nov."
+   "quand": "Aujourd'hui"
   },
   {
    "id": "a02",
    "type": "afaire",
    "ordre": 2,
-   "idee": "Résultats d'entreprises : acheter quelques jours avant la publication",
+   "idee": "Résultats d'entreprises : acheter quelques jours avant la date attendue",
    "famille": "Actions américaines",
-   "quand": "Jeudi 19 nov."
+   "quand": "Aujourd'hui"
   },
   {
    "id": "a03",
    "type": "afaire",
    "ordre": 3,
-   "idee": "Résultats d'entreprises : le lendemain de la publication",
+   "idee": "Résultats d'entreprises : suivre le mouvement le jour même",
    "famille": "Actions américaines",
-   "quand": "Jeudi 19 nov."
+   "quand": "Aujourd'hui"
   },
   {
    "id": "a04",
    "type": "afaire",
    "ordre": 4,
-   "idee": "Suivre les grandes tendances sur plusieurs semaines (panier de marchés)",
+   "idee": "Suivre les grandes tendances sur plusieurs semaines (devises, or, indices)",
    "famille": "Tendance lente",
-   "quand": "Jeudi 19 nov."
+   "quand": "Aujourd'hui"
   },
   {
    "id": "a05",
    "type": "afaire",
    "ordre": 5,
-   "idee": "Cassures de prix sur le pétrole (la règle qui marche déjà sur l'or)",
-   "famille": "Nouveaux marchés",
-   "quand": "Jeudi 19 nov."
+   "idee": "Suivre les grandes tendances sur plusieurs semaines (actions américaines)",
+   "famille": "Tendance lente",
+   "quand": "Aujourd'hui"
   },
   {
    "id": "a06",
    "type": "afaire",
    "ordre": 6,
-   "idee": "Pétrole : suivre le mouvement après le rapport hebdomadaire sur les stocks américains",
+   "idee": "Cassures de prix sur le pétrole (la règle qui marche déjà sur l'or)",
    "famille": "Nouveaux marchés",
-   "quand": "Jeudi 19 nov."
+   "quand": "Aujourd'hui"
   },
   {
    "id": "a07",
    "type": "afaire",
    "ordre": 7,
-   "idee": "Week-end du Bitcoin, puis lundi, avec un historique long",
-   "famille": "Crypto",
-   "quand": "Jeudi 19 nov."
+   "idee": "Pétrole : suivre le mouvement après le rapport hebdomadaire sur les stocks américains",
+   "famille": "Nouveaux marchés",
+   "quand": "Aujourd'hui"
   },
   {
    "id": "a08",
    "type": "afaire",
    "ordre": 8,
-   "idee": "Bitcoin plus cher sur la bourse américaine qu'ailleurs",
+   "idee": "Week-end du Bitcoin, puis lundi, avec un historique long",
    "famille": "Crypto",
-   "quand": "Jeudi 19 nov."
+   "quand": "Aujourd'hui"
   },
   {
    "id": "a09",
    "type": "afaire",
    "ordre": 9,
-   "idee": "Résultats d'entreprises : effet sur les concurrents",
-   "famille": "Actions américaines",
-   "quand": "Ensuite"
+   "idee": "Bitcoin plus cher sur la bourse américaine qu'ailleurs",
+   "famille": "Crypto",
+   "quand": "Demain"
   },
   {
    "id": "a10",
    "type": "afaire",
    "ordre": 10,
-   "idee": "Achats agressifs absorbés sur les cryptos",
-   "famille": "Crypto",
-   "quand": "Ensuite"
+   "idee": "Résultats d'entreprises : effet sur les concurrents qui publient après",
+   "famille": "Actions américaines",
+   "quand": "Demain"
   },
   {
    "id": "a11",
    "type": "afaire",
    "ordre": 11,
-   "idee": "Cassures de prix sur l'argent et le Nikkei",
-   "famille": "Nouveaux marchés",
-   "quand": "Ensuite"
+   "idee": "Achats agressifs absorbés sur les cryptos",
+   "famille": "Crypto",
+   "quand": "Demain"
   },
   {
    "id": "a12",
@@ -333,41 +338,55 @@
    "id": "s03",
    "type": "stop",
    "ordre": 3,
-   "famille": "Météo, lune, pollution, tempêtes solaires",
-   "pourquoi": "Chances très faibles : mises de côté sans test."
+   "famille": "Les règles du robot recopiées telles quelles sur d'autres marchés (indices, devises, argent, Nikkei)",
+   "pourquoi": "Déjà fait avant : 126 essais, les deux meilleurs ont échoué à la vérification. Seul le pétrole n'avait pas pu être testé."
   },
   {
    "id": "s04",
    "type": "stop",
    "ordre": 4,
-   "famille": "Or en journée, indices américains en journée, DAX",
-   "pourquoi": "Déjà fouillés lors des recherches précédentes ; ce qui marchait est dans le robot."
+   "famille": "Actions américaines en journée (achat et vente le même jour)",
+   "pourquoi": "Déjà testé avant : petit gain avant frais, mais les frais sont cinq fois plus gros."
   },
   {
    "id": "s05",
    "type": "stop",
    "ordre": 5,
-   "famille": "Cryptos à très court terme",
-   "pourquoi": "118 variantes testées avant : rien de plus que les règles du robot."
+   "famille": "Météo, lune, pollution, tempêtes solaires",
+   "pourquoi": "Chances très faibles : mises de côté sans test."
   },
   {
    "id": "s06",
    "type": "stop",
    "ordre": 6,
-   "famille": "Jours d'annonces économiques, nuit, jours du calendrier",
-   "pourquoi": "Testés avant : rien de solide."
+   "famille": "Or en journée, indices américains en journée, DAX",
+   "pourquoi": "Déjà fouillés lors des recherches précédentes ; ce qui marchait est dans le robot."
   },
   {
    "id": "s07",
    "type": "stop",
    "ordre": 7,
-   "famille": "Devises majeures (tendance ou retournement à court terme)",
-   "pourquoi": "Testées avant et cette semaine : rien."
+   "famille": "Cryptos à très court terme",
+   "pourquoi": "118 variantes testées avant : rien de plus que les règles du robot."
   },
   {
    "id": "s08",
    "type": "stop",
    "ordre": 8,
+   "famille": "Jours d'annonces économiques, nuit, jours du calendrier",
+   "pourquoi": "Testés avant : rien de solide."
+  },
+  {
+   "id": "s09",
+   "type": "stop",
+   "ordre": 9,
+   "famille": "Devises majeures (tendance ou retournement à court terme)",
+   "pourquoi": "Testées avant et cette semaine : rien."
+  },
+  {
+   "id": "s10",
+   "type": "stop",
+   "ordre": 10,
    "famille": "Vendre de la volatilité, cibles de gain, mises variables",
    "pourquoi": "Testés avant : n'améliorent pas le robot."
   },
@@ -375,14 +394,9 @@
    "id": "jour",
    "type": "jour",
    "date": "2026-11-18",
-   "texte": "Aucune des idées testées cette semaine ne gagne de l'argent, et presque toutes ne gagnent rien avant même les frais. Ce type d'idées ne donne rien : je change de direction à partir de jeudi.",
-   "direction": "Trois nouvelles pistes : les résultats d'entreprises sur les actions américaines, les grandes tendances sur plusieurs semaines, et les règles qui marchent déjà dans le robot appliquées à de nouveaux marchés (pétrole, Nikkei).",
+   "texte": "Aucune des 17 idées testées cette semaine ne gagne de l'argent, et presque toutes ne gagnent rien avant même les frais. Ce type d'idées ne donne rien : je change de direction dès le lot d'aujourd'hui (résultats ce soir sur cette feuille).",
+   "direction": "Trois nouvelles pistes : les résultats d'entreprises sur les actions américaines, les grandes tendances sur plusieurs semaines, et le pétrole. Ce sont des terrains que les recherches précédentes n'avaient pas pu tester.",
    "rythme": "8 idées par jour, en un lot lancé chaque jour vers 13 h 30. Cette feuille est mise à jour juste après."
-  },
-  {
-   "id": "robot",
-   "type": "robot",
-   "texte": "Le robot actuel (10 règles) est prêt. La démo n'est pas encore lancée : c'est la prochaine étape de ton côté, avec le guide déjà envoyé."
   }
  ]
 }

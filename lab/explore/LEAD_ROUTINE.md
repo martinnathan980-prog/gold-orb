@@ -12,13 +12,18 @@ are the costly part; the idea agents are cheap.
 2. Choose 8 ideas: the plan of DIRECTION2.md first, then the open ideas of IDEAS.md, varying the families. Count the
    ideas already handled today (ledger lines with today's date): 8 a day in all.
 3. Bring the batch working copy to the pushed head (`git -C <scratchpad>/explore_wt checkout --detach <head>`, after
-   `git clean -fdq lab/explore`), then launch the batch: `Workflow({scriptPath: "<scratchpad>/wf/ideas2.js", args:
-   {ideas: [...]}})`. Each entry: `{num, slug, scout: k}` for a scout idea (row k of scout/ideas.md), or `{num, slug,
-   custom: "<the full brief: the row of DIRECTION2.md or of IDEAS.md>"}`; `note` adds a remark. If the script is gone
-   (the scratchpad was cleaned), copy it back from `lab/explore/lead/batch_ideas.js` (its paths name the scratchpad
-   folders: recreate the worktree with `git worktree add --detach <scratchpad>/explore_wt <head>`).
+   `git clean -fdq lab/explore`), then launch the batch: `Workflow({scriptPath: "<scratchpad>/wf/ideas3.js", args:
+   {ideas: [...], selftest: "<the self-test's last line>"}})`. Each entry: `{num, slug, custom: "<the full brief: the
+   row of DIRECTION2.md or of IDEAS.md, with its family, data, rule, why and power>"}`, or `{num, slug, scout: k}` for
+   a scout idea (row k of scout/ideas.md); `note` adds a remark. If the script is gone (the scratchpad was cleaned),
+   copy it back from `lab/explore/lead/batch_ideas.js` (its paths name the scratchpad folders: recreate the worktree
+   with `git worktree prune && git worktree add --detach <scratchpad>/explore_wt <head>`).
    The agents work in the worktree, use prepared bars in `~/explore_data/h1` (built from the lab's minute files by
-   `lab/explore/lead/build_h1_from_lab.py`, in sample only), never run git and never take a validation look.
+   `lab/explore/lead/build_h1_from_lab.py`, in sample only) and the earnings calendar in `~/explore_data/earnings`
+   (rebuilt by `lab/explore/scout/earnings_edgar.py build`), never run git and never take a validation look.
+   **Before choosing an idea, check it against the lab's own record** (CHARTER "Families the lab already closed",
+   `lab/results/r2/autopsy/breadth/summary.json` for the ten rules carried to other markets, `lab/results/r2/stocks`
+   for the opening rules on shares): on 2026-11-18 two ideas the lead was about to add had already failed there.
 4. When the batch reports: read each verdict; copy the idea folders into `lab/explore/ideas/`; for each judged idea
    `judge.ledger_add(<rows of trials.jsonl>, results["ledger_line"])` in idea order (0 configurations and a hand-written
    line for an idea closed before a run); set the statuses in IDEAS.md; commit; push.
