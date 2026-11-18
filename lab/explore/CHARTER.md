@@ -54,12 +54,12 @@ runs may work at the same time; an idea marked `en cours` usually belongs to a r
    system instructions give.
 
 ## Data you can fetch (checked from this environment on 2026-11-16)
-**Notice of 2026-11-18 01:40 UTC: Dukascopy (`datafeed.dukascopy.com`) resets every connection from the cloud since the
-evening of 17 November (too many downloads in one day). Until this notice is removed: probe it with ONE request; if it
-is refused, do not retry and do not start an idea that needs Dukascopy prices. Take an idea whose traded market is
-crypto (prices from Binance, which works: ideas 009, 010 and the crypto ideas of IDEAS.md), or close your run with
-`EN COURS : serveur de prix indisponible`. The lead runs the ideas that need FX, metal and index prices from the lab's
-own bars meanwhile.**
+**Notice of 2026-11-18 00:35 UTC: Dukascopy (`datafeed.dukascopy.com`) resets every connection from the cloud since the
+evening of 17 November (too many downloads in one day). Until this notice is removed: probe it ONCE
+(`PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/data.py prefetch eurusd --budget 60`); if it answers `error`,
+do not retry and do not start an idea whose traded market needs Dukascopy prices (column Prices = `duka` in
+IDEAS.md). Take an idea marked `crypto` (prices from Binance, which works), or close your run with
+`EN COURS : serveur de prix indisponible`. The lead runs the `duka` ideas from the lab's own bars meanwhile.**
 Cache folder: `~/explore_data` (outside the repository; it may survive between runs, or not).
 - **Dukascopy hourly candles (FX, metals, indices, oil, some crypto)**, works:
   `https://datafeed.dukascopy.com/datafeed/<SYMBOL>/<YYYY>/<MM>/BID_candles_hour_1.bi5` (and `ASK_...`), where
@@ -76,8 +76,37 @@ Cache folder: `~/explore_data` (outside the repository; it may survive between r
   `https://query1.finance.yahoo.com/v8/finance/chart/<TICKER>?period1=<unix>&period2=<unix>&interval=1d`.
 - **GDELT 2.0** (world news events and tone since 2015, 15-minute files), works: `https://data.gdeltproject.org/`.
 - Blocked or unreachable from here: CFTC (403), Stooq. If a source fails, say so in the ledger and move on.
-- First run that needs it: write a small, tested fetch helper `lab/explore/fetch.py` (cache, throttle, retries,
-  decoding, IS cut); later runs reuse and improve it.
+- More sources, each with tested code and the time its values are known: `lab/explore/scout/sources.md`
+  (CFTC positioning through Socrata, FINRA short volume, Treasury auctions, Wikipedia page views, Coinbase, Bitstamp
+  and Bitfinex candles, blockchain.info, Coin Metrics, CBOE indices, NOAA and more), with the list of what is blocked.
+- `lab/explore/fetch.py` is the first runs' helper; the kit's `data.py` replaces it.
+
+## The kit (`lab/explore/kit`): use it; do not rewrite fetch, backtest or statistics
+Built and attacked on 2026-11-17/18 (README.md in the folder; 78 self-tests). It holds the period lock, FP costs in
+the lab's conventions, an hourly simulator, every bar below, the random-entry null, the correlation with the ten, the
+deflated Sharpe and the guards against look-ahead.
+1. Check first: `PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py` must end `N/N checks passed`
+   (about 50 s). If it does not, run no idea and write the failure in the ledger.
+2. Write `ideas/NNN_slug/declared.json` from `kit/template/declared.template.json` (at most 11 configurations, the
+   publication lag of every external series), its sha256 in `declared.sha256`, commit and push. Copy
+   `kit/template/run_template.py` to the idea's `run.py`: it READS the declaration and never writes it. Run it with
+   `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=lab/explore python3 -B lab/explore/ideas/NNN_slug/run.py`.
+3. Data only through `kit.data`: `load_bars(fp_key)` (prepared hourly bars if a folder holds them, else a download),
+   `fred`, `yahoo_daily`, `binance_klines`, `binance_funding`, and `external(obs, values, known=..., min_lag=...)` for
+   any other source; join with `asof_join`. **`lab/explore/scout/sources.md` gives, for 29 other sources, tested fetch
+   code and WHEN each value is known (and what is blocked): read your source's section before declaring.**
+4. `build(data)` returns the WHOLE signal table (`known_at` UTC, `side`, optional `market`); a value computed from a
+   bar's close is known at the bar's END. `checks.truncation_test(build, data, cuts, row_len={every item: ...})` must
+   pass; simulate exactly `build(data)`; then the neighbours, `mode="every"`, `stats.null_test(..., n_draws=2000)`,
+   `judge.verdict(folder, main, neighbours, every, null, truncation=tr, n_configs=N)` (writes results.json and
+   trials.jsonl) and only then `judge.ledger_add(N, res["ledger_line"])`.
+5. `pass` and `pass, weak against selection` both mean A VERIFIER: your attack (rule 5), then `val_declared.json`
+   (frozen_rule, bars, attack, cut "2025-12-31"), `data.unlock_val(folder)`, the frozen main on 2022-2025 and
+   `judge.val_verdict(folder, trades, every)`, once.
+6. Sizing is reported, not judged (`res["sizing"]`, for the lead). Never edit the kit inside an idea run. If the kit
+   cannot express your rule (limit orders, trailing stops, two-legged pairs and exits on a condition until kit v2),
+   take another idea, or write the missing piece in the idea folder on top of `kit.costs` and `kit.data` and say so
+   in the ledger; a kit bug goes in the ledger for the lead.
 
 ## Costs (always on, always FP Markets Raw)
 `lab/r2/fp_costs.json` (spread in price units at a reference price, Raw commission folded in, slippage per side for
@@ -98,13 +127,30 @@ does not pass.
 - **Power first:** before declaring, count the signals of the main configuration from the signal data alone (no
   price, no return): if n >= 250 on one market, or the basket bars, cannot be reached in sample, close the idea as
   `donnees insuffisantes` without running it.
-- **Independence:** weekly correlation of the main configuration's R with the sum of the ten <= 0.30 (2014-2021).
+- **Independence:** weekly correlation of the main configuration's R with the sum of the ten <= 0.30 (2014-2021);
+  the bar is signed: a negative correlation passes (a rule that wins when the ten lose is what the user needs).
 - **Selection:** the search tests many ideas, so luck finds winners. Log every configuration in the idea's
   `trials.jsonl`, keep the running total in LEDGER.md, and report the deflated Sharpe ratio (Bailey and Lopez de
   Prado) of the main configuration given the total number of configurations ever tested (about 2,500 before this
-  search, plus every configuration of this search). A pass with a deflated probability below 0.95 is reported as
-  "pass, weak against selection", never as a find.
+  search, plus every configuration of this search). A pass with a deflated probability below 0.95 is labelled
+  "pass, weak against selection".
+  **Amendment of 2026-11-18 (written by the lead before any idea of this search passed in sample; one idea had been
+  judged, 005, failed on t 0.82): the label is carried to the ledger and to the final message, but it is not a gate.
+  A weak pass gets its attack and its single VAL look like a pass.** Reason: measured in sample on the ten rules the
+  robot trades, nine of the ten have a deflated probability below 0.95 under the lab's 2,500 configurations (their t
+  is 2.7 to 3.9; only one reaches 4.8), so as a gate it would refuse every edge of the size this lab has ever found.
+  What controls luck instead: the main configuration is declared and hashed before any result; the in-sample bars
+  (t >= 2.5 and the null >= 97.5th percentile: none of 200 pure-noise rules passes them with costs, about 1 in 400
+  without, in the kit's tests); the independent attack; the single look at four untouched years; the lead's own
+  verification, with the number of VAL looks this search has taken in view; the 2026 holdout, which stays closed.
 - VAL (rule 5): PF >= 1.06, expectancy > 0, every-signal expectancy > 0, positive in at least 3 of the 4 years.
+- **Rulings of the lead (2026-11-18):** (a) a hedged pair (two legs of equal notional) is ONE synthetic market, and
+  several pairs form a basket of pairs: the basket bars are read across pairs, never across the two legs of a hedge;
+  (b) crypto signals and in-sample trade prices may come from the dollar venues Bitstamp, Bitfinex or Coinbase before
+  Binance's 2017-08 start (scout/sources.md): the declaration names the venue that prices the trades, costs stay FP's;
+  (c) a source that exists only as one file of its whole history may be read with a streamed download stopped at the
+  first row past 2021 (a read-ahead of a few kilobytes, discarded unparsed, is accepted); (d) costs of the FX pairs
+  and silver follow the lab's forward-looking model (today's cost in basis points of price), as for every market.
 
 ## What a run does
 1. The repository is checked out on branch `lab`; `git pull --ff-only`, then check you can push
@@ -114,13 +160,14 @@ does not pass.
    commit under its folder, `git log -1 --format=%cI -- lab/explore/ideas/<NNN>_*`, is more than 3 hours old), else
    the first `ouverte` one in IDEAS.md that is not of the last ledger line's family, or a better new idea of your own
    (add it to IDEAS.md first, with its mechanism and why it is worth a run). Check in LEDGER.md and the closed
-   families below that it was not tried. **Claim it at once:** set its status to `en cours (AAAA-MM-JJ HH:MM UTC)`
+   families below that it was not tried. Never take an idea marked `reservee (lead)`: the lead runs it. **Claim it at once:** set its status to `en cours (AAAA-MM-JJ HH:MM UTC)`
    in IDEAS.md, commit and push; if the push is refused, `git pull --rebase origin lab` and check that no other run
    claimed it meanwhile (else choose another). Two runs may overlap: never work on an idea another run holds.
 3. Check that its data exists and covers enough in-sample history (at least 4 years; say how many). If not, close it
    as `donnees insuffisantes` and take the next one (at most two such skips per run).
 4. Declare (rule 4), fetch, build, run the IS test, the neighbours, costs x1.5, the null, the correlation, the
-   deflated Sharpe. Keep code in the idea folder (`run.py` and helpers) so the result can be re-run.
+   deflated Sharpe, all with the kit (section "The kit"). Keep code in the idea folder (`run.py` and helpers) so the
+   result can be re-run.
 5. If it passes: attack it (rule 5), then, if it survives, the single VAL look.
 6. Write `results.json` in the idea folder and one line in LEDGER.md (number, date, idea, markets, data, configurations,
    verdict, the key figures: n, PF net, t, PF at x1.5, years positive, null percentile, correlation, deflated
@@ -131,6 +178,7 @@ does not pass.
    - `EN COURS : idee NNN (<titre>) : <ou on en est>`
    - `TROUVE : idee NNN (<titre>) passe en echantillon et a la validation : <chiffres>`
    - `A VERIFIER : idee NNN (<titre>) passe en echantillon, validation a faire : <chiffres>`
+   (a weak pass is also `A VERIFIER` or `TROUVE`, with the words `faible face a la selection` in the next line)
    Then at most three short lines. No jargon in the first line.
 
 ## The ten rules of the robot (do not redo, and be independent of them)

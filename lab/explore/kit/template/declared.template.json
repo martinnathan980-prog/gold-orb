@@ -1,0 +1,33 @@
+{
+  "idea": "NNN Short title",
+  "date_declared": "AAAA-MM-JJ",
+  "family": "one word (news, macro, positioning, volume, calendar, crypto-flow, ...): never the family of the last ledger line",
+  "hypothesis": "What predicts what, in one or two sentences.",
+  "mechanism": "Why it should hold (who is forced to trade, who is late), and why it is not one of the closed families.",
+  "data": {
+    "signal": "source, URL pattern, exact field; the KNOWN-AT rule of every external value (e.g. FRED daily: observation date + 1 business day 13:00 UTC)",
+    "publication_lag": "the declared min_lag of every external series (data.external / data.fred min_lag), and for FRED non-daily series: revised values used (revised_ok) or why not",
+    "prices": "kit.data.load_bars(<fp key>) = Dukascopy H1 BID (Binance 1h for btcusd/ethusd), FP crypto weekend removed",
+    "in_sample_years": "first year .. 2021 (>= 4 years); power check: n signals counted from the signal data alone = ...",
+    "nothing_after": "2021-12-31"
+  },
+  "markets": ["us500"],
+  "rule_main": {
+    "signal": "exact formula, with the time each signal is known (a value from a bar's close is known at the bar's end)",
+    "side": "+1 / -1 rule",
+    "entry": "open of the first H1 bar opening at or after known_at (+ delay_h)",
+    "exit": ["hours", 24],
+    "stop": ["d20", 1.5],
+    "target": null,
+    "overlap": "one position per market (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+  },
+  "configurations": [
+    {"id": "01_main", "exit": ["hours", 24], "stop": ["d20", 1.5]},
+    {"id": "02_h12", "exit": ["hours", 12], "stop": ["d20", 1.5]},
+    {"id": "03_h48", "exit": ["hours", 48], "stop": ["d20", 1.5]}
+  ],
+  "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw): gross, net, spread and slippage x1.5",
+  "bars": "CHARTER.md 'The bars' on 01_main, computed by kit.judge.verdict (one market or basket; small-basket amendment applies); random-entry null 2000 draws; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported)",
+  "split": "IS only (to 2021-12-31). VAL only per charter rule 5 (val_declared.json, then kit.data.unlock_val).",
+  "kit": "lab/explore/kit (state the kit files' sha256 or the commit if you change the kit)"
+}

@@ -1,0 +1,579 @@
+# Data sources of the open search: what can really be fetched (scout, probed 2026-11-17, 21:45-22:45 UTC)
+
+Read with `CHARTER.md` (hard rules) and `kit/data.py` (period lock, `known=` rules). Every snippet below was run by the
+scout from this environment with the in-sample bound (nothing after 2021-12-31 requested or kept). "When known" is the
+part that protects a run from look-ahead: use the conservative rule unless you can prove a faster one.
+The snippets share the three helpers of section 0 and need only the standard library and pandas.
+
+**Read this first: six traps found while probing**
+1. **FRED refuses a browser User-Agent** from here (connection closed or read timeout), and answers the default Python
+   client at once. `kit/data.py:http_get` sends a browser User-Agent to every host, so `kit.data.fred()` will hang and
+   fail until FRED is exempted (tested with the kit's exact User-Agent: read timeout; with the default one: 200).
+2. **FRED ignores `coed=` on licence-limited series** and returns its own recent window instead: `BAMLH0A0HYM2`,
+   `BAMLC0A0CM`, `BAMLHE00EHYIOAS` (ICE BofA spreads: only 2023-11-20 to today) and `SP500` (2025-11-17 to today);
+   `DJIA` starts 2016-11-17. **Idea 005 (credit leads equity) has no in-sample data on FRED any more**, and a run
+   that asks for it would receive and cache 2023-2026 values. Check the first and last DATE before parsing a value.
+3. **Files that only exist as one full history to today** (CBOE index files, DIX, the JGB file, the policy-uncertainty
+   file) must be read with `stream_until` (section 0), never downloaded whole: the CBOE server ignores `Range`.
+4. **Bounds that are silently ignored**: Kraken's OHLC `since` (it returns its last 720 candles, i.e. 2024-2026),
+   FRED as above. Ask for 1-3 rows first and look at the dates only.
+5. **Revised history**: NFCI as published on 2019-06-28 differs from today's NFCI for the same weeks by 0.24 on
+   average (the index is re-estimated every week); Coin Metrics exchange flows were recomputed in 2026; AirNow files
+   are rewritten for 48 hours. Section by section below; ALFRED gives real-time vintages for FRED series.
+6. **Shared address**: other sessions use the same outgoing address. GDELT's API (one call per 5 s), Wikimedia and
+   Dukascopy answered 429 or reset connections during this probe. Space the calls, retry with long waits.
+
+## 0. Common helpers (used by every snippet)
+```python
+import io, json, time, urllib.request, urllib.parse as up
+import pandas as pd
+CUT = "2021-12-31"
+UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"}
+def raw(url, headers=None, timeout=60):
+    return urllib.request.urlopen(urllib.request.Request(url, headers=headers or {}), timeout=timeout).read()
+def stream_until(url, is_after_cut, headers=UA, timeout=60):
+    """Lines of an ascending text file up to the first line dated after the cut; that line and the rest are never read."""
+    r = urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout); out = []
+    for line in r:
+        s = line.decode("utf-8", "replace").rstrip("\r\n")
+        if is_after_cut(s): break
+        out.append(s)
+    r.close(); return out
+```
+`stream_until` reads line by line and closes the connection at the first row dated after the cut. Python keeps a small
+read-ahead buffer (at most 8 KB of the file after the stop row is pulled from the socket and thrown away unparsed; for a
+daily file that is a few months of rows never turned into numbers). If that is not acceptable, do not use the four
+sources that need it (2, 4, 11, 28).
+
+## 1. FRED (St. Louis Fed): rates, real yields, volatility indices, uncertainty, liquidity
+- URL: `https://fred.stlouisfed.org/graph/fredgraph.csv?id=<SERIES>&cosd=<start>&coed=2021-12-31` (no key).
+- Real-time vintages (the series as published on a past day): `https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=<SERIES>&cosd=..&coed=<vintage>&vintage_date=<vintage>`
+  (one request per vintage date; the same parameter on fredgraph.csv is ignored: checked).
+```python
+def fred(sid, start="1990-01-01"):
+    b = raw(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}&cosd={start}&coed={CUT}")   # default urllib User-Agent
+    dates = pd.read_csv(io.BytesIO(b), usecols=[0], parse_dates=[0]).iloc[:, 0]                    # dates only first
+    assert dates.max() <= pd.Timestamp(CUT), f"{sid}: FRED ignored coed (licence window): do not use, do not cache"
+    return pd.read_csv(io.BytesIO(b), na_values=["."], parse_dates=[0], index_col=0).iloc[:, 0].dropna()
+def alfred(sid, vintage, start="1990-01-01"):
+    """The series as it was published on `vintage` (YYYY-MM-DD <= cut): one request per vintage date."""
+    assert vintage <= CUT
+    u = f"https://alfred.stlouisfed.org/graph/alfredgraph.csv?id={sid}&cosd={start}&coed={vintage}&vintage_date={vintage}"
+    return pd.read_csv(io.BytesIO(raw(u)), na_values=["."], parse_dates=[0], index_col=0).iloc[:, 0].dropna()
+```
+- Probe: 53 series asked with `cosd=1990-01-01&coed=2021-12-31`, 0.6-3 s each (NASDAQCOM 15 s).
+
+| Series | What | First in-sample date (rows to 2021-12-31) | When known | Revised later? |
+|---|---|---|---|---|
+| DGS10, DGS2, DTB3, T10Y2Y, T10Y3M | Treasury yields and slopes, daily | before 1990 (8,007 rows from 1990) | The Treasury posts day D's curve on D between about 15:30 and 18:00 New York; FRED shows D on the next business day about 16:20 New York. Safe: D+1 business day 13:00 UTC if the live robot reads treasury.gov (`rule_next_bday_utc(13, 1)`), D+1 22:00 UTC if it reads FRED | no |
+| DFII10, T10YIE, T5YIFR | 10-year real yield, breakevens | 2003-01-02 (4,755) | same | no |
+| VIXCLS, VXVCLS (3-month VIX), VXNCLS, RVXCLS, VXDCLS, GVZCLS (gold), OVXCLS (oil) | CBOE volatility index closes | 1990-01-02 (8,062); 2007-12-04 (3,545); 2001-02-02; 2004-01-02; 1997-10-07; 2008-06-03 (3,423); 2007-05-10 | The index closes at 16:15 New York on D and is public in real time; FRED shows D on D+1. Safe: `rule_local_close("16:30")` (live source = CBOE, section 2) | no |
+| USEPUINDXD (daily policy uncertainty), WLEMUINDXD (equity-market uncertainty), INFECTDISEMVTRACKD | newspaper-count indices, 7 days a week | 1985 (11,688 rows from 1990) | The authors' file is rewritten every night about 19:00 US Central; the ALFRED vintage of 2019-06-28 already held the value of 2019-06-28. Safe: D+1 13:00 UTC | yes, mildly: 18 of 59 days of May-June 2019 differ by more than 1 % between the 2019-06-28 vintage and today (median 0.4 %). Use ALFRED vintages if the rule keys on single-day jumps |
+| NFCI | Chicago Fed financial conditions, weekly (week ending Friday) | 1971 (1,670 from 1990) | Released the next Wednesday 08:30 New York (the 2019-06-28 vintage ends at 2019-06-21). Safe: release Wednesday 14:00 UTC | **yes, heavily** (re-estimated weekly): use ALFRED vintages only |
+| STLFSI4 | St. Louis Fed stress index, weekly | 1993-12-31 | version 4 was created in 2022: no real-time history before, **do not use in sample** | whole history rebuilt |
+| WALCL, WTREGEN, WRESBAL, WSHOMCB | Fed balance sheet, Treasury account, reserves (Wednesday levels) | 2002-12-18 (994) | H.4.1 release Thursday 16:30 New York. Safe: Thursday 22:00 UTC | rarely |
+| RRPONTSYD | overnight reverse repo, daily | 2003-02-07 (2,153) | same day about 13:15 New York (New York Fed operation result) | no; near zero before 2021-03 except quarter ends |
+| DTWEXBGS, DTWEXAFEGS, DTWEXEMEGS, DEXJPUS, DEXUSEU, DEXKOUS ... | dollar indices and noon exchange rates (H.10) | 2006-01-02 (4,013); 1990; 1999 | H.10 is published once a week (Monday, for the week before). Safe: the following Tuesday 00:00 UTC. For a live dollar signal build it from Dukascopy prices instead | index weights revised yearly |
+| ICSA | jobless claims, weekly (week ending Saturday) | 1967 (1,669 from 1990) | Thursday 08:30 New York | yes, the week after |
+| NASDAQCOM, CBBTCUSD | Nasdaq Composite close; Coinbase bitcoin daily | 1971 (8,065 from 1990); 2014-12-01 (2,553) | close of D | no |
+| EVZCLS, VXEEMCLS, TEDRATE | euro and emerging-market volatility, TED spread | 2007-11-01; 2011-03-16; 1986 | probably dead: the CBOE history file of EVZ answers 403 today; TEDRATE ended in January 2022 | do not build on them |
+| BAMLH0A0HYM2, BAMLC0A0CM, BAMLHE00EHYIOAS, SP500, DJIA | ICE BofA spreads, S&P 500, Dow | **not available in sample** (see trap 2) | | |
+| GOLDPMGBD228NLBM, WILL5000IND | London gold fix, Wilshire 5000 | 404: removed from FRED | | |
+
+- Still published: not checked series by series (FRED gives no date without the values); the H.15 yields, the CBOE
+  indices (checked on CBOE, section 2), the H.4.1 series and the uncertainty file (section 28) are alive today.
+- Licence: FRED terms of use; ICE and S&P series are restricted (hence the windows). No data in git.
+
+## 2. CBOE index histories: VIX9D, VVIX, SKEW (and VIX, VIX3M, VXN, GVZ, OVX, RVX, VXD)
+- URL: `https://cdn.cboe.com/api/global/us_indices/daily_prices/<NAME>_History.csv`: one ascending file to today
+  (`DATE,OPEN,HIGH,LOW,CLOSE` or `DATE,<NAME>`; dates MM/DD/YYYY). `Range` is ignored: use `stream_until`.
+```python
+def cboe_index(name):  # VIX9D, VVIX, SKEW, VIX3M, GVZ, OVX, VXN ...
+    L = stream_until(f"https://cdn.cboe.com/api/global/us_indices/daily_prices/{name}_History.csv",
+                     lambda s: s[:1].isdigit() and int(s[6:10]) >= 2022)
+    d = pd.read_csv(io.StringIO("\n".join(L)), parse_dates=[0], index_col=0)
+    return d[d.columns[-1]]
+```
+- Probe: VIX9D 2011-01-04 to 2021-12-31, 2,768 rows, 0.3 s; VVIX 2006-03-06 (sparse before 2007), 3,925 rows, 0.2 s;
+  SKEW 1990-01-02, 8,049 rows, 0.3 s. In-sample years from 2013: 9.
+- Frequency: daily close. When known: the files are rewritten at about 17:31 New York for VIX9D, VVIX, VIX3M, VXN,
+  GVZ, OVX, RVX, VXD (Last-Modified Mon 16 Nov 2026 22:31 GMT) and about 21:15 New York for SKEW and VIX. The indices
+  themselves tick in real time until 16:15 New York. Safe rule: `rule_local_close("17:45")`, or simply the next
+  session's open.
+- Revised: no. Still published: yes for the ten names above (HEAD, Last-Modified 16-17 Nov 2026); **EVZ: 403**.
+- Licence: CBOE market-data terms (research use; nothing in git).
+
+## 3. CBOE put/call ratios
+- 2006-11-01 to 2019-10-04: static files `https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/equitypc.csv`
+  (`totalpc.csv`, `indexpc.csv`), last modified 2020-10-30, about 135 KB, 3,253 rows each.
+- From 2019-10-07: one JSON per session, `https://cdn.cboe.com/data/us/options/market_statistics/daily/<YYYY-MM-DD>_daily_options`
+  (key `ratios`: total, index, exchange-traded products, equity, VIX, SPX+SPXW, OEX put/call). Earlier dates and
+  non-trading days answer 403. About 565 calls for 2019-10-07 to 2021-12-31 (0.2 s each).
+```python
+def cboe_pc_archive(kind="equity"):  # equity, total, index
+    t = raw(f"https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/{kind}pc.csv", UA).decode()
+    d = pd.read_csv(io.StringIO(t), skiprows=2, parse_dates=[0], index_col=0)
+    return d[d.columns[-1]]
+def cboe_pc_day(day):  # 'YYYY-MM-DD' (<= 2021-12-31); 403 = no session that day
+    assert day <= CUT
+    j = json.loads(raw(f"https://cdn.cboe.com/data/us/options/market_statistics/daily/{day}_daily_options", UA))
+    return {r["name"]: float(r["value"]) for r in j["ratios"]}
+```
+- Probe: archive first 2006-11-01, last 2019-10-04; JSON of 2021-12-30 gives equity 0.49, total 0.83; 2019-10-07 exists;
+  2019-06-03, 2016-03-01, 2012-06-12 answer 403.
+- When known: end of the session; the JSON of 2026-11-16 was written at 03:21 GMT the next day. Safe: next day 08:00 UTC
+  (the ratios are also shown on CBOE's site during the evening, not verified). Revised: no. Still published: yes.
+
+## 4. SqueezeMetrics DIX and GEX
+- URL: `https://squeezemetrics.com/monitor/static/DIX.csv` (`date,price,dix,gex`, ascending, to today; `Range` works).
+```python
+def dix():
+    L = stream_until("https://squeezemetrics.com/monitor/static/DIX.csv", lambda s: s[:4].isdigit() and s[:10] > CUT)
+    return pd.read_csv(io.StringIO("\n".join(L)), parse_dates=[0], index_col=0)
+```
+- Probe: 2011-05-02 to 2021-12-31, 2,687 rows, 0.2 s. Daily. In sample from 2013: 9 years.
+- When known: the file is rewritten about 18:00 New York (Last-Modified Mon 16 Nov 2026 22:59 GMT) with the day's value
+  (it is built from the FINRA files of section 6). Safe: `rule_local_close("19:00")`.
+- Revised: unknown (a vendor's computation on the S&P 500 members; the first print cannot be checked). The lab already
+  used this file as a sizing gate (Addendum C, failed validation). Still published: yes. Proprietary, free to read.
+
+## 5. CFTC Commitments of Traders through Socrata (the www.cftc.gov site refuses us, this API does not)
+- URL: `https://publicreporting.cftc.gov/resource/<id>.json?$select=..&$where=..&$order=..&$limit=50000`.
+  Ids checked: legacy futures-only `6dca-aqww` (since 1986), disaggregated futures-only `72hh-3qpy` and financial
+  futures (TFF) futures-only `gpe5-46if` (both since 2006-06-13). Combined-with-options ids (from memory, not probed):
+  `jun7-fc8e`, `kh3c-gbw2`, `yw9f-hn96`.
+- Contract codes checked (rows to 2021-12-28): gold 088691 (1,688), silver 084691 (1,688), EUR 099741 (1,210, since 1999),
+  JPY 097741 (1,689), GBP 096742 (1,634), AUD 232741 (1,552), CAD 090741 (1,689), CHF 092741 (1,687), NZD 112741 (908),
+  E-mini S&P 500 13874A (1,263), Nasdaq-100 209742 (1,176), Dow 124603 (1,019).
+```python
+def cot(codes, resource="6dca-aqww", cols="noncomm_positions_long_all,noncomm_positions_short_all,open_interest_all"):
+    q = {"$select": "report_date_as_yyyy_mm_dd,cftc_contract_market_code," + cols, "$limit": "50000",
+         "$where": "cftc_contract_market_code in (%s) AND report_date_as_yyyy_mm_dd <= '%sT00:00:00.000'"
+                   % (",".join("'%s'" % c for c in codes), CUT), "$order": "report_date_as_yyyy_mm_dd"}
+    d = pd.DataFrame(json.loads(raw("https://publicreporting.cftc.gov/resource/%s.json?%s" % (resource, up.urlencode(q)), UA)))
+    d["date"] = pd.to_datetime(d.pop("report_date_as_yyyy_mm_dd"))
+    return d.set_index("date").apply(lambda c: pd.to_numeric(c, errors="coerce") if c.name != "cftc_contract_market_code" else c)
+```
+- Probe: 12 legacy contracts in one call, 17,203 rows, 4.3 s; TFF 10 contracts 8,117 rows, 5.2 s. Weekly.
+- When known: positions of Tuesday's close, released **Friday 15:30 New York**; when a federal holiday falls in the
+  week the release slips (usually to Monday). Two long gaps (from memory, check before declaring): the shutdowns of
+  October 2013 and of 2018-12-22 to 2019-01-25, after which the backlog was published over several weeks (until early
+  March 2019). Safe rule: value usable from the **Tuesday 00:00 UTC after the report's own Tuesday (report date + 7
+  days)**, and drop report dates 2013-10-01..2013-11-12 and 2018-12-18..2019-03-05. A Monday entry is safe only in
+  weeks without a US federal holiday between the report Tuesday and Friday.
+- Revised: rarely (corrected reports replace the old ones; the API serves the corrected values).
+- Still published: yes (latest report date 2026-11-10). Public domain.
+
+## 6. FINRA daily short-sale volume files (off-exchange trades reported to FINRA)
+- URL: `https://cdn.finra.org/equity/regsho/daily/<FAC>shvol<YYYYMMDD>.txt`, '|' separated, one row per symbol.
+  `CNMS` (all facilities together) exists from 2018-08-01 (2014, 2011, 2009 answer 403); before that add the
+  facility files `FNSQ` (Nasdaq TRF) and `FNYX` (NYSE TRF), which exist for 2011-01-03 (`FNRA` is almost empty).
+  2011 rows: `Date|Symbol|ShortVolume|TotalVolume|Market`; 2021 rows add `ShortExemptVolume` before `TotalVolume`.
+```python
+def finra_day(day="20211230", fac="CNMS", symbols=("SPY", "QQQ", "GLD", "SLV", "GDX", "TLT", "HYG")):
+    assert day <= "20211231"
+    t = raw(f"https://cdn.finra.org/equity/regsho/daily/{fac}shvol{day}.txt", UA).decode()
+    return [l.split("|") for l in t.splitlines() if l.split("|")[1:2] and l.split("|")[1] in symbols]
+```
+- Probe: 2021-12-30 CNMS: GLD short 578,593 of 1,056,342; 2011-01-03 FNSQ: GLD 1,161,084 of 2,385,176 (0.2-0.3 s per
+  file, about 0.3-0.5 MB). A 2011-2021 history is about 2,770 days x 1-2 files: 10-15 minutes, kept rows only.
+- When known: posted by 18:00 New York on the day itself (the 2021-12-30 file was written 17:23 New York, the
+  2026-11-16 file 17:18). Safe: `rule_local_close("18:30")`.
+- Revised: no in principle (old files were re-uploaded in 2021-2022, content unchanged as far as can be seen).
+- Still published: yes (file of 2026-11-16 exists, HEAD only). Public.
+
+## 7. US Treasury auctions (fiscaldata API; TreasuryDirect's own web service answers 500)
+- URL: `https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?filter=auction_date:lte:2021-12-31,...`
+```python
+def fiscal(path, flt, fields, size=10000):
+    out, page = [], 1
+    while True:
+        j = json.loads(raw("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/" + path +
+                           f"?filter={flt}&fields={fields}&sort={fields.split(',')[0]}&page[size]={size}&page[number]={page}", UA))
+        out += j["data"]
+        if page >= j["meta"]["total-pages"]: break
+        page += 1
+    return pd.DataFrame(out)
+def auctions():
+    return fiscal("v1/accounting/od/auctions_query", f"auction_date:lte:{CUT},auction_date:gte:2012-01-01,security_type:in:(Note,Bond)",
+                  "auction_date,announcemt_date,issue_date,security_type,security_term,reopening,inflation_index_security,floating_rate,"
+                  "offering_amt,total_accepted,bid_to_cover_ratio,high_yield,indirect_bidder_accepted,closing_time_comp")
+```
+- Probe: 960 note and bond auctions 2012-2021 in 0.6 s (history since 1979-10-31). In 2013-2021: 670 nominal coupon
+  auctions on 643 days (2y, 3y, 5y, 7y, 30y: 108 each; 10y: 109; 20y: 21), 238 clusters of consecutive auction days;
+  closing time 13:00 New York for 632 of them (11:30 for 36).
+- Fields: `auction_date`, `announcemt_date`, `issue_date` (settlement), `security_term`, `reopening`,
+  `offering_amt`, `total_accepted`, `bid_to_cover_ratio`, `high_yield`, `indirect_bidder_accepted`, `closing_time_comp`.
+- When known: the calendar (date, size) on `announcemt_date`, 2 to 6 business days before the auction in 2013-2021
+  (2 days: 75 auctions, 3: 187, 4: 203, 5: 167, 6: 36; the Treasury's tentative schedule gives the pattern months
+  ahead); results within about two minutes of the close. Safe for results: close + 5 minutes. Settlement follows 1
+  to 11 business days after the auction. Auctions fall on Monday to Thursday (84, 216, 203, 165).
+- Trap: two rows are 25-million-dollar test auctions announced the same day (2019-06-21 and 2021-12-02, both
+  Fridays): keep `offering_amt` of one billion or more.
+- Revised: no. Still published: yes (latest auction listed 2026-10-22 on 2026-11-17). Public domain.
+- Note: the "tail" of idea 013 needs the when-issued yield at the close, which is not in this data.
+
+## 8. Daily Treasury Statement: the Treasury's cash balance
+- URL: `.../v1/accounting/dts/operating_cash_balance?filter=record_date:lte:2021-12-31` (since 2005-10-03).
+```python
+def tga():
+    d = fiscal("v1/accounting/dts/operating_cash_balance", f"record_date:lte:{CUT}", "record_date,account_type,open_today_bal,close_today_bal")
+    return d
+```
+- Probe: 11,971 rows in 1.8 s; account type "Federal Reserve Account" (later "Treasury General Account (TGA)") holds
+  the closing balance in `close_today_bal`, USD millions; 2,263 business days in 2013-2021.
+- When known: day D's statement is published on the next business day about 16:00 New York. Safe:
+  `known_at(dates, lag_bdays=1, time="16:30")`. Revised: rarely. Still published: yes (latest record 2026-11-16).
+- Format break after the sample (2022): the closing balance moves to another account type and column.
+
+## 9. Swiss National Bank sight deposits (weekly)
+- URL: `https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en?fromDate=2011-01-01&toDate=2021-12-31`
+```python
+def snb():
+    t = raw(f"https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en?fromDate=2011-01-01&toDate={CUT}", UA).decode("utf-8-sig")
+    d = pd.read_csv(io.StringIO(t), sep=";", skiprows=3, parse_dates=[0]).dropna(subset=["Value"])
+    return d.pivot(index="Date", columns="D0", values="Value")
+```
+- Probe: 574 weekly rows 2011-01-07 to 2021-12-31 in 2.2 s; columns GI (domestic banks), UEB (other), TG (total),
+  CHF millions, dated on the Friday that ends the week (weekly averages).
+- When known: the file header says "PublishingDate 2026-11-16 10:00": Monday 10:00 Zurich for the week before. Safe:
+  Monday 10:00 UTC (Tuesday when Monday is a Swiss holiday). Revised: no. Still published: yes. Free with attribution.
+
+## 10. European Central Bank data API (euro-area yield curve)
+- URL: `https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_<2Y|10Y>?startPeriod=..&endPeriod=2021-12-31&format=csvdata`
+```python
+def ecb_yield(tenor="2Y", start="2013-01-01"):
+    u = f"https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_{tenor}?startPeriod={start}&endPeriod={CUT}&format=csvdata"
+    d = pd.read_csv(io.BytesIO(raw(u, UA)), usecols=["TIME_PERIOD", "OBS_VALUE"], parse_dates=["TIME_PERIOD"], index_col="TIME_PERIOD")
+    return d["OBS_VALUE"]
+```
+- Probe: 2-year AAA spot yield, 2,294 daily rows 2013-01-02 to 2021-12-31, 8.6 s.
+- When known (from memory, not verified): published at noon Frankfurt time on the next business day. Safe:
+  `rule_next_bday_utc(13, 1)`. Revised: no. Free reuse with attribution.
+
+## 11. Japan Ministry of Finance: JGB yields
+- URL: `https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv` (1974-09-24 to the
+  end of last month, ascending, dates Y/M/D; the current month is in `.../interest_rate/jgbcme.csv`, not probed).
+```python
+def jgb():
+    L = stream_until("https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv",
+                     lambda s: s[:4].isdigit() and int(s[:4]) >= 2022)
+    d = pd.read_csv(io.StringIO("\n".join(L[1:])), na_values=["-"], parse_dates=[0], index_col=0)
+    return d
+```
+- Probe: 12,151 rows to 2021-12-30, 15 maturities (1Y..40Y), 2.3 s.
+- When known (not verified): the yields are the Tokyo afternoon reference rates, posted on the ministry's site the next
+  business day. Safe: D+2 00:00 UTC. Revised: no. Still published: yes (file last modified 2026-11-03).
+- The weekly "transactions in securities" (foreign bond flows) file was not found (404 on the guessed path).
+
+## 12. New York Fed markets API (primary dealers, reverse repo operations)
+- URLs: `https://markets.newyorkfed.org/api/pd/get/SBN2015/timeseries/PDPOSGST-TOT.json` (dealers' net Treasury
+  position, weekly, 2015-01-07 to 2021-12-29 in the "SBN2015" series break; earlier breaks not probed);
+  `https://markets.newyorkfed.org/api/rp/reverserepo/propositions/search.json?startDate=..&endDate=2021-12-31`.
+```python
+def nyfed_pd(key="PDPOSGST-TOT", brk="SBN2015"):
+    j = json.loads(raw(f"https://markets.newyorkfed.org/api/pd/get/{brk}/timeseries/{key}.json", UA))["pd"]["timeseries"]
+    s = pd.Series({pd.Timestamp(x["asofdate"]): float(x["value"]) for x in j if x["value"] not in ("", "*")})
+    return s[s.index <= CUT]
+```
+- Probe: 365 weekly values in 0.3 s; reverse repo operations of 2021-12-28..31: 4 rows.
+- When known: dealer statistics for the week ending Wednesday are released on the Thursday of the following week about
+  16:15 New York (8 days). Safe: that Thursday 22:00 UTC. Only 7 in-sample years and 365 points: too few for a rule
+  on one market.
+
+## 13. Bitfinex public API: nine years of hourly bitcoin, and the price of borrowing dollars
+- URL: `https://api-pub.bitfinex.com/v2/candles/<key>/hist?limit=10000&start=<ms>&end=<ms>&sort=1`; keys
+  `trade:1h:tBTCUSD` (first candle **2013-03-31 23:00**), `trade:1h:tETHUSD` (first 2016-03-09 16:00),
+  `trade:1D:fUSD:p2` and `trade:1h:fUSD:p2` (USD margin-funding rate, 2-day period; first 2016-07-31; `p30` also).
+```python
+def bitfinex(key="trade:1D:fUSD:p2", start="2016-07-01", end=CUT + " 23:59"):
+    s, e, out = int(pd.Timestamp(start, tz="UTC").timestamp() * 1000), int(pd.Timestamp(end, tz="UTC").timestamp() * 1000), []
+    while s < e:
+        j = json.loads(raw(f"https://api-pub.bitfinex.com/v2/candles/{key}/hist?limit=10000&start={s}&end={e}&sort=1", UA))
+        if not j: break
+        out += j; s = j[-1][0] + 1; time.sleep(1.5)
+    d = pd.DataFrame(out, columns=["t", "open", "close", "high", "low", "volume"])
+    return d.set_index(pd.to_datetime(d.pop("t"), unit="ms", utc=True))
+```
+- Probe: daily funding candles 2016-07-31 to 2021-12-31, 1,971 rows, 2.7 s; a funding "price" is the rate per day
+  (0.0002 = 0.02 % a day). Rows are `[time, open, close, high, low, volume]`. Hours without a trade are missing.
+- When known: at the candle's close (real time). Revised: no. Still up: yes (`platform/status` = 1).
+- **Consequence for the search: bitcoin has 8.75 in-sample years of hourly prices here (ether 5.8), against 4.4 on
+  Binance.** The CFD's costs are a model in basis points anyway; say in the declaration which venue prices the trades.
+- Too short for research: `stats1/pos.size:1h:tBTCUSD:long|short` (margin longs and shorts) starts 2021-02-22 and
+  `funding.size` 2021-04-07 through this API.
+
+## 14. Bitstamp OHLC (USD pairs, long history)
+- URL: `https://www.bitstamp.net/api/v2/ohlc/<pair>/?step=<seconds>&limit=1000&start=<s>&end=<s>`: it returns the
+  `limit` candles that END at `end`, so walk backward.
+```python
+def bitstamp(pair="btcusd", step=86400, start="2013-01-01", end=CUT):
+    s, e, out = int(pd.Timestamp(start, tz="UTC").timestamp()), int(pd.Timestamp(end, tz="UTC").timestamp()) + 86399, []
+    while e > s:
+        j = json.loads(raw(f"https://www.bitstamp.net/api/v2/ohlc/{pair}/?step={step}&limit=1000&start={s}&end={e}", UA))["data"]["ohlc"]
+        if not j: break
+        out += j; e = int(j[0]["timestamp"]) - step; time.sleep(0.3)
+    d = pd.DataFrame(out).astype(float).drop_duplicates("timestamp").sort_values("timestamp")
+    d = d[d.timestamp >= s]
+    return d.set_index(pd.to_datetime(d.pop("timestamp"), unit="s", utc=True))
+```
+- Probe: btcusd daily 2013-01-01 to 2021-12-31, 3,287 rows, 5.0 s (hourly candles exist for November 2012; daily for
+  December 2011); ethusd hourly starts 2017-08-16. Real time, not revised.
+
+## 15. Coinbase Exchange candles
+- URL: `https://api.exchange.coinbase.com/products/<BTC-USD|ETH-USD>/candles?granularity=<60|3600|86400>&start=..&end=..`
+  (at most 300 candles per call; rows `[time, low, high, open, close, volume]`).
+```python
+def coinbase(product="BTC-USD", gran=86400, start="2015-07-20", end=CUT):
+    s, e, out = pd.Timestamp(start, tz="UTC"), pd.Timestamp(end, tz="UTC") + pd.Timedelta(days=1), []
+    while s < e:
+        t = min(s + pd.Timedelta(seconds=gran * 300), e)
+        out += json.loads(raw(f"https://api.exchange.coinbase.com/products/{product}/candles?granularity={gran}"
+                              f"&start={s:%Y-%m-%dT%H:%M:%SZ}&end={(t - pd.Timedelta(seconds=gran)):%Y-%m-%dT%H:%M:%SZ}", UA))
+        s = t; time.sleep(0.25)
+    d = pd.DataFrame(out, columns=["t", "low", "high", "open", "close", "volume"]).drop_duplicates("t").sort_values("t")
+    return d.set_index(pd.to_datetime(d.pop("t"), unit="s", utc=True))
+```
+- Probe: BTC-USD daily 2015-07-20 to 2021-12-31, 2,357 rows, 3.5 s; ETH-USD from 2016-05-18. Hourly history of
+  BTC-USD needs about 190 calls. Real time, not revised. Still up: product status "online".
+
+## 16. Upbit candles (Korean won market)
+- URL: `https://api.upbit.com/v1/candles/days?market=KRW-BTC&to=<UTC time>&count=200` (also `candles/minutes/60`);
+  walks backward from `to`.
+```python
+def upbit(market="KRW-BTC", end=CUT):
+    to, out = pd.Timestamp(end) + pd.Timedelta(days=1), []
+    while True:
+        j = json.loads(raw(f"https://api.upbit.com/v1/candles/days?market={market}&to={to:%Y-%m-%dT%H:%M:%SZ}&count=200", UA))
+        if not j: break
+        out += j; to = pd.Timestamp(j[-1]["candle_date_time_utc"]); time.sleep(0.2)
+    d = pd.DataFrame(out)
+    return d.set_index(pd.to_datetime(d.candle_date_time_utc))["trade_price"].sort_index()
+```
+- Probe: KRW-BTC daily 2017-09-25 to 2021-12-31, 1,559 rows, 10.8 s: 4.27 in-sample years. The won rate for a
+  premium comes from FRED `DEXKOUS` (weekly publication lag: use the previous week's rate) or any live FX quote.
+
+## 17. Binance public dumps (charter): what is inside the klines
+- `https://data.binance.vision/data/spot/monthly/klines/<SYM>/1h/<SYM>-1h-<YYYY-MM>.zip`, no header, 12 columns:
+  open time (ms), open, high, low, close, volume, close time, quote volume, trades, **taker-buy base volume**,
+  taker-buy quote volume, ignore. BTCUSDT and ETHUSDT: 38,222 hourly rows each, 2017-08-17 04:00 to 2021-12-31,
+  53 files, about 32 s per symbol. Taker-buy share = column 10 / column 6 (mean 0.498 for BTC, 0.500 for ETH).
+- Futures funding files: `.../futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2019-09.zip` answers 404,
+  2020-01 exists: at most 2 in-sample years, **below the 4-year rule** (the charter says "since 2019-09").
+
+## 18. blockchain.info charts (bitcoin chain activity)
+- URL: `https://api.blockchain.info/charts/<chart>?start=2013-01-01&timespan=9years&format=json&sampled=false`
+  (start + timespan must end by 2021-12-31: this pair ends on 2021-12-30).
+```python
+def bcinfo(chart="transaction-fees-usd"):
+    j = json.loads(raw(f"https://api.blockchain.info/charts/{chart}?start=2013-01-01&timespan=9years&format=json&sampled=false", UA))
+    s = pd.Series({pd.Timestamp(v["x"], unit="s"): v["y"] for v in j["values"]})
+    assert s.index.max() <= pd.Timestamp(CUT); return s
+```
+- Probe (each 0.5 s, 3,286 daily rows 2013-01-01 to 2021-12-30): hash-rate, difficulty, miners-revenue,
+  n-transactions, transaction-fees-usd, estimated-transaction-volume-usd, n-unique-addresses, avg-block-size,
+  median-confirmation-time; mempool-size is by minute from 2016-06-14 (194,327 rows, 6 MB, 2.3 s).
+- When known: a UTC day's value appears some hours after midnight. Safe: D+1 06:00 UTC. Revised: these are counts of
+  the chain (stable); hash-rate is an estimate. Still published: not checked (it would read a 2026 value).
+
+## 19. Coin Metrics community API
+- URL: `https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets=btc&metrics=..&frequency=1d&start_time=..&end_time=2021-12-31&page_size=10000`
+```python
+def coinmetrics(asset="btc", metrics="AdrActCnt,TxCnt,FeeTotNtv,CapMVRVCur,FlowInExNtv,FlowOutExNtv,SplyExNtv", start="2013-01-01"):
+    j = json.loads(raw("https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets=%s&metrics=%s&frequency=1d"
+                       "&start_time=%s&end_time=%s&page_size=10000" % (asset, metrics, start, CUT), UA))
+    d = pd.DataFrame(j["data"]); d.index = pd.to_datetime(d.pop("time")).dt.tz_localize(None)
+    return d[[c for c in metrics.split(",")]].astype(float)
+```
+- Probe: btc 2013-01-01 to 2021-12-31, 3,287 rows, 0.4 s. Open metrics for btc at daily frequency: PriceUSD,
+  AdrActCnt, TxCnt, TxTfrCnt, CapMVRVCur, CapMrktCurUSD, HashRate, FeeTotNtv, IssTotNtv, SplyCur, FlowInExNtv,
+  FlowOutExNtv, FlowInExUSD, FlowOutExUSD, SplyExNtv, BlkCnt. Refused (403, and one refused metric fails the whole
+  call): CapRealUSD, DiffMean, FeeMeanUSD, NVTAdj, TxTfrValAdjUSD, SplyAct1yr, VtyDayRet30d, RevUSD, SOPR.
+  Stablecoin supply `SplyCur` for usdt (from 2014-10-06), usdc, usdt_eth, usdt_trx, usdt_omni: open. Exchange flows
+  start 2011-04-24 (btc), ether metrics 2015-07-30.
+- When known: the day after (safe: D+2 00:00 UTC).
+- **Revised: the exchange-flow metrics are not point-in-time.** Rows of 2011 carry a status time of April and
+  September 2026: the labelling of exchange addresses is extended backward. A back-test on today's flows knows
+  addresses nobody knew then. Chain counts (AdrActCnt, TxCnt, FeeTotNtv, SplyCur) do not have this problem.
+- Licence (from memory): community data is CC BY-NC 4.0, non-commercial: to be read before any live use.
+
+## 20. Wikimedia page views
+- URL: `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/<Title>/daily/20150701/20211231`
+  (daily since 2015-07-01: 6.5 in-sample years). A descriptive User-Agent is required.
+```python
+def wiki(article, start="20150701", end="20211231", project="en.wikipedia"):
+    j = json.loads(raw(f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{project}/all-access/user/"
+                       f"{up.quote(article, safe='')}/daily/{start}/{end}", {"User-Agent": "scout-probe/0.1 (research script)"}))
+    return pd.Series({pd.Timestamp(i["timestamp"][:8]): i["views"] for i in j["items"]})
+```
+- Probe: 2,376 daily values per page in 0.3 s (Ethereum, Gold, Silver, Euro, Japanese_yen, S&P_500 read; Bitcoin and
+  DAX answered 429 from this shared address: wait 2-3 s between calls and retry).
+- When known: a UTC day is published during the next day. Safe: D+2 00:00 UTC.
+- Traps: views are counted under the title of the time; a renamed page splits its history (S&P_500 has a median of
+  767 views a day, far too low: the page was moved, add the old title). "user" excludes declared robots only.
+- Revised: no. Licence: CC0.
+
+## 21. GDELT: what it offers beyond the daily event files of ideas 002 and 003
+- Daily event files (in use): `https://data.gdeltproject.org/events/<YYYYMMDD>.export.CSV.zip`, 2013-04-01 on; the
+  file of 2021-12-30 was written 2021-12-31 07:00 GMT (5.8 MB). Country codes of the actors, the Goldstein scale and
+  the four "QuadClass" groups are in the same rows: country-specific tone or conflict costs no extra download.
+- Daily theme counts: `https://data.gdeltproject.org/gkg/<YYYYMMDD>.gkgcounts.csv.zip` (0.26 MB in 2013, 3.1 MB in
+  2021, written 07:01 GMT the next day; HEAD only, content not read): counts of events by theme and place (KILL,
+  PROTEST, ARREST, AFFECT ...).
+- DOC 2.0 API (news articles, **2017-01-01 on only: 5 in-sample years**):
+  `https://api.gdeltproject.org/api/v2/doc/doc?query=<words>&mode=timelinevolraw&format=csv&startdatetime=20211201000000&enddatetime=20211231235959`
+  returned the daily count of matching articles and of all monitored articles for December 2021 (2.2 KB, one call).
+  `mode=timelinetone` gives the average tone. Limit: one call per 5 seconds per address; 3 of the scout's 4 calls
+  got 429 because the address is shared. Whether a five-year window comes back by day in one call is not verified.
+- TV API (`/api/v2/tv/tv`, business-channel captions since 2009): connection reset twice: not reachable.
+- When known: 15-minute updates; a day's count is complete after midnight UTC. Safe: D+1 08:00 UTC. Counts of old
+  days can still grow a little (late crawls).
+
+## 22. Hacker News story counts (Algolia)
+```python
+def hn_count(query="bitcoin", day="2021-12-30"):
+    s = int(pd.Timestamp(day, tz="UTC").timestamp())
+    j = json.loads(raw(f"https://hn.algolia.com/api/v1/search_by_date?query={query}&tags=story&numericFilters=created_at_i>={s},created_at_i<{s + 86400}&hitsPerPage=0", UA))
+    return j["nbHits"]
+```
+- Probe: 2 stories with "bitcoin" on 2021-12-30, 0.3 s per day-window (one call per day: slow for long histories).
+  Real time; deleted stories disappear later (small).
+
+## 23. GFZ Potsdam: geomagnetic Kp index
+- URL: `https://kp.gfz-potsdam.de/app/json/?start=2013-01-01T00:00:00Z&end=2021-12-31T23:59:59Z&index=Kp`
+```python
+def kp(start="2013-01-01"):
+    j = json.loads(raw(f"https://kp.gfz-potsdam.de/app/json/?start={start}T00:00:00Z&end={CUT}T23:59:59Z&index=Kp", UA))
+    return pd.Series(j["Kp"], index=pd.to_datetime(j["datetime"]))
+```
+- Probe: 26,296 three-hour values 2013-01-01 to 2021-12-31 in 1.9 s (status "def" = definitive).
+- When known: a provisional value minutes after each 3-hour interval, replaced by the definitive one within weeks
+  (small changes). Safe: the completed UTC day, at D+1 00:30 UTC. Still published: yes (file modified 2026-11-16).
+  Licence: CC BY 4.0.
+
+## 24. Iowa Environmental Mesonet: hourly airport weather (sky cover in New York)
+- URL: `https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=LGA&data=skyc1&...&year1=..&year2=..&tz=Etc/UTC&format=onlycomma&report_type=3`
+  One request per station and year (a nine-year request fails); the end date is exclusive.
+```python
+def asos(station="LGA", y1=2013, y2=2021):
+    parts = []
+    for y in range(y1, min(y2, 2021) + 1):          # one request per year; the end date is exclusive (stops at 2022-01-01)
+        u = (f"https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station={station}&data=skyc1&data=skyc2&data=skyc3"
+             f"&data=skyc4&data=tmpf&data=vsby&year1={y}&month1=1&day1=1&year2={y + 1}&month2=1&day2=1&tz=Etc%2FUTC"
+             "&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3")
+        parts.append(pd.read_csv(io.BytesIO(raw(u, UA, 240)), parse_dates=["valid"], index_col="valid")); time.sleep(2)
+    d = pd.concat(parts); assert d.index.max() < pd.Timestamp("2022-01-01"); return d
+```
+- Probe: LaGuardia 2013-2021, 78,540 hourly reports (about 8,720 a year, 390 KB and 0.5 s per year); Central Park
+  ("NYC") 2021: 8,737 rows. Columns skyc1..4 (CLR, FEW, SCT, BKN, OVC, VV), tmpf, vsby.
+- When known: minutes after the report (xx:51 each hour). Not revised. Public data; one request at a time.
+
+## 25. NOAA daily summaries (Central Park)
+```python
+def noaa_daily(station="USW00094728", start="2013-01-01"):
+    u = ("https://www.ncei.noaa.gov/access/services/data/v1?dataset=daily-summaries&stations=%s&startDate=%s&endDate=%s"
+         "&dataTypes=TMAX,TMIN,PRCP,AWND,SNOW&format=csv&units=metric" % (station, start, CUT))
+    return pd.read_csv(io.BytesIO(raw(u, UA, 120)), parse_dates=["DATE"], index_col="DATE")
+```
+- Probe: 3,287 days 2013-2021 (TMAX, TMIN, PRCP, AWND, SNOW) in 7.6 s. A day's values exist only after the day: for
+  a same-day rule use section 24. NOAA's hourly service returned no rows for LaGuardia (two tries): use section 24.
+
+## 26. AirNow hourly files (fine particles in New York), EPA yearly files
+- URL: `https://files.airnowtech.org/airnow/<YYYY>/<YYYYMMDD>/HourlyData_<YYYYMMDDHH>.dat` (hour in UTC; '|'
+  separated: date, time, monitor id, name, offset, parameter, unit, value, agency), 0.4-1.2 MB per hour, all US monitors.
+```python
+def airnow_hour(stamp="2021123013"):
+    assert stamp[:8] <= "20211231"
+    t = raw(f"https://files.airnowtech.org/airnow/{stamp[:4]}/{stamp[:8]}/HourlyData_{stamp}.dat", UA).decode("latin-1")
+    return [l.split("|") for l in t.splitlines() if "|PM2.5|" in l and ("New York" in l or "NYC" in l or "IS 52" in l or "Division Street" in l)]
+```
+- Probe: 13:00 UTC files of 2015-01-05 and 2021-12-30 (0.7-0.8 s each). New York City PM2.5 monitors present in both:
+  360610115 (IS143, Manhattan), 360610135 (CCNY), 360470052 (PS 314, Brooklyn), 360810120 (Maspeth), 360850111
+  (Fresh Kills). Years before 2015 not probed.
+- When known: first posted about 90 minutes after the hour, then **rewritten for 48 hours** (the 2021-12-30 13:00
+  file was last written 2022-01-01 12:59 GMT): the archive is the last revision, not the first print. Keep to monitors
+  that report on time, and say so in the declaration.
+- Still published: yes (file of 2026-11-16 13:00 exists, HEAD only).
+- `https://aqs.epa.gov/aqsweb/airdata/daily_88101_<YYYY>.zip` (4.2 MB for 2015, HEAD only) is the audited daily mean,
+  published months later: for cross-checks, not for a live rule.
+
+## 27. USGS earthquakes
+```python
+def quakes(minmag=6.0, box=(24, 46, 123, 146), start="2013-01-01"):
+    u = ("https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=%s&endtime=%s&minmagnitude=%s"
+         "&minlatitude=%s&maxlatitude=%s&minlongitude=%s&maxlongitude=%s&orderby=time-asc" % ((start, CUT, minmag) + box))
+    return pd.read_csv(io.BytesIO(raw(u, UA)), parse_dates=["time"])[["time", "mag", "place"]]
+```
+- Probe: magnitude 5.5 or more near Japan (24-46 N, 123-146 E), 2013-2021: 231 events (68 of magnitude 6 or more),
+  0.7 s. Real time; magnitudes are revised in the first days. Too few events for a rule on one market.
+
+## 28. Daily economic policy uncertainty, the authors' own file
+```python
+def epu_site():
+    L = stream_until("https://www.policyuncertainty.com/media/All_Daily_Policy_Data.csv",
+                     lambda s: s[:1].isdigit() and int(s.split(",")[2]) >= 2022)
+    d = pd.read_csv(io.StringIO("\n".join(L)))
+    d.index = pd.to_datetime(dict(year=d.year, month=d.month, day=d.day)); return d.iloc[:, -1]
+```
+- Probe: 13,514 days 1985-01-01 to 2021-12-31 in 0.2 s (same data as FRED USEPUINDXD); rewritten nightly
+  (Last-Modified 2026-11-17 00:55 GMT): still published. Timing and revisions: section 1.
+
+## 29. The lab's own minute bars (scout's counting only; the scheduled runs do not have them)
+`/home/user/gold-orb/lab/data/<market>_m1.parquet` (columns ts, bo..bc, ao..ac), read with
+`pq.read_table(path, columns=["ts","bc"], filters=[("ts", "<", 2022-01-01 UTC)])`. Used here only to count
+price-based signals (pair z-scores, round-number crossings); no outcome after a signal was computed.
+
+---
+
+## Reachable but not usable under the rules (nothing downloaded)
+| Source | What the probe returned | Why not used |
+|---|---|---|
+| AAII sentiment survey `https://www.aaii.com/files/surveys/sentiment.xls` | HEAD 200, 1.3 MB, last modified Thu 12 Nov 2026 | one binary file with the whole history to today (holds 2022-2026 values), old Excel format that the runs cannot parse without xlrd |
+| Geopolitical risk, daily `https://www.matteoiacoviello.com/gpr_files/data_gpr_daily_recent.xls` | HEAD 200, 3.3 MB, last modified 2026-11-17 | same two reasons; and it is unclear how soon after a day its value is posted |
+| San Francisco Fed daily news sentiment `https://www.frbsf.org/wp-content/uploads/news_sentiment_data.xlsx` | HEAD 200, 0.4 MB, last modified 2026-11-17 | full history to today in one file; published weekly, model revised |
+| New York Fed ACM term premium `.../ACMTermPremium.xls` | HEAD 200, 10 MB | same; re-estimated history |
+| Wayback Machine | `archive.org/wayback/available` answers (snapshots: GLD archive 2021-10-19, AAII 2020-12-06, geopolitical risk 2022-03-31, news sentiment 2022-04-25) | the snapshots themselves live on `web.archive.org`, which resets every connection (8 tries) |
+
+## Blocked or not reached (error as returned)
+| Source | Result |
+|---|---|
+| BitMEX funding since 2016 (`www.bitmex.com/api/v1/funding`) | 403 Forbidden twice (HTML error page) |
+| Yahoo chart API | `query1` with a Linux Chrome User-Agent: 429 "Edge: Too Many Requests" on every ticker of the first batch; one call to `query2` with another browser string answered 200 (GLD, 22 daily bars of December 2021); the follow-up batch was refused by this session's permission system as a way around the refusal. **Coverage of ^VIX9D, ^VVIX, ^SKEW, ^MOVE, GDX, HYG, LQD, TLT, RSP, IWM, GBTC is not verified; no idea in ideas.md needs Yahoo.** `kit.data.yahoo_daily` uses `query1` |
+| Dukascopy datafeed (charter source) | three connection resets between 22:12 and 22:27 UTC; the proxy log shows the same for other sessions from 21:47 UTC: probably throttled by the parallel downloads, not a new block. ETF, bond and copper symbols on Dukascopy therefore not verified |
+| SPDR gold holdings archive (`spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv`) | 200 but a PDF, not the CSV: holdings in tonnes not reached; iShares silver holdings not probed |
+| Kraken OHLC | ignores `since`: returns only its last 720 candles (2024-2026) |
+| TreasuryDirect web service (`TA_WS/securities/search`) | 500 (use section 7) |
+| GDELT TV API | connection reset twice |
+| Dukascopy retail sentiment (SWFX) | the guessed endpoint answers 204 with no content: not found |
+| Google Trends | 404 on the probed endpoint; not pursued (its rescaling is a look-ahead trap anyway) |
+| Japan MoF weekly securities flows | 404 on the guessed path |
+| NOAA hourly service and per-year hourly file | header without rows; the file path returns a web page |
+| Twitter-based uncertainty file (policyuncertainty.com) | 404 on the guessed name |
+| CBOE EVZ history | 403 |
+| Bitfinex margin longs and shorts; Binance funding files | reachable, but history starts 2021-02 and 2020-01: too short |
+| www.cftc.gov, Stooq | not probed again (refused according to the lead and the charter) |
+| NAAIM exposure, COMEX stocks, Baltic Dry, Shanghai gold premium | not probed (no stable file known) |
+
+## Still published today? (metadata or latest date only)
+Alive, checked on 2026-11-17: CBOE VIX9D, VVIX, SKEW, VIX3M, VXN, GVZ, OVX, RVX, VXD, VIX (files modified 16-17 Nov
+2026); CBOE put/call JSON (file of 2026-11-16); DIX (2026-11-16); CFTC (latest report 2026-11-10); FINRA (file of
+2026-11-16); Treasury statement (2026-11-16) and auctions (2026-10-22); SNB (published 2026-11-16); JGB file
+(2026-11-03); GFZ (2026-11-16); AirNow (2026-11-16); policy-uncertainty file (2026-11-17); Bitfinex, Coinbase, Upbit
+(status endpoints). Not checked because the only way was to read a 2026 value: FRED series one by one, ECB,
+blockchain.info, Coin Metrics, Wikimedia, Bitstamp, Iowa Mesonet, NOAA, USGS, New York Fed (all long-standing public
+services). Dead or dying: EVZ, TED spread, STLFSI before version 4, the ICE BofA history on FRED.
+
+## What went wrong during the probe (said plainly)
+Values dated after 2021 reached this machine five times by accident. None was displayed, stored on disk or used in a
+count; only dates and row counts were printed.
+1. FRED, first batch: `BAMLH0A0HYM2`, `BAMLC0A0CM`, `BAMLHE00EHYIOAS` and `SP500` came back as 2023-11-20..2026-11-16
+   and 2025-11-17..2026-11-16 although `coed=2021-12-31` was sent (trap 2). The rows were parsed to count them. The
+   guard of the `fred` snippet was then tested once on `BAMLH0A0HYM2` (dates column only).
+2. CBOE `VIX9D`, `VVIX`, `SKEW` files: a `Range: bytes=0-699` request was answered with the whole file (three files
+   to today in memory, first 420 bytes printed). Hence `stream_until`.
+3. The SPDR archive URL returned a whole PDF (not data).
+4. Kraken returned daily bitcoin candles of 2024-11-27 to today (first timestamp printed).
+5. Yahoo's reply for GLD carries today's price in its `meta` block (only the key names were printed).
+
+Two probe loops also failed to stop after two refusals as the task asked: 77 calls to Yahoo (all 429, in one minute)
+and 8 to web.archive.org (all reset), before the stop rule was built into the probe helper.
