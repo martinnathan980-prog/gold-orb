@@ -1,0 +1,39 @@
+{
+  "idea": "052 Earnings drift: follow the reaction to a company's results for a few days",
+  "date_declared": "2026-11-18",
+  "track": "fast",
+  "family": "earnings",
+  "hypothesis": "After a quarterly results release, a share that has moved by 3 % or more by 15:00 New York on its reaction session keeps drifting in the same direction over the next five sessions.",
+  "mechanism": "Post-earnings-announcement drift (Ball and Brown 1968; Bernard and Thomas 1989): investors under-react to earnings news, funds adjust over days. Weaker on large shares since 2010, but reported in the first days after large surprises. Events are company-specific and spread over the calendar: not one of the closed families (no share was ever held overnight by the lab).",
+  "data": {
+    "signal": "SEC EDGAR 8-K item 2.02 calendar of lab/explore/scout/earnings_edgar.py, calendar(end='2021-12-31', drop_late=True) (816 quarterly results rows; Alibaba 6-K and in-session Citigroup rows dropped as a session late). Each row is KNOWN at accepted_utc (EDGAR acceptance time, real UTC); its reaction session = column reaction_session (first regular 09:30-16:00 New York session starting strictly after accepted_utc). The move uses the share's own hourly bars up to the end of the bar labelled 14:00 New York of the reaction session, so the signal is known at 15:00 New York (that bar's end).",
+    "publication_lag": "calendar rows indexed by accepted_utc (row_len 0 in the truncation test); no FRED or other external series. The move itself needs the 14:00-labelled bar's close: known_at = its open + 1 h.",
+    "prices": "kit.data.load_bars(<ticker>) = prepared hourly BID bars of the 40 US shares (kit v2.1, split-adjusted, 2017-01-26..2021-12-31), PROVISIONAL costs of kit/extra_costs.json (spread by year and hour, commission max(0.03 USD, 2 USD minimum at the stake), swaps 7 % long / 3 % short, dividends: shorts pay, longs credited 0.70)",
+    "in_sample_years": "2017-2021 (5 years, the share bars' span); power check from the signal data alone (power.py, power.json): 725 events with reaction bars, 355 moves at or beyond +/-3 % (178 up, 177 down) on 39 shares (Alibaba has no row left after drop_late), by reaction year 2017 41, 2018 86, 2019 69, 2020 83, 2021 76; at 4 %: 268; at 2.5 %: 418",
+    "nothing_after": "2021-12-31"
+  },
+  "markets": ["aapl", "adbe", "amd", "amzn", "avgo", "ba", "baba", "bac", "c", "cat", "crm", "csco", "cvx", "dis", "fb", "ge", "googl", "gs", "hd", "intc", "jnj", "jpm", "ma", "mcd", "mrk", "msft", "mu", "nflx", "nke", "nvda", "orcl", "pfe", "pypl", "qcom", "tsla", "unh", "v", "wfc", "wmt", "xom"],
+  "rule_main": {
+    "signal": "For each calendar row (drop_late=True) whose reaction session R has a bar labelled 14:00 New York in the share's bars: move = close of that bar / close of the last bar of the previous session present in the share's bars - 1. Signal if |move| >= 0.03. known_at = end of the 14:00-labelled bar (15:00 New York). Sessions without a 14:00 bar (13:00 half days, holes) give no signal.",
+    "side": "+1 if move > 0, -1 if move < 0",
+    "entry": "open of the bar labelled 15:00 New York of R (first bar opening at or after known_at), simulated with max_wait_h=2 so that a missing 15:00 bar gives no trade instead of an entry the next morning (counted as stale)",
+    "exit": ["bdays", 5],
+    "stop": ["d20", 1.5],
+    "target": null,
+    "overlap": "one position per share (kit.sim mode 'one'); every-signal variant (mode 'every') for the every-signal bar; basket of all the shares, one rule"
+  },
+  "what_changed_vs_brief": "The brief exits at the open of the bar labelled 15:00 five SESSIONS later. Declared: exit ('bdays', 5) = 15:00 New York five business days (Mon-Fri) after the entry bar, the kit's scheduled exit. Reason: the random-entry null must run the main's own exit; an event exit at session R+5 would let null draws on random days hold until the next event or the max_hold, i.e. a different holding time than the real trades. Consequence, counted before any result: 36 of the 355 main signals have a NYSE holiday (or a missing day) inside the five business days, so they exit one session earlier (at the 15:00 bar of session R+4), or at the close of the last bar before when the fifth business day is a holiday. 'Previous session's last close' = the last bar of the previous date present in the share's bars (on a 13:00 half day its 12:00 bar; a whole missing day in the data would make the previous present session be used).",
+  "configurations": [
+    {"id": "01_main", "threshold": 0.03, "exit": ["bdays", 5], "stop": ["d20", 1.5]},
+    {"id": "02_th2.5", "threshold": 0.025, "exit": ["bdays", 5], "stop": ["d20", 1.5]},
+    {"id": "03_th4", "threshold": 0.04, "exit": ["bdays", 5], "stop": ["d20", 1.5]},
+    {"id": "04_hold3", "threshold": 0.03, "exit": ["bdays", 3], "stop": ["d20", 1.5]},
+    {"id": "05_hold7", "threshold": 0.03, "exit": ["bdays", 7], "stop": ["d20", 1.5]},
+    {"id": "06_stop1.0", "threshold": 0.03, "exit": ["bdays", 5], "stop": ["d20", 1.0]},
+    {"id": "07_stop2.0", "threshold": 0.03, "exit": ["bdays", 5], "stop": ["d20", 2.0]}
+  ],
+  "costs": "kit.costs with kit/extra_costs.json (PROVISIONAL share costs: quoted spread by year and hour of week, commission max(0.03 USD a share, 2 USD minimum per order at 4,791.67 USD stake), slippage 1 bp market / 2 bp stop, swaps 7 % long 3 % short, triple Friday, dividends: shorts pay, longs credited 0.70; results.json 'dividends' read at credits 0 and 1): gross, net, spread and slippage x1.5",
+  "bars": "CHARTER.md 'The bars' on 01_main as a BASKET (t on daily sums of R >= 2.5, pooled PF >= 1.12 and >= 1.04 at costs x1.5, >= 60 % of years positive, >= 65 % of markets positive, no market above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days, same-day random-entry null >= 97.5th percentile with 2000 draws), computed by kit.judge.verdict; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (label only)",
+  "split": "IS only (to 2021-12-31). No validation look in this run (the lead decides).",
+  "kit": "lab/explore/kit v2.1 (unchanged)"
+}

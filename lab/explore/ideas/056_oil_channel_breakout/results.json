@@ -1,0 +1,555 @@
+{
+ "idea": "056 Oil: the gold 4-hour channel breakout (donch4h_stop) carried to crude oil",
+ "declared_sha256": "3926bad3bbe22ac294042ace85011fcdc55132ee2454b68954e750535c7de87c",
+ "verdict": "fail",
+ "failed_bars": [
+  "t>=2.5",
+  "every_signal_exp>0"
+ ],
+ "basket": false,
+ "bars": {
+  "truncation_test": {
+   "value": "passed",
+   "bar": "checks.truncation_test on the main signal build passed (same signals, dense cuts: checks.cuts_ok)",
+   "pass": true
+  },
+  "event_truncation_test": {
+   "value": "passed",
+   "bar": "checks.truncation_test on the exit-event build passed (same events per market, dense cuts)",
+   "pass": true
+  },
+  "declared_hash": {
+   "value": "matches declared.sha256",
+   "bar": "declared.json matches declared.sha256",
+   "pass": true
+  },
+  "configs<=11": {
+   "value": 9,
+   "bar": "at most 11 configurations",
+   "pass": true
+  },
+  "n>=250": {
+   "value": 338,
+   "bar": ">= 250 trades",
+   "pass": true
+  },
+  "t>=2.5": {
+   "value": 1.3949452122593038,
+   "bar": "t per trade >= 2.5",
+   "pass": false
+  },
+  "PF>=1.12": {
+   "value": 1.2190977350483123,
+   "bar": "PF net >= 1.12",
+   "pass": true
+  },
+  "years>=60%": {
+   "value": 0.7777777777777778,
+   "bar": ">= 60 % of years positive",
+   "pass": true
+  },
+  "PF_stress>=1.04": {
+   "value": 1.1683371081816067,
+   "bar": "PF with spread and slippage x1.5 >= 1.04",
+   "pass": true
+  },
+  "neighbours_median_PF>=1.06": {
+   "value": 1.164792943002527,
+   "bar": "median PF of the neighbours >= 1.06",
+   "pass": true
+  },
+  "every_signal_exp>0": {
+   "value": -0.07934564464613339,
+   "bar": "every-signal expectancy > 0",
+   "pass": false
+  },
+  "hold<=5d": {
+   "value": 5,
+   "bar": "hold <= 5 trading days",
+   "pass": true
+  },
+  "null>=97.5": {
+   "value": 99.85000000000001,
+   "bar": "random-entry null (same market, side, clock, the main's own exit rule: exit_key; >= 2000 draws) >= 97.5th percentile",
+   "pass": true
+  },
+  "corr<=0.30": {
+   "value": 0.0398393492592019,
+   "bar": "weekly corr with the sum of the ten <= 0.30 (CHARTER 'Independence'; a negative one passes)",
+   "pass": true
+  }
+ },
+ "selection": {
+  "N_all": 2623,
+  "N_main": 173,
+  "dsr_N_all": {
+   "dsr": 0.011917279345943143,
+   "sr": 0.07587501684402014,
+   "sr0": 0.19174412799457463,
+   "T": 338,
+   "n_trials": 2623,
+   "skew": 1.587469673058645,
+   "kurtosis": 5.476802902509793,
+   "var_sr_used": 0.002967359050445104
+  },
+  "dsr_N_main": {
+   "dsr": 0.07963166881795425,
+   "sr": 0.07587501684402014,
+   "sr0": 0.14804645016737103,
+   "T": 338,
+   "n_trials": 173,
+   "skew": 1.587469673058645,
+   "kurtosis": 5.476802902509793,
+   "var_sr_used": 0.002967359050445104
+  },
+  "dsr_N_all_V_noise": {
+   "dsr": 0.011917279345943143,
+   "sr": 0.07587501684402014,
+   "sr0": 0.19174412799457463,
+   "T": 338,
+   "n_trials": 2623,
+   "skew": 1.587469673058645,
+   "kurtosis": 5.476802902509793,
+   "var_sr_used": 0.002967359050445104
+  },
+  "pass": false
+ },
+ "main": {
+  "n": 338,
+  "markets": [
+   "oil"
+  ],
+  "PF_gross": 1.3952863641430777,
+  "PF": 1.2190977350483123,
+  "PF_stress": 1.1683371081816067,
+  "mean_R": 0.1138093067783045,
+  "mean_R_gross": 0.19155780024779806,
+  "mean_R_stress": 0.08922663151682204,
+  "mean_net_bp": 48.17460559890589,
+  "mean_gross_bp": 62.34504532281982,
+  "t_trade": 1.3949452122593038,
+  "t_daily": 1.3981876931007697,
+  "n_days": 335,
+  "years_positive_frac": 0.7777777777777778,
+  "by_year_R": {
+   "2013": 2.1034882362422467,
+   "2014": 3.1176047927365866,
+   "2015": 12.185539073412006,
+   "2016": 5.500848632719612,
+   "2017": 1.8838990116712768,
+   "2018": 12.33280165502508,
+   "2019": -8.343777207545315,
+   "2020": 18.403804530051154,
+   "2021": -8.716663033245718
+  },
+  "hold_tdays_max": 5,
+  "hold_h_mean": 83.62426035502959,
+  "exit_reasons": {
+   "event": 141,
+   "stop": 138,
+   "time": 54,
+   "time_close": 4,
+   "stop_gap": 1
+  },
+  "long_n": 177,
+  "long_R": -15.229320922137537,
+  "short_n": 161,
+  "short_R": 53.69686661320446,
+  "by_market": {
+   "oil": {
+    "n": 338,
+    "sum_R": 38.467545691066924,
+    "mean_R": 0.1138093067783045
+   }
+  },
+  "markets_positive_frac": 1.0,
+  "max_market_share_of_profit": 1.0
+ },
+ "sizing": {
+  "judged": false,
+  "note": "reported only: the charter's sizing bar is checked by the lead (risk plan)",
+  "by_market": {
+   "oil": {
+    "min_lot": 0.01,
+    "margin_eur": 0.7528741033837427,
+    "loss_at_median_stop_eur": 1.550178639975593
+   }
+  },
+  "min_lot_margin_eur": 0.7528741033837427,
+  "min_lot_loss_at_median_stop_eur": 1.550178639975593,
+  "min_lot_loss_pct_of_1000_eur": 0.1550178639975593
+ },
+ "dividends": {
+  "by_market": {},
+  "credit_long_used": null
+ },
+ "max_hold_tdays": 5,
+ "slow_track": false,
+ "costs": "PROVISIONAL COSTS: oil (kit/extra_costs.json; re-judge on the broker's own figures before anything else)",
+ "provisional_costs": true,
+ "neighbours": {
+  "02_n50": {
+   "n": 377,
+   "PF": 1.0858389909642718,
+   "mean_R": 0.04645027385699005
+  },
+  "03_n70": {
+   "n": 324,
+   "PF": 1.1625320515023163,
+   "mean_R": 0.08543766695970366
+  },
+  "04_trail1.5": {
+   "n": 355,
+   "PF": 1.31485704355074,
+   "mean_R": 0.14523926012073407
+  },
+  "05_trail2.5": {
+   "n": 327,
+   "PF": 1.2247755523555235,
+   "mean_R": 0.12307034878746557
+  },
+  "06_stop0.50": {
+   "n": 376,
+   "PF": 1.1670538345027375,
+   "mean_R": 0.1069940988727118
+  },
+  "07_stop0.90": {
+   "n": 326,
+   "PF": 1.2170233326785804,
+   "mean_R": 0.09288695049596273
+  },
+  "08_hold4": {
+   "n": 358,
+   "PF": 1.1537072459185094,
+   "mean_R": 0.07981724272460752
+  },
+  "09_touch": {
+   "n": 372,
+   "PF": 1.156484500398555,
+   "mean_R": 0.08396364846642917
+  }
+ },
+ "every_signal": {
+  "n": 2723,
+  "mean_R": -0.07934564464613339
+ },
+ "null": {
+  "real_mean_R": 0.1138093067783045,
+  "percentile": 99.85000000000001,
+  "n_draws": 2000,
+  "seed": 0,
+  "exit_key": "087e7b59cd60a5e3c397b7bae8fa79dedfbe4201fb819909bba05d86e37b1347",
+  "mode": "every",
+  "joint_groups": 0,
+  "joint_no_common_day": 0,
+  "null_mean": -0.04966364652108526,
+  "null_sd": 0.051469683712221034
+ },
+ "counts": {
+  "oil": {
+   "signals": 2740,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 5,
+   "no_d20": 12,
+   "overlap_skipped": 2385,
+   "same_bar_skipped": 0,
+   "taken": 338
+  }
+ },
+ "rule": {
+  "exit": [
+   "event",
+   "5654 event times, sha256 4c7b0dc15683cf24",
+   [
+    "bdays",
+    5
+   ]
+  ],
+  "stop": [
+   "d20",
+   0.7
+  ],
+  "target": null,
+  "delay_h": 0.0,
+  "mode": "one"
+ },
+ "ledger_line": "| 056 | 2026-11-18 | 056 Oil: the gold 4-hour channel breakout (donch4h_stop) carried to crude oil | oil | oil hourly bars 2013-2021 (kit v2.1, roll-adjusted), PROVISIONAL costs | 9 | fermee : echoue (t>=2.5, every_signal_exp>0) ; PROVISIONAL COSTS (oil) | n 338, PF net 1.22, t 1.39, PF x1.5 1.17, years + 7/9, null 99.9 pct, corr 0.04, DSR 0.012 (N_all 2623) / 0.080 (N_main 173), sizing not judged (min lot: margin 1 EUR, loss at median stop 1.6 EUR) |",
+ "written_utc": "2026-11-18T10:54:41Z",
+ "extra": {
+  "detail": {
+   "main": {
+    "n": 338,
+    "PF_net": 1.2190977350483123,
+    "PF_gross": 1.3952863641430777,
+    "PF_stress": 1.1683371081816067,
+    "mean_R": 0.1138093067783045,
+    "mean_R_gross": 0.19155780024779806,
+    "mean_net_bp": 48.17460559890589,
+    "mean_gross_bp": 62.34504532281982,
+    "hold_h_median": 77.0
+   },
+   "long": {
+    "n": 177,
+    "PF_net": 0.8359110835022041,
+    "PF_gross": 0.991444445426787,
+    "PF_stress": 0.7802302221259777,
+    "mean_R": -0.08604136114201999,
+    "mean_R_gross": -0.004157450968922798,
+    "mean_net_bp": -4.208699075835524,
+    "mean_gross_bp": 10.023314544031876,
+    "hold_h_median": 86.0
+   },
+   "short": {
+    "n": 161,
+    "PF_net": 1.64881733828618,
+    "PF_gross": 1.841828913703311,
+    "PF_stress": 1.609914127586507,
+    "mean_R": 0.3335209106410215,
+    "mean_R_gross": 0.40672301431835467,
+    "mean_net_bp": 105.76370452703776,
+    "mean_gross_bp": 119.86645121005877,
+    "hold_h_median": 70.0
+   },
+   "by_year": {
+    "2013": {
+     "n": 28,
+     "PF_net": 1.1494061685463064,
+     "PF_gross": 1.3366301334818818,
+     "PF_stress": 1.111231520120436,
+     "mean_R": 0.07512457986579453,
+     "mean_R_gross": 0.1591351527361475,
+     "mean_net_bp": 8.150876986583247,
+     "mean_gross_bp": 18.344172339097696,
+     "hold_h_median": 96.5
+    },
+    "2014": {
+     "n": 42,
+     "PF_net": 1.1281397208486554,
+     "PF_gross": 1.2825991066108746,
+     "PF_stress": 1.0965166195126932,
+     "mean_R": 0.07422868554134732,
+     "mean_R_gross": 0.15415144125467328,
+     "mean_net_bp": 41.13574849333066,
+     "mean_gross_bp": 49.53140789360611,
+     "hold_h_median": 62.0
+    },
+    "2015": {
+     "n": 33,
+     "PF_net": 1.810047580833839,
+     "PF_gross": 1.9360936101439088,
+     "PF_stress": 1.7720654352300773,
+     "mean_R": 0.3692587598003638,
+     "mean_R_gross": 0.41336085165725,
+     "mean_net_bp": 90.18885736009098,
+     "mean_gross_bp": 102.07296119139812,
+     "hold_h_median": 81.0
+    },
+    "2016": {
+     "n": 38,
+     "PF_net": 1.3322134451832037,
+     "PF_gross": 1.4747274079500325,
+     "PF_stress": 1.2886967992703475,
+     "mean_R": 0.14475917454525297,
+     "mean_R_gross": 0.19769671900698368,
+     "mean_net_bp": 44.13212634996714,
+     "mean_gross_bp": 57.98943630354073,
+     "hold_h_median": 74.0
+    },
+    "2017": {
+     "n": 37,
+     "PF_net": 1.0932679655151467,
+     "PF_gross": 1.4467083092807977,
+     "PF_stress": 1.0570993199151555,
+     "mean_R": 0.05091618950462908,
+     "mean_R_gross": 0.21105763681714373,
+     "mean_net_bp": 0.5847691516718014,
+     "mean_gross_bp": 27.68030526656477,
+     "hold_h_median": 87.0
+    },
+    "2018": {
+     "n": 45,
+     "PF_net": 1.5559420636969274,
+     "PF_gross": 1.796644460067671,
+     "PF_stress": 1.5156945425098596,
+     "mean_R": 0.2740622590005573,
+     "mean_R_gross": 0.36065455224798026,
+     "mean_net_bp": 56.508238936053985,
+     "mean_gross_bp": 70.49508899641089,
+     "hold_h_median": 72.0
+    },
+    "2019": {
+     "n": 37,
+     "PF_net": 0.6416259662583343,
+     "PF_gross": 0.7235266385109835,
+     "PF_stress": 0.5398326543226886,
+     "mean_R": -0.22550749209581938,
+     "mean_R_gross": -0.16629961305969285,
+     "mean_net_bp": -29.035302599962616,
+     "mean_gross_bp": -17.78922059778117,
+     "hold_h_median": 90.0
+    },
+    "2020": {
+     "n": 34,
+     "PF_net": 2.2226776134520265,
+     "PF_gross": 2.5762391883126883,
+     "PF_stress": 2.131818419276849,
+     "mean_R": 0.5412883685309162,
+     "mean_R_gross": 0.6211710002947194,
+     "mean_net_bp": 291.44254209132515,
+     "mean_gross_bp": 312.49723096300255,
+     "hold_h_median": 84.5
+    },
+    "2021": {
+     "n": 44,
+     "PF_net": 0.6491709178303647,
+     "PF_gross": 0.7328970712991528,
+     "PF_stress": 0.6288157488524518,
+     "mean_R": -0.19810597802831173,
+     "mean_R_gross": -0.14414335210710316,
+     "mean_net_bp": -39.213859994011514,
+     "mean_gross_bp": -28.556634706576077,
+     "hold_h_median": 61.0
+    }
+   },
+   "reasons": {
+    "event": 141,
+    "stop": 138,
+    "time": 54,
+    "time_close": 4,
+    "stop_gap": 1
+   },
+   "every": {
+    "n": 2723,
+    "PF_net": 0.858098384045351,
+    "PF_gross": 0.9922035413968999,
+    "PF_stress": 0.8120963497348231,
+    "mean_R": -0.07934564464613339,
+    "mean_R_gross": -0.004086334138260122,
+    "mean_net_bp": -2.872086811863416,
+    "mean_gross_bp": 11.634843797821398,
+    "hold_h_median": 65.0
+   },
+   "neighbours": {
+    "02_n50": {
+     "n": 377,
+     "PF_net": 1.0858389909642718,
+     "PF_gross": 1.2458017037031532,
+     "PF_stress": 1.042267050894362,
+     "mean_R": 0.04645027385699005,
+     "mean_R_gross": 0.12409159316884773,
+     "mean_net_bp": 30.563494738075953,
+     "mean_gross_bp": 44.66186937854561,
+     "hold_h_median": 72.0
+    },
+    "03_n70": {
+     "n": 324,
+     "PF_net": 1.1625320515023163,
+     "PF_gross": 1.3160154751381288,
+     "PF_stress": 1.0792522542642868,
+     "mean_R": 0.08543766695970366,
+     "mean_R_gross": 0.15587671741331777,
+     "mean_net_bp": 38.42833482320967,
+     "mean_gross_bp": 51.26152274717678,
+     "hold_h_median": 73.0
+    },
+    "04_trail1.5": {
+     "n": 355,
+     "PF_net": 1.31485704355074,
+     "PF_gross": 1.5065861967255876,
+     "PF_stress": 1.24968562416646,
+     "mean_R": 0.14523926012073407,
+     "mean_R_gross": 0.2181351609983267,
+     "mean_net_bp": 46.85015305107821,
+     "mean_gross_bp": 60.30921224411573,
+     "hold_h_median": 60.0
+    },
+    "05_trail2.5": {
+     "n": 327,
+     "PF_net": 1.2247755523555235,
+     "PF_gross": 1.3959237948929233,
+     "PF_stress": 1.1769530858292219,
+     "mean_R": 0.12307034878746557,
+     "mean_R_gross": 0.20284657278898868,
+     "mean_net_bp": 47.40676535203807,
+     "mean_gross_bp": 61.609970493343276,
+     "hold_h_median": 95.0
+    },
+    "06_stop0.50": {
+     "n": 376,
+     "PF_net": 1.1670538345027375,
+     "PF_gross": 1.3545125566949219,
+     "PF_stress": 1.1147852949093189,
+     "mean_R": 0.1069940988727118,
+     "mean_R_gross": 0.21356811749778343,
+     "mean_net_bp": 37.55322672459142,
+     "mean_gross_bp": 52.8189932015536,
+     "hold_h_median": 45.0
+    },
+    "07_stop0.90": {
+     "n": 326,
+     "PF_net": 1.2170233326785804,
+     "PF_gross": 1.422674919901037,
+     "PF_stress": 1.1568009147446339,
+     "mean_R": 0.09288695049596273,
+     "mean_R_gross": 0.1662174878590971,
+     "mean_net_bp": 50.639672315964816,
+     "mean_gross_bp": 67.574813562926,
+     "hold_h_median": 91.0
+    },
+    "08_hold4": {
+     "n": 358,
+     "PF_net": 1.1537072459185094,
+     "PF_gross": 1.3283390148722023,
+     "PF_stress": 1.1006340808049295,
+     "mean_R": 0.07981724272460752,
+     "mean_R_gross": 0.1579943941180173,
+     "mean_net_bp": 32.0688566978028,
+     "mean_gross_bp": 46.82480495450137,
+     "hold_h_median": 77.0
+    },
+    "09_touch": {
+     "n": 372,
+     "PF_net": 1.156484500398555,
+     "PF_gross": 1.330193342828754,
+     "PF_stress": 1.109610750568404,
+     "mean_R": 0.08396364846642917,
+     "mean_R_gross": 0.1645776359400625,
+     "mean_net_bp": 30.90675496943176,
+     "mean_gross_bp": 45.25506561089478,
+     "hold_h_median": 83.0
+    }
+   },
+   "counts": {
+    "oil": {
+     "signals": 2740,
+     "stale": 0,
+     "no_bar": 0,
+     "open_at_end": 5,
+     "no_d20": 12,
+     "overlap_skipped": 2385,
+     "same_bar_skipped": 0,
+     "taken": 338
+    }
+   },
+   "shift_test": {
+    "base": {
+     "n": 338,
+     "PF": 1.2190977350483123,
+     "mean_R": 0.1138093067783045,
+     "PF_gross": 1.3952863641430777,
+     "stale": 0
+    },
+    "shifted": {
+     "n": 339,
+     "PF": 1.1536251412464036,
+     "mean_R": 0.08236410536508655,
+     "PF_gross": 1.2926787681218572,
+     "stale": 0
+    },
+    "delay_extra_h": 1.0,
+    "max_wait_h": null
+   }
+  }
+ }
+}

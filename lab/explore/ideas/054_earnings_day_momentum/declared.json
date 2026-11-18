@@ -1,0 +1,184 @@
+{
+ "idea": "054 Earnings day: follow the opening move for the session",
+ "date_declared": "2026-11-18",
+ "track": "fast",
+ "family": "earnings",
+ "hypothesis": "On the reaction session of a quarterly results release, a share whose price at 10:00 New York stands 2 % or more away from the previous session's close keeps moving in that direction until the session's close.",
+ "mechanism": "Intraday continuation of large earnings gaps ('gap and go'; intraday post-earnings drift): funds and index-tracking or risk-limited traders that cannot or do not act at the open adjust their positions during the day, so the price discovery of a large surprise is spread over the session. Company-specific events spread over the calendar; the entry at 10:00 avoids the 09:30 opening spread (10-16 x the usual). Not one of the closed families: the lab's share opening rules (noise30/ocm4 on shares) traded every day, not earnings days.",
+ "data": {
+  "signal": "SEC EDGAR 8-K item 2.02 calendar of lab/explore/scout/earnings_edgar.py, calendar(end='2021-12-31', drop_late=True) (816 quarterly results rows; the 21 Alibaba 6-K and 4 in-session Citigroup rows dropped as a session late). Each row is KNOWN at accepted_utc (EDGAR acceptance time, real UTC); its reaction session R = column reaction_session (first regular 09:30-16:00 New York session starting strictly after accepted_utc). The move uses the share's own hourly bars up to the end of the first bar of R (labelled 09:00, runs 09:30-10:00 New York), so the signal is known at 10:00 New York (that bar's end).",
+  "publication_lag": "calendar rows indexed by accepted_utc (row_len 0 in the truncation test; every reaction session starts after it); no FRED or other external series. The move needs the first bar's close: known_at = its label + 1 h = 10:00 New York.",
+  "prices": "kit.data.load_bars(<ticker>) = prepared hourly BID bars of the 40 US shares (kit v2.1, split-adjusted, 2017-01-26..2021-12-31), PROVISIONAL costs of kit/extra_costs.json",
+  "in_sample_years": "2017-2021 (5 years, the share bars' span); power check from the signal data alone (power.py, power.json): 724 events with reaction bars, 458 moves at or beyond +/-2 % at 10:00 (235 up, 223 down) on 39 shares (Alibaba has no row left after drop_late), by reaction year 2017 57, 2018 108, 2019 99, 2020 100, 2021 94; at 1.5 %: 531; at 2.5 %: 391; at 3 %: 338; no event falls on an early-close session; every 2 % signal has a bar opening at 10:00",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": [
+  "aapl",
+  "adbe",
+  "amd",
+  "amzn",
+  "avgo",
+  "ba",
+  "baba",
+  "bac",
+  "c",
+  "cat",
+  "crm",
+  "csco",
+  "cvx",
+  "dis",
+  "fb",
+  "ge",
+  "googl",
+  "gs",
+  "hd",
+  "intc",
+  "jnj",
+  "jpm",
+  "ma",
+  "mcd",
+  "mrk",
+  "msft",
+  "mu",
+  "nflx",
+  "nke",
+  "nvda",
+  "orcl",
+  "pfe",
+  "pypl",
+  "qcom",
+  "tsla",
+  "unh",
+  "v",
+  "wfc",
+  "wmt",
+  "xom"
+ ],
+ "rule_main": {
+  "signal": "For each calendar row (drop_late=True) whose reaction session R is not a NYSE scheduled early close (list in signals.py: 2017-07-03, 2017-11-24, 2018-07-03, 2018-11-23, 2018-12-24, 2019-07-03, 2019-11-29, 2019-12-24, 2020-11-27, 2020-12-24, 2021-11-26) and has a first bar (labelled 09:00 New York) in the share's bars: move = close of that bar / close of the last bar of the previous session present in the share's bars - 1. Signal if |move| >= 0.02. known_at = end of the first bar (10:00 New York).",
+  "side": "+1 if move > 0, -1 if move < 0",
+  "entry": "open of the bar labelled 10:00 New York of R (first bar opening at or after known_at), simulated with max_wait_h=2 (a missing 10:00 bar enters at 11:00 at the latest, else no trade, counted as stale)",
+  "exit": [
+   "clock",
+   "16:00",
+   "America/New_York"
+  ],
+  "stop": [
+   "d20",
+   1.0
+  ],
+  "target": null,
+  "overlap": "one position per share (kit.sim mode 'one'); every-signal variant (mode 'every') for the every-signal bar; basket of all the shares, one rule"
+ },
+ "what_changed_vs_brief": "Nothing of substance. The exit 'at the session's close (16:00 New York)' is the kit's ('clock', '16:00', 'America/New_York'): no bar opens at 16:00, so the kit exits at the close of the last bar before (the bar labelled 15:00, whose close is the 16:00 price), with the close-of-bar spread. 'Half days give no trade' is implemented with the NYSE's scheduled early-close list (known a year ahead), not with the bars (a bar's existence later in the session is not known at 10:00). 'Previous session's last close' = the last bar of the previous date present in the share's bars.",
+ "configurations": [
+  {
+   "id": "01_main",
+   "threshold": 0.02,
+   "exit": [
+    "clock",
+    "16:00",
+    "America/New_York"
+   ],
+   "stop": [
+    "d20",
+    1.0
+   ]
+  },
+  {
+   "id": "02_th1.5",
+   "threshold": 0.015,
+   "exit": [
+    "clock",
+    "16:00",
+    "America/New_York"
+   ],
+   "stop": [
+    "d20",
+    1.0
+   ]
+  },
+  {
+   "id": "03_th2.5",
+   "threshold": 0.025,
+   "exit": [
+    "clock",
+    "16:00",
+    "America/New_York"
+   ],
+   "stop": [
+    "d20",
+    1.0
+   ]
+  },
+  {
+   "id": "04_th3",
+   "threshold": 0.03,
+   "exit": [
+    "clock",
+    "16:00",
+    "America/New_York"
+   ],
+   "stop": [
+    "d20",
+    1.0
+   ]
+  },
+  {
+   "id": "05_stop0.75",
+   "threshold": 0.02,
+   "exit": [
+    "clock",
+    "16:00",
+    "America/New_York"
+   ],
+   "stop": [
+    "d20",
+    0.75
+   ]
+  },
+  {
+   "id": "06_stop1.5",
+   "threshold": 0.02,
+   "exit": [
+    "clock",
+    "16:00",
+    "America/New_York"
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "07_exit15",
+   "threshold": 0.02,
+   "exit": [
+    "clock",
+    "15:00",
+    "America/New_York"
+   ],
+   "stop": [
+    "d20",
+    1.0
+   ]
+  },
+  {
+   "id": "08_exit13",
+   "threshold": 0.02,
+   "exit": [
+    "clock",
+    "13:00",
+    "America/New_York"
+   ],
+   "stop": [
+    "d20",
+    1.0
+   ]
+  }
+ ],
+ "costs": "kit.costs with kit/extra_costs.json (PROVISIONAL share costs: quoted spread by year and hour of week for an order at a 10:00-15:00 bar open or a bar close, commission max(0.03 USD a share, 2 USD minimum per order at 4,791.67 USD stake), slippage 1 bp market / 2 bp stop; no night held, so no swap and no dividend): gross, net, spread and slippage x1.5",
+ "bars": "CHARTER.md 'The bars' on 01_main as a BASKET (t on daily sums of R >= 2.5, pooled PF >= 1.12 and >= 1.04 at costs x1.5, >= 60 % of years positive, >= 65 % of markets positive, no market above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days, same-day random-entry null >= 97.5th percentile with 2000 draws), computed by kit.judge.verdict; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (label only)",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead decides).",
+ "kit": "lab/explore/kit v2.1 (unchanged)"
+}

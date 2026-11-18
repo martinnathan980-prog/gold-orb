@@ -1,0 +1,42 @@
+{
+  "idea": "057 Oil: momentum after the weekly inventory report",
+  "date_declared": "2026-11-18",
+  "track": "fast",
+  "family": "event-momentum (new market: oil)",
+  "hypothesis": "On a US EIA weekly petroleum report day, when the hourly bar that holds the release moves crude by more than its own usual size, the move continues in the same direction until the futures settlement (14:30 New York).",
+  "mechanism": "The inventory surprise moves crude within seconds; hedgers, refiners and funds adjust through the session, extending the move (event-day momentum, as on the Nasdaq open, here on a market where a scheduled shock sets the direction). Intraday, no swap. Not a closed family: the lab never tested oil (its data had roll jumps until kit v2.1) and macro event days were tested on the 16 FP markets, not on crude with its own weekly report.",
+  "data": {
+    "signal": "Calendar BUILT FROM THE RULE (no schedule fetched; sources.md has no EIA section and EIA's past release schedule is not in the reachable sources): Wednesday 10:30 New York; in a week with a US federal holiday (pandas USFederalHolidayCalendar, observed dates) on Monday, Tuesday or Wednesday, Thursday 11:00 New York. 470 report days 2013-2021 (404 Wednesdays, 66 Thursdays). A week dated wrongly by the rule only dilutes the effect (the signal is the price move itself). The signal value is the move of the oil bar that holds the release: close / open - 1 of the bar labelled 10:00 New York (Thursday: 11:00), known at that bar's END (11:00 / 12:00 New York).",
+    "publication_lag": "no external series: the calendar depends on dates only; the only values used are hourly bar prices, each known at its bar's end (row_len 1 h in the truncation test).",
+    "prices": "kit.data.load_bars('oil') = prepared hourly BID bars of the front WTI future (Dukascopy LIGHT.CMD/USD), back-adjusted by the kit for the monthly roll; ratios only, never levels.",
+    "in_sample_years": "2013..2021 (9 years). Power check from the signal data alone (release bars only, no later price): 462 report days with a release bar; main configuration 290 signals (2013: 25 (first 60 days are the median's warm-up), 2014: 25, 2015: 37, 2016: 42, 2017: 34, 2018: 32, 2019: 35, 2020: 29, 2021: 31), 149 long / 141 short.",
+    "nothing_after": "2021-12-31"
+  },
+  "markets": ["oil"],
+  "rule_main": {
+    "signal": "On each report day of the calendar: m = close/open - 1 of the bar labelled 10:00 New York (11:00 on a Thursday release). U = median |m'| of the bars at the same New York hour on the previous 60 trading days that have that bar (report days included, the day itself excluded; 60 needed). Signal if |m| > 1.0 x U and m != 0. known_at = the bar's end (11:00 / 12:00 New York).",
+    "side": "sign(m): +1 if the release bar rose, -1 if it fell",
+    "entry": "open of the next bar (the first bar opening at or after known_at), simulate with max_wait_h = 1 (a missing next bar leaves at most one hour of wait, else the signal is stale and dropped)",
+    "exit": ["clock", "14:00", "America/New_York"],
+    "exit_note": "the brief's 14:30 New York settlement; with hourly bars the open of the bar labelled 14:00 New York (the nearest the kit can express without going past the settlement)",
+    "stop": ["d20", 1.0],
+    "target": null,
+    "overlap": "one position per market (kit.sim mode 'one'; at most one signal a day and the trade ends the same day, so mode 'every' gives the same trades); every-signal variant for the every-signal bar"
+  },
+  "configurations": [
+    {"id": "01_main", "thr_mult": 1.0, "window": 60, "exit": ["clock", "14:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "02_thr075", "thr_mult": 0.75, "window": 60, "exit": ["clock", "14:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "03_thr150", "thr_mult": 1.5, "window": 60, "exit": ["clock", "14:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "04_win40", "thr_mult": 1.0, "window": 40, "exit": ["clock", "14:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "05_win120", "thr_mult": 1.0, "window": 120, "exit": ["clock", "14:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "06_exit13", "thr_mult": 1.0, "window": 60, "exit": ["clock", "13:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "07_exit15", "thr_mult": 1.0, "window": 60, "exit": ["clock", "15:00", "America/New_York"], "stop": ["d20", 1.0]},
+    {"id": "08_stop05", "thr_mult": 1.0, "window": 60, "exit": ["clock", "14:00", "America/New_York"], "stop": ["d20", 0.5]},
+    {"id": "09_stop15", "thr_mult": 1.0, "window": 60, "exit": ["clock", "14:00", "America/New_York"], "stop": ["d20", 1.5]}
+  ],
+  "what_changed_vs_brief": "Exit at the open of the bar labelled 14:00 New York instead of 14:30 (hourly bars). Calendar built from the brief's rule with pandas' US federal holiday calendar (observed dates); other shifts of the real schedule (shutdowns, Thanksgiving and Christmas weeks moved differently, unscheduled delays) are not modelled. 'Usual size' = median over the previous 60 trading days that have a bar at that New York hour, report days included.",
+  "costs": "kit.costs: oil PROVISIONAL (kit/extra_costs.json: spread 0.05 USD a barrel constant, slippage 0.5 / 1.5 bp, swaps 6 % long 4 % short, none paid intraday): gross, net, spread and slippage x1.5",
+  "bars": "CHARTER.md 'The bars' on 01_main, one market (oil): n >= 250, PF >= 1.12, t >= 2.5, >= 60 % years positive, PF >= 1.04 at costs x1.5, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days, random-entry null (2000 draws, same exit and stop) >= 97.5th percentile; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (label). Computed by kit.judge.verdict.",
+  "split": "IS only (to 2021-12-31). No validation look in this run (lead's instruction).",
+  "kit": "lab/explore/kit v2.1, unchanged"
+}

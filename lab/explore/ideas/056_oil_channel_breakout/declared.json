@@ -1,0 +1,43 @@
+{
+  "idea": "056 Oil: the gold 4-hour channel breakout (donch4h_stop) carried to crude oil",
+  "date_declared": "2026-11-18",
+  "track": "fast",
+  "family": "breakout",
+  "hypothesis": "The robot's gold rule donch4h_stop (break of the 60-bar channel of UTC 4-hour bars, 2 ATR(14) stop and trail, at most 5 trading days), ported to the front WTI future with the same parameters, earns net of provisional costs.",
+  "mechanism": "Breakouts work on volatile trending markets (the lab's working family); oil trends hard after supply news and inventory surprises, and stop-runs at multi-week extremes push trend followers in late. One rule ported unchanged is one trial, not a search. The lab's breadth study carried this rule to every other market but left oil out because of the contract-roll jumps, which kit v2.1 removes.",
+  "data": {
+    "signal": "prices only: kit.data.load_bars('oil') hourly BID bars (front WTI future, Dukascopy LIGHT.CMD/USD prepared from the lab's one-minute bars, back-adjusted by the kit for its 108 monthly rolls). 4-hour bars = UTC buckets 00/04/08/12/16/20 aggregated from the hourly bars (first open, max high, min low, last close; empty buckets absent), each KNOWN at its nominal end (bucket start + 4 h; conservative for the Friday bucket that closes earlier). An hourly bar's close is known at the bar's end (open + 1 h).",
+    "publication_lag": "none (no external series)",
+    "prices": "kit.data.load_bars('oil'), roll-adjusted by the kit (never by hand); only ratios / comparisons of prices are used, never absolute levels",
+    "in_sample_years": "2013 .. 2021 (9 years); power check from the bars alone (no return): 1,127 channel crossings (608 long, 519 short; 91-147 a year), 2,740 hourly closes beyond the channel; gold's rule made about 500 trades",
+    "nothing_after": "2021-12-31"
+  },
+  "markets": ["oil"],
+  "rule_main": {
+    "signal": "At each hourly bar (open time h): U = highest high and D = lowest low of the last N=60 completed 4-hour bars (those whose nominal end <= h). Long signal if the hourly close > U, short if it is < D; known at h + 1 h. Every such hour is a signal (the gold rule re-arms its stop orders at each 4-hour close while flat); the one-position filter skips signals while a trade is open.",
+    "side": "+1 above the channel, -1 below",
+    "entry": "open of the first hourly bar opening at or after known_at (kit.sim)",
+    "exit": "exit on a condition (kit.sim.event_exit), max hold ('bdays', 5). Events (one table for the market, independent of any trade): ATR = Wilder ATR(14) of the 4-hour bars (alpha 1/14, true range with the previous 4-hour close); for each completed 4-hour bar j, take the most recent signal of either side known at or before its end; ATR_s = the ATR of the last 4-hour bar completed at or before that signal's known_at (frozen, as the gold rule freezes it at the decision); best = the highest (long signal) / lowest (short signal) 4-hour close among the 4-hour bars ending at or after that signal's known_at, up to j; event at the end of bar j if close_j <= best - TRAIL x ATR_s (long) or close_j >= best + TRAIL x ATR_s (short), TRAIL = 2. A trade leaves at the open after the first event strictly after its entry bar's open, or after 5 business days.",
+    "stop": ["d20", 0.70],
+    "stop_note": "the gold rule's initial stop is 2 ATR(14) of 4-hour bars; the kit only takes a multiple of D20 (mean daily range of 20 days) or bp. 0.70 = the median of 2 x ATR14(4h) / D20 measured on the oil bars at the 1,127 channel crossings (median 0.684, quartiles 0.62-0.77), a range statistic with no return, measured before this declaration and rounded to 0.05",
+    "target": null,
+    "overlap": "one position (kit.sim mode 'one'); every-signal variant (mode 'every') for the every-signal bar"
+  },
+  "configurations": [
+    {"id": "01_main",     "n": 60, "entry": "close", "trail_atr": 2.0, "max_hold": ["bdays", 5], "stop": ["d20", 0.70]},
+    {"id": "02_n50",      "n": 50, "entry": "close", "trail_atr": 2.0, "max_hold": ["bdays", 5], "stop": ["d20", 0.70]},
+    {"id": "03_n70",      "n": 70, "entry": "close", "trail_atr": 2.0, "max_hold": ["bdays", 5], "stop": ["d20", 0.70]},
+    {"id": "04_trail1.5", "n": 60, "entry": "close", "trail_atr": 1.5, "max_hold": ["bdays", 5], "stop": ["d20", 0.70]},
+    {"id": "05_trail2.5", "n": 60, "entry": "close", "trail_atr": 2.5, "max_hold": ["bdays", 5], "stop": ["d20", 0.70]},
+    {"id": "06_stop0.50", "n": 60, "entry": "close", "trail_atr": 2.0, "max_hold": ["bdays", 5], "stop": ["d20", 0.50]},
+    {"id": "07_stop0.90", "n": 60, "entry": "close", "trail_atr": 2.0, "max_hold": ["bdays", 5], "stop": ["d20", 0.90]},
+    {"id": "08_hold4",    "n": 60, "entry": "close", "trail_atr": 2.0, "max_hold": ["bdays", 4], "stop": ["d20", 0.70]},
+    {"id": "09_touch",    "n": 60, "entry": "touch", "trail_atr": 2.0, "max_hold": ["bdays", 5], "stop": ["d20", 0.70],
+     "entry_note": "signal when the hourly HIGH >= U (long) or LOW <= D (short), an hour touching both is no signal; closer to the gold rule's stop order, entered at the next open"}
+  ],
+  "what_changed_vs_gold_rule": "(1) stop entry at the channel edge inside the 4-hour window -> hourly close beyond the channel, entry at the next hourly open (the kit enters at an open after a signal); (2) initial stop 2 ATR(14,4h) from the fill -> 0.70 D20 from the fill (kit stops are D20 or bp); (3) continuous trailing stop 2 ATR from the best M1 price -> exit at the next open after a 4-hour close 2 ATR below the best 4-hour close since the latest signal (trade-independent event table, which the kit requires; the latest signal of the trade's side resets 'best' only when the close is again beyond the channel, i.e. at a new extreme); (4) exit 5 NY trading days after the decision minus 5 min -> 5 business days after entry (kit 'bdays'); (5) mid prices of bid and ask -> BID bars plus the kit's modelled spread.",
+  "costs": "kit.costs, oil PROVISIONAL (kit/extra_costs.json: spread 0.05 USD a barrel constant, slippage 0.5 / 1.5 bp, swaps 6 % long and 4 % short a year both a cost, triple Friday): gross, net, spread and slippage x1.5. A pass must be re-judged on FP's real XTIUSD costs and on FP's own spot prices.",
+  "bars": "CHARTER.md 'The bars' (one market) on 01_main, computed by kit.judge.verdict: n >= 250, PF >= 1.12, t >= 2.5, >= 60 % years positive, PF >= 1.04 at costs x1.5, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days, random-entry null (2000 draws, same event exit and stop) >= 97.5th percentile; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (label). Truncation tests (default cuts) on the signal build and on the event build.",
+  "split": "IS only (to 2021-12-31). No VAL look in this run (the lead does it if the main passes and survives the attack).",
+  "kit": "lab/explore/kit v2.1 (unchanged)"
+}

@@ -1,0 +1,220 @@
+{
+ "idea": "053 Earnings run-up on the EXPECTED date: hold a share in the days before the date its results are due",
+ "date_declared": "2026-11-18",
+ "track": "fast",
+ "family": "earnings",
+ "hypothesis": "A large US share earns more than its own usual drift in the five sessions before the date its quarterly results are expected (the same quarter's reaction session one year earlier + 364 days).",
+ "mechanism": "Earnings announcement premium (Frazzini and Lamont 2007; Savor and Wilson 2016): attention and buying build up before scheduled announcements; companies report on nearly the same dates every year, which is how the cited studies date the expected announcement. Long only on shares that rose in 2017-2021: the same-share, same-clock random-entry null decides whether it beats the drift. Not a closed family (the lab never held a share overnight before kit v2.1).",
+ "data": {
+  "signal": "SEC EDGAR 8-K item 2.02 calendar of lab/explore/scout/earnings_edgar.py, calendar(end='2021-12-31', drop_late=True) (816 quarterly results rows; Alibaba's 6-K rows and Citigroup's 4 in-session rows dropped, so Alibaba has no signal). Each row P is KNOWN at accepted_utc (EDGAR acceptance, real UTC) and its reaction session is the column reaction_session. Expected reaction session E = first regular NYSE session on or after reaction_session + 364 calendar days; sessions = Monday-Friday minus the NYSE full-day holidays by rule (kit.data._nyse_holidays) minus the special closure 2018-12-05 (announced 2018-12-01). E is computable from P a year ahead: nothing is known early. No price enters the signal.",
+  "publication_lag": "calendar rows indexed by accepted_utc (row_len 0 in the truncation test; no other external series). The signal's known_at is the entry bar's open (10:00 New York of session E-k), about 360 days after P is known.",
+  "prices": "kit.data.load_bars(<ticker>) = prepared hourly BID bars of the US shares (kit v2.1, split-adjusted, 2017-01-26..2021-12-31), PROVISIONAL costs of kit/extra_costs.json",
+  "in_sample_years": "2017-2021 (5 years of share bars; first expected dates late 2017). Power check from the calendar alone (power.py, power.json): 660 main signals with entry and exit inside the bars' span, 39 shares, by entry year 2017 40, 2018 156, 2019 156, 2020 155, 2021 153. Information from the calendar only (no price): the actual reaction session of the same quarter falls on E in 314 cases, after E in 269, inside the hold (entry session excluded) in 66, on the entry session in 8, before the entry in 3.",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": [
+  "aapl",
+  "adbe",
+  "amd",
+  "amzn",
+  "avgo",
+  "ba",
+  "bac",
+  "c",
+  "cat",
+  "crm",
+  "csco",
+  "cvx",
+  "dis",
+  "fb",
+  "ge",
+  "googl",
+  "gs",
+  "hd",
+  "intc",
+  "jnj",
+  "jpm",
+  "ma",
+  "mcd",
+  "mrk",
+  "msft",
+  "mu",
+  "nflx",
+  "nke",
+  "nvda",
+  "orcl",
+  "pfe",
+  "pypl",
+  "qcom",
+  "tsla",
+  "unh",
+  "v",
+  "wfc",
+  "wmt",
+  "xom"
+ ],
+ "rule_main": {
+  "signal": "for each calendar row P (drop_late=True): E as above; entry session S = the 5th session before E (E-5); known_at = 10:00 New York of S (the open of the bar labelled 10:00). Rows whose known_at is in 2022 or later dropped.",
+  "side": "+1 (long only)",
+  "entry": "open of the bar labelled 10:00 New York of S; simulated with max_wait_h=2 (a missing 10:00 bar gives no trade, counted stale)",
+  "exit": "exit on a condition (sim.event_exit): events = the open of the bar labelled 15:00 New York of session E-1 (12:00 on the NYSE 13:00 early-close days, rule-known: 2017-07-03, 2017-11-24, 2018-07-03, 2018-11-23, 2018-12-24, 2019-07-03, 2019-11-29, 2019-12-24, 2020-11-27, 2020-12-24, 2021-11-26), per share; max_hold ('bdays', 6) as a safety cap only (later than every main exit unless two holidays fall inside the hold)",
+  "stop": [
+   "d20",
+   2.0
+  ],
+  "target": null,
+  "overlap": "one position per share (kit.sim mode 'one'); every-signal variant (mode 'every'); basket of all the shares, one rule"
+ },
+ "what_changed_vs_brief": "(1) Exit at the OPEN of the bar labelled 15:00 New York of session E-1 instead of the session's close (16:00): the kit's exit on a condition leaves at the open of the first bar at or after the event, and an event at 16:00 would exit at the next session's 09:30 open, i.e. through the release of an after-close reporter; the last hour of E-1 is given up. On the rule-known 13:00 half days the exit is the open of the 12:00 bar (the last full bar). If a share's bars have a hole at that bar the exit falls at the next bar (counted and reported). (2) The event exit needs a max_hold: ('bdays', k+1) from the entry bar. The random-entry null re-enters on random days and leaves at the share's next exit event or at that cap, so most null draws hold k+1 business days (to 10:00) while the real trades hold about k-1 days and 5 hours: the null holds about 1.8 sessions longer than the trades (on rising shares this gives the null more drift: a harder null for a long-only rule). Declared now, before any result; reported. (3) Sessions are computed from NYSE holiday rules plus the 2018-12-05 closure, not from the bars (a robot knows the exchange calendar in advance; using the bars would read future bars). (4) Alibaba has no signal (all its rows are dropped by drop_late, as the lead asked); 39 shares trade. (5) The 'results' pick of the calendar uses each company's whole-history usual lag (scout notes: redone strictly point in time it gave the same rows).",
+ "release_inside_hold_report": "information only, not judged: each trade is matched to the actual results row of the same share whose reaction session is nearest E within 45 days (calendar(end='2021-12-31'), late rows included); trades where that reaction session falls on the entry session or inside the hold (before E) are counted and the main's PF and mean R reported with and without them.",
+ "configurations": [
+  {
+   "id": "01_main",
+   "k_sessions_before_E": 5,
+   "exit_m_sessions_before_E": 1,
+   "exit": [
+    "event",
+    "open of the 15:00-labelled bar (12:00 on early-close days) of session E-1",
+    [
+     "bdays",
+     6
+    ]
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ],
+   "target": null
+  },
+  {
+   "id": "02_k3",
+   "k_sessions_before_E": 3,
+   "exit_m_sessions_before_E": 1,
+   "exit": [
+    "event",
+    "open of the 15:00-labelled bar (12:00 on early-close days) of session E-1",
+    [
+     "bdays",
+     4
+    ]
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ],
+   "target": null
+  },
+  {
+   "id": "03_k4",
+   "k_sessions_before_E": 4,
+   "exit_m_sessions_before_E": 1,
+   "exit": [
+    "event",
+    "open of the 15:00-labelled bar (12:00 on early-close days) of session E-1",
+    [
+     "bdays",
+     5
+    ]
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ],
+   "target": null
+  },
+  {
+   "id": "04_k6",
+   "k_sessions_before_E": 6,
+   "exit_m_sessions_before_E": 1,
+   "exit": [
+    "event",
+    "open of the 15:00-labelled bar (12:00 on early-close days) of session E-1",
+    [
+     "bdays",
+     7
+    ]
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ],
+   "target": null
+  },
+  {
+   "id": "05_k7",
+   "k_sessions_before_E": 7,
+   "exit_m_sessions_before_E": 1,
+   "exit": [
+    "event",
+    "open of the 15:00-labelled bar (12:00 on early-close days) of session E-1",
+    [
+     "bdays",
+     8
+    ]
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ],
+   "target": null
+  },
+  {
+   "id": "06_exit_E-2",
+   "k_sessions_before_E": 5,
+   "exit_m_sessions_before_E": 2,
+   "exit": [
+    "event",
+    "open of the 15:00-labelled bar (12:00 on early-close days) of session E-2",
+    [
+     "bdays",
+     6
+    ]
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ],
+   "target": null
+  },
+  {
+   "id": "07_stop1.5",
+   "k_sessions_before_E": 5,
+   "exit_m_sessions_before_E": 1,
+   "exit": [
+    "event",
+    "open of the 15:00-labelled bar (12:00 on early-close days) of session E-1",
+    [
+     "bdays",
+     6
+    ]
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ],
+   "target": null
+  },
+  {
+   "id": "08_stop3.0",
+   "k_sessions_before_E": 5,
+   "exit_m_sessions_before_E": 1,
+   "exit": [
+    "event",
+    "open of the 15:00-labelled bar (12:00 on early-close days) of session E-1",
+    [
+     "bdays",
+     6
+    ]
+   ],
+   "stop": [
+    "d20",
+    3.0
+   ],
+   "target": null
+  }
+ ],
+ "costs": "kit.costs with kit/extra_costs.json (PROVISIONAL share costs: quoted spread by year and hour of week, commission max(0.03 USD a share, 2 USD minimum per order at the 4,791.67 USD stake), slippage 1 bp market / 2 bp stop, swaps 7 % long, triple Friday, dividends: longs credited 0.70; results.json 'dividends' read at credits 0 and 1): gross, net, spread and slippage x1.5",
+ "bars": "CHARTER.md 'The bars' on 01_main as a BASKET (t on daily sums of R >= 2.5, pooled PF >= 1.12 and >= 1.04 at costs x1.5, >= 60 % of years positive, >= 65 % of markets positive, no market above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days, same-day random-entry null >= 97.5th percentile with 2000 draws run with the main's own exit events, cap and stop), computed by kit.judge.verdict with the signal and the event truncation reports; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (label only)",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead decides).",
+ "kit": "lab/explore/kit v2.1 (unchanged)"
+}

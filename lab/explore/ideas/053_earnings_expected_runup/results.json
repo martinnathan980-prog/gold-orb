@@ -1,0 +1,2463 @@
+{
+ "idea": "053 Earnings run-up on the EXPECTED date: hold a share in the days before the date its results are due",
+ "declared_sha256": "a6efd824612461b7cb24c5615cb535b5f862c115b79e871ce43c6987dc3d7ef6",
+ "verdict": "fail",
+ "failed_bars": [
+  "t_daily>=2.5",
+  "markets_positive>=65%",
+  "max_market_share<=25%",
+  "PF>=1.12",
+  "PF_stress>=1.04",
+  "neighbours_median_PF>=1.06",
+  "null>=97.5"
+ ],
+ "basket": true,
+ "bars": {
+  "truncation_test": {
+   "value": "passed",
+   "bar": "checks.truncation_test on the main signal build passed (same signals, dense cuts: checks.cuts_ok)",
+   "pass": true
+  },
+  "event_truncation_test": {
+   "value": "passed",
+   "bar": "checks.truncation_test on the exit-event build passed (same events per market, dense cuts)",
+   "pass": true
+  },
+  "declared_hash": {
+   "value": "matches declared.sha256",
+   "bar": "declared.json matches declared.sha256",
+   "pass": true
+  },
+  "configs<=11": {
+   "value": 8,
+   "bar": "at most 11 configurations",
+   "pass": true
+  },
+  "t_daily>=2.5": {
+   "value": 0.1502825704300223,
+   "bar": "t on daily sums of R >= 2.5",
+   "pass": false
+  },
+  "markets_positive>=65%": {
+   "value": 0.5641025641025641,
+   "bar": ">= 65 % of markets with positive expectancy",
+   "pass": false
+  },
+  "max_market_share<=25%": {
+   "value": 1.9434440782520308,
+   "bar": "no market above 25% of the profit",
+   "pass": false
+  },
+  "PF>=1.12": {
+   "value": 1.0191417782892835,
+   "bar": "PF net >= 1.12",
+   "pass": false
+  },
+  "years>=60%": {
+   "value": 0.6,
+   "bar": ">= 60 % of years positive",
+   "pass": true
+  },
+  "PF_stress>=1.04": {
+   "value": 0.945374708430476,
+   "bar": "PF with spread and slippage x1.5 >= 1.04",
+   "pass": false
+  },
+  "neighbours_median_PF>=1.06": {
+   "value": 1.0308043823242896,
+   "bar": "median PF of the neighbours >= 1.06",
+   "pass": false
+  },
+  "every_signal_exp>0": {
+   "value": 0.006253456689660637,
+   "bar": "every-signal expectancy > 0",
+   "pass": true
+  },
+  "hold<=5d": {
+   "value": 5,
+   "bar": "hold <= 5 trading days",
+   "pass": true
+  },
+  "null>=97.5": {
+   "value": 48.5,
+   "bar": "random-entry null (same market, side, clock, the main's own exit rule: exit_key; >= 2000 draws) >= 97.5th percentile",
+   "pass": false
+  },
+  "corr<=0.30": {
+   "value": -0.11314118755547328,
+   "bar": "weekly corr with the sum of the ten <= 0.30 (CHARTER 'Independence'; a negative one passes)",
+   "pass": true
+  }
+ },
+ "selection": {
+  "N_all": 2622,
+  "N_main": 173,
+  "dsr_N_all": {
+   "dsr": 0.00038621407579849315,
+   "sr": 0.008067591081897415,
+   "sr0": 0.18922847178028615,
+   "T": 347,
+   "n_trials": 2622,
+   "skew": -0.5211879349586301,
+   "kurtosis": 9.60921476667459,
+   "var_sr_used": 0.002890173410404624
+  },
+  "dsr_N_main": {
+   "dsr": 0.005201383460360619,
+   "sr": 0.008067591081897415,
+   "sr0": 0.1461083039603307,
+   "T": 347,
+   "n_trials": 173,
+   "skew": -0.5211879349586301,
+   "kurtosis": 9.60921476667459,
+   "var_sr_used": 0.002890173410404624
+  },
+  "dsr_N_all_V_noise": {
+   "dsr": 0.00038621407579849315,
+   "sr": 0.008067591081897415,
+   "sr0": 0.18922847178028615,
+   "T": 347,
+   "n_trials": 2622,
+   "skew": -0.5211879349586301,
+   "kurtosis": 9.60921476667459,
+   "var_sr_used": 0.002890173410404624
+  },
+  "pass": false
+ },
+ "main": {
+  "n": 652,
+  "markets": [
+   "aapl",
+   "adbe",
+   "amd",
+   "amzn",
+   "avgo",
+   "ba",
+   "bac",
+   "c",
+   "cat",
+   "crm",
+   "csco",
+   "cvx",
+   "dis",
+   "fb",
+   "ge",
+   "googl",
+   "gs",
+   "hd",
+   "intc",
+   "jnj",
+   "jpm",
+   "ma",
+   "mcd",
+   "mrk",
+   "msft",
+   "mu",
+   "nflx",
+   "nke",
+   "nvda",
+   "orcl",
+   "pfe",
+   "pypl",
+   "qcom",
+   "tsla",
+   "unh",
+   "v",
+   "wfc",
+   "wmt",
+   "xom"
+  ],
+  "PF_gross": 1.2818042188461587,
+  "PF": 1.0191417782892835,
+  "PF_stress": 0.945374708430476,
+  "mean_R": 0.006253456689660637,
+  "mean_R_gross": 0.08210979585721646,
+  "mean_R_stress": -0.0185246111691278,
+  "mean_net_bp": 15.985876948114417,
+  "mean_gross_bp": 47.29174906847071,
+  "t_trade": 0.19265730516935242,
+  "t_daily": 0.1502825704300223,
+  "n_days": 347,
+  "years_positive_frac": 0.6,
+  "by_year_R": {
+   "2017": 2.857741973624761,
+   "2018": -20.6076627176318,
+   "2019": 3.829047343639121,
+   "2020": -6.709633379109626,
+   "2021": 24.70776054113628
+  },
+  "hold_tdays_max": 5,
+  "hold_h_mean": 135.65797546012269,
+  "exit_reasons": {
+   "event": 509,
+   "stop": 113,
+   "stop_gap": 30
+  },
+  "long_n": 652,
+  "long_R": 4.077253761658735,
+  "short_n": 0,
+  "short_R": 0.0,
+  "by_market": {
+   "aapl": {
+    "n": 17,
+    "sum_R": -1.7953037071277045,
+    "mean_R": -0.10560610041927673
+   },
+   "adbe": {
+    "n": 17,
+    "sum_R": -1.1554109042679577,
+    "mean_R": -0.06796534730987987
+   },
+   "amd": {
+    "n": 16,
+    "sum_R": 1.671417889755232,
+    "mean_R": 0.104463618109702
+   },
+   "amzn": {
+    "n": 17,
+    "sum_R": -2.979294769322252,
+    "mean_R": -0.17525263348954423
+   },
+   "avgo": {
+    "n": 17,
+    "sum_R": 0.6022911688536507,
+    "mean_R": 0.03542889228550887
+   },
+   "ba": {
+    "n": 17,
+    "sum_R": -3.0038658042404673,
+    "mean_R": -0.17669798848473336
+   },
+   "bac": {
+    "n": 17,
+    "sum_R": 2.493867063203609,
+    "mean_R": 0.14669806254138876
+   },
+   "c": {
+    "n": 14,
+    "sum_R": 3.1764449524631715,
+    "mean_R": 0.2268889251759408
+   },
+   "cat": {
+    "n": 17,
+    "sum_R": -2.3333386046695237,
+    "mean_R": -0.13725521203938373
+   },
+   "crm": {
+    "n": 17,
+    "sum_R": -2.1127862618305766,
+    "mean_R": -0.12428154481356334
+   },
+   "csco": {
+    "n": 17,
+    "sum_R": -4.024796681265299,
+    "mean_R": -0.23675274595678228
+   },
+   "cvx": {
+    "n": 17,
+    "sum_R": -2.6678917991037863,
+    "mean_R": -0.15693481171198742
+   },
+   "dis": {
+    "n": 17,
+    "sum_R": 1.5722382987042685,
+    "mean_R": 0.09248460580613344
+   },
+   "fb": {
+    "n": 17,
+    "sum_R": 2.239683940665488,
+    "mean_R": 0.1317461141567934
+   },
+   "ge": {
+    "n": 17,
+    "sum_R": 0.5099487968448573,
+    "mean_R": 0.029996988049697488
+   },
+   "googl": {
+    "n": 17,
+    "sum_R": 3.2053512800698627,
+    "mean_R": 0.1885500752982272
+   },
+   "gs": {
+    "n": 17,
+    "sum_R": 7.923914678626486,
+    "mean_R": 0.46611262815449916
+   },
+   "hd": {
+    "n": 17,
+    "sum_R": -0.024408476698919088,
+    "mean_R": -0.0014357927469952404
+   },
+   "intc": {
+    "n": 17,
+    "sum_R": 2.444041065497127,
+    "mean_R": 0.143767121499831
+   },
+   "jnj": {
+    "n": 17,
+    "sum_R": 0.7276948012587418,
+    "mean_R": 0.042805576544631865
+   },
+   "jpm": {
+    "n": 17,
+    "sum_R": 5.776062993380941,
+    "mean_R": 0.33976841137534947
+   },
+   "ma": {
+    "n": 17,
+    "sum_R": -0.4500421359789102,
+    "mean_R": -0.026473066822288834
+   },
+   "mcd": {
+    "n": 16,
+    "sum_R": 3.103548865908859,
+    "mean_R": 0.19397180411930368
+   },
+   "mrk": {
+    "n": 16,
+    "sum_R": -3.439096415885615,
+    "mean_R": -0.21494352599285094
+   },
+   "msft": {
+    "n": 17,
+    "sum_R": -2.423443888083567,
+    "mean_R": -0.1425555228284451
+   },
+   "mu": {
+    "n": 16,
+    "sum_R": 1.161523756429831,
+    "mean_R": 0.07259523477686444
+   },
+   "nflx": {
+    "n": 17,
+    "sum_R": 1.94208983299604,
+    "mean_R": 0.11424057841153178
+   },
+   "nke": {
+    "n": 17,
+    "sum_R": -3.2645684109322,
+    "mean_R": -0.19203343593718825
+   },
+   "nvda": {
+    "n": 17,
+    "sum_R": 0.7257282965026279,
+    "mean_R": 0.042689899794272235
+   },
+   "orcl": {
+    "n": 17,
+    "sum_R": -9.430980333951494,
+    "mean_R": -0.5547635490559703
+   },
+   "pfe": {
+    "n": 17,
+    "sum_R": 1.167007641198639,
+    "mean_R": 0.0686475083058023
+   },
+   "pypl": {
+    "n": 16,
+    "sum_R": -2.227353766263586,
+    "mean_R": -0.13920961039147411
+   },
+   "qcom": {
+    "n": 16,
+    "sum_R": 1.430829161687524,
+    "mean_R": 0.08942682260547025
+   },
+   "tsla": {
+    "n": 17,
+    "sum_R": 0.6026252685314125,
+    "mean_R": 0.03544854520773015
+   },
+   "unh": {
+    "n": 16,
+    "sum_R": 5.8313442450713815,
+    "mean_R": 0.36445901531696134
+   },
+   "v": {
+    "n": 17,
+    "sum_R": -4.777147901615917,
+    "mean_R": -0.28100870009505396
+   },
+   "wfc": {
+    "n": 17,
+    "sum_R": -0.08317690295399102,
+    "mean_R": -0.004892758997293589
+   },
+   "wmt": {
+    "n": 16,
+    "sum_R": 1.7830513489177293,
+    "mean_R": 0.11144070930735808
+   },
+   "xom": {
+    "n": 17,
+    "sum_R": 0.1794551792830283,
+    "mean_R": 0.010556187016648722
+   }
+  },
+  "markets_positive_frac": 0.5641025641025641,
+  "max_market_share_of_profit": 1.9434440782520308
+ },
+ "sizing": {
+  "judged": false,
+  "note": "reported only: the charter's sizing bar is checked by the lead (risk plan)",
+  "by_market": {
+   "aapl": {
+    "min_lot": 1.0,
+    "margin_eur": 10.592539194303134,
+    "loss_at_median_stop_eur": 2.0635217391304357,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 78.67172526314707,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 9.851068206863633,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 31.888062227918983,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "adbe": {
+    "min_lot": 1.0,
+    "margin_eur": 52.952908309513795,
+    "loss_at_median_stop_eur": 15.640347826086943,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 15.737253343337375,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "amd": {
+    "min_lot": 1.0,
+    "margin_eur": 7.392569058127114,
+    "loss_at_median_stop_eur": 2.609956521739123,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 112.72580976665992,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 14.115231831651329,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 27.623898603131288,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "amzn": {
+    "min_lot": 1.0,
+    "margin_eur": 329.347869537385,
+    "loss_at_median_stop_eur": 87.44678260869574,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 2.530252691489598,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "avgo": {
+    "min_lot": 1.0,
+    "margin_eur": 49.582755307124316,
+    "loss_at_median_stop_eur": 13.388434782608726,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 16.80691861861085,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "ba": {
+    "min_lot": 1.0,
+    "margin_eur": 54.16711098610669,
+    "loss_at_median_stop_eur": 11.668260869565174,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 15.384489188413148,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "bac": {
+    "min_lot": 1.0,
+    "margin_eur": 5.073312688623522,
+    "loss_at_median_stop_eur": 1.0553043478260793,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 164.25822425690686,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 20.567986341734425,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 21.17114409304819,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "c": {
+    "min_lot": 1.0,
+    "margin_eur": 11.991240477614513,
+    "loss_at_median_stop_eur": 2.3901304347825993,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 69.49517315485556,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.702004290694957,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.03712614408766,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "cat": {
+    "min_lot": 1.0,
+    "margin_eur": 24.74476484308276,
+    "loss_at_median_stop_eur": 5.779304347826067,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 33.677157112539156,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "crm": {
+    "min_lot": 1.0,
+    "margin_eur": 28.675100744351898,
+    "loss_at_median_stop_eur": 7.23208695652171,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 29.061217282644566,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "csco": {
+    "min_lot": 1.0,
+    "margin_eur": 8.266373840719663,
+    "loss_at_median_stop_eur": 1.443043478260872,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 100.81002255528094,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 12.623168041704742,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 29.115962393077872,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "cvx": {
+    "min_lot": 1.0,
+    "margin_eur": 19.863924980260315,
+    "loss_at_median_stop_eur": 3.319913043478259,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 41.952098296859994,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "dis": {
+    "min_lot": 1.0,
+    "margin_eur": 21.096845718610194,
+    "loss_at_median_stop_eur": 4.021130434782603,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 39.50037576462076,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "fb": {
+    "min_lot": 1.0,
+    "margin_eur": 34.947412277881924,
+    "loss_at_median_stop_eur": 8.097217391304344,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 23.845351601633375,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "ge": {
+    "min_lot": 1.0,
+    "margin_eur": 16.281819374725124,
+    "loss_at_median_stop_eur": 4.3777391304348265,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 51.18183135153482,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "googl": {
+    "min_lot": 1.0,
+    "margin_eur": 213.92277011087145,
+    "loss_at_median_stop_eur": 48.151217391304236,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 3.895486828734666,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "gs": {
+    "min_lot": 1.0,
+    "margin_eur": 39.7331573865891,
+    "loss_at_median_stop_eur": 9.431478260869447,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 20.973247235937098,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "hd": {
+    "min_lot": 1.0,
+    "margin_eur": 40.485069571048726,
+    "loss_at_median_stop_eur": 7.705130434782523,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 20.58371992842661,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "intc": {
+    "min_lot": 1.0,
+    "margin_eur": 9.4002136950559,
+    "loss_at_median_stop_eur": 1.8845217391304372,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 88.65046693264327,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 11.100580207217938,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 30.63855022756468,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "jnj": {
+    "min_lot": 1.0,
+    "margin_eur": 24.673347560108688,
+    "loss_at_median_stop_eur": 3.501739130434801,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 33.77463602387898,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "jpm": {
+    "min_lot": 1.0,
+    "margin_eur": 19.539028509800126,
+    "loss_at_median_stop_eur": 3.7160869565217305,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 42.64968101742424,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "ma": {
+    "min_lot": 1.0,
+    "margin_eur": 47.8300759113015,
+    "loss_at_median_stop_eur": 8.555999999999962,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 17.422789269218573,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "mcd": {
+    "min_lot": 1.0,
+    "margin_eur": 35.08174168634877,
+    "loss_at_median_stop_eur": 4.8305217391304,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 23.754046785470898,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "mrk": {
+    "min_lot": 1.0,
+    "margin_eur": 13.638249388308827,
+    "loss_at_median_stop_eur": 2.2749565217391363,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 61.10266131719921,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "msft": {
+    "min_lot": 1.0,
+    "margin_eur": 24.532791463148477,
+    "loss_at_median_stop_eur": 4.531913043478263,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 33.96814156208482,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "mu": {
+    "min_lot": 1.0,
+    "margin_eur": 8.825624194229816,
+    "loss_at_median_stop_eur": 3.1494347826087083,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 94.42202783551173,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 11.823280007229293,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 29.915850427553323,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "nflx": {
+    "min_lot": 1.0,
+    "margin_eur": 65.57760267162561,
+    "loss_at_median_stop_eur": 21.53069565217392,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 12.707590692300554,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "nke": {
+    "min_lot": 1.0,
+    "margin_eur": 15.303226057756493,
+    "loss_at_median_stop_eur": 3.6284347826086845,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 54.45474896523245,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "nvda": {
+    "min_lot": 1.0,
+    "margin_eur": 10.96100323732627,
+    "loss_at_median_stop_eur": 3.1340869565217466,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 76.02710402415768,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 9.519915634329308,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 32.21921480045331,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "orcl": {
+    "min_lot": 1.0,
+    "margin_eur": 9.372153125436768,
+    "loss_at_median_stop_eur": 1.8534782608695604,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 88.91588967657823,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 11.133815750806317,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 30.6053146839763,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "pfe": {
+    "min_lot": 1.0,
+    "margin_eur": 6.547548450257949,
+    "loss_at_median_stop_eur": 1.0976521739130278,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 127.27409956019541,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 15.93693072753751,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 25.80219970724511,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "pypl": {
+    "min_lot": 1.0,
+    "margin_eur": 19.57035442891216,
+    "loss_at_median_stop_eur": 4.107695652173917,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 42.581412429721404,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "qcom": {
+    "min_lot": 1.0,
+    "margin_eur": 13.978412229482874,
+    "loss_at_median_stop_eur": 3.1765652173912966,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 59.615736011540015,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "tsla": {
+    "min_lot": 1.0,
+    "margin_eur": 12.154510946849891,
+    "loss_at_median_stop_eur": 5.100573913043461,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 68.56165064784528,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.585111037643236,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.15401939713938,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "unh": {
+    "min_lot": 1.0,
+    "margin_eur": 45.764577583888624,
+    "loss_at_median_stop_eur": 9.40865217391303,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 18.209134167267127,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "v": {
+    "min_lot": 1.0,
+    "margin_eur": 31.119059076783543,
+    "loss_at_median_stop_eur": 4.841478260869578,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 26.77887307830088,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "wfc": {
+    "min_lot": 1.0,
+    "margin_eur": 8.38851439049099,
+    "loss_at_median_stop_eur": 1.6933043478260832,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 99.34218319729884,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 12.439369026444375,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 29.29976140833824,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "wmt": {
+    "min_lot": 1.0,
+    "margin_eur": 20.623900306118163,
+    "loss_at_median_stop_eur": 3.2282608695652057,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 40.406194801384,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.347826086956522,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.39130434782609,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   },
+   "xom": {
+    "min_lot": 1.0,
+    "margin_eur": 12.006329812348241,
+    "loss_at_median_stop_eur": 2.051478260869614,
+    "min_commission_per_side": 2.0,
+    "min_commission_modelled": true,
+    "trade_notional_usd": 4791.666666666667,
+    "units_at_trade_notional": 69.40783289796595,
+    "units_below_which_min_commission_binds": 66.66666666666667,
+    "commission_bp_round_trip_modelled": 8.691067771571387,
+    "commission_bp_round_trip_at_1000_eur_account": 41.739130434782616,
+    "extra_cost_bp_round_trip_at_1000_eur_account": 33.048062663211226,
+    "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional (5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a 1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"
+   }
+  },
+  "min_lot_margin_eur": 329.347869537385,
+  "min_lot_loss_at_median_stop_eur": 87.44678260869574,
+  "min_lot_loss_pct_of_1000_eur": 8.744678260869573
+ },
+ "dividends": {
+  "by_market": {
+   "aapl": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "adbe": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "amd": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "amzn": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "avgo": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "ba": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "bac": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "c": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "cat": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 11,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 478.7369999999999
+   },
+   "crm": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "csco": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "cvx": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "dis": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "fb": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "ge": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "googl": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "gs": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "hd": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "intc": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "jnj": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "jpm": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "ma": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "mcd": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "mrk": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "msft": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "mu": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "nflx": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "nke": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "nvda": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "orcl": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "pfe": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "pypl": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "qcom": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "tsla": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "unh": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "v": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "wfc": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   },
+   "wmt": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 1,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 25.662000000000017
+   },
+   "xom": {
+    "credit_long_used": 0.7,
+    "long_trades_across_ex_dates": 0,
+    "short_trades_across_ex_dates": 0,
+    "long_credit_bp_total": 0.0
+   }
+  },
+  "credit_long_used": 0.7,
+  "PF_net": 1.0191417782892835,
+  "mean_R_net": 0.006253456689660637,
+  "PF_net_credit_0": 1.0131490764251008,
+  "mean_R_net_credit_0": 0.004305113773547927,
+  "PF_net_credit_1": 1.0217167693654425,
+  "mean_R_net_credit_1": 0.007088460796566098,
+  "needs_credit": false
+ },
+ "max_hold_tdays": 5,
+ "slow_track": false,
+ "costs": "PROVISIONAL COSTS: aapl, adbe, amd, amzn, avgo, ba, bac, c, cat, crm, csco, cvx, dis, fb, ge, googl, gs, hd, intc, jnj, jpm, ma, mcd, mrk, msft, mu, nflx, nke, nvda, orcl, pfe, pypl, qcom, tsla, unh, v, wfc, wmt, xom (kit/extra_costs.json; re-judge on the broker's own figures before anything else)",
+ "provisional_costs": true,
+ "neighbours": {
+  "02_k3": {
+   "n": 652,
+   "PF": 0.87936635701637,
+   "mean_R": -0.03258191218881619
+  },
+  "03_k4": {
+   "n": 652,
+   "PF": 0.9322338686716869,
+   "mean_R": -0.021183779802150755
+  },
+  "04_k6": {
+   "n": 652,
+   "PF": 1.1674374430599883,
+   "mean_R": 0.056622757459273705
+  },
+  "05_k7": {
+   "n": 652,
+   "PF": 1.1848499019574832,
+   "mean_R": 0.06652401716329362
+  },
+  "06_exit_E-2": {
+   "n": 652,
+   "PF": 1.007745712360226,
+   "mean_R": 0.0021955089973728814
+  },
+  "07_stop1.5": {
+   "n": 652,
+   "PF": 1.0308043823242896,
+   "mean_R": 0.013007954964043772
+  },
+  "08_stop3.0": {
+   "n": 652,
+   "PF": 1.0586540161650602,
+   "mean_R": 0.01261722370861364
+  }
+ },
+ "every_signal": {
+  "n": 652,
+  "mean_R": 0.006253456689660637
+ },
+ "null": {
+  "real_mean_R": 0.006253456689660637,
+  "percentile": 48.5,
+  "n_draws": 2000,
+  "seed": 0,
+  "exit_key": "859b9b9c1bc852f700b02c7a0b69e6a628ad6be7ddd020d95999593a620baff0",
+  "mode": "every",
+  "joint_groups": 146,
+  "joint_no_common_day": 0,
+  "null_mean": 0.007910004110422173,
+  "null_sd": 0.044555789003935455
+ },
+ "counts": {
+  "aapl": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "adbe": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "amd": {
+   "signals": 17,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 16
+  },
+  "amzn": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "avgo": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "ba": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "bac": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "c": {
+   "signals": 14,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 14
+  },
+  "cat": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "crm": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "csco": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "cvx": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "dis": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "fb": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "ge": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "googl": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "gs": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "hd": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "intc": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "jnj": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "jpm": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "ma": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "mcd": {
+   "signals": 17,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 16
+  },
+  "mrk": {
+   "signals": 17,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 16
+  },
+  "msft": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "mu": {
+   "signals": 18,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 1,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 16
+  },
+  "nflx": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "nke": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "nvda": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "orcl": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "pfe": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "pypl": {
+   "signals": 17,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 16
+  },
+  "qcom": {
+   "signals": 17,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 16
+  },
+  "tsla": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "unh": {
+   "signals": 17,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 16
+  },
+  "v": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "wfc": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  },
+  "wmt": {
+   "signals": 17,
+   "stale": 1,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 16
+  },
+  "xom": {
+   "signals": 17,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 17
+  }
+ },
+ "rule": {
+  "exit": [
+   "event",
+   "660 event times, sha256 733d8dfbf8731128",
+   [
+    "bdays",
+    6
+   ]
+  ],
+  "stop": [
+   "d20",
+   2.0
+  ],
+  "target": null,
+  "delay_h": 0.0,
+  "mode": "one"
+ },
+ "ledger_line": "| 053 | 2026-11-18 | 053 Earnings run-up on the EXPECTED date: hold a share in the days before the date its results are due | aapl, adbe, amd, amzn, avgo, ba, bac, c, cat, crm, csco, cvx, dis, fb, ge, googl, gs, hd, intc, jnj, jpm, ma, mcd, mrk, msft, mu, nflx, nke, nvda, orcl, pfe, pypl, qcom, tsla, unh, v, wfc, wmt, xom | 39 US shares hourly bars 2017-2021 (kit v2.1, PROVISIONAL costs); EDGAR earnings calendar drop_late; expected date = reaction + 364 days | 8 | fermee : echoue (t_daily>=2.5, markets_positive>=65%, max_market_share<=25%, PF>=1.12, PF_stress>=1.04, neighbours_median_PF>=1.06, null>=97.5) ; PROVISIONAL COSTS (aapl, adbe, amd, amzn, avgo, ba, bac, c, cat, crm, csco, cvx, dis, fb, ge, googl, gs, hd, intc, jnj, jpm, ma, mcd, mrk, msft, mu, nflx, nke, nvda, orcl, pfe, pypl, qcom, tsla, unh, v, wfc, wmt, xom) | n 652, PF net 1.02, t 0.15 (daily sums), PF x1.5 0.95, years + 3/5, null 48.5 pct, corr -0.11, DSR 0.000 (N_all 2622) / 0.005 (N_main 173), long dividend credit 0.70 (PF net at credit 0 / 1: 1.01 / 1.02), sizing not judged (min lot: margin 329 EUR, loss at median stop 87.4 EUR) |",
+ "written_utc": "2026-11-18T10:57:04Z",
+ "extra": {
+  "descriptive": {
+   "main": {
+    "n": 652,
+    "mean_R": 0.006253456689660637,
+    "PF_net": 1.0191417782892835,
+    "mean_R_gross": 0.08210979585721646,
+    "PF_gross": 1.2818042188461587,
+    "mean_net_bp": 15.985876948114417,
+    "mean_gross_bp": 47.29174906847071,
+    "PF_stress": 0.945374708430476,
+    "win_rate_net": 0.5199386503067485,
+    "t_trade_net": 0.19265730516935242
+   },
+   "by_year": {
+    "2017": {
+     "n": 32,
+     "mean_R": 0.08930443667577381,
+     "PF_net": 1.2888655896511996,
+     "mean_R_gross": 0.17042156215704868,
+     "PF_gross": 1.6115592914051964,
+     "mean_net_bp": 30.121280319613092,
+     "mean_gross_bp": 52.59368744793164,
+     "PF_stress": 1.1228324894570467,
+     "win_rate_net": 0.53125,
+     "t_trade_net": 0.5648723160971748
+    },
+    "2018": {
+     "n": 156,
+     "mean_R": -0.1321004020361013,
+     "PF_net": 0.6481609669990717,
+     "mean_R_gross": -0.04643793850043426,
+     "PF_gross": 0.8610777212126578,
+     "mean_net_bp": -77.787921770077,
+     "mean_gross_bp": -40.91006822753724,
+     "PF_stress": 0.601952797655143,
+     "win_rate_net": 0.4358974358974359,
+     "t_trade_net": -2.1258829106761747
+    },
+    "2019": {
+     "n": 156,
+     "mean_R": 0.024545175279737947,
+     "PF_net": 1.0835887219365454,
+     "mean_R_gross": 0.10331486591661523,
+     "PF_gross": 1.399545678031987,
+     "mean_net_bp": 25.82702640413057,
+     "mean_gross_bp": 55.09995579534301,
+     "PF_stress": 1.0027652543202539,
+     "win_rate_net": 0.5705128205128205,
+     "t_trade_net": 0.3985620889405698
+    },
+    "2020": {
+     "n": 155,
+     "mean_R": -0.043287957284578224,
+     "PF_net": 0.8848576265056955,
+     "mean_R_gross": 0.02451731561353223,
+     "PF_gross": 1.0719554643033058,
+     "mean_net_bp": 48.87876141199247,
+     "mean_gross_bp": 82.4979222068309,
+     "PF_stress": 0.8480004693103312,
+     "win_rate_net": 0.5225806451612903,
+     "t_trade_net": -0.6225713513697895
+    },
+    "2021": {
+     "n": 153,
+     "mean_R": 0.16148863098781882,
+     "PF_net": 1.6107024789210067,
+     "mean_R_gross": 0.2314321066199859,
+     "PF_gross": 1.990218856324398,
+     "mean_net_bp": 65.2849833867437,
+     "mean_gross_bp": 92.48641824622614,
+     "PF_stress": 1.4459556269551774,
+     "win_rate_net": 0.5490196078431373,
+     "t_trade_net": 2.300441546534481
+    }
+   },
+   "by_sector": {
+    "tech": {
+     "n": 201,
+     "mean_R": -0.06421338526268959,
+     "PF_net": 0.829502957329537,
+     "mean_R_gross": 0.008067778223280189,
+     "PF_gross": 1.023694031533725,
+     "mean_net_bp": -31.579218512461228,
+     "mean_gross_bp": 1.8742117143677643,
+     "PF_stress": 0.7794203842694597,
+     "win_rate_net": 0.44776119402985076,
+     "t_trade_net": -1.056462062560567
+    },
+    "internet_media": {
+     "n": 118,
+     "mean_R": 0.03690966174051892,
+     "PF_net": 1.107546716057338,
+     "mean_R_gross": 0.11074305396861542,
+     "PF_gross": 1.3591585753802518,
+     "mean_net_bp": 18.922291453149406,
+     "mean_gross_bp": 52.473378606080026,
+     "PF_stress": 1.0190764988682997,
+     "win_rate_net": 0.576271186440678,
+     "t_trade_net": 0.4532859688643904
+    },
+    "finance": {
+     "n": 116,
+     "mean_R": 0.12120623057866714,
+     "PF_net": 1.5166133662775312,
+     "mean_R_gross": 0.19335089065173167,
+     "PF_gross": 1.9280754671537972,
+     "mean_net_bp": 129.43991340367435,
+     "mean_gross_bp": 157.9776315433922,
+     "PF_stress": 1.3719925057927818,
+     "win_rate_net": 0.603448275862069,
+     "t_trade_net": 1.709256972375574
+    },
+    "health": {
+     "n": 66,
+     "mean_R": 0.06495379199459313,
+     "PF_net": 1.1972942464160756,
+     "mean_R_gross": 0.15490988879850476,
+     "PF_gross": 1.5334639689229066,
+     "mean_net_bp": 50.287048519290565,
+     "mean_gross_bp": 79.05048158259476,
+     "PF_stress": 1.1256198243405044,
+     "win_rate_net": 0.5909090909090909,
+     "t_trade_net": 0.5740738508637627
+    },
+    "industry_energy_consumer": {
+     "n": 151,
+     "mean_R": -0.03786800599132731,
+     "PF_net": 0.8805247321339672,
+     "mean_R_gross": 0.04101673596971527,
+     "PF_gross": 1.1481075044864988,
+     "mean_net_bp": -25.142985810567748,
+     "mean_gross_bp": 4.7874709871045305,
+     "PF_stress": 0.8145447989921357,
+     "win_rate_net": 0.4768211920529801,
+     "t_trade_net": -0.6294374650022411
+    }
+   },
+   "by_market": {
+    "aapl": {
+     "n": 17,
+     "mean_R": -0.10560610041927673,
+     "PF_net": 0.7571229450318074,
+     "mean_R_gross": -0.051887749818892576,
+     "PF_gross": 0.8746051226758144,
+     "mean_net_bp": 13.43751725807619,
+     "mean_gross_bp": 32.567068297200294,
+     "PF_stress": 0.7295602279368144,
+     "win_rate_net": 0.5294117647058824,
+     "t_trade_net": -0.47459747589827367
+    },
+    "adbe": {
+     "n": 17,
+     "mean_R": -0.06796534730987987,
+     "PF_net": 0.8218748650572428,
+     "mean_R_gross": 0.014696975490465683,
+     "PF_gross": 1.0435767608445177,
+     "mean_net_bp": -29.096469793380727,
+     "mean_gross_bp": 5.236913027301161,
+     "PF_stress": 0.783457264208162,
+     "win_rate_net": 0.5294117647058824,
+     "t_trade_net": -0.31368115412239284
+    },
+    "amd": {
+     "n": 16,
+     "mean_R": 0.10446361810970198,
+     "PF_net": 1.3176475707418625,
+     "mean_R_gross": 0.2720258006365418,
+     "PF_gross": 2.141199963103413,
+     "mean_net_bp": 13.776671461659276,
+     "mean_gross_bp": 135.6825650746084,
+     "PF_stress": 1.2530132586908327,
+     "win_rate_net": 0.5,
+     "t_trade_net": 0.42878445964743056
+    },
+    "amzn": {
+     "n": 17,
+     "mean_R": -0.1752526334895442,
+     "PF_net": 0.5719685663266796,
+     "mean_R_gross": -0.11229470970486621,
+     "PF_gross": 0.6988938251415842,
+     "mean_net_bp": -90.80394940669167,
+     "mean_gross_bp": -67.81227623289973,
+     "PF_stress": 0.4087336008017162,
+     "win_rate_net": 0.35294117647058826,
+     "t_trade_net": -0.9435975092333136
+    },
+    "avgo": {
+     "n": 17,
+     "mean_R": 0.03542889228550884,
+     "PF_net": 1.1178075727792542,
+     "mean_R_gross": 0.09416375964156265,
+     "PF_gross": 1.332818856036899,
+     "mean_net_bp": 8.459899992903342,
+     "mean_gross_bp": 35.52387757606171,
+     "PF_stress": 1.0557426808232233,
+     "win_rate_net": 0.5294117647058824,
+     "t_trade_net": 0.18442777309410321
+    },
+    "ba": {
+     "n": 17,
+     "mean_R": -0.17669798848473336,
+     "PF_net": 0.4967001752031845,
+     "mean_R_gross": -0.11931249202818689,
+     "PF_gross": 0.6237275055393459,
+     "mean_net_bp": -93.98442369655555,
+     "mean_gross_bp": -67.0082162114794,
+     "PF_stress": 0.46447072415046947,
+     "win_rate_net": 0.35294117647058826,
+     "t_trade_net": -1.140095368676139
+    },
+    "bac": {
+     "n": 17,
+     "mean_R": 0.14669806254138873,
+     "PF_net": 1.8789048322768245,
+     "mean_R_gross": 0.23314029539810224,
+     "PF_gross": 2.653577490181427,
+     "mean_net_bp": 124.92851789075782,
+     "mean_gross_bp": 162.38782884390227,
+     "PF_stress": 1.6636353291581798,
+     "win_rate_net": 0.5882352941176471,
+     "t_trade_net": 1.0327138157610798
+    },
+    "c": {
+     "n": 14,
+     "mean_R": 0.22688892517594086,
+     "PF_net": 2.2586293101439123,
+     "mean_R_gross": 0.2861216602172872,
+     "PF_gross": 2.776675161344634,
+     "mean_net_bp": 245.63175812184357,
+     "mean_gross_bp": 271.61452731614344,
+     "PF_stress": 2.1462196967555216,
+     "win_rate_net": 0.6428571428571429,
+     "t_trade_net": 1.0636958037464523
+    },
+    "cat": {
+     "n": 17,
+     "mean_R": -0.13725521203938373,
+     "PF_net": 0.5600533512467712,
+     "mean_R_gross": -0.1402958462116658,
+     "PF_gross": 0.544357254708031,
+     "mean_net_bp": -58.31220362586761,
+     "mean_gross_bp": -60.5484574605248,
+     "PF_stress": 0.5127147202745936,
+     "win_rate_net": 0.47058823529411764,
+     "t_trade_net": -0.9140860617187262
+    },
+    "crm": {
+     "n": 17,
+     "mean_R": -0.12428154481356334,
+     "PF_net": 0.6925522381537355,
+     "mean_R_gross": -0.07029607075885537,
+     "PF_gross": 0.813948052032338,
+     "mean_net_bp": -78.68810043725554,
+     "mean_gross_bp": -55.02192657721098,
+     "PF_stress": 0.6597997137540179,
+     "win_rate_net": 0.4117647058823529,
+     "t_trade_net": -0.6205988485895824
+    },
+    "csco": {
+     "n": 17,
+     "mean_R": -0.23675274595678228,
+     "PF_net": 0.3857597075593247,
+     "mean_R_gross": -0.11764367173156348,
+     "PF_gross": 0.6120320292466206,
+     "mean_net_bp": -88.17665311326601,
+     "mean_gross_bp": -51.173246071110654,
+     "PF_stress": 0.35144819735141597,
+     "win_rate_net": 0.29411764705882354,
+     "t_trade_net": -1.4638051848870015
+    },
+    "cvx": {
+     "n": 17,
+     "mean_R": -0.15693481171198742,
+     "PF_net": 0.5964159841162683,
+     "mean_R_gross": -0.07901978952517646,
+     "PF_gross": 0.7722014872938167,
+     "mean_net_bp": -47.21036647073245,
+     "mean_gross_bp": -21.62818856756682,
+     "PF_stress": 0.5645556047636278,
+     "win_rate_net": 0.47058823529411764,
+     "t_trade_net": -0.8315000693188456
+    },
+    "dis": {
+     "n": 17,
+     "mean_R": 0.09248460580613346,
+     "PF_net": 1.1931117584328759,
+     "mean_R_gross": 0.1685359405121228,
+     "PF_gross": 1.3779672297750973,
+     "mean_net_bp": 27.123057637677128,
+     "mean_gross_bp": 52.82145020668148,
+     "PF_stress": 1.1387696372180764,
+     "win_rate_net": 0.5294117647058824,
+     "t_trade_net": 0.29338742485913505
+    },
+    "fb": {
+     "n": 17,
+     "mean_R": 0.1317461141567934,
+     "PF_net": 1.4946223741524125,
+     "mean_R_gross": 0.18998930507291387,
+     "PF_gross": 1.7749226508026936,
+     "mean_net_bp": 52.7981750876069,
+     "mean_gross_bp": 76.72020628338096,
+     "PF_stress": 1.4253336229832214,
+     "win_rate_net": 0.6470588235294118,
+     "t_trade_net": 0.6135537627447467
+    },
+    "ge": {
+     "n": 17,
+     "mean_R": 0.02999698804969746,
+     "PF_net": 1.1286938342838466,
+     "mean_R_gross": 0.17071078712940924,
+     "PF_gross": 2.0621229567041834,
+     "mean_net_bp": -4.351058210019543,
+     "mean_gross_bp": 79.1712978884968,
+     "PF_stress": 0.8850220357423213,
+     "win_rate_net": 0.47058823529411764,
+     "t_trade_net": 0.1766179106974902
+    },
+    "googl": {
+     "n": 17,
+     "mean_R": 0.1885500752982272,
+     "PF_net": 1.6234512145541522,
+     "mean_R_gross": 0.28140720740304087,
+     "PF_gross": 2.039365868093071,
+     "mean_net_bp": 30.896429075685734,
+     "mean_gross_bp": 60.243256706351424,
+     "PF_stress": 1.557621232422917,
+     "win_rate_net": 0.7058823529411765,
+     "t_trade_net": 0.820267384718575
+    },
+    "gs": {
+     "n": 17,
+     "mean_R": 0.4661126281544991,
+     "PF_net": 7.28006672504577,
+     "mean_R_gross": 0.5319769111315056,
+     "PF_gross": 8.873451162975302,
+     "mean_net_bp": 298.0253216453499,
+     "mean_gross_bp": 326.40664140524484,
+     "PF_stress": 4.335952822410567,
+     "win_rate_net": 0.8823529411764706,
+     "t_trade_net": 2.8765717766630763
+    },
+    "hd": {
+     "n": 17,
+     "mean_R": -0.0014357927469952536,
+     "PF_net": 0.9954624138681926,
+     "mean_R_gross": 0.07762170077402815,
+     "PF_gross": 1.280513489751416,
+     "mean_net_bp": 7.738628840702683,
+     "mean_gross_bp": 32.67575709087368,
+     "PF_stress": 0.9244505546219018,
+     "win_rate_net": 0.47058823529411764,
+     "t_trade_net": -0.007262115525445852
+    },
+    "intc": {
+     "n": 17,
+     "mean_R": 0.14376712149983098,
+     "PF_net": 1.6033377901284618,
+     "mean_R_gross": 0.2168233092066092,
+     "PF_gross": 2.0088787678470146,
+     "mean_net_bp": 34.33426729995546,
+     "mean_gross_bp": 64.15521936257589,
+     "PF_stress": 1.4936514379435544,
+     "win_rate_net": 0.6470588235294118,
+     "t_trade_net": 0.6786638356386614
+    },
+    "jnj": {
+     "n": 17,
+     "mean_R": 0.04280557654463185,
+     "PF_net": 1.1608957618617386,
+     "mean_R_gross": 0.11905696703531152,
+     "PF_gross": 1.4753113454852202,
+     "mean_net_bp": 32.53435174549001,
+     "mean_gross_bp": 54.59207332771217,
+     "PF_stress": 1.0820845714765623,
+     "win_rate_net": 0.7058823529411765,
+     "t_trade_net": 0.2570689546837551
+    },
+    "jpm": {
+     "n": 17,
+     "mean_R": 0.33976841137534947,
+     "PF_net": 3.429592858484801,
+     "mean_R_gross": 0.4062473264888737,
+     "PF_gross": 4.416495458658765,
+     "mean_net_bp": 223.10183534142578,
+     "mean_gross_bp": 247.4681301609316,
+     "PF_stress": 3.197600664744897,
+     "win_rate_net": 0.7058823529411765,
+     "t_trade_net": 1.6517182079510466
+    },
+    "ma": {
+     "n": 17,
+     "mean_R": -0.026473066822288824,
+     "PF_net": 0.919095908096166,
+     "mean_R_gross": 0.0460521202443451,
+     "PF_gross": 1.1509905959628577,
+     "mean_net_bp": -8.860570824895527,
+     "mean_gross_bp": 16.38317647370254,
+     "PF_stress": 0.8570374454023139,
+     "win_rate_net": 0.5882352941176471,
+     "t_trade_net": -0.14061600733942076
+    },
+    "mcd": {
+     "n": 16,
+     "mean_R": 0.19397180411930365,
+     "PF_net": 1.8603643343528107,
+     "mean_R_gross": 0.2984788173647698,
+     "PF_gross": 2.692577741748748,
+     "mean_net_bp": 70.32979641260891,
+     "mean_gross_bp": 99.01400465211292,
+     "PF_stress": 1.8405773936949725,
+     "win_rate_net": 0.5625,
+     "t_trade_net": 0.9682426693928798
+    },
+    "mrk": {
+     "n": 16,
+     "mean_R": -0.214943525992851,
+     "PF_net": 0.5701806663686723,
+     "mean_R_gross": -0.14744373484396536,
+     "PF_gross": 0.6794645234969896,
+     "mean_net_bp": -55.586884909666466,
+     "mean_gross_bp": -32.169044610846555,
+     "PF_stress": 0.5428942760756215,
+     "win_rate_net": 0.375,
+     "t_trade_net": -0.8629694566320534
+    },
+    "msft": {
+     "n": 17,
+     "mean_R": -0.14255552282844514,
+     "PF_net": 0.658407845349234,
+     "mean_R_gross": -0.07182224639855944,
+     "PF_gross": 0.8088519759534215,
+     "mean_net_bp": -65.28526813713302,
+     "mean_gross_bp": -43.44756985833893,
+     "PF_stress": 0.6235540967819172,
+     "win_rate_net": 0.23529411764705882,
+     "t_trade_net": -0.5867939323432242
+    },
+    "mu": {
+     "n": 16,
+     "mean_R": 0.07259523477686446,
+     "PF_net": 1.2172866733646828,
+     "mean_R_gross": 0.1126740729752168,
+     "PF_gross": 1.355554449285207,
+     "mean_net_bp": -46.325842802018315,
+     "mean_gross_bp": -19.919218617497222,
+     "PF_stress": 1.178502376184871,
+     "win_rate_net": 0.4375,
+     "t_trade_net": 0.31530753116338445
+    },
+    "nflx": {
+     "n": 17,
+     "mean_R": 0.11424057841153179,
+     "PF_net": 1.4630591857881305,
+     "mean_R_gross": 0.17152210475682686,
+     "PF_gross": 1.7561039550980162,
+     "mean_net_bp": 100.99505842154007,
+     "mean_gross_bp": 132.89168366793652,
+     "PF_stress": 1.4090187642221836,
+     "win_rate_net": 0.7058823529411765,
+     "t_trade_net": 0.668596538473701
+    },
+    "nke": {
+     "n": 17,
+     "mean_R": -0.19203343593718825,
+     "PF_net": 0.5727974320297913,
+     "mean_R_gross": -0.14285833942576254,
+     "PF_gross": 0.6744002660474223,
+     "mean_net_bp": -151.91504557355566,
+     "mean_gross_bp": -135.15634081871863,
+     "PF_stress": 0.542588299976381,
+     "win_rate_net": 0.35294117647058826,
+     "t_trade_net": -0.9459182132139313
+    },
+    "nvda": {
+     "n": 17,
+     "mean_R": 0.04268989979427222,
+     "PF_net": 1.1146594658795708,
+     "mean_R_gross": 0.08179195451637393,
+     "PF_gross": 1.2298713788340052,
+     "mean_net_bp": 15.365642797487013,
+     "mean_gross_bp": 38.59149184555533,
+     "PF_stress": 1.0854812359238624,
+     "win_rate_net": 0.47058823529411764,
+     "t_trade_net": 0.18166639027148546
+    },
+    "orcl": {
+     "n": 17,
+     "mean_R": -0.5547635490559703,
+     "PF_net": 0.1827677132615413,
+     "mean_R_gross": -0.47485323568126475,
+     "PF_gross": 0.23762319749377253,
+     "mean_net_bp": -210.18751247357682,
+     "mean_gross_bp": -184.56633327133272,
+     "PF_stress": 0.15626077590199527,
+     "win_rate_net": 0.23529411764705882,
+     "t_trade_net": -2.9413330556630215
+    },
+    "pfe": {
+     "n": 17,
+     "mean_R": 0.06864750830580235,
+     "PF_net": 1.177530640740208,
+     "mean_R_gross": 0.21558781339932692,
+     "PF_gross": 1.7156250697419857,
+     "mean_net_bp": 19.42072915589892,
+     "mean_gross_bp": 61.57301970795795,
+     "PF_stress": 1.0950166060320539,
+     "win_rate_net": 0.5294117647058824,
+     "t_trade_net": 0.2535464474776878
+    },
+    "pypl": {
+     "n": 16,
+     "mean_R": -0.13920961039147411,
+     "PF_net": 0.6263541752689032,
+     "mean_R_gross": -0.0755182910105576,
+     "PF_gross": 0.7802332578908008,
+     "mean_net_bp": -44.0932114441322,
+     "mean_gross_bp": -15.571144481744042,
+     "PF_stress": 0.5857969921507508,
+     "win_rate_net": 0.5625,
+     "t_trade_net": -0.7400843235282307
+    },
+    "qcom": {
+     "n": 16,
+     "mean_R": 0.08942682260547025,
+     "PF_net": 1.3905329671730977,
+     "mean_R_gross": 0.11936775182320583,
+     "PF_gross": 1.5132114926851143,
+     "mean_net_bp": 60.66170767164185,
+     "mean_gross_bp": 75.79935047826396,
+     "PF_stress": 1.316282295208769,
+     "win_rate_net": 0.5625,
+     "t_trade_net": 0.513784290548865
+    },
+    "tsla": {
+     "n": 17,
+     "mean_R": 0.035448545207730144,
+     "PF_net": 1.1081798480260057,
+     "mean_R_gross": 0.1406032710461701,
+     "PF_gross": 1.5509183937368287,
+     "mean_net_bp": 51.833686512284466,
+     "mean_gross_bp": 124.01785508768735,
+     "PF_stress": 1.0766258120644512,
+     "win_rate_net": 0.5294117647058824,
+     "t_trade_net": 0.18654546396700616
+    },
+    "unh": {
+     "n": 16,
+     "mean_R": 0.3644590153169613,
+     "PF_net": 3.2162924657392242,
+     "mean_R_gross": 0.43088694692599405,
+     "PF_gross": 3.841850503258072,
+     "mean_net_bp": 207.81868659401428,
+     "mean_gross_bp": 234.8268697886505,
+     "PF_stress": 3.046239085272048,
+     "win_rate_net": 0.75,
+     "t_trade_net": 1.7987576466949018
+    },
+    "v": {
+     "n": 17,
+     "mean_R": -0.28100870009505396,
+     "PF_net": 0.4010469251777438,
+     "mean_R_gross": -0.19858104336520246,
+     "PF_gross": 0.5294639709989983,
+     "mean_net_bp": -88.94512345229062,
+     "mean_gross_bp": -63.850468780320625,
+     "PF_stress": 0.3696521548669774,
+     "win_rate_net": 0.4117647058823529,
+     "t_trade_net": -1.5147889481394206
+    },
+    "wfc": {
+     "n": 17,
+     "mean_R": -0.004892758997293624,
+     "PF_net": 0.9822147270419563,
+     "mean_R_gross": 0.06487027672348494,
+     "PF_gross": 1.276677417115249,
+     "mean_net_bp": 132.70209828908887,
+     "mean_gross_bp": 165.4871552263917,
+     "PF_stress": 0.9014160393302535,
+     "win_rate_net": 0.4117647058823529,
+     "t_trade_net": -0.02651069301695651
+    },
+    "wmt": {
+     "n": 16,
+     "mean_R": 0.11144070930735808,
+     "PF_net": 1.4227542808737896,
+     "mean_R_gross": 0.24740223376930104,
+     "PF_gross": 2.3994155269224713,
+     "mean_net_bp": 47.88905501735797,
+     "mean_gross_bp": 88.75073071192797,
+     "PF_stress": 1.3392444889424058,
+     "win_rate_net": 0.625,
+     "t_trade_net": 0.5779448800188848
+    },
+    "xom": {
+     "n": 17,
+     "mean_R": 0.010556187016648774,
+     "PF_net": 1.0347177861973358,
+     "mean_R_gross": 0.08370870359805262,
+     "PF_gross": 1.2995688995984465,
+     "mean_net_bp": 13.440793425722203,
+     "mean_gross_bp": 38.29840415116209,
+     "PF_stress": 0.9635061682525825,
+     "win_rate_net": 0.5294117647058824,
+     "t_trade_net": 0.05841468593014954
+    }
+   },
+   "by_reason": {
+    "event": 509,
+    "stop": 113,
+    "stop_gap": 30
+   },
+   "hold_tdays": {
+    "0": 6,
+    "1": 38,
+    "2": 41,
+    "3": 27,
+    "4": 507,
+    "5": 33
+   },
+   "mean_hold_h": 135.65797546012269,
+   "counts_total": {
+    "signals": 661,
+    "stale": 8,
+    "no_bar": 0,
+    "open_at_end": 1,
+    "no_d20": 0,
+    "overlap_skipped": 0,
+    "taken": 652
+   },
+   "exit_not_on_session_E-1": 112,
+   "exit_not_on_E-1_by_reason": {
+    "stop": 92,
+    "stop_gap": 20
+   },
+   "actual_release_vs_expected": {
+    "on_E": 310,
+    "after_E": 266,
+    "inside_hold": 66,
+    "on_entry_day": 7,
+    "before_entry": 3
+   },
+   "release_inside_hold_or_before": {
+    "n": 76,
+    "with": {
+     "n": 652,
+     "mean_R": 0.006253456689660637,
+     "PF_net": 1.0191417782892835,
+     "mean_R_gross": 0.08210979585721646,
+     "PF_gross": 1.2818042188461587,
+     "mean_net_bp": 15.985876948114417,
+     "mean_gross_bp": 47.29174906847071,
+     "PF_stress": 0.945374708430476,
+     "win_rate_net": 0.5199386503067485,
+     "t_trade_net": 0.19265730516935242
+    },
+    "without": {
+     "n": 576,
+     "mean_R": 0.030008275092538752,
+     "PF_net": 1.0996308803824102,
+     "mean_R_gross": 0.10276500848360953,
+     "PF_gross": 1.3828428174177183,
+     "mean_net_bp": 25.933525456022394,
+     "mean_gross_bp": 54.97173526623252,
+     "PF_stress": 1.0156724567656328,
+     "win_rate_net": 0.53125,
+     "t_trade_net": 0.903872290837505
+    },
+    "only_those": {
+     "n": 76,
+     "mean_R": -0.17378306173215244,
+     "PF_net": 0.665758075786099,
+     "mean_R_gross": -0.0744349735217627,
+     "PF_gross": 0.840019664939221,
+     "mean_net_bp": -59.40682753287239,
+     "mean_gross_bp": -10.914462114566158,
+     "PF_stress": 0.6310326198491188,
+     "win_rate_net": 0.4342105263157895,
+     "t_trade_net": -1.472869404893466
+    }
+   },
+   "neighbours": {
+    "02_k3": {
+     "n": 652,
+     "mean_R": -0.03258191218881619,
+     "PF_net": 0.87936635701637,
+     "mean_R_gross": 0.03445481322509653,
+     "PF_gross": 1.14726458554529,
+     "mean_net_bp": -8.514157683833426,
+     "mean_gross_bp": 18.785259616790672,
+     "PF_stress": 0.793081549459913,
+     "win_rate_net": 0.50920245398773,
+     "t_trade_net": -1.2878651001498198
+    },
+    "03_k4": {
+     "n": 652,
+     "mean_R": -0.021183779802150755,
+     "PF_net": 0.9322338686716869,
+     "mean_R_gross": 0.05153746697449355,
+     "PF_gross": 1.1874107966125755,
+     "mean_net_bp": 1.3708538110114201,
+     "mean_gross_bp": 30.788127804949998,
+     "PF_stress": 0.8411424836628888,
+     "win_rate_net": 0.5168711656441718,
+     "t_trade_net": -0.7143590484011578
+    },
+    "04_k6": {
+     "n": 652,
+     "mean_R": 0.056622757459273705,
+     "PF_net": 1.1674374430599883,
+     "mean_R_gross": 0.13640954133958877,
+     "PF_gross": 1.4499230984740534,
+     "mean_net_bp": 39.25208264310084,
+     "mean_gross_bp": 70.65560453332567,
+     "PF_stress": 1.082823988231453,
+     "win_rate_net": 0.5306748466257669,
+     "t_trade_net": 1.3745030964415457
+    },
+    "05_k7": {
+     "n": 652,
+     "mean_R": 0.06652401716329362,
+     "PF_net": 1.1848499019574832,
+     "mean_R_gross": 0.15418913591015207,
+     "PF_gross": 1.4841660626553952,
+     "mean_net_bp": 46.886556077024835,
+     "mean_gross_bp": 81.19694816923317,
+     "PF_stress": 1.1158638024535252,
+     "win_rate_net": 0.5214723926380368,
+     "t_trade_net": 1.5567338562812834
+    },
+    "06_exit_E-2": {
+     "n": 652,
+     "mean_R": 0.0021955089973728814,
+     "PF_net": 1.007745712360226,
+     "mean_R_gross": 0.07274913061028379,
+     "PF_gross": 1.292014876918216,
+     "mean_net_bp": 7.994441192495387,
+     "mean_gross_bp": 37.2718530018494,
+     "PF_stress": 0.927728347066163,
+     "win_rate_net": 0.5122699386503068,
+     "t_trade_net": 0.07802113219540992
+    },
+    "07_stop1.5": {
+     "n": 652,
+     "mean_R": 0.013007954964043772,
+     "PF_net": 1.0308043823242896,
+     "mean_R_gross": 0.12018686319587224,
+     "PF_gross": 1.3249604909265988,
+     "mean_net_bp": 15.958660098076452,
+     "mean_gross_bp": 48.14731410700038,
+     "PF_stress": 0.9271674361164955,
+     "win_rate_net": 0.5,
+     "t_trade_net": 0.31589531964310863
+    },
+    "08_stop3.0": {
+     "n": 652,
+     "mean_R": 0.01261722370861364,
+     "PF_net": 1.0586540161650602,
+     "mean_R_gross": 0.06775214114280571,
+     "PF_gross": 1.362496467836544,
+     "mean_net_bp": 20.54608830149651,
+     "mean_gross_bp": 53.54861461124256,
+     "PF_stress": 0.98237073449641,
+     "win_rate_net": 0.5368098159509203,
+     "t_trade_net": 0.5573973958951989
+    }
+   },
+   "every": {
+    "n": 652,
+    "mean_R": 0.006253456689660637,
+    "PF_net": 1.0191417782892835,
+    "mean_R_gross": 0.08210979585721646,
+    "PF_gross": 1.2818042188461587,
+    "mean_net_bp": 15.985876948114417,
+    "mean_gross_bp": 47.29174906847071,
+    "PF_stress": 0.945374708430476,
+    "win_rate_net": 0.5199386503067485,
+    "t_trade_net": 0.19265730516935242
+   },
+   "null": {
+    "real_mean_R": 0.006253456689660637,
+    "percentile": 48.5,
+    "n_draws": 2000,
+    "seed": 0,
+    "exit_key": "859b9b9c1bc852f700b02c7a0b69e6a628ad6be7ddd020d95999593a620baff0",
+    "mode": "every",
+    "joint_groups": 146,
+    "joint_no_common_day": 0,
+    "null_mean": 0.007910004110422173,
+    "null_sd": 0.044555789003935455
+   }
+  }
+ }
+}

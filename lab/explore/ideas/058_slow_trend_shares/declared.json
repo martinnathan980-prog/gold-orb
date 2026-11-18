@@ -1,0 +1,164 @@
+{
+ "idea": "058 Slow trend on shares: follow 50-day breakouts on the 40 US shares",
+ "date_declared": "2026-11-18",
+ "track": "slow",
+ "family": "trend",
+ "hypothesis": "A share's session close at the highest (lowest) of its last 50 session closes is followed over the next weeks by further moves in the same direction, on a basket of the 40 US shares, enough to beat provisional CFD costs (spread, commission with its minimum, swaps, dividends on shorts) and the same-day random-entry null on the same share and side.",
+ "mechanism": "Momentum and the 52-week-high effect on single shares (Jegadeesh and Titman 1993; George and Hwang 2004): investors anchor on recent highs and under-react to news, so prices near a high keep drifting. The lab never held a share overnight (kit v2.1 now has dividends and financing, provisionally). The same rule as idea 055 (declared before any run of 055), on the shares. Not a closed family: the closed share tests were opening rules held intraday; the closed breakout tests were intraday or held <= 5 days.",
+ "data": {
+  "signal": "prices only: kit.data.load_bars(<ticker>) prepared hourly BID bars of the 40 shares (~/explore_data/h1, split-adjusted by the kit, bars of fewer than 5 minutes dropped). Session close = close of the share's bar labelled 15:00 New York (it ends at 16:00); a New York date whose last bar of that share is not labelled 15:00 (half days, sessions cut short by a data hole) gives no session close. Only comparisons of a share's own closes (scale-free, so later splits do not matter).",
+  "publication_lag": "none (no external series). A close is known at 16:00 New York of its session; it is USED from known_at = 10:00 New York of the share's next session in the data (the next New York date holding a bar of that share), i.e. 18 h or more after it is known (conservative stamp chosen so that the kit enters and exits at the open of the bar labelled 10:00).",
+  "prices": "kit.data.load_bars(<ticker>) prepared hourly BID bars to 2021-12-31: 26 shares from 2017-01-26; adbe, cat, crm, ma from 2017-03; amd, mcd, mrk, mu, nke, orcl, pypl, qcom, unh, wmt from 2017-08/09 (first signal 50 sessions later). PROVISIONAL costs of kit/extra_costs.json.",
+  "in_sample_years": "2017 .. 2021 (about 4.9 years; fourteen shares 4.3 to 4.7 years). Power check (signal data alone, no return, run.py --power, ~/explore_data/idea_058/power.json): 7,452 breakout closes (5,638 long, 1,814 short); 943 regime entries (a lower bound of the one-position trades, before stops and time exits add re-entries), 16-32 per share.",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": [
+  "aapl",
+  "adbe",
+  "amd",
+  "amzn",
+  "avgo",
+  "ba",
+  "baba",
+  "bac",
+  "c",
+  "cat",
+  "crm",
+  "csco",
+  "cvx",
+  "dis",
+  "fb",
+  "ge",
+  "googl",
+  "gs",
+  "hd",
+  "intc",
+  "jnj",
+  "jpm",
+  "ma",
+  "mcd",
+  "mrk",
+  "msft",
+  "mu",
+  "nflx",
+  "nke",
+  "nvda",
+  "orcl",
+  "pfe",
+  "pypl",
+  "qcom",
+  "tsla",
+  "unh",
+  "v",
+  "wfc",
+  "wmt",
+  "xom"
+ ],
+ "rule_main": {
+  "signal": "At each session close c_t of a share: long if c_t >= max(c_{t-49..t}) (the highest of the last 50 session closes, itself included); short if c_t <= min(c_{t-49..t}). 50 session closes needed. known_at = 10:00 New York of the share's next session in the data.",
+  "side": "+1 for the 50-session-high close, -1 for the 50-session-low close",
+  "entry": "open of the first hourly bar opening at or after known_at = the bar labelled 10:00 New York of the next session (never the 09:30 opening print); kit.sim delay 0, max_wait_h 2 (a signal whose entry bar opens more than 2 h after 10:00 is dropped as stale)",
+  "max_wait_h": 2,
+  "exit": "exit on a condition (kit.sim.event_exit): a long leaves at the open of the bar labelled 10:00 of the session after a session close that is the lowest of the last 20 closes (itself included), a short after a close that is the highest of the last 20 (events stamped like the signals); or max hold 40 business days ('bdays', 40, same clock time, i.e. the 10:00 bar), whichever first. Events per share = the 20-low closes met while the share's breakout state is long and the 20-high closes met while it is short (state long from a 50-high close until the first 20-low close, short from a 50-low close until the first 20-high close), as in idea 055.",
+  "stop": [
+   "d20",
+   3
+  ],
+  "target": null,
+  "overlap": "one position per share (kit.sim mode 'one'); every-signal variant (mode 'every') for the every-signal bar. Basket of the 40 shares, one rule, same parameters. Positions are held through earnings releases and ex-dividend dates (shorts pay the dividend; longs credited 0.70, PROVISIONAL)."
+ },
+ "configurations": [
+  {
+   "id": "01_main",
+   "n_entry": 50,
+   "n_exit": 20,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "02_entry40",
+   "n_entry": 40,
+   "n_exit": 20,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "03_entry60",
+   "n_entry": 60,
+   "n_exit": 20,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "04_exit15",
+   "n_entry": 50,
+   "n_exit": 15,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "05_exit25",
+   "n_entry": 50,
+   "n_exit": 25,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "06_stop2.5",
+   "n_entry": 50,
+   "n_exit": 20,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    2.5
+   ]
+  },
+  {
+   "id": "07_stop4",
+   "n_entry": 50,
+   "n_exit": 20,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    4
+   ]
+  },
+  {
+   "id": "08_hold30",
+   "n_entry": 50,
+   "n_exit": 20,
+   "max_hold_bdays": 30,
+   "stop": [
+    "d20",
+    3
+   ]
+  }
+ ],
+ "what_changed": [
+  "The brief's 'session close (16:00 New York)' is read as the close of the bar labelled 15:00; half days (last bar 12:00) and sessions cut short by a data hole give no close that day (simple and the same for every share; about 9 to 15 days per share).",
+  "The brief's entry and exit 'at the bar labelled 10:00 of the next session' is obtained by stamping each signal and each exit condition at 10:00 New York of the share's next session in the data (later than the time the close is known: conservative). A share whose 10:00 bar is missing enters at the next bar within 2 h (max_wait_h 2), else the signal is dropped.",
+  "Exit after '40 trading days' is the kit's ('bdays', 40): 40 business days (holidays counted as days, so at most 40 trading days).",
+  "The kit's event exit is per market, not per side; the side-dependent channel exit is expressed as the per-share event set of the breakout state machine (as idea 055). The random-entry null re-enters on random days with the same per-share events (kit design); trades of several shares known at the same 10:00 stamp make the kit's null the same-day (joint) null automatically.",
+  "A reversal (a 50-session breakout on the opposite side on the very close that exits the open trade) would enter at the bar where the open trade exits; the kit's one-position rule requires the next entry to open AFTER the exit bar, so such a reversal is skipped (counted and reported). Later signals of that side enter normally.",
+  "Neighbours fixed now as in idea 055 (entry 40 / 60, exit 15 / 25, stop 2.5 / 4, hold 30)."
+ ],
+ "costs": "kit.costs with kit/extra_costs.json, PROVISIONAL (share spread by year and hour, 0.03 USD a share with the 2 USD minimum at a 5,000 EUR / 6 positions stake at 1:5, swaps 7 % long and 3 % short every night, dividends paid by shorts and credited 0.70 to longs; results at credits 0 and 1 from results.json 'dividends'): gross, net, spread and slippage x1.5.",
+ "bars": "CHARTER.md 'The bars' for a basket on 01_main, computed by kit.judge.verdict(..., max_hold_tdays=40): t on daily sums >= 2.5, pooled PF >= 1.12 and >= 1.04 at costs x1.5, >= 60 % years positive, >= 65 % markets positive, no market above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 40 trading days, random-entry null >= 97.5 (2000 draws, the main's own exit, stop and events; same-day null where stamps coincide), weekly corr with the ten <= 0.30, truncation tests (signals and events) with default cuts; deflated Sharpe on N_all reported.",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead does it).",
+ "kit": "lab/explore/kit v2.1, unchanged"
+}

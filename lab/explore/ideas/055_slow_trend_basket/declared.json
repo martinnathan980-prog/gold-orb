@@ -1,0 +1,136 @@
+{
+ "idea": "055 Slow trend: follow 50-day breakouts on a basket of markets",
+ "date_declared": "2026-11-18",
+ "track": "slow",
+ "family": "trend",
+ "hypothesis": "A daily close at the highest (lowest) of the last 50 daily closes is followed over the next weeks by further moves in the same direction, on a basket of 14 FX, metal and index markets, enough to beat costs and the same-side random-day null.",
+ "mechanism": "Time-series momentum (Moskowitz, Ooi and Pedersen 2012) and the long record of trend-following futures funds: slow diffusion of information, hedging and risk-parity flows that chase trends, central-bank paths that move currencies for months. Never tested by this lab because of the five-day hold cap (slow track now allows 40 trading days). Not a closed family: the closed breakout tests were intraday or held <= 5 days.",
+ "data": {
+  "signal": "prices only: kit.data.load_bars(key) prepared hourly BID bars (~/explore_data/h1). Daily close = close of the last hourly bar of the 17:00-New-York trading day (kit.data.trading_day), days with >= 5 hourly bars only (drops the one-bar holiday stubs); KNOWN at that trading day's 17:00 New York boundary (DST-correct), never earlier, even when the market closed earlier that day.",
+  "publication_lag": "none (no external series). Each daily close is used from the 17:00 New York boundary of its day.",
+  "prices": "kit.data.load_bars(<fp key>) = prepared hourly BID bars 2013-2021 (us30 and ger40 start 2013-09-30); FP costs from lab/r2/fp_costs.json (no provisional market).",
+  "in_sample_years": "2013 .. 2021 (9 years; us30 and ger40 8.25). Power check (signal data alone, no return): 5,080 breakout closes; 654 regime entries (a lower bound of the one-position trades, before stops and time exits add re-entries), 43-51 per market.",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": [
+  "xauusd",
+  "xagusd",
+  "us100",
+  "us500",
+  "us30",
+  "ger40",
+  "eurusd",
+  "gbpusd",
+  "usdjpy",
+  "audusd",
+  "usdcad",
+  "usdchf",
+  "nzdusd",
+  "eurjpy"
+ ],
+ "rule_main": {
+  "signal": "At each daily close c_t (known at the day's 17:00 NY boundary): long if c_t >= max(c_{t-49..t}) (the highest of the last 50 daily closes, itself included); short if c_t <= min(c_{t-49..t}). 50 complete days needed.",
+  "side": "+1 for the 50-day-high close, -1 for the 50-day-low close",
+  "entry": "open of the first hourly bar opening at or after the 17:00 NY boundary (kit.sim, delay 0, no max_wait)",
+  "exit": "exit on a condition (kit.sim.event_exit): long leaves at the open of the first bar at or after the boundary of a daily close that is the lowest of the last 20 closes (itself included), short at a close that is the highest of the last 20; or max hold 40 business days ('bdays', 40), whichever first. Events per market = the 20-day-low closes met while the market's breakout state is long and the 20-day-high closes met while it is short (state long from a 50-day-high close until the first 20-day-low close, short from a 50-day-low close until the first 20-day-high close): for every long trade the first event after its entry is exactly its first 20-day-low close, and for every short its first 20-day-high close.",
+  "stop": [
+   "d20",
+   3
+  ],
+  "target": null,
+  "overlap": "one position per market (kit.sim mode 'one'); every-signal variant (mode 'every') for the every-signal bar. Basket of the 14 markets, one rule, same parameters."
+ },
+ "configurations": [
+  {
+   "id": "01_main",
+   "n_entry": 50,
+   "n_exit": 20,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "02_entry40",
+   "n_entry": 40,
+   "n_exit": 20,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "03_entry60",
+   "n_entry": 60,
+   "n_exit": 20,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "04_exit15",
+   "n_entry": 50,
+   "n_exit": 15,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "05_exit25",
+   "n_entry": 50,
+   "n_exit": 25,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "06_stop2.5",
+   "n_entry": 50,
+   "n_exit": 20,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    2.5
+   ]
+  },
+  {
+   "id": "07_stop4",
+   "n_entry": 50,
+   "n_exit": 20,
+   "max_hold_bdays": 40,
+   "stop": [
+    "d20",
+    4
+   ]
+  },
+  {
+   "id": "08_hold30",
+   "n_entry": 50,
+   "n_exit": 20,
+   "max_hold_bdays": 30,
+   "stop": [
+    "d20",
+    3
+   ]
+  }
+ ],
+ "what_changed": [
+  "No crypto (the brief's own decision of 2026-11-18): 14 markets.",
+  "The kit's event exit is per market, not per side; the side-dependent channel exit is expressed as the per-market event set of the breakout state machine above, which gives every long and every short trade exactly its own exit condition. The random-entry null re-enters on random days with the same per-market events (kit design): a random long entered while the market's state is short leaves at the first 20-day-HIGH close; the null is therefore the kit's same-exit null, not a side-specific channel null.",
+  "A reversal (a 50-day close breakout on the opposite side on the very close that exits the open trade) enters at the bar where the open trade exits; the kit's one-position rule requires the next entry to open AFTER the exit bar, so such a reversal is skipped (counted and reported). Later signals of that side enter normally.",
+  "Days with fewer than 5 hourly bars (one-bar holiday stubs) are not daily closes.",
+  "Daily close known at the 17:00 NY boundary even on early-close days (conservative)."
+ ],
+ "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw): gross, net, spread and slippage x1.5; swaps every night (slow track).",
+ "bars": "CHARTER.md 'The bars' for a basket on 01_main, computed by kit.judge.verdict(..., max_hold_tdays=40): t on daily sums >= 2.5, pooled PF >= 1.12 and >= 1.04 at costs x1.5, >= 60 % years positive, >= 65 % markets positive, no market above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 40 trading days, same-day random-entry null >= 97.5 (2000 draws, the main's own exit, stop and events), weekly corr with the ten <= 0.30, truncation tests (signals and events) with default cuts; deflated Sharpe on N_all reported.",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead does it).",
+ "kit": "lab/explore/kit v2.1, unchanged"
+}

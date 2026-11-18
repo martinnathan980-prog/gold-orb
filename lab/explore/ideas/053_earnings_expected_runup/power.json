@@ -1,0 +1,21 @@
+{
+ "calendar_rows_drop_late": 816,
+ "signals_built_before_2022": 661,
+ "main_signals_with_entry_and_exit_in_sample": 660,
+ "by_entry_year": {
+  "2017": 40,
+  "2018": 156,
+  "2019": 156,
+  "2020": 155,
+  "2021": 153
+ },
+ "shares": 39,
+ "actual_reaction_vs_expected": {
+  "on_E": 314,
+  "after_E": 269,
+  "inside_hold": 66,
+  "on_entry_day": 8,
+  "before_entry": 3
+ },
+ "exit_events_before_2022": 660
+}
