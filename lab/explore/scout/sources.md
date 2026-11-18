@@ -776,3 +776,195 @@ earlier than its release was public.** What it checked and what a run must know:
   days does not see them.
 - `calendar(end=...)`: `end` is a UTC instant; a bare date means the end of that UTC day (19:59 or 20:59 New York).
 - `build()` does not notice a truncated cache file (only `test()` does, by its counts): run `test` after any rebuild.
+
+## 31. A broad universe of US shares: list, daily bars, 8-K calendar (S&P 500 list, Yahoo, SEC EDGAR)
+(fetched and built 2026-11-18 for lead/DIRECTION3.md; repaired the same day after an adversarial review, issues
+D3-1 to D3-12, see "Repairs" at the end. Code `lab/explore/scout/universe_us.py`, `prices_d1.py`, `events_edgar.py`
+(which imports `earnings_edgar.py`, section 30, without changing it). Data in `~/explore_data/d1/` and
+`~/explore_data/events_d1/`, never in the repository: no price series may enter it.)
+
+### 31.1 What a run must do (read this first)
+```python
+import sys; sys.path.insert(0, "lab/explore/scout")
+from events_edgar import calendar, idea_sessions, news_sessions
+res = calendar("2021-12-31", kind="results", drop_late=True)   # one row per fiscal quarter; event day = event_session
+s59 = idea_sessions("059")                          # key, session (= event_session), accession, when, accepted_et
+s61 = idea_sessions("061")                          # key, session: plain 8-K without 2.02, no results-like day at s or s-1
+s62 = idea_sessions("062")                          # key, session: no filing in s-2..s, no results-like day in s-2..s+2
+# bars: pandas.read_parquet("~/explore_data/d1/bars/<key>.parquet"); index = UTC session open (09:30 New York)
+```
+- **The event day is `event_session`**: the session s with close(s-1) <= acceptance < close(s) (close 16:00 New York,
+  13:00 on the 12 half days; an acceptance at 16:00:00 exactly goes to the next session). It is the first close at
+  which the 8-K is public: a move read at that close and an order at the next open use nothing unknown. It equals
+  `reaction_session` (the first session that OPENS after the acceptance) except on the 4,005 rows accepted inside a
+  session (`when` = in_session), where reaction_session is one session later. Idea 059's "R = the first session that
+  starts after the acceptance" must be read as R = event_session (see 31.6, D3-3); `drop_in_session=True` (the old
+  drop_late) is a sensitivity check only.
+- **Flags and what a run does with each** (events_raw.csv columns):
+  - `late_suspect` (77 results rows: Schwab 24, Atmos 24, Vulcan 20, Halliburton 9): the stamp may be a session late
+    (the release went out before the open or during the session before; the 8-K was accepted after the close). It
+    cannot be shown safe, so a run DROPS these rows: `calendar(..., drop_late=True)` and `idea_sessions("059")` do it
+    (8,871 of 8,948 results rows remain). They are never moved earlier. For 061 / 062 their sessions still count as
+    results-like days (they are excluded, not used).
+  - `late_by_construction` (in_session rows): NOT a reason to drop any more; use event_session.
+  - `when` = closed_day (53 rows accepted on a weekend or holiday): nothing to do; event_session is the next session.
+  - `quarter_flag` = results_candidate (87 rows in 55 fiscal quarters without a results row: a non-2.02 8-K at the
+    usual lag, e.g. T. Rowe Price, Rollins, Xcel, Linde, Raymond James): results news filed without item 2.02. Not
+    an event of 059 (not shown to be the release), left out of `kind='other'`, and a results-like day for 061 / 062.
+  - `filing_before_acceptance` (3 rows: JCI 2017-02-02, PNW 2019-03-07 8-K/A, VRSN 2019-10-25): EDGAR's filing date
+    is a day before the acceptance date. The acceptance time is the stamp used; nothing to do.
+  - `fiscal_q4`: the row's quarter is the fiscal fourth quarter (10-K quarter); information only.
+  - Bars: `info.json` meta.levels_warning, splits.csv `kind`, dividends.csv `fraction`: see 31.3. A run uses ratios only;
+    a per-share commission or a USD price filter needs the warning there.
+- **Results-like sessions X** (used by 061 and 062, built from EVERY results row, late_suspect included): a results
+  row's event_session and reaction_session, the event_session of any other 8-K with item 2.02 (pre-announcements,
+  updates, amendments), of a results candidate, and of any 10-Q / 10-K (or amendment) acceptance (periodic.csv).
+- **061** (`idea_sessions("061")`): one row per share-session s with at least one plain 8-K without item 2.02 whose
+  event_session is s (several 8-Ks on one session count once; 1,334 share-sessions carry more than one 8-K), s and
+  s-1 not in X. 8-K/A rows are NOT counted by default (484 share-sessions have only an 8-K/A among their non-2.02
+  rows); `include_amend=True` counts them. 15,539 share-sessions (15,887 with 8-K/A).
+- **062** (`idea_sessions("062")`): share-sessions s with no 8-K / 8-K/A of any kind and no 10-Q / 10-K whose
+  event_session is s-2, s-1 or s (i.e. accepted at or after the close of s-3 and before the close of s), and no X
+  session in s-2..s+2. NOTE: s+1 and s+2 look ahead (a results day after s is known at s only when the company
+  announced its date); `results_ahead=0` removes it. 346,299 share-sessions (364,507 with results_ahead=0).
+- All three keep sessions from the share's `in_universe_from` (and 2017-01-01) to 2021-12-31.
+- **State with every result**: survivors only (31.2), and the 2020 concentration of 061 / 062 (31.5).
+
+### 31.2 The universe (`universe_us.py`, `~/explore_data/d1/universe.csv`)
+- Today's S&P 500 list (raw.githubusercontent.com datasets/s-and-p-500-companies, constituents.csv; cross-checked
+  with Wikipedia's REST page), 500 rows, minus the lab's 40 and the second share classes (GOOG, FOX, NWS): 382
+  companies in the universe, 11 sectors. `in_universe_from` = the later of 2017-01-01 and the first fja point-in-time
+  list (github fja05680/sp500) holding the ticker or a former ticker of it: no look-ahead at inclusion (331 from
+  2017, 13 / 19 / 9 / 10 joining in 2018 / 2019 / 2020 / 2021).
+- **SURVIVORS ONLY, and it biases the rules, not only their level** (review D3-6). 183 companies (210 tickers minus
+  27 renames) were in the index at some time in 2017-2021 and are not in today's list
+  (`universe_left_2017_2021.csv`); they were 134 of 506 index members on 2017-06-26, 121 / 112 / 92 of 505-506 in
+  mid 2018 / 2019 / 2020 and still 84 of 505 on 2021-06-04 (16.6 %). Five re-joiners are out too (EQT, FSLR, KDP,
+  PCG, ILMN). Survival to today depends on what happened after a shock: companies whose falls continued were later
+  removed (Gap, Macy's, Kohl's, Xerox, Lumen, Walgreens, SVB, First Republic) and takeover targets (large positive
+  news days, idea 061) are gone. So the LONG side after up-shocks is flattered, the SHORT side after down-shocks is
+  biased against, and 061 is thinned; the random-entry null on the same share does not remove this. A run reports
+  long and short sides separately and says this. Not repaired: the departed companies would need their SEC CIKs
+  (only today's list carries CIKs; www.sec.gov, which holds the ticker-to-CIK files, refuses this client) and
+  Yahoo serves a departed ticker's CURRENT holder when the symbol was re-used, so their bars could not be trusted
+  without a second source.
+- Dates after 2021 (review D3-12): the raw list files (`raw_universe/`) and universe.csv necessarily hold them (79
+  rows added 2022 or later, all out of the universe; universe_us.py test checks it). universe_left_2017_2021.csv
+  now writes 'after 2021' for a departure after 2021 and cuts the part of a label that tells a later event (80
+  rows; test: no year after 2021 in the file). The EDGAR cache files carry the fetch date (fetched_utc
+  2026-11-18) and the bars' info.json the read date: dates of the fetch, not of any market data. No price, return
+  or event dated 2022 or later exists anywhere (prices_d1 test cache_clean / bars_written, events_edgar test 1).
+
+### 31.3 Daily bars (`prices_d1.py`, `~/explore_data/d1/`)
+- Yahoo chart API v8, interval 1d, one request per share (period 2016-01-01..2022-01-01 UTC), browser-like
+  User-Agent 'Mozilla/5.0', about one request a second, cached in `raw_yahoo/<SYM>.json` (422 replies, 0 errors,
+  0 refusals). Each reply is stripped IN MEMORY before it is written: 'meta' (today's price) deleted unread,
+  adjclose deleted (used once in memory for adjclose_check), every row and event dated after 2021-12-31 dropped.
+- `build` -> `bars/<key>.parquet` (422 shares: 382 universe + 40 lab40; 632,500 session rows; UTC index = 09:30 New
+  York; open high low close = Yahoo quote prices; volume = minutes of the session, 390 or 210; shares = traded
+  volume), `dividends.csv` (8,133), `splits.csv` (68), `info.json`, `liquidity_by_year.csv`. Pre-listing blocks of
+  zero-volume rows are cut (`listing_cut`: AMCR's 864 rows before 2019-06-11; HWM's 37 rows to 2016-12-23). AMCR's
+  in_universe_from (2019-06-07) is two sessions before its first bar.
+- `test` (no network; all PASS, "flags: none"): calendar 1,511 sessions (rules before 2017-01-26, the lab's hourly
+  bars after; 0 differences on the overlap); 0 duplicates, 0 missing sessions, 0 rows off-session, 0 null prices,
+  0 broken high/low; 12 isolated zero-volume days left (no run of 3+ sessions from 2017); 11 split-like moves, all
+  real (hand list `EXPLAINED`, each with a volume spike of 3x or more: oil and COVID crash days, AMD 2016-04-22, DexCom
+  2017-09-28, Symantec 2018-05-11, Williams 2016-02-08); 68 Yahoo splits all adjusted (previous close / open of the
+  ex-date median 0.995); adjclose step = 1 - dividend / previous close on 8,126 ex-dates (0.0 bp); cache: 0 of 422
+  files with a key other than the stripped ones or a stamp of 2022 or later (keys are tested, not text: D3-2); the
+  lab's 40 against their hourly bars: close median 2.0 bp, open 10.5 bp, same-day match best for every share.
+  `selftest` plants defects in synthetic replies (missing session, duplicate, high below close, unadjusted 2:1, level
+  1/20, zero volume, pre-listing block, date shift) and must find each; it also runs `test` before `build` (must
+  report NO BARS, not crash) and puts the stripped reply through the same cache check.
+- **LEVELS ARE NOT THE PRICES TRADED IN 2016-2021** (review D3-7). Yahoo divides every earlier price by each later
+  split and spin-off ratio, those after 2021 included. Against the lab's hourly bars: AMZN and GOOGL 0.05, NVDA,
+  AVGO and NFLX 0.1, TSLA and WMT 0.333, GE 0.623, MRK 0.954, PFE 0.949; universe shares split after 2021 have no
+  reference in the data. Returns are right. Dividends are scaled the same way (MMM 2019-02-14: 1.204 for 1.44 paid):
+  use `fraction` (amount / previous close) only. Spin-offs inside the sample appear in splits.csv as
+  `kind = spin_off_or_other_adjustment` (32 of 68: DHR 1319:1000, DD 1487:1000, GE 104:100, MRK 1048:1000, PFE, IBM,
+  HON ...; 36 are real splits). Consequence for the provisional costs: a commission of max(0.03 USD a share, 2 USD)
+  computed on Yahoo levels counts too many shares wherever a later split or spin-off lowered the level, so it is
+  HEAVIER than the real one (in line with "deliberately heavy"); it would be lighter only for a reverse split after
+  2021, which the data cannot show. The lead decides whether to express it as a fraction of the stake instead; no
+  hand list of post-2021 corporate actions was written (that is information dated after 2021). The report's
+  "median price under 30 USD: 41 of 382" is an upper bound for the same reason.
+
+### 31.4 The 8-K calendar (`events_edgar.py`, `~/explore_data/events_d1/`)
+- Source: `https://data.sec.gov/submissions/CIK<10 digits>.json` and the extra files it names, client name
+  'research-client/1.0', at most 4 requests a second; www.sec.gov not used. 388 companies' lists (382 + 6
+  predecessor registrants, hand map `PRED`), filtered in memory before writing (filingDate 2015-06-01..2021-12-31,
+  acceptance before 2022-01-01 UTC, accession year <= 21). Cache `raw/`, 388 files, 45,284 rows.
+- Tables: `events_raw.csv` (32,221 rows, one per 8-K / 8-K/A accepted 2016-2021: key, cik, accession, accepted_utc,
+  accepted_et, filing_date, form, items, when, event_session, reaction_session, has_202, quarter_flag, period_end,
+  fiscal_q4, lag_days, usual_lag, late_by_construction, late_suspect, filing_before_acceptance, event_date,
+  primaryDocument); `periodic.csv` (9,956 10-Q / 10-K rows with period_end, period_end_ok, accepted_utc,
+  event_session); `news_sessions.csv` (37,188 share-sessions with any filing: n_8k_other, n_8ka_other, n_8k_202,
+  n_8k_all, results_event, results_reaction, results_late_suspect, results_candidate, periodic); `companies.csv`;
+  `results_missing_quarters.csv`; check and count files.
+- `when`: before_open (< 09:30), in_session, after_close (New York clock; 13:00 close on half days), closed_day
+  (weekend or holiday): 10,731 / 4,005 / 17,432 / 53 rows.
+- Results pick (`quarter_flag`, rule of section 30 per company, with two repairs, D3-9): (1) a 10-Q/10-K reportDate
+  fewer than 15 days before its own acceptance is not a period end (38 rows, HSIC 2016-2018, RJF 2017-08-08: EDGAR
+  gave the filing date) and the 91-day filling replaces it; (2) the fiscal fourth quarter has its own usual lag L4
+  (median lag of the earliest plain 8-K 2.02 more than 15 days after year end) and the pick there is the earliest
+  row near L4, those with 9.01 first, else the section 30 pick; plus 3 hand picks from the filing pattern
+  (`HAND_RESULTS`: PPL Q4 2015 and Q4 2016, Baxter Q4 2019, whose release carries item 4.02). 25 quarters changed
+  pick: the pre-announcement or update was replaced by the release at DexCom 2016 and 2017, CenterPoint 2016-2018,
+  AWK 2018, AES 2018, Ecolab 2018 and 2019, Baxter 2020, Hilton 2021, Con Ed 2021, Albemarle 2021, Moody's 2017,
+  ONEOK 2017, MGM 2019, Ingersoll Rand 2020, Entergy 2018, West 2019, AIG 2016, Symantec 2016, Wabtec 2018, Chubb
+  2019, TransDigm 2019, Steris 2021, all moved LATER (to the release); Kimberly-Clark Q1 2016 (2016-04-22) gained a
+  results row (a bad period end had hidden it); RJF 2017-09-01 and HSIC 2018-08-30 are no longer results. The lab's 40 are still
+  reproduced exactly (817 rows). The verifier's test for Q4 pre-announcement picks finds 16 (was 37): MMM 4, PNC 2,
+  STT 2, DTE 2 (checked correct by the verifier: a later investor update), PPL 2 (the hand picks), and EMR 2016-09,
+  LUV 2017-12, MSCI 2020-12, MPC 2020-12, not checked (MPC's pick 2021-01-25 may be a pre-announcement of the
+  2021-02-02 release). Item-2.02 rows 9,644 = 8,948 results, 323 before_results, 314 after_results, 59 amendment.
+- Quarters without results row: 76 at 47 companies (T. Rowe Price 18: only its Q4 release is an 8-K 2.02;
+  Berkshire 5: results with the 10-Q on a Saturday, no 8-K; Rollins 3). In these quarters the 10-Q / 10-K
+  acceptance is the only public stamp: it is a results-like day of X (D3-10). check_results_per_year.csv reasons
+  now use the registrant's first filing in the cache (ALGN and LLY 2016 are "quarters without a results 8-K", no
+  longer "first year").
+
+- Traps (unchanged from the first build): for most non-2.02 news the 8-K is NOT the moment the news became public
+  (an 8-K is due within 4 business days; its own event date is the New York acceptance day for 51.2 % of the rows
+  without 2.02, 1-4 business days earlier for 44.0 %: item 1.01 37 % / 59 %, 5.02 28 % / 66 %, 7.01 77 % / 20 %,
+  8.01 61 % / 35 %), so 061 mostly reads days after the news and 062's "no news" set holds news days; the safe
+  stamp stays the acceptance time. `filing_date` is the next business day after 17:30 New York: never key on it.
+  The cache holds only the 8-K, 10-Q / 10-K and 6-K / 20-F / 40-F families. A new listing in the universe must be
+  checked for a predecessor registrant (companies.csv first_8k against in_universe_from).
+
+### 31.5 Checks and counts (`events_edgar.py test`: 28/28 passed)
+- Nothing at or after 2022-01-01 in cache or tables; one row per 8-K; one results row per company and quarter; the
+  cut works; the lab's 40 reproduced. reaction_session and event_session recomputed by a second piece of code
+  (rule-based holidays, zoneinfo, epoch search): 0 of 32,221 differ for each; event_session differs from
+  reaction_session exactly on the in_session rows; closed_day exactly on non-session days. UTC clock reading and
+  the EDGAR filing-date rule as before (95.1 % / 99.99 %).
+- **Price witness** (only to judge the stamps; nothing is chosen by it): mean |close-to-close move| / the share's
+  usual move, sessions -2..+2 around event_session: before_open 1.26 1.41 **4.23** 1.85 1.51 (4,825 rows), after_close
+  1.31 1.51 **4.31** 1.75 1.50 (3,298), in_session 1.24 1.39 **3.84** 1.71 1.49 (460). Around the old reaction_session
+  the in_session rows peaked one session early (1.39 **3.84** 1.71 at -1): the D3-3 repair. Results rows not
+  accepted in session whose largest move is on the session before the event session: 13.9 %; companies far above
+  it (binomial p < 0.001): Schwab 12/23, Atmos 11/23, Vulcan 9/20, all in LATE_STAMP (with Halliburton, 6/9 in the
+  verifier's count): the test fails if a new one appears. Largest move AFTER the event session: 20.9 %; DOC, MPC and
+  UDR 12/23 each, which cannot be an early stamp (the 8-K is public at acceptance): drift or noise.
+- **Counts for the ideas** (2017..2021; share-sessions; signal = |close-to-close move| of the session itself >= 8 %;
+  no later return is read): 059: 6,913 events, signals 80 / 139 / 133 / 108 / 94 = 554, 446 without 2020.
+  061: 15,539 share-sessions, signals 8 / 13 / 9 / 221 / 17 = 268, **47 without 2020** (with 8-K/A: 273, 47).
+  062: 346,299 share-sessions, signals 19 / 43 / 38 / 2,465 / 127 = 2,692, **227 without 2020**; the busiest days
+  are in March 2020. Net of the universe's equal-weight median move that session: 059 532 (433 without 2020), 061
+  130 (42), 062 981 (169). **061 and 062 are mostly March-2020 rules** (D3-5): 82 % and 92 % of their signals fall in
+  2020, and 061 clears the 250-event floor only because of 2020 (47 signals in the other four years). The lead
+  should declare per-year minimums or a market-move filter before running them; the counts above are for that.
+
+### 31.6 Repairs of 2026-11-18 (review D3-1 to D3-12) and what proves each
+- D3-1 bars built (422 shares, 8,133 dividends, 68 splits), `prices_d1.py test` and the events witness run.
+- D3-2 the cache check tests keys, not text (`cache_check`); `test` reports NO BARS instead of crashing; selftest.
+- D3-3 event_session (31.1); witness peaks at 0 for in_session rows (test check).
+- D3-4 `idea_sessions` and `news_sessions.csv` (31.1); tests: one row per share-session, 061 and 062 disjoint.
+- D3-5 counts by year with and without 2020 and net of the market (31.5); the declaration is the lead's.
+- D3-6 not repaired (no CIK source for departed companies); stated in 31.2.
+- D3-7 levels: info.json warnings, splits.csv kind, dividends fraction only (31.3); no post-2021 hand list.
+- D3-8 LATE_STAMP / late_suspect, dropped by drop_late (test check against the binomial list).
+- D3-9 period-end clean-up, fiscal-Q4 lag, 3 hand picks (31.4; test checks HSIC, RJF, the hand picks, Q4 count <= 16).
+- D3-10 results candidates flagged and out of kind='other'; periodic and candidate sessions in X; reason labels.
+- D3-11 closed_day; filing_before_acceptance; listing_cut; EXPLAINED list.
+- D3-12 universe_left_2017_2021.csv without post-2021 dates; fetch dates stated here.
