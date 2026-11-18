@@ -577,3 +577,202 @@ count; only dates and row counts were printed.
 
 Two probe loops also failed to stop after two refusals as the task asked: 77 calls to Yahoo (all 429, in one minute)
 and 8 to web.archive.org (all reset), before the stop rule was built into the probe helper.
+
+---
+
+## 30. Earnings releases (SEC EDGAR, 8-K item 2.02)
+(probed and built 2026-11-18, 06:50-07:30 UTC; code `lab/explore/scout/earnings_edgar.py`; calendar in
+`~/explore_data/earnings/`, never in the repository)
+
+- URLs (all answer the plain client name `User-Agent: research-client/1.0`, nothing personal; at most 4 requests a second):
+  - filings list of a company: `https://data.sec.gov/submissions/CIK<10 digits>.json` (holds about the last 1,000
+    filings; older ones are in the extra files it names, `CIK..-submissions-001.json`, fetched only when their
+    filingFrom..filingTo overlaps 2015-06..2021-12).
+  - full-text search (2001 on): `https://efts.sec.gov/LATEST/search-index?q=<phrase>&forms=6-K&ciks=<10 digits>&dateRange=custom&startdt=..&enddt=2021-12-31`
+    (JSON hits with accession number and file date; used for Alibaba and for the question of advance dates below).
+  - **refused**: `www.sec.gov` (`files/company_tickers.json`, every `Archives/edgar/...` page, i.e. the filings'
+    documents and headers) answers 403 'Request Rate Threshold Exceeded' to a User-Agent without a contact address
+    (two refusals, then stopped). So the CIKs are written by hand in the script and checked against the name EDGAR
+    returns, and no press-release text could be read.
+- What the cache holds: one file per CIK, `~/explore_data/earnings/raw/CIK##########.json`, filtered in memory before
+  it is written: filings with filingDate 2015-06-01..2021-12-31, acceptance date <= 2021-12-31 and an accession
+  number of year <= 21 (Salesforce has two records re-filed in 2022 under old filing dates: dropped). Plus
+  `fts_baba_results.json` (21 accession numbers). 43 files, 20 MB.
+- Rebuild: `PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/scout/earnings_edgar.py fetch` (only what is not
+  cached), `... build` (writes `calendar_raw.csv`, 904 rows, and `calendar.csv`, 841 quarterly results),
+  `... test` (30 checks on the cache, no network: 30/30 passed).
+- Use in a run:
+```python
+import sys; sys.path.insert(0, "lab/explore/scout")
+from earnings_edgar import calendar
+cal = calendar(end="2021-12-31")                       # one row per fiscal quarter ('results'), cut at `end` (UTC)
+allrows = calendar(end="2021-12-31", quarterly_only=False)   # every 8-K 2.02 with its flag
+# columns: ticker, accepted_utc (tz-aware), accepted_et, when (before_open / in_session / after_close),
+#          reaction_session (date), quarter_flag, form, items, accession, filing_date, event_date, period_end,
+#          lag_days, usual_lag, note, cik
+```
+
+**WHEN each value is known (the whole point)**
+- `accepted_utc` = EDGAR's acceptance time of the 8-K. In the submissions JSON `acceptanceDateTime` is **real UTC**
+  ("2021-10-28T20:30:23.000Z" = Apple, 16:30:23 New York EDT; "2021-01-27T21:30:35.000Z" = 16:30 EST in winter).
+  The SAME instant is printed in New York local time with no zone in the filing's own header and on the EDGAR web
+  pages: never mix the two. Converted with pandas tz (daylight saving handled); checked on Apple in summer and winter
+  and on JPMorgan (10:45 UTC = 06:45 New York, its usual release time).
+- `filing_date` is the New York business date of filing, and a filing accepted after 17:30 New York carries the NEXT
+  business day: never key on it (Apple 2019-01-02 16:30, Tesla 2019-04-03 20:22 ...).
+- The acceptance time is a **safe** 'known at' (the filing cannot be public before EDGAR accepts it), but it can be
+  **late**: companies put the release on a wire, or post it on their site, first. Measured on what EDGAR alone shows:
+  - after-close releases (458): acceptance 3 minutes after 16:00 New York at the 10th percentile, 12 at the median,
+    32 at the 90th, 58 at the 97th; each company keeps a tight clock (Apple 16:30 every quarter, Micron 16:00-16:06,
+    Nvidia 16:20-16:27, JPMorgan 06:39-06:46 except once, UnitedHealth 06:00-06:34). The wire time itself is not in
+    EDGAR and the press-release documents could not be read (www.sec.gov refused), so the gap to the wire is
+    measured only indirectly, by price (below).
+  - late filers seen: Tesla (16:11-17:25, letter usually out about 16:05), Amazon once 19:53, Facebook once 19:18,
+    Apple once 18:55, Alphabet once 18:40, Chevron at 09:00 although its release goes out earlier, Citigroup 07:55-10:26
+    (its release is at about 08:00 New York; **4 quarterly results were accepted after 09:30**: 2019-07-15, 2020-07-14,
+    2020-10-13, 2021-10-14), and **Alibaba** (6-K accepted at about 16:30 New York on the release day; the release is
+    published before the US open: on the 19 release days with bars the open gap of the 6-K's own day is 3.1 x usual against 1.7 x on the
+    day the safe rule names, and larger than on that day in 16 of 19 cases).
+  - price check of the calendar (in-sample hourly share bars, open of the first bar against the previous close; the
+    check was used to judge the calendar, not to choose events or tune anything): on the reaction session named by
+    the safe rule the open gap is 7.1 x the share's usual gap for after-close releases (389 events; largest of the
+    three days around it in 87 %), 3.4 x for before-open releases (331; 71 %), against 1.1 x the day before.
+- **The safe rule for every run**: the reaction session is the first regular session (09:30-16:00 New York) that
+  STARTS strictly after `accepted_utc` (column `reaction_session`; NYSE full-day holidays written in the script and
+  checked against the days without bars, 2017-01-27..2021-12-31: identical). Early closes (13:00) do not change it.
+  Consequence: a release accepted at 09:31 reacts the NEXT day by this rule although the wire went out before the
+  open: Citigroup x 4 and Alibaba x 21 are then a full session late. A run should either drop `when == 'in_session'`
+  and Alibaba from rules that trade the reaction day (052, 054), or keep them and say that their reaction day is late
+  by construction. Never move an event earlier on the evidence of a price move.
+
+**Which 8-K is 'the' quarterly result (`quarter_flag`)**
+- A release = form 8-K or 8-K/A whose `items` include 2.02 (Results of Operations and Financial Condition); Alibaba:
+  the 6-K found by full-text search ("Alibaba Group Announces" + "Quarter Results"); three results filed under the
+  wrong item, found by the gap check, are added by hand (`GAP_FILLS`): GE Q1 2017 and Q1 2020 (item 9.01 only),
+  Citigroup Q1 2021 (item 2.01 declared instead of 2.02). Column `note` says so.
+- Fiscal period ends = the `reportDate` of the company's 10-Q/10-K (52/53-week years respected), extended by 91 days
+  to the cut and filled where one is missing. Each 8-K 2.02 belongs to the last period end before its day.
+- The company's usual lag L = median, over its periods, of the lag of the last 8-K 2.02 accepted before that period's
+  10-Q/10-K. In each period the 'results' row is the earliest plain 8-K (not 8-K/A) within max(2, min(7, L/4)) days
+  of L, or the one nearest to L; an 8-K whose own event date is an earlier release's day (call transcripts) is
+  never chosen. The others are flagged `before_results` (pre-announcements, delivery reports, restated segments),
+  `after_results` (transcripts, reserves, later revisions) or `amendment` (8-K/A).
+- Point in time: the choice uses the company's whole-history usual lag; a run that needs a strictly point-in-time
+  event set should take every 8-K 2.02 (`quarterly_only=False`) or drop the flagged rows knowingly. Flagged rows:
+  40 before, 22 after, 1 amendment (Tesla 24, PayPal 5, Nike 7, Exxon 3 ...).
+
+**Counts per share (quarterly results 2016-10-01..2021-12-31; acceptance clock New York, median (min-max))**
+
+| Key | Results | First | Last | Clock | When | Other 8-K 2.02 kept in the raw table |
+|---|---|---|---|---|---|---|
+| aapl | 21 | 2016-10-25 | 2021-10-28 | 16:30 (16:30-18:55) | after_close 21 | before_results 1 (2019-01-02 revenue warning) |
+| adbe | 21 | 2016-12-15 | 2021-12-16 | 16:07 (08:04-16:09) | after_close 19, before_open 2 (Dec 2020, Dec 2021) |  |
+| amd | 21 | 2016-10-20 | 2021-10-26 | 16:19 (06:34-17:11) | after_close 20, before_open 1 (2020-10-27, with the Xilinx deal) | after_results 1 |
+| amzn | 21 | 2016-10-27 | 2021-10-28 | 16:18 (16:06-19:53) | after_close 21 |  |
+| avgo | 21 | 2016-12-08 | 2021-12-09 | 16:19 (16:05-16:39) | after_close 21 (Broadcom Ltd CIK 1649338 to 2018, Broadcom Inc 1730168 after) | after_results 1 |
+| ba | 21 | 2016-10-26 | 2021-10-27 | 07:40 (07:33-07:56) | before_open 21 | before_results 1 (2019-07-18 737 MAX charge) |
+| baba | 21 | 2016-11-02 | 2021-11-18 | 16:30 (12:47-17:21) | after_close 20, in_session 1: **6-K hours late, see above** |  |
+| bac | 21 | 2016-10-17 | 2021-10-14 | 06:46 (06:17-06:56) | before_open 21 |  |
+| c | 21 | 2016-10-14 | 2021-10-14 | 08:35 (07:55-10:26) | before_open 17, **in_session 4** | before_results 2, after_results 1 |
+| cat | 21 | 2016-10-25 | 2021-10-28 | 07:31 (06:30-09:05) | before_open 21 | after_results 1 |
+| crm | 21 | 2016-11-17 | 2021-11-30 | 16:14 (16:08-16:40) | after_close 21 | after_results 1 |
+| csco | 21 | 2016-11-16 | 2021-11-17 | 16:10 (16:08-16:34) | after_close 21 |  |
+| cvx | 21 | 2016-10-28 | 2021-10-29 | 09:00 (06:02-09:04) | before_open 21 |  |
+| dis | 21 | 2016-11-10 | 2021-11-10 | 16:09 (16:06-16:19) | after_close 21 (old Disney CIK 1001039 to 2019-03, new 1744489 after) |  |
+| fb | 21 | 2016-11-02 | 2021-10-25 | 16:10 (16:04-19:18) | after_close 21 (CIK 1326801, now Meta) |  |
+| ge | 21 | 2016-10-21 | 2021-10-26 | 06:55 (06:06-08:12) | before_open 21 (2 hand-added) | before_results 2, after_results 1 |
+| googl | 21 | 2016-10-27 | 2021-10-26 | 16:01 (16:01-18:40) | after_close 21 (Alphabet CIK 1652044, one filing for both share classes) |  |
+| gs | 21 | 2016-10-18 | 2021-10-15 | 07:38 (07:29-08:34) | before_open 21 | after_results 2 |
+| hd | 21 | 2016-11-15 | 2021-11-16 | 06:10 (06:05-06:58) | before_open 21 |  |
+| intc | 21 | 2016-10-18 | 2021-10-21 | 16:07 (16:04-16:10) | after_close 21 | before_results 1 (2021-01-14 CEO change with preliminary results) |
+| jnj | 21 | 2016-10-18 | 2021-10-19 | 08:00 (07:12-08:34) | before_open 21 | after_results 1 |
+| jpm | 21 | 2016-10-14 | 2021-10-13 | 06:45 (06:39-07:54) | before_open 21 |  |
+| ma | 21 | 2016-10-28 | 2021-10-28 | 08:02 (07:47-08:08) | before_open 21 |  |
+| mcd | 21 | 2016-10-21 | 2021-10-27 | 07:59 (06:59-08:06) | before_open 21 | before_results 2 (monthly sales updates 2020) |
+| mrk | 21 | 2016-10-25 | 2021-10-28 | 06:50 (06:38-08:37) | before_open 21 |  |
+| msft | 21 | 2016-10-20 | 2021-10-26 | 16:04 (16:02-16:41) | after_close 21 |  |
+| mu | 22 | 2016-10-04 | 2021-12-20 | 16:00 (16:00-16:06) | after_close 22 (fiscal quarters end early in the month: 22 fall in the window) |  |
+| nflx | 21 | 2016-10-17 | 2021-10-19 | 16:09 (16:02-16:57) | after_close 21 | before_results 1, after_results 1 |
+| nke | 21 | 2016-12-20 | 2021-12-20 | 16:18 (16:16-17:09) | after_close 21 | after_results 7 (call transcripts filed 2-6 days later) |
+| nvda | 21 | 2016-11-10 | 2021-11-17 | 16:21 (16:20-16:27) | after_close 21 | before_results 1 (2019-01-28 guidance cut) |
+| orcl | 21 | 2016-12-15 | 2021-12-09 | 16:15 (16:08-16:51) | after_close 21 |  |
+| pfe | 21 | 2016-11-01 | 2021-11-02 | 08:42 (08:04-09:29) | before_open 21 |  |
+| pypl | 21 | 2016-10-20 | 2021-11-08 | 16:28 (16:10-16:38) | after_close 21 | before_results 5 (reclassification 8-K a week before) |
+| qcom | 21 | 2016-11-02 | 2021-11-03 | 16:05 (16:01-16:18) | after_close 21 |  |
+| tsla | 21 | 2016-10-26 | 2021-10-20 | 16:38 (16:11-17:25) | after_close 21 | before_results 24 (quarterly delivery reports carry item 2.02) |
+| unh | 21 | 2016-10-18 | 2021-10-14 | 06:03 (06:00-06:34) | before_open 21 |  |
+| v | 21 | 2016-10-24 | 2021-10-26 | 16:05 (06:03-16:40) | after_close 20, before_open 1 (2017-10-25) |  |
+| wfc | 21 | 2016-10-14 | 2021-10-14 | 07:59 (06:46-08:05) | before_open 21 | after_results 2, amendment 1 (April 2018 revision) |
+| wmt | 21 | 2016-11-17 | 2021-11-16 | 07:00 (06:04-07:01) | before_open 21 |  |
+| xom | 21 | 2016-10-28 | 2021-10-29 | 07:58 (07:27-08:39) | before_open 21 | after_results 3 (reserves 8-K in February) |
+
+Totals: 841 quarterly results (40 x 21 + Micron's 22nd), 41 in late 2016, 160 a year 2017-2021 (159 in 2020: Micron's
+calendar), 458 after the close, 378 before the open, 5 inside the session (accepted 09:30-16:00). The last results in sample are the
+September quarter (October-November 2021) for calendar-year companies, the November quarter (December 2021) for Nike,
+Micron, Oracle, Adobe, Broadcom; the December 2021 quarter (reported in 2022) is out of the period by design.
+
+**Checked by hand (dates known independently; script `test()`)**: Apple 2021-10-28 after the close (20:30 UTC,
+reaction 2021-10-29) and 2021-01-27 (21:30 UTC, winter time); Microsoft 2021-10-26, Amazon 2021-10-28, Alphabet
+2021-10-26, Facebook 2021-10-25, Netflix 2021-10-19, Tesla 2021-10-20, Intel 2021-10-21, Nvidia 2021-11-17, Nike
+2021-12-20, Micron 2021-12-20 (all after the close); Walmart 2021-11-16 and JPMorgan 2021-10-13 before the open
+(reaction the same day); Apple's 2019-01-02 revenue warning flagged `before_results`; Tesla's delivery reports
+flagged. All agree.
+
+**Gaps and oddities found**
+- No quarter is missing once the three hand-added filings are in (each share has 21; the gap check found GE Q1 2017,
+  GE Q1 2020, Citigroup Q1 2021: results filed without item 2.02).
+- Price bars of the shares start 2017-01-26: the 2 to 3 releases per share before that date (about 80) have no
+  reaction bars.
+- Adobe's December 2020 and December 2021 results 8-K were accepted at 08:04 / 08:06 New York (Adobe's other quarters
+  are after the close); the 2021 one is confirmed by an 8.3 % opening gap the same morning. Visa 2017-10-25 at 06:03.
+- Intel 2021-01-21: accepted 16:04, after the close; Intel is reported to have published that release minutes early
+  because of a leak (from memory, not verified here). If so the wire was inside the session: the safe rule still
+  gives the next day, where most of the move took place.
+- In 3 % of reaction sessions the first hourly bar opens within 0.1 % of the previous close although the share moved
+  a lot during that first hour (e.g. Alphabet 2021-10-27): the lab's share bars do not always show the opening gap.
+  A rule on 'the gap at the open' (054) should measure it on the first bar's close or the 10:00 bar, and say so.
+
+**Revisions**: EDGAR keeps every filing; corrections come as new 8-K or 8-K/A (kept, flagged). The acceptance time of a
+filing never changes. Records can be re-filed with an old filing date (Salesforce 2022 re-submissions of 2020-2021
+10-Q/10-K): filter on acceptance date and accession year as the script does.
+
+**Can the DATE of a release be known in advance, point in time? (idea 053)** Not from EDGAR, as far as could be shown:
+- Full-text search for the exact date string ("January 29, 2019" ...) in each company's filings of the 75 days before
+  12 releases (Apple, Microsoft, Netflix, JPMorgan, Amazon, Tesla, Alphabet, Intel, Nike, Exxon, Facebook, Walmart):
+  only Apple's Q1 2019 date appears in advance, inside its 2019-01-02 revenue-warning 8-K; the 3 JPMorgan hits are
+  note prospectuses (424B2) that merely contain the date. 10 of 12: nothing.
+- Phrase searches over the 40 companies 2016-07..2021-12 ("to announce ... quarter ... results ... conference call",
+  "will report ... results on", "will release ... results on", "earnings release date") return results releases,
+  proxies and merger documents, not dated announcements; a handful (Broadcom 2016-11-02, AMD 2020-10-27) may name
+  a coming date inside a merger release: could not be read (www.sec.gov refused).
+- Companies announce the date by press release and on their investor site, 2 to 4 weeks ahead (some, e.g. JPMorgan
+  and Netflix, a year ahead), not on EDGAR. Free point-in-time copies of those pages exist only in the Wayback Machine
+  (`archive.org/wayback/available` answers and lists, e.g., a 2019-01-16 snapshot of Apple's investor page), but
+  `web.archive.org` itself refused (connection reset, then 403): not reachable from here.
+- So idea 053 as briefed (date public at least 5 trading days before) is **not testable point in time with the
+  sources reachable here**. The only honest variant is a rule that does not need the date: e.g. enter at a fixed lag
+  after the previous release (the company's own rhythm, `usual_lag` computed from past releases only) and accept
+  that some entries land after the release; or close the idea.
+
+**Independent verification (2026-11-18, a second agent whose job was to break the calendar): no row is stamped
+earlier than its release was public.** What it checked and what a run must know:
+- The clock: under the UTC reading, each company's summer and winter release clocks agree (37 of 40 within 20
+  minutes); under the other reading none does. EDGAR's own filing-date rule (next business day after 17:30 Eastern)
+  holds on 5,592 of 5,623 filings under the UTC reading (the 31 exceptions are at 17:30-17:32 or on EDGAR's
+  extended-hours days). The reaction session, recomputed with its own holiday calendar, differs on 0 of 904 rows.
+- Prices as a witness (in-sample bars, market-adjusted, 743 results rows): the largest move of the five sessions
+  around the reaction session falls ON it for 344 of 408 after-close rows and 249 of 331 before-open rows; the mean
+  abnormal opening gap is 14.8 times the usual one on the reaction session after an after-close release (2.1 the
+  session before, 1.7 the session after) and 6.4 times after a before-open release.
+- **Rows that are late by construction: 25 results rows** (the 21 Alibaba 6-K, whose release goes out before the
+  US open but is filed about 16:30 New York; the 4 Citigroup rows accepted after 09:30). `calendar()` now returns
+  the column `late_by_construction`; **a rule that trades the reaction day calls `calendar(drop_late=True)`** (816
+  rows). Never move them earlier.
+- `when` uses a fixed 16:00 close: on the 13:00 half days two non-results rows are labelled `in_session` though they
+  came after the close; their reaction session is right.
+- `quarter_flag` is set with hindsight for `before_results` / `after_results` (they need the later filings); the
+  `results` pick itself gave the same rows when redone strictly point in time. `quarterly_only=True` drops 38
+  `before_results` rows with bars, of which 22 are real news days (warnings, pre-announcements): an idea on results
+  days does not see them.
+- `calendar(end=...)`: `end` is a UTC instant; a bare date means the end of that UTC day (19:59 or 20:59 New York).
+- `build()` does not notice a truncated cache file (only `test()` does, by its counts): run `test` after any rebuild.

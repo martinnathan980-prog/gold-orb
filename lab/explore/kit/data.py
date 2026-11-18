@@ -13,6 +13,19 @@ Guarantees (tested in test_kit.py):
 - Prepared hourly bars: load_bars(key) first looks for <fp key>.parquet in EXPLORE_H1_DIR, <cache>/h1 and
   lab/explore/prices/h1 (hourly BID bars the lead built once from the lab's own minute data, in sample only; the
   validation years live in a sibling folder '<dir>_val' and are read only after unlock_val). No download then.
+- LOCAL-ONLY markets (kit v2.1, kit/extra_costs.json 'local'): 'oil' (WTI, the lab's lightcmdusd) and 40 US shares
+  (keys = lower-case tickers) exist ONLY as prepared bars: load_bars reads them through the same lock and raises
+  FileNotFoundError when the file is absent (no download path). Shares: 7 hourly bars a day (09:30-16:00 New York); the
+  FIRST BAR IS LABELLED AT THE FULL HOUR (09:00) THOUGH TRADING STARTS AT 09:30: its open is the 09:30 price, its end
+  (label + 1 h = 10:00) is right. The kit treats that bar as opening at its label, i.e. EARLIER than it really does: a
+  signal known between 09:00 and 09:30 enters at the 10:00 bar (late, never early), and an entry 'at the open' of the
+  session is the 09:30 price, filled at that bar's open with the 09:30 spread shape. Nothing can be known from the bar
+  before its end (10:00); a value computed from its open is the 09:30 price. A 'hours' exit counted from that bar holds
+  30 minutes less than its label says. The share bars are NOT split-adjusted in the files: load_bars back-adjusts them
+  (splits of the cost entry, checked against the bars); sim.Book recomputes the adjustment (split_factor) to scale the
+  per-unit commission and refuses raw bars. No column of the bars carries the split adjustment (a build could read a
+  future split from it); an ABSOLUTE share (or oil) price level still depends on later splits (rolls): use ratios.
+  checks.truncation_test catches a rule on levels (kit v2.1 fix 2, KF-2: cut copies re-based, cut builds in asof).
 - Cache: ~/explore_data (EXPLORE_CACHE overrides), outside the repository. Polite HTTP: browser User-Agent, at least
   1 s between Dukascopy requests (0.3 s for other hosts), growing waits on 429/503/network errors, 404 = no data.
 """
@@ -251,6 +264,10 @@ FP = {
     "nzdusd": ("duka", "NZDUSD", 1e5, 0.7), "eurjpy": ("duka", "EURJPY", 1e3, 125),
     "btcusd": ("binance", "BTCUSDT", None, 10000), "ethusd": ("binance", "ETHUSDT", None, 500),
 }
+from . import costs as _C  # noqa: E402  (costs imports nothing of the kit)
+for _k, _v in _C.EXTRA.items():          # kit v2.1 local-only markets: prepared bars only, no download path
+    if _v.get("local"):
+        FP[_k] = ("local", _v.get("data_symbol", _k.upper()), None, float(_v["ref_price"]))
 POINT = {v[1]: v[2] for v in FP.values() if v[0] == "duka"}
 REF = {v[1]: v[3] for v in FP.values()}
 
@@ -264,9 +281,11 @@ def fp_markets():
     out = {}
     for k, (src, sym, pt, _) in FP.items():
         crypto = src == "binance"
-        out[k] = {"source": "dukascopy" if src == "duka" else "binance", "symbol": sym, "point": pt,
+        out[k] = {"source": {"duka": "dukascopy", "binance": "binance", "local": "local"}[src], "symbol": sym, "point": pt,
                   "price_is": "mid" if crypto else "bid", "weekdays_only": crypto,
                   "hours": "closed Fri 23:55 - Mon 00:00 server (NY+7h)" if crypto else "bars that exist in the data"}
+        if src == "local":
+            out[k]["hours"] = "bars that exist in the prepared file (shares: 09:30-16:00 New York, 7 bars a day)"
     return out
 
 
@@ -640,7 +659,7 @@ def rule_local_close(time="16:00", tz=NY, lag_bdays=0):
     return lambda dates: known_at(dates, lag_bdays=lag_bdays, time=time, tz=tz)
 
 
-def _apply_rule(obs, values, known, name, min_lag=None):
+def _apply_rule(obs, values, known, name, min_lag=None, keep="last"):
     if known is None or not callable(known):
         raise ValueError("give known=<rule>: a function from observation dates to the UTC time each value is known "
                          "(e.g. data.rule_next_bday_utc(13, 1)); there is no default, on purpose")
@@ -657,9 +676,12 @@ def _apply_rule(obs, values, known, name, min_lag=None):
         bad = int((lag < pd.Timedelta(min_lag)).sum())
         raise ValueError(f"{name}: the known-at rule makes {bad} values known less than the declared publication lag "
                          f"{pd.Timedelta(min_lag)} after their observation date: the rule leaks")
+    if keep not in ("last", "all"):
+        raise ValueError("keep is 'last' (one row per known-at time, the default) or 'all' (every row)")
     d = pd.DataFrame({"v": np.asarray(values, float), "obs": obs}, index=k)
-    d = d[~np.isnan(d.v.to_numpy())].sort_index()
-    d = d[~d.index.duplicated(keep="last")]
+    d = d[~np.isnan(d.v.to_numpy())].sort_index(kind="mergesort")      # stable: rows known together keep their order
+    if keep == "last":
+        d = d[~d.index.duplicated(keep="last")]
     d = d[pd.DatetimeIndex(d.index) < period_end()]
     s = pd.Series(d.v.to_numpy(), index=d.index, name=name)
     s.attrs["obs_date"] = d.obs.to_numpy()
@@ -667,16 +689,43 @@ def _apply_rule(obs, values, known, name, min_lag=None):
     return cut(s)
 
 
-def external(obs_dates, values, known, min_lag=None, name="external"):
+def external(obs_dates, values, known, min_lag=None, name="external", keep="last"):
     """Any custom external series (GDELT, a scraped table, ...): values observed on `obs_dates` (naive dates or
     timestamps), indexed by the time each is KNOWN (`known` rule, no default) and cut at the period end. `min_lag` (a
     Timedelta, REQUIRED) is the declared publication lag: every known_at must be at least obs_date + min_lag, else it
     raises (verifier V4: a series indexed by its observation date passes the truncation test while it leaks, because
-    its own index is the lie; this check is the guard). The observation dates stay in s.attrs['obs_date']."""
+    its own index is the lie; this check is the guard). The observation dates stay in s.attrs['obs_date'].
+    keep='last' (default): one row per known-at time, the last given. keep='all': every row is kept, rows known at the
+    same time in their input order (an event calendar where several events are announced together); for events that
+    carry labels (tickers, kinds) use event_table."""
     if min_lag is None:
         raise ValueError("data.external: give min_lag=<declared publication lag> (e.g. pd.Timedelta(hours=1) for a "
                          "15-minute GDELT file published at its slot's end + processing)")
-    return _apply_rule(obs_dates, values, known, name, min_lag)
+    return _apply_rule(obs_dates, values, known, name, min_lag, keep)
+
+
+def event_table(obs_dates, known, min_lag, name="events", **columns):
+    """An event calendar as a table: one row per event (NONE dropped, several may share a known-at time), indexed by
+    the time each event is KNOWN (`known` rule from the observation dates, no default) and cut at the period end, with
+    column obs_date and the given columns (e.g. market=tickers, kind=..., value=...). min_lag (REQUIRED) is the declared
+    publication lag, enforced on every row as in external(). Rows known together keep their input order. Use it as an
+    item of a truncation test's data with row_len 0, and asof_join(..., agg=) to combine rows known together."""
+    if min_lag is None:
+        raise ValueError("data.event_table: give min_lag=<declared publication lag>")
+    obs = pd.DatetimeIndex(pd.to_datetime(obs_dates))
+    obs = obs.tz_localize(None) if obs.tz is not None else obs
+    for c, v in columns.items():
+        if len(v) != len(obs):
+            raise ValueError(f"event_table: column {c} has {len(v)} rows for {len(obs)} observation dates")
+    vals = np.arange(len(obs), dtype=float)                          # row numbers through the same checked path
+    s = _apply_rule(obs, vals, known, name, min_lag, keep="all")
+    pos = s.to_numpy().astype(np.int64)
+    t = pd.DataFrame({"obs_date": obs[pos]}, index=s.index)
+    for c, v in columns.items():
+        t[c] = np.asarray(v, dtype=object if not np.issubdtype(np.asarray(v).dtype, np.number) else None)[pos]
+    t.index.name = "known_at"
+    t.attrs["min_lag"] = s.attrs["min_lag"]
+    return cut(t)
 
 
 def fred(series, known, start="1990-01-01", end=None, min_lag=None, revised_ok=False):
@@ -730,11 +779,21 @@ def yahoo_daily(ticker, known, field="close", start="1990-01-01", end=None):
     return _apply_rule(obs[keep], vals[keep], known, ticker)
 
 
-def asof_join(times, series):
+AGG = ("last", "first", "sum", "mean", "max", "min", "count")
+
+
+def asof_join(times, series, agg="last"):
     """Value of `series` (indexed by known-at time, UTC) last known at each of `times`: strictly backward-looking, a value
-    known at exactly t counts as known at t. NaN where nothing is known yet."""
-    s = series.sort_index()
-    s = s[~s.index.duplicated(keep="last")]
+    known at exactly t counts as known at t. NaN where nothing is known yet. Several rows known at the SAME time (a
+    series from external(..., keep='all')) are combined first by `agg`: 'last' (the default: the last row given, as
+    before), 'first', 'sum', 'mean', 'max', 'min' or 'count'."""
+    if agg not in AGG:
+        raise ValueError(f"agg is one of {AGG}")
+    s = series.sort_index(kind="mergesort")
+    if agg == "last":
+        s = s[~s.index.duplicated(keep="last")]
+    elif s.index.has_duplicates:
+        s = s.groupby(level=0, sort=True).agg(agg).astype(float)
     kn = pd.DatetimeIndex(s.index).tz_convert("UTC").as_unit("ns").asi8
     tt = pd.DatetimeIndex(times)
     tt = (tt.tz_convert("UTC") if tt.tz is not None else tt.tz_localize("UTC")).as_unit("ns").asi8
@@ -849,6 +908,28 @@ def load_bars(key, start_year=2013, venue=None, allow_holes=False):
     'binance': the default, unchanged. allow_holes: passed to crypto_h1 (a venue month with a run of more than 48 h
     without a candle raises DataGap unless allowed)."""
     m = fp_markets()[key]
+    if m["source"] == "local":
+        if venue not in (None, "binance"):
+            raise ValueError(f"venue= is for the crypto keys (btcusd, ethusd), not {key}")
+        b = local_h1(key, start_year)
+        if b is None:
+            raise FileNotFoundError(
+                f"{key}: a local-only market (prepared hourly bars, no download path): no {key}.parquet in "
+                f"{h1_dirs()}" + ("" if period_end() <= IS_END else " or no validation file in their sibling '<dir>_val' "
+                                  "folders") + ". The lead builds it with lab/explore/lead/build_h1_from_lab.py.")
+        src = b.attrs["source"]
+        mbm = int(_C.spec(key).get("min_bar_minutes", 0))
+        nshort = 0
+        if mbm and len(b):                     # kit v2.1 fix (V21-7): a share 'hour' of fewer minutes is not a bar
+            keep = b.volume.to_numpy() >= mbm
+            nshort = int((~keep).sum())
+            b = b[keep]
+        b = _adjust_splits(key, b)
+        b = _adjust_rolls(key, b)
+        b.attrs.update(price_is="bid", market=key, source=src)
+        if mbm:
+            b.attrs["short_bars_dropped"] = nshort
+        return b
     if venue not in (None, "binance"):
         if m["source"] != "binance":
             raise ValueError(f"venue= is for the crypto keys (btcusd, ethusd), not {key}")
@@ -869,6 +950,292 @@ def load_bars(key, start_year=2013, venue=None, allow_holes=False):
     b = fp_hours(key, b)
     b.attrs["price_is"], b.attrs["market"], b.attrs["source"] = m["price_is"], key, src
     return b
+
+
+SPLIT_RATIOS = (1.5, 2, 3, 4, 5, 6, 7, 8, 10, 15, 20, 25, 50)    # lab/prep_round3.py RATIOS
+
+
+def overnight_ratios(bars):
+    """Previous 17:00-NY day's last close / this day's first open, per day (the move a split makes)."""
+    td = trading_day(bars.index)
+    g = bars.groupby(td)
+    d = pd.DataFrame({"o": g["open"].first(), "c": g["close"].last()})
+    return (d.c.shift(1) / d.o).dropna()
+
+
+def _listed_splits(key):
+    """{ex-date (naive Timestamp): ratio} of a share's splits before the period end; raises PeriodError when the period
+    end is past the entry's splits_checked_to (the later splits are not in the kit)."""
+    sp = _C.spec(key)
+    end = period_end()
+    chk = pd.Timestamp(sp.get("splits_checked_to", "1900-01-01")).tz_localize(NY) + pd.Timedelta(days=1)
+    if end > chk.tz_convert("UTC"):
+        raise PeriodError(f"{key}: its splits are checked to {sp.get('splits_checked_to')} only; reading to {end} needs "
+                          "the later splits in kit/extra_costs.json first (splits, splits_checked_to)")
+    kend = known_end()
+    return {pd.Timestamp(d): float(q) for d, q in sp.get("splits", {}).items() if pd.Timestamp(d).tz_localize(NY) < kend}
+
+
+def _nyse_holidays(y0, y1):
+    """NYSE full-day holidays (rules; special closures not included), as naive dates: the business-day calendar of the
+    NYMEX CL expiry rule (the lab's oil data rolls with the front WTI future)."""
+    from pandas.tseries.holiday import (AbstractHolidayCalendar, GoodFriday, Holiday, USLaborDay, USMartinLutherKingJr,
+                                        USMemorialDay, USPresidentsDay, USThanksgivingDay, nearest_workday,
+                                        sunday_to_monday)
+
+    class _NYSE(AbstractHolidayCalendar):
+        rules = [Holiday("NewYear", month=1, day=1, observance=sunday_to_monday), USMartinLutherKingJr, USPresidentsDay,
+                 GoodFriday, USMemorialDay, Holiday("Juneteenth", month=6, day=19, start_date="2022-01-01",
+                                                    observance=nearest_workday),
+                 Holiday("July4", month=7, day=4, observance=nearest_workday), USLaborDay, USThanksgivingDay,
+                 Holiday("Christmas", month=12, day=25, observance=nearest_workday)]
+    return set(_NYSE().holidays(f"{y0}-01-01", f"{y1}-12-31"))
+
+
+def cl_expiry(year, month, hol=None):
+    """NYMEX WTI (CL) last trading day of the contract expiring in that month: 3 business days before the 25th (the
+    business day before the 25th first when the 25th is not one). Naive date."""
+    hol = _nyse_holidays(year, year) if hol is None else hol
+    isbd = lambda x: x.weekday() < 5 and x not in hol      # noqa: E731
+    x = pd.Timestamp(year, month, 25)
+    while not isbd(x):
+        x -= pd.Timedelta(days=1)
+    k = 0
+    while k < 3:
+        x -= pd.Timedelta(days=1)
+        k += isbd(x)
+    return x
+
+
+_ASOF = [None]      # kit v2.1 fix 2 (KF-2): the cut of checks.truncation_test while a cut build runs, else None
+
+
+class asof:
+    """Context: rolls and splits as they were known at time t (checks.truncation_test runs each cut build inside it):
+    roll_times, price_factor, split_factor and the cut copies of the bars then ignore every roll / split at or after
+    t, so a build that reads an absolute adjusted level, or data.price_factor, sees what it would have seen at t."""
+
+    def __init__(self, t):
+        self.t = None if t is None else pd.Timestamp(t)
+
+    def __enter__(self):
+        self.prev = _ASOF[0]
+        _ASOF[0] = self.t
+        return self
+
+    def __exit__(self, *a):
+        _ASOF[0] = self.prev
+        return False
+
+
+def known_end():
+    """End of what is known: the period end, or the cut of a truncation test's cut build (asof) if earlier."""
+    a = _ASOF[0]
+    return period_end() if a is None else min(period_end(), a)
+
+
+def roll_times(key):
+    """Contract-roll times (UTC: the first bar on the new contract) of a futures-based local market (cost entry
+    'rolls' {time: ratio}, listed to 'rolls_checked_to') before known_end(); after rolls_checked_to (validation years)
+    the rule of the listed years' end: the 18:00 New York reopen that starts the trading day one business day before
+    the CL expiry (cl_expiry). [] for every other market."""
+    sp = _C.spec(key)
+    if "rolls" not in sp:
+        return []
+    end = known_end()
+    out = [pd.Timestamp(t) for t in sp["rolls"] if pd.Timestamp(t) < end]
+    chk = pd.Timestamp(sp.get("rolls_checked_to", "1900-01-01"))
+    m = (chk + pd.Timedelta(days=1)).to_period("M")
+    hol = _nyse_holidays(m.year, end.year + 1)
+    while True:
+        e = cl_expiry(m.year, m.month, hol)
+        x = e - pd.Timedelta(days=1)
+        while x.weekday() >= 5 or x in hol:
+            x -= pd.Timedelta(days=1)
+        t = (x - pd.Timedelta(days=1) + pd.Timedelta(hours=18)).tz_localize(NY).tz_convert("UTC")
+        if t >= end:
+            break
+        if e > chk:
+            out.append(t)
+        m += 1
+    return sorted(out)
+
+
+_ROLLS_MEASURED = {}  # key -> {rule roll time: ratio measured by load_bars} (validation years only); merged, never replaced
+
+
+def _normal_break(t0, t1):
+    """True if the bars t0 -> t1 (consecutive bar open times) span no more than the market's normal break: the daily
+    17:00-18:00 New York pause (2 h between bar opens) or a weekend (Friday -> Sunday/Monday, at most 50 h)."""
+    h = (t1 - t0) / pd.Timedelta(hours=1)
+    if h <= 2:
+        return True
+    a, b = t0.tz_convert(NY), t1.tz_convert(NY)
+    return a.dayofweek == 4 and b.dayofweek in (6, 0) and h <= 50
+
+
+def _roll_table(key, since=None):
+    """{roll time: ratio new / old} of the rolls before known_end() (and after `since`, if given): the LISTED rolls of
+    extra_costs.json (in sample: dated and sized from outside settlements, kit v2.1 fix 2, KF-1) and, after
+    rolls_checked_to, the rule rolls with the ratio load_bars measured in this process (_ROLLS_MEASURED). A rule roll
+    that is needed but was not measured raises DataGap (sim.Book then refuses the bars: load_bars them first)."""
+    sp = _C.spec(key)
+    if "rolls" not in sp:
+        return {}
+    listed = {pd.Timestamp(t): float(q) for t, q in sp["rolls"].items()}
+    meas = _ROLLS_MEASURED.get(key, {})
+    out = {}
+    for r in roll_times(key):
+        if since is not None and r <= since:
+            continue
+        if r in listed:
+            out[r] = listed[r]
+        elif r in meas:
+            out[r] = meas[r]
+        else:
+            raise DataGap(f"{key}: the roll at {r} (validation years, rule) has no ratio in this process: build the bars "
+                          f"with data.load_bars('{key}') (which measures it) before using them")
+    return out
+
+
+def _adjust_rolls(key, b):
+    """Back-adjust a futures-based local market (oil) for its contract rolls (kit v2.1 fix 2, KF-1/KF-3/KF-7): every
+    price of the bars before a roll is multiplied by its ratio (as a share split), so the series is the continuous rolled
+    future. In sample the ratio is the LISTED one (extra_costs.json oil.rolls: the roll dated where Dukascopy's price
+    switches from the outside front-month settlement to the next one, and sized as next / front settled on the last day
+    before the switch, EIA NYMEX WTI contract 1 / 2), so the real move of the roll night stays in the series. After
+    rolls_checked_to (validation years) the ratio is measured on the bars at the rule's reopen (first open / previous
+    close; it then includes that night's real move, README limits) and kept in a private table (merged across loads);
+    a reopen that comes after a hole longer than the normal break raises DataGap (list that roll first). Nothing about
+    the rolls is put in the bars or their attrs (a build could read a later roll from them)."""
+    sp = _C.spec(key)
+    if "rolls" not in sp or not len(b):
+        return b
+    t = b.index
+    o, c = b.open.to_numpy(float), b.close.to_numpy(float)
+    listed = {pd.Timestamp(x) for x in sp["rolls"]}
+    meas = _ROLLS_MEASURED.setdefault(key, {})
+    for r in roll_times(key):
+        if r in listed:
+            continue
+        i = int(t.searchsorted(r))
+        if 0 < i < len(t):
+            if not _normal_break(t[i - 1], t[i]):
+                raise DataGap(f"{key}: the rule roll at {r} reopens at {t[i]} after a hole from {t[i - 1]}: its ratio "
+                              "cannot be measured across the hole (it would include the real move): list this roll's "
+                              "time and ratio (next / front contract settled before the switch, e.g. EIA RCLC2 / RCLC1) "
+                              "in kit/extra_costs.json oil.rolls and move rolls_checked_to")
+            meas[r] = float(o[i] / c[i - 1])
+    tab = _roll_table(key, since=t[0])
+    out = b.copy()
+    if tab:
+        adj = _roll_adj(t, tab)
+        for col in ("open", "high", "low", "close"):
+            out[col] = out[col].to_numpy() * adj
+    out.attrs.update(b.attrs)
+    return out
+
+
+def _roll_adj(index, applied):
+    idx = pd.DatetimeIndex(index)
+    adj = np.ones(len(idx))
+    for x, q in applied.items():
+        adj[np.asarray(idx < pd.Timestamp(x))] *= q
+    return adj
+
+
+def price_factor(key, index):
+    """Adjusted / raw price of each bar time: split_factor (shares) x the roll adjustment of a futures-based market (the
+    listed ratios in sample, the ratios load_bars measured in the validation years; DataGap if one is needed and was not
+    measured in this process). As known at known_end() (checks.truncation_test: at its cut). sim.Book scales the
+    per-unit commission and an absolute spread (oil's spread_abs) by it."""
+    idx = pd.DatetimeIndex(index)
+    f = split_factor(key, idx)
+    if "rolls" in _C.spec(key) and len(idx):
+        tab = _roll_table(key, since=idx.min())
+        if tab:
+            f = f * _roll_adj(idx, tab)
+    return f
+
+
+def has_adjustment(key):
+    """True for a market whose loaded bars are back-adjusted (share splits, oil rolls)."""
+    sp = _C.spec(key)
+    return "splits" in sp or "rolls" in sp
+
+
+def split_factor(key, index):
+    """Adjusted / raw price of each bar time of a share with splits (1.0 for every other market): the product of 1 / ratio
+    over the splits whose ex-date (New York midnight) is after the bar and before the period end. sim.Book scales the
+    per-unit commission by it (one adjusted unit before a 4:1 split is a quarter of a real share)."""
+    idx = pd.DatetimeIndex(index)
+    adj = np.ones(len(idx))
+    if "splits" not in _C.spec(key):
+        return adj
+    for d, q in _listed_splits(key).items():
+        adj[np.asarray(idx < d.tz_localize(NY))] /= q
+    return adj
+
+
+def check_adjusted(key, bars):
+    """Raise ValueError if a share's bars still show a listed split as an overnight jump, or oil's bars are raw at a
+    listed contract roll (ratio beyond 0.2 %): the bars' reopen move there equals the vendor's raw move recorded in
+    extra_costs.json oil.rolls_vendor_gap, or equals the roll ratio itself (raw bars: give the bars of data.load_bars,
+    which back-adjusts them)."""
+    sp = _C.spec(key)
+    if "rolls" in sp and len(bars):
+        t = bars.index
+        o, c = bars.open.to_numpy(float), bars.close.to_numpy(float)
+        vg = {pd.Timestamp(x): float(v) for x, v in sp.get("rolls_vendor_gap", {}).items()}
+        for r, q in sp["rolls"].items():
+            r = pd.Timestamp(r)
+            i = int(t.searchsorted(r))
+            if 0 < i < len(t) and t[i] == r and abs(q - 1) > 0.002:
+                g = o[i] / c[i - 1]
+                if abs(g / q - 1) < 1e-4 or (r in vg and abs(g / vg[r] - 1) < 1e-9 and abs(vg[r] / q - 1) > 1e-4):
+                    raise ValueError(f"{key}: the bars jump at the listed contract roll {r} as the raw data do: they "
+                                     "are not roll-adjusted (use data.load_bars)")
+    if "splits" not in sp or not len(bars):
+        return
+    r = overnight_ratios(bars)
+    for d, q in _listed_splits(key).items():
+        if d in r.index and abs(r[d] / q - 1) < 0.04:
+            raise ValueError(f"{key}: the bars jump by the split ratio {q} on {d.date()}: they are not split-adjusted "
+                             "(use data.load_bars)")
+
+
+def _adjust_splits(key, b):
+    """Back-adjust a local share's raw bars for its splits (cost entry 'splits' {ex-date: ratio}, 'splits_checked_to'):
+    prices of the bars before the ex-date (New York midnight) are divided by the ratio, so the series is continuous in
+    the units of the period end (lab/prep_round3.py, which also scales its frames' commission: sim.Book does it with
+    split_factor). Only splits before the period end are applied. Guards: a read past splits_checked_to raises PeriodError (the split list must be completed first: the
+    validation years' splits are not in the kit); a listed split whose day does not show its ratio, or a day whose
+    overnight move looks like an unlisted split (lab/prep_round3.py rule: within 4 % of a usual ratio, unless the entry
+    lists the day in 'not_splits'), raises DataGap."""
+    sp = _C.spec(key)
+    if "splits" not in sp:
+        return b
+    listed = _listed_splits(key)
+    if not len(b):
+        return b
+    r = overnight_ratios(b)
+    for d, q in listed.items():
+        if d in r.index and not abs(r[d] / q - 1) < 0.04:
+            raise DataGap(f"{key}: listed split {d.date()} ({q}) but the bars' overnight ratio that day is {r[d]:.4f}")
+    skip = {pd.Timestamp(x) for x in sp.get("not_splits", [])} | {pd.Timestamp(x) for x in sp.get("splits", {})}
+    for d, x in r.items():
+        if d in listed or d in skip:
+            continue
+        if any(abs(x / q - 1) < 0.04 or abs(x * q - 1) < 0.04 for q in SPLIT_RATIOS):
+            raise DataGap(f"{key}: the overnight move of {d.date()} (ratio {x:.4f}) looks like an unlisted split: check it "
+                          "and add it to 'splits' (or to 'not_splits') in kit/extra_costs.json")
+    adj = split_factor(key, b.index)
+    out = b.copy()
+    for c in ("open", "high", "low", "close"):
+        out[c] = out[c].to_numpy() * adj
+    out.attrs.update(b.attrs)
+    out.attrs["splits_applied"] = {str(d.date()): q for d, q in listed.items()}
+    return out
 
 
 if __name__ == "__main__":

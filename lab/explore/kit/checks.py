@@ -5,8 +5,47 @@ import os
 import numpy as np
 import pandas as pd
 
+from . import data as _data
 from . import sim
 from . import stats as S
+
+_PRICE_COLS = ("open", "high", "low", "close")
+
+
+def _asof_prices(x, c):
+    """Kit v2.1 fix 2 (KF-2): the cut copy of back-adjusted bars (attrs 'market' = a share with splits or oil with
+    rolls, as data.load_bars returns them) as they would have been adjusted at the cut c: every price is divided by the
+    factor of the rolls / splits at or after c (constant over the copy), so an ABSOLUTE level differs between the full
+    and the cut build (a rule on levels then fails the test) while ratios are unchanged; attrs 'splits_applied' keeps
+    the splits before c only. Frames without that attrs are returned as they are (the guard cannot see them)."""
+    key = getattr(x, "attrs", {}).get("market")
+    if not key or not len(x) or not isinstance(key, str):
+        return x
+    try:
+        if not _data.has_adjustment(key):
+            return x
+    except KeyError:
+        return x
+    last = pd.DatetimeIndex(x.index[-1:])
+    full = float(_data.price_factor(key, last)[0])
+    with _data.asof(c):
+        known = float(_data.price_factor(key, last)[0])
+    if full == known:
+        return x
+    k = known / full
+    out = x.copy()
+    if isinstance(out, pd.DataFrame):
+        for col in _PRICE_COLS:
+            if col in out:
+                out[col] = out[col].to_numpy(float) * k
+    elif out.name in _PRICE_COLS:
+        out = out * k
+    out.attrs.update(x.attrs)
+    if "splits_applied" in out.attrs:
+        cc = pd.Timestamp(c)
+        out.attrs["splits_applied"] = {d: q for d, q in x.attrs["splits_applied"].items()
+                                       if pd.Timestamp(d).tz_localize("America/New_York") < cc}
+    return out
 
 
 def _cut(data, c, lens):
@@ -19,7 +58,7 @@ def _cut(data, c, lens):
             return {k: _cut(v, c, lens[k]) for k, v in data.items()}
         return {k: _cut(v, c, lens) for k, v in data.items()}
     idx = pd.DatetimeIndex(data.index)
-    return data[idx + lens <= c]
+    return _asof_prices(data[idx + lens <= c], c)
 
 
 # Minimum cut density judge.verdict requires of a truncation report (verifier V1, 2026-11-18: a build that DROPS an
@@ -91,7 +130,13 @@ def truncation_test(build, data, cuts=(), row_len=pd.Timedelta(hours=1), cols=("
     EVENT builds (exit on a condition): a build returning a table WITHOUT 'side' (columns known_at = when the exit
     condition is known to be true, optional market) is tested the same way; the report then carries `events_sha`
     (sim.events_sha of the full build, signals_sha None) and `events_by_key` (sha per market key, '*' for a table without
-    market), and judge.verdict binds it to the events each simulated market used (pass it as event_truncation=)."""
+    market), and judge.verdict binds it to the events each simulated market used (pass it as event_truncation=).
+    BACK-ADJUSTED BARS (kit v2.1 fix 2, KF-2): share bars with splits and oil bars with rolls carry, before a roll or a
+    split, the factor of every later one. Each cut copy of such bars (attrs 'market' set, as data.load_bars returns them)
+    is re-based to the adjustment known at the cut, and each cut build runs inside data.asof(cut) (data.price_factor,
+    roll_times and split_factor then ignore later rolls / splits): a rule that reads an absolute adjusted level, or
+    price_factor, changes between the full and the cut build and fails. A series derived from the bars that lost its
+    attrs (e.g. a numpy array or a new Series) is not re-based: build signals from the bars passed in `data`."""
     full = build(data)
     ends = _bar_ends(data, row_len)                       # also refuses a dict without a row_len for every item
     is_ev = "side" not in full
@@ -134,7 +179,9 @@ def truncation_test(build, data, cuts=(), row_len=pd.Timedelta(hours=1), cols=("
     fka = pd.DatetimeIndex(full.known_at)
     for c in cuts:
         c = c.tz_localize("UTC") if c.tz is None else c
-        part = build(_cut(data, c, row_len))
+        cd = _cut(data, c, row_len)                       # re-based to the rolls / splits known at the cut (KF-2)
+        with _data.asof(c):                               # and the build sees them as known at the cut
+            part = build(cd)
         a = full[fka <= c][keep].reset_index(drop=True)
         b = part[pd.DatetimeIndex(part.known_at) <= c][keep].reset_index(drop=True)
         same = len(a) == len(b) and all((a[k].to_numpy() == b[k].to_numpy()).all() for k in keep)
@@ -145,15 +192,18 @@ def truncation_test(build, data, cuts=(), row_len=pd.Timedelta(hours=1), cols=("
     return rep
 
 
-def shift_test(signals, bars, delay_extra_h=1.0, **rule):
+def shift_test(signals, bars, delay_extra_h=1.0, max_wait_h=None, **rule):
     """The same signals entered one bar (delay_extra_h hours) later: reported, not judged. A rule whose result
-    collapses with a one-hour delay lives on the entry bar itself: look for look-ahead or a fragile clock."""
+    collapses with a one-hour delay lives on the entry bar itself: look for look-ahead or a fragile clock.
+    max_wait_h is passed to BOTH simulations (counted from each run's own known_at + delay_h: a signal whose entry bar
+    opens more than max_wait_h after that is dropped as stale), so the shifted run keeps the main's staleness rule; the
+    report carries each run's stale count."""
     d0 = float(rule.pop("delay_h", 0.0))
-    a = sim.simulate(signals, bars, delay_h=d0, **rule)
-    b = sim.simulate(signals, bars, delay_h=d0 + delay_extra_h, **rule)
+    a = sim.simulate(signals, bars, delay_h=d0, max_wait_h=max_wait_h, **rule)
+    b = sim.simulate(signals, bars, delay_h=d0 + delay_extra_h, max_wait_h=max_wait_h, **rule)
     f = lambda t: {"n": int(len(t)), "PF": S.pf(t.R), "mean_R": float(t.R.mean()) if len(t) else None,  # noqa: E731
-                   "PF_gross": S.pf(t.R_gross)}
-    return {"base": f(a), "shifted": f(b), "delay_extra_h": delay_extra_h}
+                   "PF_gross": S.pf(t.R_gross), "stale": int(sum(c.get("stale", 0) for c in t.attrs["counts"].values()))}
+    return {"base": f(a), "shifted": f(b), "delay_extra_h": delay_extra_h, "max_wait_h": max_wait_h}
 
 
 def declared_hash(idea_dir):

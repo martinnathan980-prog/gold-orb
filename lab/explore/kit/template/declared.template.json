@@ -1,6 +1,7 @@
 {
   "idea": "NNN Short title",
   "date_declared": "AAAA-MM-JJ",
+  "track": "fast (hold <= 5 trading days) or slow (CHARTER 'Slow track': hold <= 40, judge.verdict(..., max_hold_tdays=40) refuses it unless this says slow)",
   "family": "one word (news, macro, positioning, volume, calendar, crypto-flow, ...): never the family of the last ledger line",
   "hypothesis": "What predicts what, in one or two sentences.",
   "mechanism": "Why it should hold (who is forced to trade, who is late), and why it is not one of the closed families.",

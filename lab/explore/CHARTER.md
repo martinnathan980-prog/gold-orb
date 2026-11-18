@@ -82,11 +82,12 @@ Cache folder: `~/explore_data` (outside the repository; it may survive between r
 - `lab/explore/fetch.py` is the first runs' helper; the kit's `data.py` replaces it.
 
 ## The kit (`lab/explore/kit`): use it; do not rewrite fetch, backtest or statistics
-Built and attacked on 2026-11-17/18 (README.md in the folder; 122 self-tests). It holds the period lock, FP costs in
-the lab's conventions, an hourly simulator, hedged pairs, exits on a condition, every bar below, the random-entry
-null (same-day for baskets), the correlation with the ten, the deflated Sharpe and the guards against look-ahead.
+Built and attacked on 2026-11-17/18 (README.md in the folder; v2.1: 157 self-tests). It holds the period lock, FP
+costs in the lab's conventions, an hourly simulator, hedged pairs, exits on a condition, every bar below, the
+random-entry null (same-day for baskets), the correlation with the ten, the deflated Sharpe, the guards against
+look-ahead and, since v2.1, US shares and oil with provisional costs and the slow track (paragraphs under "The bars").
 1. Check first: `PYTHONDONTWRITEBYTECODE=1 python3 -B lab/explore/kit/test_kit.py` must end `N/N checks passed`
-   (about 2 minutes). If it does not, run no idea and write the failure in the ledger.
+   (about 4 minutes). If it does not, run no idea and write the failure in the ledger.
 2. Write `ideas/NNN_slug/declared.json` from `kit/template/declared.template.json` (at most 11 configurations, the
    publication lag of every external series), its sha256 in `declared.sha256`, commit and push. Copy
    `kit/template/run_template.py` to the idea's `run.py`: it READS the declaration and never writes it. Run it with
@@ -163,14 +164,60 @@ does not pass.
   without, in the kit's tests); the independent attack; the single look at four untouched years; the lead's own
   verification, with the number of VAL looks this search has taken in view; the 2026 holdout, which stays closed.
 - VAL (rule 5): PF >= 1.06, expectancy > 0, every-signal expectancy > 0, positive in at least 3 of the 4 years.
-- **Slow track (amendment of 2026-11-18, written before any slow idea was run):** an idea declared `slow` may hold up
-  to 40 trading days instead of 5 (`judge.verdict(..., max_hold_tdays=40)`); every other bar is unchanged, swaps are
-  charged every night, the null and the basket bars apply. Reason: the twelve ideas run so far, all held a few days,
-  show no gross edge, and the best documented premium this lab never tested (trend following over weeks) lives at
-  slower holds. The user asked on 2026-11-18 for a change of direction if the ideas were poor.
-- **New markets and provisional costs (2026-11-18):** US share CFDs, oil and later markets are judged with the
-  costs of `kit/extra_costs.json`, marked PROVISIONAL (the broker's own figures are not read yet). A pass on
-  provisional costs is reported as such and re-judged on the real costs before anything else.
+- **Slow track (amendment of 2026-11-18, written before any slow idea was run):** an idea whose declared.json says
+  `"track": "slow"` (set at declaration, before any result) may hold up to 40 trading days instead of 5:
+  `judge.verdict(..., max_hold_tdays=40)`. The kit accepts only 5 or 40, and refuses 40 for an idea not declared slow.
+  Every other bar is unchanged; swaps are charged every night, share dividends are charged, and the null and the
+  basket bars apply. Reason: the twelve ideas run so far, all held a few days, show no gross edge, and the best
+  documented premium this lab never tested (trend following over weeks) lives at slower holds. The user asked on
+  2026-11-18 for a change of direction if the ideas were poor.
+- **New markets and provisional costs (2026-11-18, kit v2.1):** US share CFDs and oil are judged with the costs of
+  `kit/extra_costs.json`, marked PROVISIONAL (the broker's own figures are not read yet; the ledger line and
+  results.json say so). A pass on provisional costs is reported as such and re-judged on the real costs, read in the
+  user's MetaTrader, before anything else.
+- **US share CFDs (kit v2.1):** `data.load_bars(<ticker in lower case>)` for the 40 shares of `kit/extra_costs.json`.
+  - Data: prepared hourly bars only (2017-2021), 7 bars a day from 09:30 to 16:00 New York. The first bar is labelled
+    09:00 but opens at 09:30: its open is the 09:30 price, and anything taken from it is known at 10:00. The kit
+    split-adjusts the bars and drops bars of fewer than 5 minutes (the closing minute of a half day).
+  - Prices: use ratios of prices, never absolute levels (the levels are adjusted for later splits). The truncation
+    test catches a rule on levels only when the signals are built from the bars passed to it (their attrs kept).
+  - Costs, PROVISIONAL: the data's quoted spread, calibrated by year, one level for an order at the 09:30 open and one
+    for the other bars, times its hour-of-week shape; a commission of max(0.03 USD a share, 2 USD an order) at a
+    stake of 5,000 EUR / 6 positions at 1:5 (above about 72 USD a share the minimum binds: 4.2 bp a side; a 1,000 EUR
+    account pays about 33 bp more a round trip, reported in `res["sizing"]`); swaps 7 % long and 3 % short a year.
+  - Dividends, PROVISIONAL: a short open at an ex-date's 09:30 open pays the dividend; a long is credited 70 % of it
+    (the pessimistic end of what brokers credit; the bars drop by the whole dividend). `results.json["dividends"]`
+    gives the result at credits 0 and 1; a verdict marked `LONG RESULT NEEDS THE DIVIDEND CREDIT` stays doubtful
+    until FP's figure is read.
+  - The session's open is expensive: an order at the 09 bar's open pays the 09:30 first-minute quote, 10 to 16 times
+    the day's median spread. A rule that acts at the session's open is judged on that cost; a rule that can wait
+    enters at the bar labelled 10:00.
+  - Simulate share signals with `max_wait_h` (for example 2), so that a hole in the data cannot delay an entry by
+    hours or to the next day.
+  - A validation look on shares needs the lead to list the 2022-2025 splits and dividends first; the kit refuses to
+    read past the ones it holds.
+- **Oil (kit v2.1):** `data.load_bars('oil')` is the front WTI future (the lab's Dukascopy LIGHT.CMD/USD series).
+  - The kit back-adjusts it for its monthly contract roll: 108 rolls for 2013-2021, each dated where the series
+    switches from the front contract's settlement to the next one's and sized as next / front on the last settlement
+    before the switch (public EIA settlements, `kit/oil_outside.csv`), so a trade never books a roll jump, the real
+    move of the roll night stays, and the futures carry (contango) is in the adjusted price. A run never adjusts oil
+    by hand. Use ratios, never absolute levels. In the validation years the expiry rule dates the rolls; a roll that
+    reopens after a hole in the data raises `DataGap` and the lead lists it before the look.
+  - Costs, PROVISIONAL: spread 0.05 USD a barrel (constant in USD); swaps 6 % long and 4 % short a year, both a cost,
+    guessed. FP's own oil contract (XTIUSD) is a spot contract: a pass is also re-checked on the broker's prices.
+- **Several events at one time:** an event calendar where several rows are known at the same time (several companies
+  reporting the same evening, several releases at 08:30 New York) is built with `data.event_table(obs_dates,
+  known=..., min_lag=..., market=..., <columns>)` or `data.external(..., keep='all')`: one row per event, the
+  publication lag enforced on every row, cut at the period end. Rows known together are combined with
+  `data.asof_join(times, series, agg='sum' | 'mean' | 'count' | ...)`. The table goes to the truncation test with
+  `row_len=0`. Never let the default (`keep='last'`, one row per known-at time) silently drop events.
+- **Company earnings (2026-11-18):** the calendar of `scout/earnings_edgar.py` (documented in the last section of
+  `scout/sources.md`; 841 quarterly results of the 40 shares, 2016-10 to 2021-12, from SEC EDGAR; an independent
+  verifier found no row stamped earlier than its release). A release is known at the time EDGAR accepted the filing
+  (safe: never early, sometimes late); the reaction session is the first regular session (09:30-16:00 New York) that
+  STARTS after that time. A value taken from the reaction is known at the end of the bar that carries it. A rule
+  that trades the reaction day loads `calendar(drop_late=True)` (it drops the 25 rows known to be a session late:
+  Alibaba, and Citigroup's filings made during the session); never move an event earlier because of a price move.
 - **Rulings of the lead (2026-11-18):** (a) a hedged pair (two legs of equal notional) is ONE synthetic market, and
   several pairs form a basket of pairs: the basket bars are read across pairs, never across the two legs of a hedge
   (the scout's ideas 1, 3 and 4 are run as ONE basket of seven pairs, idea 015; not both ways);

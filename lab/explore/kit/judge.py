@@ -32,6 +32,8 @@ KIT = os.path.dirname(os.path.abspath(__file__))
 LEDGER = os.path.join(KIT, "..", "LEDGER.md")
 N_MAIN_BEFORE = 160
 MAX_CONFIGS = 11                                   # CHARTER rule 4: the main + its neighbours, at most 11
+MAX_HOLD_DEFAULT = 5                               # CHARTER 'The bars': hold <= 5 trading days
+MAX_HOLD_SLOW = 40                                 # CHARTER 'Slow track' (amendment of 2026-11-18): up to 40
 IS_LAST_YEAR = 2021
 VAL_YEARS = (2022, 2023, 2024, 2025)
 # approximate EUR per unit of quote currency, for the minimum-lot figures only (reported, not judged)
@@ -98,10 +100,64 @@ def sizing(main):
         notional = units * px * rate                                         # quote currency -> EUR
         out["by_market"][mk] = {"min_lot": float(sp.get("min_lot", 0.01)), "margin_eur": notional / float(sp.get("leverage", 500)),
                                 "loss_at_median_stop_eur": units * sd * rate}
+        if sp.get("min_commission_per_side"):                               # shares: MODELLED (kit v2.1 fix, V21-2)
+            mc, cpu = float(sp["min_commission_per_side"]), float(sp.get("commission_per_unit", 0.0))
+            n_us = C.trade_notional(mk)                                     # quote currency (USD)
+            n_1k = C.trade_notional(mk, account_eur=1000.0)
+            ub = mc / cpu if cpu else None
+
+            def _rt(n):                                                     # commission round trip in bp, notional n
+                return 2 * max(mc, cpu * n / px) / n * 1e4
+            out["by_market"][mk].update({
+                "min_commission_per_side": mc, "min_commission_modelled": True, "trade_notional_usd": n_us,
+                "units_at_trade_notional": n_us / px, "units_below_which_min_commission_binds": ub,
+                "commission_bp_round_trip_modelled": _rt(n_us),
+                "commission_bp_round_trip_at_1000_eur_account": _rt(n_1k),
+                "extra_cost_bp_round_trip_at_1000_eur_account": _rt(n_1k) - _rt(n_us),
+                "note": "the commission per side is max(per share x shares, minimum per order) at the stake notional "
+                        "(5,000 EUR / 6 positions x leverage, costs.trade_notional), in the net and stress results; a "
+                        "1,000 EUR account pays the extra cost shown (round trip, at the median entry price)"})
     if out["by_market"]:
         out["min_lot_margin_eur"] = max(v["margin_eur"] for v in out["by_market"].values())
         out["min_lot_loss_at_median_stop_eur"] = max(v["loss_at_median_stop_eur"] for v in out["by_market"].values())
         out["min_lot_loss_pct_of_1000_eur"] = 100 * out["min_lot_loss_at_median_stop_eur"] / 1000
+    return out
+
+
+def dividend_report(main):
+    """Kit v2.1 fix 2 (KF-4): the long result's dependence on the dividend credit. For each share market of the main
+    (pairs excluded), the long trades open at an ex-date's first bar and the dividends they were credited at the file's
+    dividend_credit_long (0.70), and the main's PF and mean R (net) recomputed with the long credit at 0 and at 1.
+    REPORTED: the verdict uses the file's credit; a pass that needs the credit (PF at 0 below 1) is flagged."""
+    out = {"by_market": {}, "credit_long_used": None}
+    if not len(main):
+        return out
+    R0, R1 = main.R.to_numpy(float).copy(), main.R.to_numpy(float).copy()
+    any_div = False
+    for mk, g in main.groupby("market"):
+        sp = C.spec(mk)
+        if "pair" in sp or "dividends" not in sp:
+            continue
+        cl = float(sp.get("dividend_credit_long", 0.0))
+        out["credit_long_used"] = cl
+        et, xt = pd.DatetimeIndex(g.entry_time), pd.DatetimeIndex(g.exit_time)
+        side, px, sd = g.side.to_numpy(), g.entry_px.to_numpy(float), g.stop_dist.to_numpy(float)
+        d_used = C.dividends(mk, side, px, et, xt)
+        d0 = C.dividends(mk, side, px, et, xt, credit_long=0.0)
+        d1 = C.dividends(mk, side, px, et, xt, credit_long=1.0)
+        pos = main.index.get_indexer(g.index)
+        R0[pos] += (d_used - d0) / sd
+        R1[pos] += (d_used - d1) / sd
+        lng = (side > 0) & (d0 == 0) & (d1 != 0)
+        any_div |= bool(lng.any())
+        out["by_market"][mk] = {"credit_long_used": cl, "long_trades_across_ex_dates": int(lng.sum()),
+                                "short_trades_across_ex_dates": int(((side < 0) & (d_used != 0)).sum()),
+                                "long_credit_bp_total": float((-d_used[lng] / px[lng] * 1e4).sum())}
+    if out["by_market"]:
+        out.update({"PF_net": S.pf(main.R), "mean_R_net": float(main.R.mean()),
+                    "PF_net_credit_0": S.pf(pd.Series(R0)), "mean_R_net_credit_0": float(R0.mean()),
+                    "PF_net_credit_1": S.pf(pd.Series(R1)), "mean_R_net_credit_1": float(R1.mean()),
+                    "needs_credit": bool(any_div and S.pf(main.R) >= 1 > S.pf(pd.Series(R0)))})
     return out
 
 
@@ -148,7 +204,7 @@ def _same_events(rep, main):
 
 def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr="compute", n_configs=None,
             basket=None, small_basket=True, write=True, idea=None, data_desc=None, ledger=LEDGER, ten=None, extra=None,
-            truncation=None, event_truncation=None):
+            truncation=None, event_truncation=None, max_hold_tdays=MAX_HOLD_DEFAULT):
     """Judge the MAIN configuration. main / every_signal / neighbours[id]: trade tables of kit.sim.simulate (every_signal
     = the same rule with mode='every'); null: the dict of stats.null_test (>= 2000 draws); corr: 'compute' (reads the
     ten's trades from lab/results/r2/recalc/trades with the in-sample filter), a number, or None (bar fails as missing);
@@ -167,8 +223,26 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     truncation report must carry the dense cuts of checks.cuts_ok (verifier V1). The null bar also requires
     null['exit_key'] == main.attrs['exit_key'] (the null ran the main's own exit, stop, target and events; verifier V4).
     A pair is one market (its name), several pairs a basket of pairs.
+    max_hold_tdays: 5 by default (bar 'hold<=5d'); a run of the slow track (CHARTER 'Slow track') passes 40 (bar
+    'hold<=40d', the ledger line says 'slow track'), and only when idea_dir/declared.json says "track": "slow"; any
+    other value raises (kit v2.1 fix, V21-6). results.json records it.
+    PROVISIONAL COSTS: when a market of the main (or a leg of a pair) has provisional costs (kit/extra_costs.json), the
+    ledger line and results.json say 'PROVISIONAL COSTS' (a pass must be re-judged on the broker's own figures).
     Returns {'verdict', 'bars', 'ledger_line', ...}; with write=True writes results.json and appends trials.jsonl in
     idea_dir. Call it BEFORE ledger_add (N_all reads the running total as it stands)."""
+    if isinstance(max_hold_tdays, bool) or not isinstance(max_hold_tdays, (int, np.integer)) or \
+            int(max_hold_tdays) not in (MAX_HOLD_DEFAULT, MAX_HOLD_SLOW):
+        raise ValueError(f"max_hold_tdays is {MAX_HOLD_DEFAULT} or {MAX_HOLD_SLOW} (CHARTER: 5, or 40 on the slow track); "
+                         f"got {max_hold_tdays!r}")
+    max_hold_tdays = int(max_hold_tdays)
+    if max_hold_tdays == MAX_HOLD_SLOW:                    # kit v2.1 fix (V21-6): only an idea DECLARED slow
+        try:
+            trk = json.load(open(os.path.join(idea_dir, "declared.json"))).get("track")
+        except (OSError, ValueError, AttributeError):
+            trk = None
+        if str(trk).strip().lower() != "slow":
+            raise ValueError(f"max_hold_tdays={MAX_HOLD_SLOW} (slow track) needs the idea's declared.json to say "
+                             f"\"track\": \"slow\" (CHARTER 'Slow track'); it says {trk!r}")
     neighbours = neighbours or {}
     n_configs = int(n_configs if n_configs is not None else 1 + len(neighbours))
     mk = sorted(main.market.unique()) if len(main) else []
@@ -214,8 +288,10 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
         share_bar = SMALL_BASKET_SHARE.get(len(mk), 0.25) if small_basket else 0.25
         bars["markets_positive>=65%"] = _b(sm.get("markets_positive_frac"), sm.get("markets_positive_frac", 0) >= 0.65,
                                            ">= 65 % of markets with positive expectancy")
-        bars[f"max_market_share<={share_bar:.0%}"] = _b(sm.get("max_market_share_of_profit"),
-                                                        sm.get("max_market_share_of_profit", 9) <= share_bar,
+        msh = sm.get("max_market_share_of_profit")
+        msh_ok = msh is not None and np.isfinite(msh)
+        bars[f"max_market_share<={share_bar:.0%}"] = _b(msh if msh_ok else "n/a (total profit <= 0)",
+                                                        msh_ok and msh <= share_bar,
                                                         f"no market above {share_bar:.0%} of the profit")
     bars["PF>=1.12"] = _b(sm.get("PF", 0), sm.get("PF", 0) >= 1.12, "PF net >= 1.12")
     bars["years>=60%"] = _b(sm.get("years_positive_frac", 0), sm.get("years_positive_frac", 0) >= 0.6, ">= 60 % of years positive")
@@ -225,7 +301,9 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     bars["neighbours_median_PF>=1.06"] = _b(nmed, nmed is not None and nmed >= 1.06, "median PF of the neighbours >= 1.06")
     ev = float(every_signal.R.mean()) if every_signal is not None and len(every_signal) else None
     bars["every_signal_exp>0"] = _b(ev, ev is not None and ev > 0, "every-signal expectancy > 0")
-    bars["hold<=5d"] = _b(sm.get("hold_tdays_max"), sm.get("hold_tdays_max", 99) <= 5, "hold <= 5 trading days")
+    hb = f"hold<={max_hold_tdays}d"
+    bars[hb] = _b(sm.get("hold_tdays_max"), sm.get("hold_tdays_max", 99) <= max_hold_tdays,
+                  f"hold <= {max_hold_tdays} trading days" + (" (slow track)" if max_hold_tdays != MAX_HOLD_DEFAULT else ""))
     npct = None if null is None else float(null["percentile"])
     nd = 0 if null is None else int(null["n_draws"])
     n_bound = null is not None and null.get("exit_key") is not None and null.get("exit_key") == main.attrs.get("exit_key")
@@ -266,7 +344,18 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
            f"corr {fmt(corr)}, DSR {fmt(d_all['dsr'], 3)} (N_all {n_all}) / {fmt(d_main['dsr'], 3)} (N_main {n_main})")
     vtxt = {"fail": "fermee : echoue (" + ", ".join(failed) + ")", "pass": "passe en echantillon (A VERIFIER)",
             "pass, weak against selection": "passe en echantillon, faible face a la selection (A VERIFIER)"}[verdict_]
+    provisional = sorted(m for m in mk if C.is_provisional(m))
+    if max_hold_tdays != MAX_HOLD_DEFAULT:
+        vtxt += f" ; slow track (hold<={max_hold_tdays}d)"
+    if provisional:
+        vtxt += " ; PROVISIONAL COSTS (" + ", ".join(provisional) + ")"
     sz = sizing(main)
+    divr = dividend_report(main)
+    if divr.get("by_market") and any(v["long_trades_across_ex_dates"] for v in divr["by_market"].values()):
+        key += (f", long dividend credit {divr['credit_long_used']:.2f} (PF net at credit 0 / 1: "
+                f"{fmt(divr['PF_net_credit_0'])} / {fmt(divr['PF_net_credit_1'])})")
+        if divr.get("needs_credit"):
+            vtxt += " ; LONG RESULT NEEDS THE DIVIDEND CREDIT"
     if "min_lot_margin_eur" in sz:
         key += (f", sizing not judged (min lot: margin {sz['min_lot_margin_eur']:.0f} EUR, loss at median stop "
                 f"{sz['min_lot_loss_at_median_stop_eur']:.1f} EUR)")
@@ -274,7 +363,12 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     line = (f"| {num} | {_dt.date.today().isoformat()} | {idea} | {', '.join(mk)} | {data_desc or ''} | {n_configs} | "
             f"{vtxt} | {key} |")
     res = {"idea": idea, "declared_sha256": sha, "verdict": verdict_, "failed_bars": failed, "basket": basket,
-           "bars": bars, "selection": selection, "main": sm, "sizing": sz,
+           "bars": bars, "selection": selection, "main": sm, "sizing": sz, "dividends": divr,
+           "max_hold_tdays": max_hold_tdays,
+           "slow_track": max_hold_tdays != MAX_HOLD_DEFAULT,
+           "costs": ("PROVISIONAL COSTS: " + ", ".join(provisional) + " (kit/extra_costs.json; re-judge on the broker's "
+                     "own figures before anything else)") if provisional else "FP costs (lab/r2/fp_costs.json)",
+           "provisional_costs": bool(provisional),
            "neighbours": {k: {"n": int(len(t)), "PF": S.pf(t.R), "mean_R": float(t.R.mean()) if len(t) else None}
                           for k, t in neighbours.items()},
            "every_signal": None if every_signal is None else {"n": int(len(every_signal)), "mean_R": ev},

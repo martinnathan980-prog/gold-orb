@@ -19,8 +19,9 @@ arguments:
 Pairs: a PairBook (pair_book) is a market like any other in {name: book}; see PairBook and _pair_outcomes for its
 observation-based stops and targets and its two-leg costs; the trades get extra columns entry_px_a/b, exit_px_a/b
 and stop_frac.
-  stop   = ("d20", k) | ("bps", x)   MANDATORY. D20 = mean high-low of the 20 completed 17:00-NY trading days (>= 10 bars)
-           before the entry bar opens. Stop and target are set from the fill price (lab/goldlab/sim.py).
+  stop   = ("d20", k) | ("bps", x)   MANDATORY. D20 = mean high-low of the 20 completed 17:00-NY trading days (>= 10 bars;
+           a market's own min_day_bars in its cost entry: 7 for shares, a full 09:30-16:00 session) before the entry bar
+           opens. Stop and target are set from the fill price (lab/goldlab/sim.py).
   target = None | ("d20", k) | ("bps", x)
   delay_h: entry at the open of the first bar opening at or after known_at + delay_h hours (0 by default).
   mode   : "one" = one position per market and rule (a signal while a trade is open is skipped and counted; the next
@@ -28,7 +29,13 @@ and stop_frac.
            the earliest known_at, then the first row, is kept (never the one that exits first); counts
            'overlap_skipped' and, inside it, 'same_bar_skipped'. "every" = every signal taken.
 Fills (lab/goldlab/sim.py): long buys the ask, sells the bid; short the reverse. ask = bid + modelled FP spread (bars of
-price_is 'bid', Dukascopy) or bid/ask = price -/+ spread/2 (price_is 'mid', Binance). Stop and target checked from the
+price_is 'bid', Dukascopy) or bid/ask = price -/+ spread/2 (price_is 'mid', Binance). A market with a per-unit
+commission (kit v2.1 shares) has it added on each side on top of the half spread, inside the quotes (x1.5 in the stress,
+0 in gross), scaled by the split adjustment of each bar (data.split_factor: one adjusted unit before a 4:1 split is a quarter
+of a real share); raw (unadjusted) share bars are refused. Kit v2.1 fix: the commission per unit is max(that, the 2 USD
+minimum per order x price / stake notional) at each price of the bar (costs.commission); oil's spread is a constant USD
+amount x the bar's roll adjustment (data.price_factor); raw oil bars that still show a listed roll jump are refused; a
+share's dividends are in the swap (costs.dividends). Stop and target checked from the
 entry bar on; both touched in one bar -> the stop; on later bars a bar opening beyond the stop fills at its open (stop
 slippage), beyond the target at its open (no slippage). A trade whose exit is not inside the data is dropped and
 counted (open_at_end).
@@ -53,8 +60,9 @@ GAP_NS = 59 * 60 * 1_000_000_000          # a scheduled exit more than 59 min be
 class Book:
     """Arrays of one market's hourly bars, with the modelled spread and D20, ready for many simulations."""
 
-    def __init__(self, bars, key, price_is=None, min_day_bars=10):
+    def __init__(self, bars, key, price_is=None, min_day_bars=None):
         C.spec(key)
+        min_day_bars = C.min_day_bars(key) if min_day_bars is None else min_day_bars
         if len(bars) == 0:
             raise ValueError(f"{key}: no bars")
         idx = pd.DatetimeIndex(bars.index)
@@ -68,12 +76,21 @@ class Book:
         self.price_is = price_is or bars.attrs.get("price_is") or "bid"
         self.t = idx.tz_convert("UTC").as_unit("ns").asi8
         o, h, l, c = (bars[k].to_numpy(float) for k in ("open", "high", "low", "close"))
-        self.s = C.spread(key, o, idx)                                   # base modelled spread per bar (net scenario)
-        self.s_close = C.spread(key, c, idx, at="close")                 # at the bar's close (exits before a closure)
+        sp = C.spec(key)
+        if "splits" in sp or "rolls" in sp:                              # shares / oil: adjusted bars only (load_bars)
+            _data.check_adjusted(key, bars)
+        adj = _data.price_factor(key, idx)                               # split or roll adjustment of each bar
+        self.s = C.spread(key, o, idx, adj=adj)                          # base modelled spread per bar (net scenario)
+        self.s_close = C.spread(key, c, idx, at="close", adj=adj)        # at the bar's close (exits before a closure)
+        cpu = float(sp.get("commission_per_unit", 0.0))
         bid = self.price_is == "bid"
         off = self.s / 2 if bid else np.zeros_like(o)
         self.mid = {k: v + off for k, v in (("o", o), ("h", h), ("l", l))}
         self.mid["c"] = c + (self.s_close / 2 if bid else 0.0)
+        # per unit per side (or None): max(per unit x adj, minimum per order x mid / stake notional) at each price of
+        # the bar (kit v2.1 fix, V21-2); self.comm = the open's (kept for reports and tests)
+        self.comm_q = {x: C.commission(key, adj, self.mid[x]) for x in "ohlc"} if cpu else None
+        self.comm = self.comm_q["o"] if cpu else None
         self._set_d20(idx, h, l, min_day_bars)
 
     def _set_d20(self, idx, h, l, min_day_bars):
@@ -96,6 +113,8 @@ class Book:
         the close-of-bar spread."""
         hs = {x: self.s * k_spr / 2 for x in "ohl"}
         hs["c"] = self.s_close * k_spr / 2
+        if self.comm_q is not None:                     # per-unit commission on top of the half spread, each side
+            hs = {x: v + self.comm_q[x] * k_spr for x, v in hs.items()}
         return ({x: self.mid[x] - hs[x] for x in "ohlc"}, {x: self.mid[x] + hs[x] for x in "ohlc"})
 
 
@@ -113,10 +132,12 @@ class PairBook(Book):
     Relative spread of the pair = spread_a / price_a + spread_b / price_b (self.s, in P units, for reports).
     The result is the EXACT two-leg result per unit of ONE leg's notional (sim._pair_outcomes), not P_exit / P_entry - 1."""
 
-    def __init__(self, name, book_a, book_b, kind="ratio", min_day_bars=10):
+    def __init__(self, name, book_a, book_b, kind="ratio", min_day_bars=None):
         if isinstance(book_a, PairBook) or isinstance(book_b, PairBook):
             raise ValueError("a leg of a pair is one market, not a pair")
         sp = C.register_pair(name, book_a.key, book_b.key, kind)
+        min_day_bars = int(sp.get("min_day_bars", 10)) if min_day_bars is None else min_day_bars
+        self.comm = self.comm_q = None
         self.key, self.kind = name, kind
         self.legs, self.leg_keys = (book_a, book_b), (book_a.key, book_b.key)
         self.leg_sides = sp["pair"]["sides"]
@@ -130,7 +151,8 @@ class PairBook(Book):
         self.leg = []
         for bk in self.legs:
             i = np.searchsorted(bk.t, t)
-            self.leg.append({"mid": {x: bk.mid[x][i] for x in "ohlc"}, "s": bk.s[i], "s_close": bk.s_close[i]})
+            self.leg.append({"mid": {x: bk.mid[x][i] for x in "ohlc"}, "s": bk.s[i], "s_close": bk.s_close[i],
+                             "comm": None if bk.comm_q is None else {x: bk.comm_q[x][i] for x in "oc"}})
         f = (lambda x, y: x / y) if kind == "ratio" else (lambda x, y: x * y)
         a, b = self.leg
         po, pc = f(a["mid"]["o"], b["mid"]["o"]), f(a["mid"]["c"], b["mid"]["c"])
@@ -144,7 +166,7 @@ class PairBook(Book):
         raise NotImplementedError("a pair is quoted per leg (sim._pair_outcomes)")
 
 
-def pair_book(name, key_a, key_b, bars_a, bars_b, kind="ratio", min_day_bars=10):
+def pair_book(name, key_a, key_b, bars_a, bars_b, kind="ratio", min_day_bars=None):
     """A hedged pair usable wherever a Book is (simulate, outcomes, stats.null_test, judge, checks): name = its market
     name in the signal table and the trades (e.g. 'eurusd/gbpusd'); bars_a / bars_b: the legs' bars (or Books) of FP
     keys key_a, key_b. Several pairs in one {name: PairBook} dict form a basket of pairs (CHARTER 'Rulings' (a))."""
@@ -437,6 +459,8 @@ def _pair_outcomes(book, ei, side, exit, stop, target=None, scenarios=("gross", 
         Q = []
         for leg, key, s in zip(book.leg, book.leg_keys, ls):
             ho, hc = leg["s"] * k_spr / 2, leg["s_close"] * k_spr / 2
+            if leg["comm"] is not None:                                     # a share leg's per-unit commission
+                ho, hc = ho + leg["comm"]["o"] * k_spr, hc + leg["comm"]["c"] * k_spr
             q = {"bid": {"o": leg["mid"]["o"] - ho, "c": leg["mid"]["c"] - hc},
                  "ask": {"o": leg["mid"]["o"] + ho, "c": leg["mid"]["c"] + hc},
                  "sm": C.slip(key, "mkt", k_slip), "ss": C.slip(key, "stop", k_slip), "side": s}
@@ -498,6 +522,8 @@ def _pair_outcomes(book, ei, side, exit, stop, target=None, scenarios=("gross", 
             for q, key in zip(Q, book.leg_keys):
                 spk = C.spec(key)
                 swf = swf + np.where(q["side"] > 0, spk["swap_long"], spk["swap_short"]) / 360.0 * nights
+                if "dividends" in spk:                  # a share leg's dividends per unit of its notional (kit v2.1 fix)
+                    swf = swf + C.dividends(key, q["side"], np.ones(n), et, xtt)
         result = sum(q["side"] * (q["x"] / q["fill"] - 1) for q in Q) - swf
         pfill = book.combine(Q[0]["fill"], Q[1]["fill"])
         pexit = book.combine(Q[0]["x"], Q[1]["x"])
