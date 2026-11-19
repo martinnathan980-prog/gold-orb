@@ -65,6 +65,27 @@ Running total of configurations (before this search + this search): **2734**
     bitcoin's drift in the years the signals fall in (164 of 351 in 2017). 042's 2nd percentile was the same artefact
     upside down. No validation look was taken. Lesson: a large loss of a one-sided rule on a drifting market is not a
     mirror edge.
+  - **The same-year null on today's crypto mains** (information, computed afterwards with kit v2.3; its judged null
+    reproduces the judged figures exactly): 063 long 91.3 -> 43; 042 short 1.95 -> 58; 043 short 96.2 -> 85; 021
+    (both sides, signals spread evenly over the years) 98.35 -> 97.1, its buying side alone 96.1 -> 96.4 (t 2.38),
+    its selling side 84 -> 81. So 021's buying side is the one result of the day that is not the drift of its years;
+    it is also the best side picked among eight ideas, which is selection. Idea 064 (reserved the same day, before
+    any run) tests it on ether, never looked at, with two conditions written beforehand on any validation look.
+  - **Kit v2.3 follows from it** (the same day; two independent reviews): the same-year null as information
+    (`stats.null_test(within="year")`, `judge.verdict(null_year=)`): a permutation test inside each year (distinct
+    days, long and short together, the same clock in New York and in UTC, inside the span the rule traded). The first
+    version drew with replacement in the whole calendar year: it gave 063 the 76th percentile because 32 of its
+    trades fall in the first two months of its data (the lead's cross-check against the run's own loop found it),
+    and it was too wide for a rule that takes most days of a year (the verifier measured it). A calendar of labels
+    made by `data.event_table` takes `row_len` 0 with a `market` column (059, 060 and 062 had to rename it); one with
+    a numeric column does not (a number computed from a session's bars and stamped before its close looks ahead and
+    no cut can see it: numbers belong inside build). Written down in the README: a 24-hour exit on a daily signal is
+    taken one day in two (042 and 043 declared 23 hours); `data.session_moves` is slow on the whole universe (a
+    truncation test takes 10 to 12 minutes). The judged null bar now also fails for a null that was not computed
+    from the main (its mean R differs), `judge.val_verdict` judges the charter's extra bar of a one-sided rule
+    (`"extra_null_bar": 90` in `val_declared.json`; a value that does not bind is an error), and `data.unlock_val`
+    keeps the validation period locked for a one-sided main without it (the second review found that `null` or 0
+    switched the bar off in silence).
   - **Process slip to avoid:** two agents (060, 062) ran their information-only cost variant before the judged run
     had finished (the declarations were already hashed and nothing was changed). From the next batch on the brief
     says the judged run comes first.

@@ -114,6 +114,28 @@ def period_end():
 
 VAL_KEYS = ("frozen_rule", "bars", "cut", "attack")
 VAL_OK_VERDICTS = ("pass", "pass, weak against selection")
+ONE_SIDED_SHARE = 0.8             # CHARTER 'Rules on one side': at least 80 % of the trades on one side
+EXTRA_NULL_MIN_ONE_SIDED = 90.0   # the least a one-sided rule may declare
+
+
+def extra_null_bar(decl):
+    """The value of "extra_null_bar" in a val_declared.json (kit v2.3; CHARTER 'Rules on one side, signals bunched in
+    time'): None when the key is absent; otherwise a real number X with 0 < X <= 100, returned as a float. Anything
+    else (null, a boolean, a string, 0, a negative or non-finite number, a list) raises ValueError: a declared bar
+    that does not bind must never pass in silence (second verifier, V-1)."""
+    if not isinstance(decl, dict) or "extra_null_bar" not in decl:
+        return None
+    v = decl["extra_null_bar"]
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not np.isfinite(v) or not 0 < v <= 100:
+        raise ValueError(f'val_declared.json: "extra_null_bar" must be a number X with 0 < X <= 100 (90 for a one-sided '
+                         f"rule), not {v!r}; remove the key if no extra bar is declared")
+    return float(v)
+
+
+def one_sided(long_n, short_n):
+    """True when at least ONE_SIDED_SHARE of the trades are on one side (no trade: False)."""
+    n = (long_n or 0) + (short_n or 0)
+    return bool(n > 0 and max(long_n or 0, short_n or 0) >= ONE_SIDED_SHARE * n)
 
 
 def check_val_declared(idea_dir):
@@ -132,10 +154,22 @@ def check_val_declared(idea_dir):
     if miss or str(v.get("cut")) != "2025-12-31":
         raise PeriodError(f"val_declared.json needs non-empty {list(VAL_KEYS)} with cut '2025-12-31' (missing: {miss})")
     r = os.path.join(idea_dir, "results.json")
-    verdict = json.load(open(r)).get("verdict") if os.path.isfile(r) else None
+    res = json.load(open(r)) if os.path.isfile(r) else {}
+    verdict = res.get("verdict") if isinstance(res, dict) else None
     if verdict not in VAL_OK_VERDICTS:
         raise PeriodError(f"results.json verdict is {verdict!r}: only an idea that passed every in-sample bar may look "
                           "at the validation period")
+    # kit v2.3 (CHARTER 'Rules on one side'): the extra bar is declared BEFORE the look, with a value that binds; a rule
+    # whose in-sample main trades one side only cannot unlock the validation period without it (second verifier, V-2)
+    try:
+        x = extra_null_bar(v)
+    except ValueError as e:
+        raise PeriodError(str(e))
+    m = res.get("main") or {}
+    if one_sided(m.get("long_n"), m.get("short_n")) and (x is None or x < EXTRA_NULL_MIN_ONE_SIDED):
+        raise PeriodError(f"the in-sample main trades one side ({m.get('long_n')} long, {m.get('short_n')} short): "
+                          'val_declared.json must hold "extra_null_bar": 90 (or more) before the validation period '
+                          "opens (CHARTER 'Rules on one side, signals bunched in time')")
     return v
 
 

@@ -904,3 +904,91 @@ res = judge.verdict(folder, main, neigh, every, null, truncation=tr, n_configs=N
 - Intraday stops on daily bars: the path inside the day is unknown; the stop is touched on the day's low / high with
   the open spread; a target and a stop in the same session: the stop.
 - 'bdays' exits on daily bars still fall one session early on a holiday (as before): use 'sessions'.
+
+## Kit v2.3 (2026-11-19): the same-year null (information), event calendars with a `market` column
+
+Self-tests: 231 checks (238 with `--real-bars`), the new ones in `test_v23_*`. Two independent reviews: the first
+found the defects named below as "the verifier's"; the second re-ran its scripts on the repaired kit, measured the
+rewritten null against an independent exact permutation test, and found the gaps named "the second verifier's".
+
+- **The same-year null.** `stats.null_test(..., within="year")` re-enters each trade on a random day of ITS OWN
+  calendar year instead of a random day of the whole sample. It is INFORMATION: `judge.verdict(...,
+  null_year=<its result>)` records it in `results.json` (`null_same_year`, with `usable`) and in the ledger line
+  (`same-year null x pct (information)`). It is never a bar, it changes no verdict, and a null run with
+  `within="year"` given as `null` fails the null bar. The judged null (`within=None`) is unchanged bit for bit
+  (34 cases compared draw for draw with the kit before the change). It runs in mode `every` only (the default): with
+  the one-position filter the draws of a rule's busy years collide and are dropped more often, and a rule without
+  timing stood at the 67th percentile on average (the verifier's C-1); `mode="one"` raises.
+  - Why: the judged null pools every year. A rule that trades one side and whose signals bunch in a few years is
+    compared with days of other years, so the drift of its own years counts as timing. Idea 063 (long bitcoin after
+    dear-dollar days, 164 of its 351 trades in 2017) stood at the 91st percentile of the judged null and at the 43rd
+    of the same-year null: no sign of timing. Idea 042 (the same rule short) at the 2nd percentile was the same
+    artefact upside down (58th against days of the same year). `test_v23_same_year_null`: a long-only rule without
+    timing, signals bunched in two drifting years, reaches the judged null's 97.5th percentile in 21 worlds of 30.
+  - What it draws, exactly (a permutation test inside the year): the trades of one stratum = one market, one clock
+    (the same in New York AND in UTC, so the same daylight-saving season), one calendar year (New York date of the
+    entry), long and short together, take DISTINCT random days of that stratum, each trade keeping its side; the
+    days lie inside the span the rule traded that market (first to last real entry: a rule whose data start in
+    November is not compared with the ten months before it existed). For legs decided together (a basket) the groups
+    of one year with the same markets and clocks take distinct days on which every leg has a complete trade. With
+    these choices the percentile is uniform for a rule without timing, also when the rule takes most days of a year,
+    and its power is that of the exact test (the second verifier, 150 synthetic worlds per case, signals on 10 %
+    to 100 % of a year's days, one side, both sides, a basket decided together: same distribution as an independent
+    exact permutation test, correlation 0.99 per world; the lead's own runs on 300 to 600 worlds agree).
+  - What it reports besides the percentile: `year_strata`; `year_dense_share` (share of the trades in a stratum where
+    the rule took more than half of the days); `year_room_share` (share of the trades in a stratum with at least one
+    day left to draw: only these trades can differ from the real ones); `year_no_room` (the rule took EVERY day of
+    every stratum: each draw is the real result, the percentile is `None` and the ledger line says "without room").
+  - How to read it: far below the judged null = the result is the drift of the years the signals fall in. It also takes
+    away the credit of a rule that truly picks the good years (a regime or trend filter), so read both, never this
+    one alone. A small `year_room_share` means the percentile speaks of few trades.
+  - Its limit (the verifier's C-2): it removes the drift of whole calendar years (and daylight-saving seasons) only.
+    When the drift AND the signals sit inside a part of a year (a rally of one quarter with most signals in it), a
+    rule without timing still reads as timing: a high same-year percentile is NOT proof of timing. Count the signals
+    by quarter in the power check and say so when they bunch.
+  - When: always (a run gives both nulls). It matters for a rule that trades one side only or whose signals bunch
+    in time: count the signals by year in the power check.
+```python
+null = stats.null_test(main, bk, n_draws=2000, **rule)                       # the judged null (unchanged)
+null_year = stats.null_test(main, bk, n_draws=2000, within="year", **rule)   # information only
+res = judge.verdict(folder, main, neigh, every, null, null_year=null_year, truncation=tr, n_configs=len(cfgs))
+```
+- **A null belongs to its trades** (the verifier's D-2). The judged null bar now also fails when the null's
+  `real_mean_R` is missing or is not the main's mean net R (before, only the exit key bound a null to the main: a
+  null of another trade table with the same exit rule was accepted). The same holds for `null_year`. A malformed
+  `null_year` (a missing or broken value, another object) never raises: it is recorded as not usable (D-1). Usable
+  means written by the kit: `within` "year", mode `every`, the `year_*` keys, room to draw, a percentile held as a
+  number (the second verifier's V-3: a pooled null relabelled by hand was accepted).
+- **The extra bar of a validation look** (CHARTER "Rules on one side, signals bunched in time"; the verifier's F-1).
+  When `val_declared.json` holds `"extra_null_bar": 90`, `judge.val_verdict(idea_dir, trades, every_signal,
+  null_year=...)` adds the bar `null_same_year>=90`: `null_year` is `stats.null_test(<the validation trades>,
+  <their books>, n_draws=2000, within="year", <the frozen rule>)`; missing, unusable, without room or below 90: the
+  look fails. The draws lie inside the span of the validation trades, so in 2022-2025 whatever the books hold.
+  The declared value must bind (the second verifier's V-1: `null`, `true`, 0 or a negative number passed in
+  silence): a number X with 0 < X <= 100, anything else raises before a file is written. And the charter's rule is
+  enforced (V-2): `data.unlock_val` keeps the validation period locked for an in-sample main with 80 % or more of
+  its trades on one side unless `val_declared.json` holds `"extra_null_bar"` of 90 or more; `judge.val_verdict`
+  judges validation trades that are on one side with the bar at 90 at least, whatever the declaration says.
+- **Event calendars.** A calendar of LABELS made by `data.event_table` (no numeric or boolean column: who, what kind,
+  when) takes `row_len` 0 in the truncation test also when it has a `market` column holding shares of the broad
+  universe and is stamped at the events' own times (a filing's acceptance, any minute). Before, the daily-bars guard
+  (V22-3) took it for bars and refused it unless the column had another name (ideas 059, 060, 062). Still judged by
+  that guard as before: bars, a hand-made table with such a column, an event table that lost its marks (its attrs or
+  its index name: a merge drops them, so call `data.event_table` last; a filtered slice and a concat of event tables
+  keep them), and one with ANY column of numbers, booleans or durations, whatever its name or dtype (numbers beside
+  text in one column count). A number written as text or as a date cannot be told from a label (the second
+  verifier's E-5): that takes a deliberate encoding, which only the reading of the run can catch.
+  - **A limit that no test of the kit can see** (the verifier's case E1a): a table whose own time stamps are wrong.
+    A number computed from a session's bars (the day's move) and stamped before that session's close looks ahead,
+    and every cut of the truncation test keeps it. Under the name `market` such a table is still refused; under any
+    other column name it passed before v2.3 and passes now. The rule that protects a run is the charter's: a
+    calendar holds labels and the time they were published; every number computed from prices is computed INSIDE
+    build, from the bars. The attack of a pass (an independent re-implementation from the declaration) and the lead's
+    reading are the second line.
+- **Written down, not changed (ideas 042, 043):** a daily signal with an exit after exactly 24 hours leaves at the bar
+  on which the next day's signal enters, and the one-position filter (the next entry must open after the last exit
+  bar) skips that signal: a run of consecutive signal days is taken one day in two (`counts['overlap_skipped']`
+  shows it). Declare an exit after 23 hours.
+- **Written down, not changed (ideas 059, 062):** `data.session_moves` on the whole universe takes about 7 seconds a
+  call, so a truncation test with the default cuts on a build that calls it takes 10 to 12 minutes: give such a run
+  20 minutes before calling it stuck.

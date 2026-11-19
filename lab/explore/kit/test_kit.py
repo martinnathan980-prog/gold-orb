@@ -3923,6 +3923,432 @@ def test_v22_review_fixes():
     _try(names[7], c7)
 
 
+def test_v23_same_year_null():
+    """Kit v2.3 (lead, 2026-11-19, after idea 063): the judged null draws its random days in the whole sample, so a
+    one-sided rule whose signals bunch in a few strong years is credited with those years' drift. The same-year null
+    (stats.null_test(within='year')) draws each trade's random day in the trade's own calendar year: information only,
+    recorded by judge.verdict(null_year=...), never a bar."""
+    rule = dict(exit=("hours", 5), stop=("d20", 2.0))
+    bull = lambda t: np.where((t.year == 2016) | (t.year == 2017), 0.00015, 0.0)   # noqa: E731  drift in two years only
+    pp, py = [], []
+    for w in range(30):
+        b = synth.bars("us500", seed=7000 + w, edge=bull)
+        bk = {"us500": sim.Book(b, "us500")}
+        rng = np.random.default_rng(w)
+        days = pd.bdate_range("2013-03-01", "2021-12-10", tz="UTC") + pd.Timedelta(hours=15)
+        hot = np.flatnonzero((days.year == 2016) | (days.year == 2017))
+        cold = np.flatnonzero(~((days.year == 2016) | (days.year == 2017)))
+        pick = np.sort(np.r_[rng.choice(hot, 330, replace=False), rng.choice(cold, 70, replace=False)])
+        sg = pd.DataFrame({"known_at": days[pick], "side": 1, "market": "us500"})       # long only, no timing at all
+        m = sim.simulate(sg, bk, **rule)
+        pp.append(stats.null_test(m, bk, n_draws=500, seed=w, **rule)["percentile"])
+        ny_ = stats.null_test(m, bk, n_draws=500, seed=w, within="year", **rule)
+        py.append(ny_["percentile"])
+    pp, py = np.array(pp), np.array(py)
+    NUMBERS["null_same_year"] = {"worlds": len(pp), "ge97.5_pooled": int((pp >= 97.5).sum()), "ge97.5_same_year": int((py >= 97.5).sum()),
+                                 "mean_pooled": float(pp.mean()), "mean_same_year": float(py.mean()),
+                                 "ks_p_same_year": float(st.kstest(py / 100, "uniform").pvalue)}
+    check("v2.3: a long-only rule without timing whose signals bunch in two drifting years passes the pooled null far too "
+          "often (the trap idea 063 fell into)", (pp >= 97.5).sum() >= 15, json.dumps(NUMBERS["null_same_year"]))
+    check("v2.3: the same-year null is calibrated on that rule (about 2.5 % reach 97.5, percentiles uniform)",
+          (py >= 97.5).sum() <= 3 and 35 < py.mean() < 65 and NUMBERS["null_same_year"]["ks_p_same_year"] > 0.001 and
+          ny_["within"] == "year" and ny_["exit_key"] == m.attrs["exit_key"], json.dumps(NUMBERS["null_same_year"]))
+    # a real timing edge inside the years (signals spread evenly) passes both nulls
+    b, sg = synth.signal_world("us500", seed=11, edge=0.0004, p_signal=0.25)
+    bk = {"us500": sim.Book(b, "us500")}
+    m = sim.simulate(sg.assign(market="us500"), bk, **rule)
+    a0 = stats.null_test(m, bk, n_draws=500, seed=3, **rule)
+    a1 = stats.null_test(m, bk, n_draws=500, seed=3, within="year", **rule)
+    check("v2.3: a planted timing edge with signals spread over the years passes the pooled null and the same-year null",
+          a0["percentile"] >= 97.5 and a1["percentile"] >= 97.5 and a0["within"] is None,
+          f"pooled {a0['percentile']}, same-year {a1['percentile']}, n {len(m)}")
+    # mechanics: the draws of a trade come from its own year only (null mean = that year's candidates, computed apart)
+    b = synth.bars("us500", seed=7100, edge=lambda t: np.where(t.year == 2019, 0.0006, 0.0))
+    book = sim.Book(b, "us500")
+    bk = {"us500": book}
+    d19 = pd.bdate_range("2019-02-01", "2019-11-29", tz="UTC") + pd.Timedelta(hours=15)
+    d19s = d19[np.sort(np.random.default_rng(19).choice(len(d19), int(0.6 * len(d19)), replace=False))]   # 60 % of the days
+    m = sim.simulate(pd.DataFrame({"known_at": d19s, "side": 1, "market": "us500"}), bk, **rule)
+    ny = book.index.tz_convert("America/New_York")
+    eny = pd.DatetimeIndex(m.entry_time).tz_convert("America/New_York")
+    clocks = sorted(set((eny.hour * 60 + eny.minute).tolist()))
+    w_ = pd.Series((eny.hour * 60 + eny.minute)).value_counts(normalize=True)
+    exp_y = exp_all = 0.0
+    in_span = np.asarray((book.index >= m.entry_time.min()) & (book.index <= m.entry_time.max()))
+    in_span &= np.asarray(book.index.tz_convert("UTC").hour == 15)        # the same UTC clock: the trade's own season
+    for c in clocks:
+        for only_year, tag in ((True, "y"), (False, "a")):
+            cand = np.flatnonzero((np.asarray(ny.hour * 60 + ny.minute) == c) &
+                                  (((np.asarray(ny.year) == 2019) & in_span) | (not only_year)))
+            o = sim.outcomes(book, cand, np.full(len(cand), 1), rule["exit"], rule["stop"], None, scenarios=("net",))
+            mean_c = float(o["net"]["R"][o["ok"]].mean())
+            if tag == "y":
+                exp_y += w_[c] * mean_c
+            else:
+                exp_all += w_[c] * mean_c
+    n1 = stats.null_test(m, bk, n_draws=2000, seed=5, within="year", **rule)
+    n0 = stats.null_test(m, bk, n_draws=2000, seed=5, **rule)
+    se = n1["null_sd"] / np.sqrt(2000)
+    check("v2.3 mechanics: the same-year null's mean is the mean of the trade year's own candidate days inside the span "
+          "the rule traded (computed apart with sim.outcomes), not the whole sample's", abs(n1["null_mean"] - exp_y) < 4 * se and abs(n0["null_mean"] - exp_all)
+          < 4 * n0["null_sd"] / np.sqrt(2000) and exp_y > exp_all + 0.05,
+          f"same-year null mean {n1['null_mean']:.4f} (2019 candidates {exp_y:.4f}); pooled {n0['null_mean']:.4f} (all {exp_all:.4f})")
+    check("v2.3 mechanics: all trades in one drifting year: the pooled null calls the year's drift timing, the same-year "
+          "null does not", n0["percentile"] >= 97.5 and n1["percentile"] < 97.5, f"pooled {n0['percentile']}, same-year {n1['percentile']}")
+    # dense years: the rule takes 330 of the about 520 weekdays of the two drifting years. Distinct days per stratum (a
+    # permutation test inside the year) keep the percentile uniform; a draw with replacement was too wide there
+    # (the verifier's S1: 3 % of the worlds at or above the 90th percentile instead of 10 %).
+    pd_ = []
+    for w in range(60):
+        b = synth.bars("us500", seed=7300 + w, edge=bull)
+        bk = {"us500": sim.Book(b, "us500")}
+        rng = np.random.default_rng(1000 + w)
+        days = pd.bdate_range("2013-03-01", "2021-12-10", tz="UTC") + pd.Timedelta(hours=15)
+        hot = np.flatnonzero((days.year == 2016) | (days.year == 2017))
+        cold = np.flatnonzero(~((days.year == 2016) | (days.year == 2017)))
+        pick = np.sort(np.r_[rng.choice(hot, 330, replace=False), rng.choice(cold, 70, replace=False)])
+        m_ = sim.simulate(pd.DataFrame({"known_at": days[pick], "side": 1, "market": "us500"}), bk, **rule)
+        r_ = stats.null_test(m_, bk, n_draws=400, seed=w, within="year", **rule)
+        pd_.append(r_["percentile"])
+    pd_ = np.array(pd_)
+    NUMBERS["null_same_year_dense"] = {"worlds": len(pd_), "ge90": int((pd_ >= 90).sum()), "le10": int((pd_ <= 10).sum()),
+                                       "ge97.5": int((pd_ >= 97.5).sum()), "mean": float(pd_.mean()),
+                                       "ks_p": float(st.kstest(pd_ / 100, "uniform").pvalue),
+                                       "dense_share": r_["year_dense_share"], "strata": r_["year_strata"]}
+    check("v2.3: with distinct days per stratum the same-year null stays uniform when the rule takes most days of its "
+          "years (about 10 % of the worlds at or above the 90th percentile and at or below the 10th)",
+          1 <= (pd_ >= 90).sum() <= 13 and 1 <= (pd_ <= 10).sum() <= 13 and (pd_ >= 97.5).sum() <= 5 and
+          NUMBERS["null_same_year_dense"]["ks_p"] > 0.01 and r_["year_dense_share"] > 0.5 and r_["year_replaced"] == 0,
+          json.dumps(NUMBERS["null_same_year_dense"]))
+    # ... and it keeps its power there: timing INSIDE a dense year is seen
+    hits = 0
+    for w in range(12):
+        days = pd.bdate_range("2016-01-04", "2017-12-20", tz="UTC") + pd.Timedelta(hours=15)
+        rng = np.random.default_rng(2000 + w)
+        on = np.sort(rng.choice(len(days), int(0.6 * len(days)), replace=False))
+        sig_days = days[on]
+
+        def edge_(t, sd=sig_days):                       # +0.0005 per bar for the 5 bars after each signal
+            e = np.zeros(len(t))
+            pos = np.searchsorted(t.asi8, sd.asi8)
+            for k_ in range(5):
+                e[np.clip(pos + k_, 0, len(t) - 1)] += 0.0005
+            return e
+        b = synth.bars("us500", seed=7400 + w, edge=edge_)
+        bk = {"us500": sim.Book(b, "us500")}
+        m_ = sim.simulate(pd.DataFrame({"known_at": sig_days, "side": 1, "market": "us500"}), bk, **rule)
+        hits += stats.null_test(m_, bk, n_draws=400, seed=w, within="year", **rule)["percentile"] >= 97.5
+    check("v2.3: a timing edge planted on 60 % of the days of two years is seen by the same-year null (at least 10 worlds "
+          "of 12 at or above 97.5)", hits >= 10, f"{hits} of 12")
+    # a rule that starts in November of a year whose last two months drift: its first trades are compared with the days
+    # of November and December, not with the ten months before the rule existed (idea 063's first year)
+    ps = []
+    for w in range(40):
+        b = synth.bars("us500", seed=7500 + w, edge=lambda t: np.where((t.year == 2016) & (t.month >= 11), 0.0012, 0.0))
+        bk = {"us500": sim.Book(b, "us500")}
+        rng = np.random.default_rng(3000 + w)
+        early = pd.bdate_range("2016-11-01", "2016-12-30", tz="UTC") + pd.Timedelta(hours=15)
+        late = pd.bdate_range("2017-01-03", "2021-12-10", tz="UTC") + pd.Timedelta(hours=15)
+        kn = early[np.sort(rng.choice(len(early), 32, replace=False))].append(late[np.sort(rng.choice(len(late), 300, replace=False))])
+        m_ = sim.simulate(pd.DataFrame({"known_at": kn, "side": 1, "market": "us500"}), bk, **rule)
+        ps.append(stats.null_test(m_, bk, n_draws=400, seed=w, within="year", **rule)["percentile"])
+    ps = np.array(ps)
+    check("v2.3: a rule whose data start in November of a year that drifts in its last two months is not credited with "
+          "them (the pool is the span the rule traded: uniform percentiles, where the whole first year gave a pass)",
+          (ps >= 97.5).sum() <= 4 and 35 < ps.mean() < 65 and st.kstest(ps / 100, "uniform").pvalue > 0.01,
+          f"ge97.5 {int((ps >= 97.5).sum())} of {len(ps)}, mean {ps.mean():.1f}, KS p {st.kstest(ps / 100, 'uniform').pvalue:.3f}")
+    # no room: the rule takes every candidate day of its span: the same-year null has nothing to say, and says so
+    b = synth.bars("btcusd", seed=7600)
+    bk_c = {"btcusd": sim.Book(b, "btcusd")}
+    alld = pd.date_range("2019-03-04", "2019-06-28", freq="B", tz="UTC") + pd.Timedelta(hours=12)
+    m_all = sim.simulate(pd.DataFrame({"known_at": alld, "side": 1, "market": "btcusd"}), bk_c, exit=("hours", 5), stop=("d20", 2.0))
+    r_all = stats.null_test(m_all, bk_c, n_draws=2000, seed=1, within="year", exit=("hours", 5), stop=("d20", 2.0))
+    check("v2.3: a rule that takes every candidate day of its span leaves the same-year null no room: percentile None, "
+          "'year_no_room' True (never a number that looks like a result)", r_all["percentile"] is None and
+          r_all["year_no_room"] is True and r_all["null_sd"] < 1e-12 and r_all["year_dense_share"] == 1.0 and
+          r_all["year_room_share"] == 0.0 and r_["year_no_room"] is False and r_["year_room_share"] == 1.0,
+          f"n {len(m_all)}, strata {r_all['year_strata']}, null sd {r_all['null_sd']}")
+    sgb = pd.concat([pd.DataFrame({"known_at": alld, "side": 1, "market": k}) for k in ("btcusd", "ethusd")], ignore_index=True)
+    bk_2 = {"btcusd": bk_c["btcusd"], "ethusd": sim.Book(synth.bars("ethusd", seed=7601), "ethusd")}
+    m_b = sim.simulate(sgb, bk_2, exit=("hours", 5), stop=("d20", 2.0))
+    r_b = stats.null_test(m_b, bk_2, n_draws=500, seed=1, within="year", exit=("hours", 5), stop=("d20", 2.0))
+    check("v2.3: the same holds for a basket decided together on every day (same-day groups: no room, percentile None)",
+          r_b["joint_groups"] > 50 and r_b["percentile"] is None and r_b["year_no_room"] is True,
+          f"groups {r_b['joint_groups']}, room share {r_b['year_room_share']}")
+    # a year without any candidate raises; an unknown value of within raises
+    m2 = m.copy()
+    m2.loc[m2.index[0], "entry_time"] = pd.Timestamp("2025-03-03 15:00", tz="UTC")
+    for kw, what in ((dict(within="year"), "a trade whose year has no bar"), (dict(within="month"), "an unknown within")):
+        try:
+            stats.null_test(m2 if kw["within"] == "year" else m, bk, n_draws=50, **kw, **rule)
+            ok_ = False
+        except ValueError as e:
+            ok_ = "2025" in str(e) if kw["within"] == "year" else "within" in str(e)
+        check(f"v2.3: the same-year null refuses {what} (ValueError)", ok_)
+    try:
+        stats.null_test(m, bk, n_draws=50, within="year", mode="one", **rule)
+        ok_ = False
+    except ValueError as e:
+        ok_ = "mode='every'" in str(e)
+    check("v2.3 (verifier C3): the same-year null refuses mode='one' (the one-position filter drops more draws in the "
+          "rule's busy years and shifts the null)", ok_)
+    # within=None is the judged null, unchanged: same numbers as a call that does not name the argument
+    check("v2.3: within=None is the judged null, bit for bit (same seed, same percentile and null mean)",
+          stats.null_test(m, bk, n_draws=300, seed=9, within=None, **rule)["null_mean"] ==
+          stats.null_test(m, bk, n_draws=300, seed=9, **rule)["null_mean"])
+    # joint groups (a basket decided at the same time): the group's day is drawn in the group's year
+    keys = ["us500", "us100"]
+    bb = {"us500": synth.bars("us500", seed=7200, edge=lambda t: np.where(t.year == 2019, 0.0006, 0.0)),
+          "us100": synth.bars("us100", seed=7201, edge=lambda t: np.where(t.year == 2019, 0.0006, 0.0))}
+    bkj = {k: sim.Book(bb[k], k) for k in keys}
+    sgj = pd.concat([pd.DataFrame({"known_at": d19s, "side": 1, "market": k}) for k in keys], ignore_index=True)
+    mj = sim.simulate(sgj, bkj, **rule)
+    j1 = stats.null_test(mj, bkj, n_draws=2000, seed=2, within="year", **rule)
+    j0 = stats.null_test(mj, bkj, n_draws=2000, seed=2, **rule)
+    check("v2.3: the same-day null of a basket also takes within='year' (groups drawn in their own year): the drift of "
+          "the year is no longer timing", j1["joint_groups"] > 100 and j1["within"] == "year" and j0["percentile"] >= 97.5
+          and j1["percentile"] < 97.5 and abs(j1["null_mean"] - j1["real_mean_R"]) < 5 * j1["null_sd"],
+          f"pooled {j0['percentile']} (null mean {j0['null_mean']:.3f}), same-year {j1['percentile']} (null mean "
+          f"{j1['null_mean']:.3f}, real {j1['real_mean_R']:.3f}), groups {j1['joint_groups']}")
+    # the judge: the same-year null is recorded as information, never judged; it is refused as the judged null
+    idea = os.path.join(TMP, "ideas", "913_same_year")
+    _declare(idea, {"idea": "913 a null recorded as information"})
+    r_plain = judge.verdict(idea, m, {"n": m}, m, n0, corr=0.0, truncation=None, write=False)
+    r_info = judge.verdict(idea, m, {"n": m}, m, n0, corr=0.0, truncation=None, write=True, null_year=n1)
+    saved = json.load(open(os.path.join(idea, "results.json")))
+    check("v2.3 judge: null_year is recorded (results.json 'null_same_year', the ledger line) and changes no bar and no verdict",
+          r_info["verdict"] == r_plain["verdict"] and r_info["failed_bars"] == r_plain["failed_bars"] and
+          {k: v["pass"] for k, v in r_info["bars"].items()} == {k: v["pass"] for k, v in r_plain["bars"].items()} and
+          saved["null_same_year"]["usable"] is True and abs(saved["null_same_year"]["percentile"] - n1["percentile"]) < 1e-9
+          and "means" not in saved["null_same_year"] and f"same-year null {n1['percentile']:.1f} pct (information)" in r_info["ledger_line"]
+          and r_plain.get("null_same_year") is None and "same-year" not in r_plain["ledger_line"],
+          r_info["ledger_line"][-220:])
+    r_swap = judge.verdict(idea, m, {"n": m}, m, n1, corr=0.0, truncation=None, write=False)
+    check("v2.3 judge: a same-year null passed as the judged null fails the null bar and says why",
+          r_swap["bars"]["null>=97.5"]["pass"] is False and "same-year null" in str(r_swap["bars"]["null>=97.5"]["value"]),
+          str(r_swap["bars"]["null>=97.5"]["value"])[:120])
+    j_alt = stats.null_test(m, bk, n_draws=2000, seed=5, within="year", exit=("hours", 3), stop=("d20", 2.0))
+    r_few = judge.verdict(idea, m, {"n": m}, m, n0, corr=0.0, truncation=None, write=False,
+                          null_year=stats.null_test(m, bk, n_draws=500, seed=5, within="year", **rule))
+    r_alt = judge.verdict(idea, m, {"n": m}, m, n0, corr=0.0, truncation=None, write=False, null_year=j_alt)
+    r_pool = judge.verdict(idea, m, {"n": m}, m, n0, corr=0.0, truncation=None, write=False, null_year=n0)
+    # information must never cost the verdict (verifier, 3d / 3e): malformed null_year values
+    bad_vals = [{k: v for k, v in n1.items() if k != "percentile"}, dict(n1, percentile=None), dict(n1, percentile="abc"),
+                dict(n1, percentile=float("nan")), dict(n1, n_draws="abc"), dict(n1, n_draws=None), dict(n1, n_draws=float("nan")),
+                [1, 2], 3.5, "x", dict(n1, inner={"means": np.arange(5.0)}, arr=np.arange(3.0), **{"a|b\n": 1})]
+    outs = []
+    for bv in bad_vals:
+        try:
+            rb = judge.verdict(idea, m, {"n": m}, m, n0, corr=0.0, truncation=None, write=True, null_year=bv)
+            txt = open(os.path.join(idea, "results.json")).read()
+            sv = json.loads(txt, parse_constant=lambda c: (_ for _ in ()).throw(ValueError(c)))
+            outs.append(rb["verdict"] == r_plain["verdict"] and rb["failed_bars"] == r_plain["failed_bars"] and
+                        "means" not in txt and "arr" not in sv["null_same_year"] and "inner" not in sv["null_same_year"]
+                        and rb["ledger_line"].count("|") == r_plain["ledger_line"].count("|") and "\n" not in rb["ledger_line"]
+                        and (sv["null_same_year"]["usable"] is False or bv is bad_vals[-1]))
+        except Exception as e:  # noqa: BLE001
+            outs.append(f"raised {type(e).__name__}")
+    check("v2.3 judge: a malformed null_year (missing or broken percentile or draws, a list, a number, a string, nested "
+          "arrays) never raises, changes no bar, writes no draws and keeps results.json strict JSON and the line one row",
+          all(o is True for o in outs), str(outs))
+    stripped = {k: v for k, v in n1.items() if k != "within"}
+    r_strip = judge.verdict(idea, m, {"n": m}, m, stripped, corr=0.0, truncation=None, write=False)
+    check("v2.3 judge: a same-year result with its 'within' key removed is still refused as the judged null (its year_* keys)",
+          r_strip["bars"]["null>=97.5"]["pass"] is False, str(r_strip["bars"]["null>=97.5"]["value"])[:100])
+    # verifier D-2: a null belongs to the trades it was computed from (the exit key alone bound it before)
+    other = sim.simulate(pd.DataFrame({"known_at": d19[::3], "side": 1, "market": "us500"}), bk, **rule)
+    o0 = stats.null_test(other, bk, n_draws=2000, seed=5, **rule)
+    o1 = stats.null_test(other, bk, n_draws=2000, seed=5, within="year", **rule)
+    r_other = judge.verdict(idea, m, {"n": m}, m, o0, corr=0.0, truncation=None, write=False, null_year=o1)
+    check("v2.3 judge (verifier D-2): a null computed on another trade table with the same exit rule fails the null bar "
+          "(its real mean R is not the main's) and its same-year twin is not usable",
+          r_other["bars"]["null>=97.5"]["pass"] is False and "other trades" in str(r_other["bars"]["null>=97.5"]["value"])
+          and r_other["null_same_year"]["usable"] is False and o0["exit_key"] == m.attrs["exit_key"],
+          str(r_other["bars"]["null>=97.5"]["value"])[:110])
+    r_mode = judge.verdict(idea, m, {"n": m}, m, n0, corr=0.0, truncation=None, write=False, null_year=dict(n1, mode="one"))
+    check("v2.3 judge (verifier C-1): a same-year null that was not run in mode 'every' is not usable",
+          r_mode["null_same_year"]["usable"] is False and "not usable" in r_mode["ledger_line"])
+    # the optional extra bar of a validation look (CHARTER 'Rules on one side'; verifier F-1: defined in the kit)
+    def vt(rows):
+        t = pd.DataFrame(rows, columns=["entry_time", "R"])
+        t["entry_time"] = pd.to_datetime(t.entry_time, utc=True)
+        t["exit_time"] = t.entry_time + pd.Timedelta(hours=5)
+        t["market"] = "us500"
+        t.attrs["exit_key"] = "k-val"
+        return t
+    good = vt([("2022-03-01", 1.0), ("2022-04-01", -0.5), ("2023-03-01", 0.8), ("2024-05-01", 0.3), ("2024-06-01", -0.1)])
+    ynull = lambda pct, **kw: dict({"within": "year", "mode": "every", "n_draws": 2000, "exit_key": "k-val",   # noqa: E731
+                                    "real_mean_R": float(good.R.mean()), "percentile": pct, "year_no_room": False,
+                                    "year_strata": 4, "year_room_share": 1.0, "year_dense_share": 0.0,
+                                    "year_replaced": 0}, **kw)
+    vres = {}
+    for tag, decl_extra, ny in (("no_key_no_null", None, None), ("no_key_info", None, ynull(40.0)), ("key_missing", 90, None),
+                                ("key_pass", 90, ynull(93.0)), ("key_low", 90, ynull(80.0)),
+                                ("key_room", 90, ynull(None, year_no_room=True)), ("key_pooled", 90, ynull(99.0, within=None)),
+                                ("key_other_trades", 90, ynull(99.0, real_mean_R=0.9)), ("key_few", 90, ynull(99.0, n_draws=500))):
+        folder_v = os.path.join(TMP, "ideas", "915_val_" + tag)
+        os.makedirs(folder_v, exist_ok=True)
+        json.dump(dict(VALDECL, **({} if decl_extra is None else {"extra_null_bar": decl_extra})),
+                  open(os.path.join(folder_v, "val_declared.json"), "w"))
+        vres[tag] = judge.val_verdict(folder_v, good, good, null_year=ny)
+    bar = "null_same_year>=90"
+    check("v2.3 validation look: without 'extra_null_bar' in val_declared.json the four bars judge alone (a same-year null "
+          "given anyway is recorded as information)", vres["no_key_no_null"]["verdict"] == "pass" and
+          bar not in vres["no_key_info"]["bars"] and vres["no_key_info"]["verdict"] == "pass" and
+          vres["no_key_info"]["null_same_year"]["usable"] is True and vres["no_key_no_null"]["null_same_year"] is None)
+    check("v2.3 validation look: with \"extra_null_bar\": 90 declared, the look passes only with a usable same-year null of "
+          "the validation trades at or above 90 (missing, low, without room, pooled, of other trades, too few draws: fail)",
+          vres["key_pass"]["verdict"] == "pass" and vres["key_pass"]["bars"][bar]["pass"] is True and
+          all(vres[k]["verdict"] == "fail" and vres[k]["failed_bars"] == [bar] for k in
+              ("key_missing", "key_low", "key_room", "key_pooled", "key_other_trades", "key_few")),
+          str({k: v["failed_bars"] for k, v in vres.items()}))
+    # second verifier V-3: only a same-year null the kit wrote is usable (forged marks are not)
+    forged = {"pooled relabelled": {k: v for k, v in ynull(95.0).items() if not k.startswith("year_")},
+              "no room with a percentile": ynull(95.0, year_no_room=True), "percentile as text": ynull("95")}
+    f_out = {}
+    for tag, ny in forged.items():
+        folder_v = os.path.join(TMP, "ideas", "917_forged_" + tag.replace(" ", "_"))
+        os.makedirs(folder_v, exist_ok=True)
+        json.dump(dict(VALDECL, extra_null_bar=90), open(os.path.join(folder_v, "val_declared.json"), "w"))
+        f_out[tag] = judge.val_verdict(folder_v, good, good, null_year=ny)["verdict"]
+    check("v2.3 (second verifier V-3): a pooled null relabelled by hand, a percentile beside a no-room flag and a percentile "
+          "stored as text are not usable: the extra bar fails", all(v == "fail" for v in f_out.values()), str(f_out))
+    # second verifier V-1: a declared bar that does not bind is an error, before anything is written
+    v1 = {}
+    for tag, val in (("null", None), ("true", True), ("false", False), ("zero", 0), ("negative", -5), ("minus_inf", float("-inf")),
+                     ("text_90", "90"), ("list", [90]), ("nan", float("nan")), ("above_100", 150)):
+        folder_v = os.path.join(TMP, "ideas", "918_bad_" + tag)
+        os.makedirs(folder_v, exist_ok=True)
+        json.dump(dict(VALDECL, extra_null_bar=val), open(os.path.join(folder_v, "val_declared.json"), "w"))
+        try:
+            judge.val_verdict(folder_v, good, good, null_year=ynull(99.0))
+            v1[tag] = "ran"
+        except ValueError:
+            v1[tag] = "ValueError" if not os.path.exists(os.path.join(folder_v, "val_results.json")) else "wrote a file"
+    check("v2.3 (second verifier V-1): \"extra_null_bar\" given as null, a boolean, 0, a negative or non-finite number, text, "
+          "a list or more than 100 raises ValueError before val_results.json is written (it passed in silence before)",
+          all(v == "ValueError" for v in v1.values()), str(v1))
+    # second verifier V-2: the charter's bar for a one-sided rule is enforced, at the look and before the unlock
+    longs = good.assign(side=1)
+    longs.attrs.update(good.attrs)
+    v2 = {}
+    for tag, key, ny in (("no_key_no_null", None, None), ("no_key_null_93", None, ynull(93.0)), ("key_50_null_80", 50, ynull(80.0)),
+                         ("key_95_null_93", 95, ynull(93.0))):
+        folder_v = os.path.join(TMP, "ideas", "919_one_sided_" + tag)
+        os.makedirs(folder_v, exist_ok=True)
+        json.dump(dict(VALDECL, **({} if key is None else {"extra_null_bar": key})), open(os.path.join(folder_v, "val_declared.json"), "w"))
+        rr = judge.val_verdict(folder_v, longs, longs, null_year=ny)
+        v2[tag] = (rr["verdict"], sorted(k for k in rr["bars"] if k.startswith("null_same_year")))
+    check("v2.3 (second verifier V-2): validation trades on one side are judged with the same-year bar at 90 at least, "
+          "whatever the declaration says (no key: bar at 90; a declared 50: 90; a declared 95: 95)",
+          v2 == {"no_key_no_null": ("fail", ["null_same_year>=90"]), "no_key_null_93": ("pass", ["null_same_year>=90"]),
+                 "key_50_null_80": ("fail", ["null_same_year>=90"]), "key_95_null_93": ("fail", ["null_same_year>=95"])}, str(v2))
+    unl = {}
+    for tag, main_sides, key in (("one_sided_no_key", (351, 0), "absent"), ("one_sided_90", (351, 0), 90), ("one_sided_50", (351, 0), 50),
+                                 ("short_only_no_key", (0, 314), "absent"), ("two_sided_no_key", (354, 348), "absent"),
+                                 ("two_sided_bad_value", (354, 348), True), ("mostly_long_no_key", (85, 15), "absent")):
+        folder_v = os.path.join(TMP, "ideas", "920_unlock_" + tag)
+        os.makedirs(folder_v, exist_ok=True)
+        json.dump(dict(VALDECL, **({} if key == "absent" else {"extra_null_bar": key})), open(os.path.join(folder_v, "val_declared.json"), "w"))
+        json.dump({"verdict": "pass", "main": {"long_n": main_sides[0], "short_n": main_sides[1]}}, open(os.path.join(folder_v, "results.json"), "w"))
+        try:
+            data.check_val_declared(folder_v)
+            unl[tag] = "ok"
+        except data.PeriodError:
+            unl[tag] = "locked"
+    check("v2.3 (second verifier V-2): the validation period stays locked for a one-sided in-sample main (80 % or more of "
+          "its trades on one side) whose val_declared.json has no \"extra_null_bar\" of 90 or more, and for a value that "
+          "does not bind; a two-sided main needs no key",
+          unl == {"one_sided_no_key": "locked", "one_sided_90": "ok", "one_sided_50": "locked", "short_only_no_key": "locked",
+                  "two_sided_no_key": "ok", "two_sided_bad_value": "locked", "mostly_long_no_key": "locked"}, str(unl))
+    # second verifier J-1: the judged null carries the mean of its own trades (a dict without it fails the bar)
+    r_nokey = judge.verdict(idea, m, {"n": m}, m, {k: v for k, v in n0.items() if k != "real_mean_R"}, corr=0.0,
+                            truncation=None, write=False)
+    check("v2.3 (second verifier J-1): a judged null without real_mean_R fails the null bar",
+          r_nokey["bars"]["null>=97.5"]["pass"] is False)
+    # verifier F-3: the template's own run reaches the same-year null and the judge records it
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("run_template_v23",
+                                                  os.path.join(os.path.dirname(os.path.abspath(__file__)), "template", "run_template.py"))
+    tmod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tmod)
+    t_res = tmod.one_idea(tmod.demo_declare(os.path.join(TMP, "ideas", "916_template"), "916 template"), edge=0.0004, seed=5, ten=TEN)
+    check("v2.3 (verifier F-3): the template's run computes both nulls and the judge records the same-year one as usable",
+          t_res["verdict"] == "pass" and t_res["null_same_year"]["usable"] is True and t_res["null"]["within"] is None
+          and "same-year null" in t_res["ledger_line"], t_res["ledger_line"][-160:])
+    idea_c = os.path.join(TMP, "ideas", "914_no_room")
+    _declare(idea_c, {"idea": "914 a rule on every day"})
+    n_all0 = stats.null_test(m_all, bk_c, n_draws=2000, seed=1, exit=("hours", 5), stop=("d20", 2.0))
+    r_room = judge.verdict(idea_c, m_all, {"n": m_all}, m_all, n_all0, corr=0.0, truncation=None, write=True, null_year=r_all)
+    saved_c = json.load(open(os.path.join(idea_c, "results.json")))
+    check("v2.3 judge: a same-year null without room is recorded as not usable and the ledger line says why",
+          saved_c["null_same_year"]["usable"] is False and saved_c["null_same_year"]["percentile"] is None and
+          "without room" in r_room["ledger_line"], r_room["ledger_line"][-200:])
+    check("v2.3 judge: a same-year null with under 2000 draws, another exit, or drawn in the whole sample is marked not usable",
+          all(r["null_same_year"]["usable"] is False and "not usable" in r["ledger_line"] for r in (r_few, r_alt, r_pool)))
+
+
+def test_v23_event_table_row_len():
+    """Kit v2.3 (ideas 059, 060, 062): an event calendar of class shares made by data.event_table, stamped at each
+    event's own time (a filing's acceptance, any minute), takes row_len 0 with a 'market' column; the daily-bars guard
+    (V22-3) still refuses bars, a hand-made table, and a table carrying bar prices."""
+    u = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "universe_us.csv"), dtype=str)
+    keys = list(u.key[:6])
+    rng = np.random.default_rng(3)
+    days = pd.bdate_range("2018-01-02", "2021-11-30")
+    pick = np.sort(rng.choice(len(days), 300, replace=False))
+    acc = days[pick] + pd.to_timedelta(rng.integers(6 * 60, 22 * 60, len(pick)), unit="m")     # New York wall clock
+    known = lambda o: pd.DatetimeIndex(o).tz_localize("America/New_York").tz_convert("UTC")   # noqa: E731
+    ev = data.event_table(acc, known=known, min_lag=pd.Timedelta(0), market=rng.choice(keys, len(pick)),
+                          kind=rng.choice(["2.02", "8.01"], len(pick)))
+    z = pd.Timedelta(0)
+
+    def refused(x):
+        try:
+            checks._check_row_len(x, z, "events")
+            return False
+        except ValueError:
+            return True
+
+    hand = pd.DataFrame({"obs_date": ev.obs_date.to_numpy(), "market": ev.market.to_numpy()}, index=pd.DatetimeIndex(ev.index))
+    priced = ev.assign(close=1.0)
+    lost = ev.copy()
+    lost.attrs.clear()
+    # the verifier's E1a: the day's own move stamped at the session's OPEN (a look-ahead no cut can see): a numeric
+    # column keeps the table under the daily-bars guard, whatever its type or name
+    opens = (days[pick] + pd.Timedelta(hours=9, minutes=30))
+    leak = data.event_table(opens, known=known, min_lag=pd.Timedelta(0), market=rng.choice(keys, len(pick)),
+                            value=rng.normal(0, 0.02, len(pick)))
+    leak_int = data.event_table(opens, known=known, min_lag=pd.Timedelta(0), market=rng.choice(keys, len(pick)),
+                                sign=rng.choice([-1, 1], len(pick)))
+    leak_bool = data.event_table(opens, known=known, min_lag=pd.Timedelta(0), market=rng.choice(keys, len(pick)),
+                                 up=rng.random(len(pick)) > 0.5)
+    check("v2.3: an event calendar of data.event_table with a 'market' column of class shares, stamped at the events' own "
+          "times, takes row_len 0 (it was refused as daily bars)", not refused(ev) and not refused(ev[ev.kind == "2.02"])
+          and checks._is_event_table(ev), f"{len(ev)} events, markets {sorted(set(ev.market))[:3]}")
+    check("v2.3: the guard still refuses row_len 0 for a hand-made table with a 'market' column of class shares, for an "
+          "event table that carries a bar price column, and for one that lost its marks",
+          refused(hand) and refused(priced) and refused(lost))
+    check("v2.3 (verifier E1a): an event table of class shares with a numeric or boolean column, stamped at the session's "
+          "open (the day's own move known too early), is NOT exempt: refused at row_len 0 as before",
+          refused(leak) and refused(leak_int) and refused(leak_bool) and not checks._is_event_table(leak))
+    mixed = data.event_table(opens, known=known, min_lag=pd.Timedelta(0), market=rng.choice(keys, len(pick)),
+                             v=np.array([0.01 if i % 2 else "n/a" for i in range(len(pick))], dtype=object))
+    dur = data.event_table(opens, known=known, min_lag=pd.Timedelta(0), market=rng.choice(keys, len(pick)))
+    dur = dur.assign(d=pd.to_timedelta(rng.integers(1, 9, len(dur)), unit="h"))
+    check("v2.3 (second verifier E-5): numbers beside text in one column, and a column of durations, are not labels: refused",
+          refused(mixed) and refused(dur))
+
+    def build(d):
+        e = d["events"]
+        e = e[e.kind == "2.02"]
+        return pd.DataFrame({"known_at": pd.DatetimeIndex(e.index), "side": 1, "market": e.market.to_numpy()})
+
+    tr = checks.truncation_test(build, {"events": ev}, row_len={"events": z})
+    check("v2.3: the truncation test runs on that calendar with row_len 0 and passes an honest build", tr["pass"] is True,
+          str({k: tr[k] for k in ("pass", "n_cuts") if k in tr}))
+
+
 def test_v21_real_bars():
     """--real-bars: mechanical checks on the prepared hourly bars of ~/explore_data/h1 (no trading rule): every new
     market loads (< 2022), D20 exists, share days have 7 bars, the modelled cost of a round trip is sane."""
@@ -4122,7 +4548,8 @@ if __name__ == "__main__":
              test_v21_costs_by_hand, test_v21_local_markets, test_v21_share_traps, test_v21_slow_track_and_provisional,
              test_v21_small_fixes, test_v21_review_fixes, test_v21_review2_fixes, test_v21_review3_fixes,
              test_v22_universe_and_costs, test_v22_daily_data_and_sessions, test_v22_daily_traps,
-             test_v22_daily_noise, test_v22_planted_chain_and_groups, test_v22_review_fixes]
+             test_v22_daily_noise, test_v22_planted_chain_and_groups, test_v22_review_fixes, test_v23_same_year_null,
+             test_v23_event_table_row_len]
     if "--review" in sys.argv:
         tests = [t for t in tests if t.__name__.startswith("test_review")]
     if "--only" in sys.argv:                 # --only <substring of a test name>

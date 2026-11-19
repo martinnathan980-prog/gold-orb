@@ -161,6 +161,44 @@ def ledger_add(n_configs, line=None, path=LEDGER):
     return new
 
 
+def _same_mean(null, trades):
+    """Kit v2.3 (verifier D-2): a null belongs to the trades it was computed from: its real_mean_R is their mean net R.
+    Before, only the exit key bound a null to the main, so a null of another trade table with the same exit rule was
+    accepted."""
+    try:
+        a, b = float(null["real_mean_R"]), float(trades["R"].mean())
+        return bool(np.isfinite(a) and np.isfinite(b) and abs(a - b) <= 1e-9 * max(1.0, abs(b)))
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _year_null(null_year, trades):
+    """Reads a same-year null (stats.null_test(..., within='year')) against the trades it should belong to. Returns
+    (usable, percentile or None, record of its scalars, no_room). Never raises: information must not cost a verdict
+    (verifier D-1). Usable = a dict with within 'year', mode 'every' (verifier C-1), the trades' own exit key and mean
+    R, at least 2000 draws, a finite percentile held as a number, the year_* keys stats.null_test writes for a
+    same-year null and room to draw (second verifier V-3: a pooled null relabelled by hand, a percentile kept beside
+    a no-room flag or stored as text are not usable)."""
+    ok, pct, room, rec = False, None, False, None
+    try:
+        room = bool(null_year.get("year_no_room"))
+        pct = null_year.get("percentile")
+        pct = None if pct is None else float(pct)
+        raw = null_year.get("percentile")
+        ok = (null_year.get("within") == "year" and null_year.get("mode") == "every"
+              and null_year.get("exit_key") is not None and null_year.get("exit_key") == trades.attrs.get("exit_key")
+              and int(null_year.get("n_draws", 0)) >= 2000 and pct is not None and bool(np.isfinite(pct))
+              and isinstance(raw, (int, float, np.integer, np.floating)) and not isinstance(raw, bool)
+              and "year_strata" in null_year and "year_room_share" in null_year and room is False   # second verifier, V-3
+              and _same_mean(null_year, trades))
+        rec = {str(k): v for k, v in null_year.items() if k != "means" and
+               (v is None or isinstance(v, (str, bool, int, float, np.integer, np.floating, np.bool_)))}
+    except Exception as e:  # noqa: BLE001  (a list, a float, a broken value)
+        ok, rec = False, {"error": f"null_year could not be read: {type(e).__name__}"}
+    rec["usable"] = bool(ok)
+    return bool(ok), pct, rec, room
+
+
 def _b(value, ok, bar):
     v = value if not isinstance(value, (np.floating, np.integer)) else value.item()
     return {"value": v, "bar": bar, "pass": bool(ok)}
@@ -323,7 +361,8 @@ def _same_events(rep, main):
 
 def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr="compute", n_configs=None,
             basket=None, small_basket=True, write=True, idea=None, data_desc=None, ledger=LEDGER, ten=None, extra=None,
-            truncation=None, event_truncation=None, max_hold_tdays=MAX_HOLD_DEFAULT, groups=None, min_commission=None):
+            truncation=None, event_truncation=None, max_hold_tdays=MAX_HOLD_DEFAULT, groups=None, min_commission=None,
+            null_year=None):
     """Judge the MAIN configuration. main / every_signal / neighbours[id]: trade tables of kit.sim.simulate (every_signal
     = the same rule with mode='every'); null: the dict of stats.null_test (>= 2000 draws); corr: 'compute' (reads the
     ten's trades from lab/results/r2/recalc/trades with the in-sample filter), a number, or None (bar fails as missing);
@@ -341,6 +380,11 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     events_by_key, so a table without market and {market: times} with the same times are the same events). Every
     truncation report must carry the dense cuts of checks.cuts_ok (verifier V1). The null bar also requires
     null['exit_key'] == main.attrs['exit_key'] (the null ran the main's own exit, stop, target and events; verifier V4).
+    null_year (kit v2.3, INFORMATION ONLY, never a bar): the dict of stats.null_test(..., within='year'), the same-year
+    null (each trade re-entered on a random day of its own calendar year). Recorded in res['null_same_year'] and in the
+    ledger line ('same-year null x pct'); 'usable' is False when it was not run with within='year', with the main's
+    exit key and at least 2000 draws. The judged `null` must be the pooled one: a null run with within='year' passed
+    as `null` fails the null bar. Give it whenever the signals bunch in time or the rule trades one side only.
     A pair is one market (its name), several pairs a basket of pairs.
     max_hold_tdays: 5 by default (bar 'hold<=5d'); a run of the slow track (CHARTER 'Slow track') passes 40 (bar
     'hold<=40d', the ledger line says 'slow track'), and only when idea_dir/declared.json says "track": "slow"; any
@@ -447,9 +491,17 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
     npct = None if null is None else float(null["percentile"])
     nd = 0 if null is None else int(null["n_draws"])
     n_bound = null is not None and null.get("exit_key") is not None and null.get("exit_key") == main.attrs.get("exit_key")
-    bars["null>=97.5"] = _b(npct if (null is None or n_bound) else
-                            f"{npct} but the null was run with another exit, stop, target or events than the main",
-                            npct is not None and nd >= 2000 and npct >= 97.5 and n_bound,
+    # kit v2.3: the judged null draws in the whole sample; a same-year result is known by 'within' or any 'year_*' key
+    n_pooled = null is None or (null.get("within") is None and not any(str(k).startswith("year_") for k in null))
+    # kit v2.3 (D-2, J-1): the null of THESE trades (stats.null_test always writes real_mean_R: a dict without it fails)
+    n_own = null is None or _same_mean(null, main)
+    bars["null>=97.5"] = _b((f"{npct} but this is the same-year null (within='year'): the judged null draws in the whole "
+                             "sample; pass this one as null_year=") if not n_pooled else
+                            f"{npct} but the null was run with another exit, stop, target or events than the main"
+                            if not (null is None or n_bound) else
+                            f"{npct} but the null was computed on other trades than the main (its real mean R differs)"
+                            if not n_own else npct,
+                            npct is not None and nd >= 2000 and npct >= 97.5 and n_bound and n_pooled and n_own,
                             "random-entry null (same market, side, clock, the main's own exit rule: exit_key; >= 2000 "
                             "draws) >= 97.5th percentile")
     if isinstance(corr, str) and corr == "compute":
@@ -493,6 +545,18 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
             ce = C.CLASSES[cn]
             vtxt += (f" ; {cn}: spread {ce['spread_bps_open']:g} bp at the open, {ce['spread_bps_close']:g} bp at a "
                      "close; per-share commission on Yahoo prices, pessimistic for shares split after 2021")
+    ny_rec = None
+    if null_year is not None:                                       # kit v2.3: the same-year null, information only
+        # Information must never cost the verdict: whatever is passed here (a malformed dict, another object), the judge
+        # goes on, records what it can as scalars (never the draws) and says in the ledger line why it is not usable.
+        ny_ok, ny_pct, ny_rec, ny_room = _year_null(null_year, main)
+        ny_rec["note"] = ("information only, never a bar: each trade re-entered on a random day of its own calendar "
+                          "year. Far below the judged null = the result is the drift of the years the signals fall in; "
+                          "a high value is not proof of timing (drift and signals inside a part of a year)")
+        key += (f", same-year null {fmt(ny_pct, 1)} pct (information)" if ny_ok else
+                ", same-year null without room (the rule took every candidate day of its years)" if ny_room else
+                ", same-year null not usable (needs within='year', mode 'every', the main's trades and exit key, "
+                ">= 2000 draws)")
     if min_commission is not None:
         key += f", PF net at the 2 USD minimum commission {fmt((min_commission.get('min_commission') or {}).get('PF'))}"
     if gsplit is not None:
@@ -528,6 +592,7 @@ def verdict(idea_dir, main, neighbours=None, every_signal=None, null=None, corr=
                           for k, t in neighbours.items()},
            "every_signal": None if every_signal is None else {"n": int(len(every_signal)), "mean_R": ev},
            "null": None if null is None else {k: v for k, v in null.items() if k != "means"},
+           "null_same_year": ny_rec,
            "counts": main.attrs.get("counts"), "rule": main.attrs.get("rule"), "ledger_line": line,
            "written_utc": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
     if extra:
@@ -561,18 +626,36 @@ def _main_json(sm):
     return out
 
 
-def val_verdict(idea_dir, trades, every_signal, write=True):
+def val_verdict(idea_dir, trades, every_signal, write=True, null_year=None):
     """The single validation look (CHARTER 'The bars', VAL; rule 5) on the frozen main configuration simulated on
     2022-2025 (after data.unlock_val): PF >= 1.06, expectancy > 0, every-signal expectancy > 0, positive in at least 3 of
     the 4 years 2022-2025 (a year without a trade is not positive). Trades must all enter in 2022-2025 (else ValueError:
     no in-sample row may be mixed in, nothing of 2026 exists). Needs idea_dir/val_declared.json. With write=True writes
-    val_results.json (never overwrites one: a second look is refused). Returns {'verdict': 'pass'|'fail', 'bars', ...}."""
+    val_results.json (never overwrites one: a second look is refused). Returns {'verdict': 'pass'|'fail', 'bars', ...}.
+    Extra bar (kit v2.3; CHARTER 'Rules on one side, signals bunched in time'): when val_declared.json holds
+    "extra_null_bar": X (the lead declares 90 for a rule that trades one side only), the bar 'null_same_year>=X' is
+    added. null_year is then the result of stats.null_test(<the validation trades>, <their books>, within='year',
+    n_draws >= 2000, the trades' own exit, stop and target): its percentile must be at least X. A missing, unusable
+    or roomless null fails the bar (the look is done once: compute it before calling). Without the key in the
+    declaration null_year is recorded as information only.
+    The declared value must bind (data.extra_null_bar: a number X with 0 < X <= 100; null, a boolean, a string, 0 or a
+    negative number raise ValueError before anything is written). When at least 80 % of the validation trades are on
+    one side (data.one_sided) the bar is judged at 90 at least, also if the declaration has no key or a lower value;
+    data.unlock_val already refuses to open the period for a one-sided in-sample main without the key."""
     p = os.path.join(idea_dir, "val_declared.json")
     if not os.path.isfile(p):
         raise ValueError("val_verdict: no val_declared.json (declare the look first, charter rule 5)")
     out_p = os.path.join(idea_dir, "val_results.json")
     if write and os.path.exists(out_p):
         raise ValueError("val_results.json exists: the validation look is done once")
+    from . import data as _d
+    extra = _d.extra_null_bar(json.load(open(p)))              # a value that does not bind is an error, before anything
+    extra_from = "declared in val_declared.json: extra_null_bar"
+    sides = trades["side"] if len(trades) and "side" in trades else None
+    if sides is not None and _d.one_sided(int((sides > 0).sum()), int((sides < 0).sum())):
+        if extra is None or extra < _d.EXTRA_NULL_MIN_ONE_SIDED:   # second verifier V-2: the charter's rule, enforced
+            extra, extra_from = _d.EXTRA_NULL_MIN_ONE_SIDED, ("the validation trades are on one side: the charter's "
+                                                              "bar applies whatever the declaration says")
     for nm, t in (("trades", trades), ("every_signal", every_signal)):
         if len(t):
             y = pd.DatetimeIndex(t.entry_time).year
@@ -589,6 +672,16 @@ def val_verdict(idea_dir, trades, every_signal, write=True):
             "exp>0": _b(exp_, exp_ is not None and exp_ > 0, "expectancy (mean net R) > 0"),
             "every_signal_exp>0": _b(ev, ev is not None and ev > 0, "every-signal expectancy > 0"),
             "years>=3/4": _b(npos, npos >= 3, "positive in at least 3 of the 4 years 2022-2025")}
+    ny_rec = None
+    if extra is not None or null_year is not None:
+        ny_ok, ny_pct, ny_rec, ny_room = _year_null(null_year, trades) if null_year is not None else (False, None, None, False)
+        if extra is not None:
+            why = ("missing: give null_year=" if null_year is None else "without room: the rule took every candidate day"
+                   if ny_room else "not usable (needs within='year', mode 'every', these trades and their exit key, "
+                                   ">= 2000 draws)")
+            bars[f"null_same_year>={extra:g}"] = _b(ny_pct if ny_ok else why, ny_ok and ny_pct >= extra,
+                                                    f"same-year null of the validation trades >= {extra:g}th percentile ("
+                                                    + extra_from + ")")
     failed = [k for k, v in bars.items() if not v["pass"]]
     try:
         looks = sum(1 for x in open(_val_log()) if '"track": "explore"' in x)
@@ -597,6 +690,7 @@ def val_verdict(idea_dir, trades, every_signal, write=True):
     res = {"verdict": "fail" if failed else "pass", "failed_bars": failed, "bars": bars, "n": int(len(R)),
            "t_trade": S.t_stat(R), "val_looks_of_this_search_so_far": looks,
            "PF_stress": S.pf(trades.R_stress) if "R_stress" in trades and len(trades) else None,
+           "null_same_year": ny_rec,
            "by_year_R": {int(k): float(v) for k, v in yr.items()},
            "val_declared_sha256": hashlib.sha256(open(p, "rb").read()).hexdigest(),
            "written_utc": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}

@@ -11,18 +11,19 @@ are the costly part; the idea agents are cheap.
 0. If a batch already ran today (the lead sometimes starts it before the task fires: look at the ledger's last lines
    and at the task list), do NOT start another: answer in one line with the sheet's link.
 1. `cd /home/user/gold-orb && git pull --rebase origin lab`. Read the last lines of `lab/explore/LEDGER.md` and the
-   statuses in `lab/explore/IDEAS.md`, and the CURRENT plan: `lab/explore/lead/DIRECTION3.md` (since 2026-11-18:
-   ideas 059, 060 and 062 on the broad universe of US shares, kit v2.2; DIRECTION2.md is done).
+   statuses in `lab/explore/IDEAS.md`, and the CURRENT plan: the section "The next batch" below (directions 2 and 3,
+   `lead/DIRECTION2.md` and `lead/DIRECTION3.md`, are done: US shares around results and news closed on 2026-11-19).
 2. Choose AT MOST 8 ideas (8 is the user's ceiling, not a quota: run what is worth running): the current plan first,
    then the open ideas of IDEAS.md, varying the families. Count the ideas already handled today (ledger lines with
    today's date): 8 a day in all. Before a new direction's first batch, its data and kit changes are built, attacked
    by an independent verifier and repaired first (as on 2026-11-18: three reviews of kit v2.1, one of the data).
 3. Bring the batch working copy to the pushed head (`git -C <scratchpad>/explore_wt checkout --detach <head>`, after
-   `git clean -fdq lab/explore`), then launch the batch: `Workflow({scriptPath: "<scratchpad>/wf/ideas3.js", args:
-   {ideas: [...], selftest: "<the self-test's last line>"}})`. Each entry: `{num, slug, row: "lead/DIRECTION2.md"}`
-   (or `row: "IDEAS.md"`): the agent reads the table row that starts with `| <num> |` as its full brief, so write that
+   `git clean -fdq lab/explore`), then launch the batch: `Workflow({scriptPath: "<scratchpad>/wf/ideas4.js", args:
+   {ideas: [...], selftest: "<the self-test's last line>"}})`. Each entry: `{num, slug, row: "IDEAS.md"}` (or a file
+   under `lead/`): the agent reads the table row that starts with `| <num> |` as its full brief, so write that
    row completely first (family, data, the exact rule, why, power); or `{num, slug, scout: k}` for
-   a scout idea (row k of scout/ideas.md); `note` adds a remark. If the script is gone (the scratchpad was cleaned),
+   a scout idea (row k of scout/ideas.md; idea number = k + 14); or `{num, slug, custom: "<the full brief>"}`; `note`
+   adds a remark. If the script is gone (the scratchpad was cleaned),
    copy it back from `lab/explore/lead/batch_ideas.js` (its paths name the scratchpad folders: recreate the worktree
    with `git worktree prune && git worktree add --detach <scratchpad>/explore_wt <head>`).
    The agents work in the worktree, use prepared bars in `~/explore_data/h1` (built from the lab's minute files by
@@ -38,7 +39,10 @@ are the costly part; the idea agents are cheap.
    read its attack; then the single validation look, yours alone: build `~/explore_data/h1_val/<key>.parquet` for the
    needed markets (2022-2025 only, never 2026; `build_h1_from_lab.py` reads only before 2022, so write the
    validation variant with care), write `val_declared.json`, `data.unlock_val`, `judge.val_verdict`, once, logged.
-   Tell the user only what is verified.
+   A rule with at least 80 % of its trades on one side (and any idea whose row says so) carries the charter's extra
+   bar: `"extra_null_bar": 90` in `val_declared.json`, and `judge.val_verdict(..., null_year=stats.null_test(<the
+   validation trades>, <their books>, n_draws=2000, within="year", <the frozen rule>))` (CHARTER "Rules on one side,
+   signals bunched in time"). Tell the user only what is verified.
 6. **Update the sheet** (the user's daily synthesis): edit `lab/explore/synthese/synthese.json` (one row per idea
    handled: `marche` Oui / Non / Pas testée, `gain` Oui / Non / —, `pourquoi` in one plain French sentence; the `jour`
    row: date and three short texts; the `afaire` rows: what comes next; the `stop` rows: what not to redo). Then
@@ -51,21 +55,30 @@ are the costly part; the idea agents are cheap.
 7. Final message in the conversation: three lines at most, in plain French, with the sheet's link. Everything else
    goes on the sheet.
 
-## The next batch (written 2026-11-18 for the batch of 2026-11-19)
-`Workflow({scriptPath: "<scratchpad>/wf/ideas3.js", args: {selftest: "195/195 checks passed", ideas: [
-{num: "059", slug: "large_earnings_shocks", row: "lead/DIRECTION3.md"},
-{num: "060", slug: "large_earnings_shocks_slow", row: "lead/DIRECTION3.md"},
-{num: "062", slug: "no_news_moves_fade", row: "lead/DIRECTION3.md"},
-{num: "021", slug: "coinbase_premium", scout: 7}, {num: "023", slug: "taker_flow_absorbed", scout: 9},
-{num: "042", slug: "bitfinex_margin_rate", scout: 28}, {num: "043", slug: "korean_premium", scout: 29}]}})`
-after bringing `<scratchpad>/explore_wt` to the pushed head. The three share ideas use the daily bars in
-`~/explore_data/d1/bars` and the filings in `~/explore_data/events_d1` (rebuild: `scout/universe_us.py`,
-`scout/prices_d1.py`, `scout/events_edgar.py`, each with `fetch`, `build`, `test`). If 059 passes in sample: re-run it,
-read its attack, then prepare the validation look yourself (2022-2025 daily bars from the same Yahoo reader, the
-8-K calendar and the dividends and splits for those years, the universe extended by the shares that joined the index
-in 2022-2025 from their dates; one declared, logged look), and before any talk of real money ask the user to read in
-MetaTrader the costs of US share CFDs at FP (spread at the open and a few minutes later, commission, swap, dividend
-credit) and which of these shares FP lists. Delete this section once the batch is merged and write the next one.
+## The next batch (written 2026-11-19 for the batch of 2026-11-20)
+`Workflow({scriptPath: "<scratchpad>/wf/ideas4.js", args: {selftest: "<N/N checks passed, from today's run>", ideas: [
+{num: "064", slug: "coinbase_premium_long_btc_eth", row: "IDEAS.md"},
+{num: "029", slug: "round_numbers_fx", scout: 15}, {num: "047", slug: "gold_option_expiry", scout: 33},
+{num: "046", slug: "treasury_settlement_days", scout: 32}, {num: "045", slug: "rate_gaps_fx", scout: 31},
+{num: "033", slug: "dix_long_sp", scout: 19}, {num: "034", slug: "btc_fee_spike", scout: 20},
+{num: "044", slug: "btc_active_addresses", scout: 30}]}})`
+after bringing `<scratchpad>/explore_wt` to the pushed head. The script's copy in git is `lab/explore/lead/batch_ideas.js`
+(kit v2.3 wording): if the scratchpad was lost, copy it back to `<scratchpad>/wf/ideas4.js`.
+Direction 3 (US shares around results and news) is closed: the ledger's note of 2026-11-19 says why. Idea 064 is the
+one lead of the batch of 2026-11-19 that stood against the same-year null (021's buying side): its row in IDEAS.md is
+the full brief, with the two conditions on any validation look; if it passes in sample, re-run it, read its attack,
+check condition (1) on the ether leg, and only then declare the look (condition 2). The other seven come
+from the scout's queue, on the markets that are cheap to trade (currencies, gold, indices, bitcoin); each needs outside
+data the scout checked (`scout/sources.md`), and an idea agent closes its idea as blocked or insufficient when a source
+refuses or the count is short. Every run now also gives the same-year null (kit v2.3, information); before any
+validation look read the charter's paragraph "Rules on one side, signals bunched in time".
+What the queue still holds after this batch: 024 and 041 (Wikipedia: one request every 10 seconds at most), 027, 032,
+037, 049, 035; and 003, 004, 006, 012, 013, 014, which have only a sketch in IDEAS.md (write a full brief first). 007 and 008
+need traded volume and ask prices the local bars do not have. The nature ideas (028, 031, 039, 040, 050) stay aside.
+When the queue is done the next direction is the lead's to choose (the user gave free rein on 2026-11-18): start from
+what the failures have in common (short holds die on costs; one-sided rules ride a market's drift; shares cost too
+much) and from where the ten rules came from (intraday momentum and breakouts on cheap, liquid markets).
+Delete this section once the batch is merged and write the next one.
 
 ## Rules that do not move
 - In sample to 2021-12-31; one declared, logged look at 2022-2025 per finalist; never 2026.

@@ -82,7 +82,7 @@ Cache folder: `~/explore_data` (outside the repository; it may survive between r
 - `lab/explore/fetch.py` is the first runs' helper; the kit's `data.py` replaces it.
 
 ## The kit (`lab/explore/kit`): use it; do not rewrite fetch, backtest or statistics
-Built and attacked on 2026-11-17/18 (README.md in the folder; v2.2, after four adversarial reviews: 195 self-tests). It holds the period lock, FP
+Built and attacked on 2026-11-17/19 (README.md in the folder; v2.3, after six adversarial reviews: 231 self-tests). It holds the period lock, FP
 costs in the lab's conventions, an hourly simulator, hedged pairs, exits on a condition, every bar below, the
 random-entry null (same-day for baskets), the correlation with the ten, the deflated Sharpe, the guards against
 look-ahead and, since v2.1, US shares and oil with provisional costs and the slow track (paragraphs under "The bars").
@@ -254,6 +254,22 @@ does not pass.
     the index since 2017 are missing): said with every result, long and short sides reported apart.
   - A validation look on these shares needs the lead to prepare the 2022-2025 bars, splits, dividends and filings
     first; the kit refuses to read past what it holds.
+- **Rules on one side, signals bunched in time (kit v2.3, amendment of 2026-11-19, after idea 063, written before
+  any validation look of this search):** the judged null draws its random days in the whole sample, so a rule that
+  trades one side only and whose signals fall mostly in a few years is credited with the drift of those years (idea
+  063, long bitcoin: 91st percentile of the judged null, 43rd against days of the same years; idea 042, the same rule
+  short: 2nd and 58th). Every run now also computes the same-year null, `stats.null_test(..., within="year")`, and
+  gives it to the judge as `null_year=`: INFORMATION, never a bar, written in the ledger line. Its limit: it removes
+  the drift of whole years only; drift and signals bunched inside a part of a year still read as timing, so a high
+  value is not proof of timing (count the signals by quarter).
+  **The validation look of a one-sided rule carries one bar more, whatever its in-sample nulls say.** One-sided = at
+  least 80 % of the main's trades on one side. Its `val_declared.json` holds `"extra_null_bar": 90`, and
+  `judge.val_verdict(..., null_year=...)` judges it: the same-year null of the validation trades (2,000 draws, the
+  frozen rule) at or above the 90th percentile. The kit enforces it: `data.unlock_val` keeps the period locked for
+  a one-sided main without that key, and a value that does not bind is an error. A long rule on a market that rose in 2022-2025 can meet the four
+  validation bars on that rise alone; this bar asks that its days beat other days of the same years. A pass in
+  sample stays a pass: this only says what the validation must show. The lead may declare the same bar for any
+  other rule (it is written in the idea's row of IDEAS.md before the run).
 - **Baskets of many markets (amendment of 2026-11-18, written before any run on such a basket):** for a basket of
   MORE THAN 40 markets (several hundred shares with a few trades each) the two basket bars are read on GROUPS of
   markets fixed in the declaration before any result (at least 8 groups, for example sectors): at least 65 % of the

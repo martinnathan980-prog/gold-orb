@@ -269,6 +269,37 @@ def _row_ends(x, lens):
     return (idx + pd.Timedelta(lens)).as_unit("ns").asi8
 
 
+def _is_event_table(x):
+    """Kit v2.3: a calendar of LABELS made by data.event_table (index named 'known_at' = the time each row is KNOWN, its
+    declared min_lag checked on every row, a column obs_date, attrs min_lag, and no numeric column) is not a frame of
+    bars: each row is complete at its own index and the item takes row_len 0, also with a 'market' column of class
+    shares (the 8-K calendar of the broad universe is stamped at each filing's acceptance time, not at a session's
+    close: ideas 059, 060 and 062 had to rename the column to get past the daily-bars guard).
+    NOT exempt (the guard V22-3 judges them as before): a table with any numeric or boolean column (a number computed
+    from the session's bars and stamped before the close would look ahead, and no cut of the truncation test can see
+    it: the verifier's case E1a, the day's move stamped at the open), a table that carries bar prices, one that lost
+    the event table's marks. Numbers belong inside build, computed from the bars; the calendar says who and when."""
+    at = getattr(x, "attrs", {}) or {}
+    if not (isinstance(x, pd.DataFrame) and x.index.name == "known_at" and "obs_date" in x.columns
+            and at.get("min_lag") is not None):
+        return False
+    return not any(_number_like(x[c]) for c in x.columns)
+
+
+def _number_like(col):
+    """A column that holds numbers, booleans or durations, whatever its dtype (data.event_table stores booleans as
+    objects). A number written as text or as a date cannot be told from a label: that is a deliberate encoding, which
+    only the reading of the declaration and of the run can catch (README 'Kit v2.3', the limit)."""
+    if (pd.api.types.is_numeric_dtype(col.dtype) or pd.api.types.is_bool_dtype(col.dtype)
+            or pd.api.types.is_timedelta64_dtype(col.dtype)):
+        return True
+    if col.dtype == object:                       # 'mixed': numbers beside text in one column (second verifier, E-5)
+        return pd.api.types.infer_dtype(col, skipna=True) in ("boolean", "integer", "floating", "mixed-integer-float",
+                                                              "mixed-integer", "decimal", "complex", "mixed",
+                                                              "timedelta", "timedelta64")
+    return False
+
+
 def _check_row_len(x, lens, label):
     """Kit v2.2: an item of daily session bars must be cut at each row's own close: row_len='known_at', or a Timedelta
     at least as long as its longest session (6.5 h). A shorter one (1 h, 0) would let a cut keep a session whose close is
@@ -279,6 +310,8 @@ def _check_row_len(x, lens, label):
     Such an input without a known_at column counts a full session (6.5 h); re-indexed to the closes (13:00 / 16:00:
     each value at the time it is known) it may take row_len 0."""
     if isinstance(lens, str) or not isinstance(x, (pd.DataFrame, pd.Series)) or not len(x):
+        return
+    if _is_event_table(x):                                # kit v2.3: an event calendar, complete at its own index
         return
     at = getattr(x, "attrs", {}) or {}
     mk = x["market"].astype(str).to_numpy() if isinstance(x, pd.DataFrame) and "market" in x.columns else None
@@ -301,7 +334,9 @@ def _check_row_len(x, lens, label):
         longest = pd.Timedelta(minutes=max(_data.SESSION_MINUTES))
         fix = ("It has no known_at column: give it row_len >= 6.5 h, or re-index its values to the time they are "
                "known (the bars' known_at) and give row_len 0, or pass the bars of data.load_bars with "
-               f"row_len='{ROW_LEN_COLUMN}'")
+               f"row_len='{ROW_LEN_COLUMN}'. An event calendar is not bars: a calendar of LABELS made by "
+               "data.event_table (no numeric column; attrs and index name kept) takes row_len 0 with a 'market' column "
+               "(kit v2.3); numbers computed from the bars belong inside build")
     if pd.Timedelta(lens) < longest:
         raise ValueError(f"truncation_test: item {label!r} holds daily session bars (open 09:30, close known at 16:00 or "
                          f"13:00 New York) but its row_len is {pd.Timedelta(lens)}, shorter than its longest session "

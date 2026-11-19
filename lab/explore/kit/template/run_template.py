@@ -43,9 +43,11 @@ def one_idea(folder, edge, seed, ten=None, data_desc="synthetic 2013-2021 (9 yea
     neigh = {c["id"]: run(c) for c in cfgs[1:]}
     every = run(cfgs[0], "every")
     null = stats.null_test(main, bk, exit=tuple(cfgs[0]["exit"]), stop=tuple(cfgs[0]["stop"]), n_draws=2000)
+    null_year = stats.null_test(main, bk, exit=tuple(cfgs[0]["exit"]), stop=tuple(cfgs[0]["stop"]), n_draws=2000,
+                                within="year")                    # kit v2.3: the same-year null, information only
     shift = checks.shift_test(sig, bk, exit=tuple(cfgs[0]["exit"]), stop=tuple(cfgs[0]["stop"]))
     res = judge.verdict(folder, main, neigh, every, null, corr="compute", ten=ten, n_configs=len(cfgs),
-                        truncation=tr, data_desc=data_desc, extra={"shift_test": shift})
+                        truncation=tr, data_desc=data_desc, extra={"shift_test": shift}, null_year=null_year)
     print(f"{os.path.basename(folder)}: {res['verdict']}  failed: {res['failed_bars']}")
     print("   ", res["ledger_line"])                               # 4. real run: judge.ledger_add(len(cfgs), line)
     return res
