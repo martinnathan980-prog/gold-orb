@@ -3,96 +3,103 @@
   {
    "id": "robot",
    "type": "robot",
-   "texte": "Le robot actuel (10 règles) est prêt. La démo n'est pas encore lancée : c'est la prochaine étape de ton côté, avec le guide déjà envoyé. Après 34 idées sans résultat, c'est aussi le moyen le plus sûr d'avancer ; la recherche continue en parallèle."
+   "texte": "Le robot (10 règles) est prêt. La démo attendra : tu m'as dit qu'on y reviendrait plus tard."
   },
   {
-   "id": "s01",
    "type": "stop",
-   "ordre": 1,
-   "famille": "Actions américaines autour des résultats d'entreprises ou des annonces (40 grandes actions, puis 382 autres)",
-   "pourquoi": "7 tests en deux jours : l'effet est trop faible avant frais et les frais sur actions sont lourds. La piste des très gros chocs ne s'est pas confirmée."
+   "famille": "Données exotiques (options, dette américaine, réseau Bitcoin, Wikipédia, positions des fonds…)",
+   "pourquoi": "Mises de côté à ta demande du 19 nov. : on ne cherche plus que sur les prix des marchés ouverts presque en continu.",
+   "id": "s01",
+   "ordre": 1
   },
   {
    "id": "s02",
    "type": "stop",
    "ordre": 2,
-   "famille": "Signaux de demande sur le Bitcoin (dollars chers à emprunter, prime coréenne, achats absorbés)",
-   "pourquoi": "4 tests aujourd'hui : rien de plus que la hausse générale du Bitcoin pendant ces années."
+   "famille": "Actions américaines autour des résultats d'entreprises ou des annonces (40 grandes actions, puis 382 autres)",
+   "pourquoi": "7 tests en deux jours : l'effet est trop faible avant frais et les frais sur actions sont lourds. La piste des très gros chocs ne s'est pas confirmée."
   },
   {
    "id": "s03",
    "type": "stop",
    "ordre": 3,
-   "famille": "Tendances lentes sur plusieurs semaines (devises, or, indices, actions)",
-   "pourquoi": "Testé mercredi sur 14 marchés et 40 actions : rien avant frais."
+   "famille": "Signaux de demande sur le Bitcoin (dollars chers à emprunter, prime coréenne, achats absorbés)",
+   "pourquoi": "4 tests aujourd'hui : rien de plus que la hausse générale du Bitcoin pendant ces années."
   },
   {
    "id": "s04",
    "type": "stop",
    "ordre": 4,
-   "famille": "Signaux inhabituels à quelques jours (actualités, positions des spéculateurs, VIX, fonds or)",
-   "pourquoi": "8 idées testées cette semaine, aucun gain avant frais."
+   "famille": "Tendances lentes sur plusieurs semaines (devises, or, indices, actions)",
+   "pourquoi": "Testé mercredi sur 14 marchés et 40 actions : rien avant frais."
   },
   {
    "id": "s05",
    "type": "stop",
    "ordre": 5,
-   "famille": "Paires qui reviennent vers leur moyenne",
-   "pourquoi": "Testée sur 7 paires : perdante."
+   "famille": "Signaux inhabituels à quelques jours (actualités, positions des spéculateurs, VIX, fonds or)",
+   "pourquoi": "8 idées testées cette semaine, aucun gain avant frais."
   },
   {
    "id": "s06",
    "type": "stop",
    "ordre": 6,
-   "famille": "Les règles du robot recopiées telles quelles sur d'autres marchés (indices, devises, argent, Nikkei, pétrole)",
-   "pourquoi": "Déjà fait avant (126 essais, les deux meilleurs ont échoué à la vérification) ; le pétrole, testé mercredi, est trop irrégulier."
+   "famille": "Paires qui reviennent vers leur moyenne",
+   "pourquoi": "Testée sur 7 paires : perdante."
   },
   {
    "id": "s07",
    "type": "stop",
    "ordre": 7,
-   "famille": "Actions américaines en journée (achat et vente le même jour)",
-   "pourquoi": "Déjà testé avant : petit gain avant frais, mais les frais sont cinq fois plus gros."
+   "famille": "Les règles du robot recopiées telles quelles sur d'autres marchés (indices, devises, argent, Nikkei, pétrole)",
+   "pourquoi": "Déjà fait avant (126 essais, les deux meilleurs ont échoué à la vérification) ; le pétrole, testé mercredi, est trop irrégulier."
   },
   {
    "id": "s08",
    "type": "stop",
    "ordre": 8,
-   "famille": "Météo, lune, pollution, tempêtes solaires",
-   "pourquoi": "Chances très faibles : mises de côté sans test."
+   "famille": "Actions américaines en journée (achat et vente le même jour)",
+   "pourquoi": "Déjà testé avant : petit gain avant frais, mais les frais sont cinq fois plus gros."
   },
   {
    "id": "s09",
    "type": "stop",
    "ordre": 9,
-   "famille": "Or en journée, indices américains en journée, DAX",
-   "pourquoi": "Déjà fouillés lors des recherches précédentes ; ce qui marchait est dans le robot."
+   "famille": "Météo, lune, pollution, tempêtes solaires",
+   "pourquoi": "Chances très faibles : mises de côté sans test."
   },
   {
    "id": "s10",
    "type": "stop",
    "ordre": 10,
-   "famille": "Cryptos à très court terme",
-   "pourquoi": "118 variantes testées avant : rien de plus que les règles du robot."
+   "famille": "Or en journée, indices américains en journée, DAX",
+   "pourquoi": "Déjà fouillés lors des recherches précédentes ; ce qui marchait est dans le robot."
   },
   {
    "id": "s11",
    "type": "stop",
    "ordre": 11,
-   "famille": "Jours d'annonces économiques, nuit, jours du calendrier",
-   "pourquoi": "Testés avant : rien de solide."
+   "famille": "Cryptos à très court terme",
+   "pourquoi": "118 variantes testées avant : rien de plus que les règles du robot."
   },
   {
    "id": "s12",
    "type": "stop",
    "ordre": 12,
-   "famille": "Devises majeures (tendance ou retournement à court terme)",
-   "pourquoi": "Testées avant et cette semaine : rien."
+   "famille": "Jours d'annonces économiques, nuit, jours du calendrier",
+   "pourquoi": "Testés avant : rien de solide."
   },
   {
    "id": "s13",
    "type": "stop",
    "ordre": 13,
+   "famille": "Devises majeures (tendance ou retournement à court terme)",
+   "pourquoi": "Testées avant et cette semaine : rien."
+  },
+  {
+   "id": "s14",
+   "type": "stop",
+   "ordre": 14,
    "famille": "Vendre de la volatilité, cibles de gain, mises variables",
    "pourquoi": "Testés avant : n'améliorent pas le robot."
   },
@@ -100,121 +107,41 @@
    "id": "a01",
    "type": "afaire",
    "ordre": 1,
-   "idee": "Bitcoin et Ether plus chers sur la bourse américaine qu'ailleurs : acheter seulement. C'est la seule piste d'aujourd'hui qui résiste aux contrôles ; je la vérifie sur l'Ether, jamais regardé.",
-   "famille": "Crypto",
+   "idee": "Construire et faire vérifier le crible : environ 1 400 règles (indicateurs classiques, chocs brutaux, indicateurs maison, mélanges) testées d'un coup sur 15 marchés",
+   "famille": "Or, argent, pétrole, devises, indices",
    "quand": "Demain"
   },
   {
    "id": "a02",
    "type": "afaire",
    "ordre": 2,
-   "idee": "Nombres ronds sur les devises : suivre le franchissement d'un seuil rond",
-   "famille": "Devises",
+   "idee": "Vérifier sur l'Ether la seule piste encore debout : acheter quand le Bitcoin est plus cher sur la bourse américaine qu'ailleurs",
+   "famille": "Crypto",
    "quand": "Demain"
   },
   {
    "id": "a03",
    "type": "afaire",
    "ordre": 3,
-   "idee": "L'or dans les jours qui précèdent l'expiration de ses options",
-   "famille": "Calendrier",
-   "quand": "Demain"
+   "idee": "Lancer le crible : recherche sur 2013-2018, puis confirmation sur 2019-2021 (ce calcul ne coûte pas de crédit)",
+   "famille": "Or, argent, pétrole, devises, indices",
+   "quand": "Demain soir"
   },
   {
    "id": "a04",
    "type": "afaire",
    "ordre": 4,
-   "idee": "Jours où la nouvelle dette américaine est réglée : vendre les indices",
-   "famille": "Calendrier",
-   "quand": "Demain"
-  },
-  {
-   "id": "a05",
-   "type": "afaire",
-   "ordre": 5,
-   "idee": "Écart de taux avec le Japon ou l'Europe que la devise n'a pas encore suivi",
-   "famille": "Devises",
-   "quand": "Demain"
-  },
-  {
-   "id": "a06",
-   "type": "afaire",
-   "ordre": 6,
-   "idee": "Achats des gros investisseurs hors bourse, puis achat du S&P",
-   "famille": "Signaux inhabituels",
-   "quand": "Demain"
-  },
-  {
-   "id": "a07",
-   "type": "afaire",
-   "ordre": 7,
-   "idee": "Pic des frais du réseau Bitcoin : signe de fin de mouvement",
-   "famille": "Crypto",
-   "quand": "Demain"
-  },
-  {
-   "id": "a08",
-   "type": "afaire",
-   "ordre": 8,
-   "idee": "Nombre d'adresses Bitcoin actives en hausse avant le prix",
-   "famille": "Crypto",
-   "quand": "Demain"
-  },
-  {
-   "id": "a09",
-   "type": "afaire",
-   "ordre": 9,
-   "idee": "Ventes à découvert sur les grands fonds (indices, or, argent, devises)",
-   "famille": "Signaux inhabituels",
-   "quand": "Ensuite"
-  },
-  {
-   "id": "a10",
-   "type": "afaire",
-   "ordre": 10,
-   "idee": "Pics d'attention sur Wikipédia (à refaire lentement)",
-   "famille": "Signaux inhabituels",
-   "quand": "Ensuite"
-  },
-  {
-   "id": "a11",
-   "type": "afaire",
-   "ordre": 11,
-   "idee": "Options de vente très demandées, puis rebond des indices",
-   "famille": "Signaux inhabituels",
-   "quand": "Ensuite"
-  },
-  {
-   "id": "a12",
-   "type": "afaire",
-   "ordre": 12,
-   "idee": "Peur concentrée sur les neuf prochains jours",
-   "famille": "Signaux inhabituels",
-   "quand": "Ensuite"
-  },
-  {
-   "id": "a13",
-   "type": "afaire",
-   "ordre": 13,
-   "idee": "Achats des grands gérants sur les contrats à terme (devises, indices)",
-   "famille": "Signaux inhabituels",
-   "quand": "Ensuite"
-  },
-  {
-   "id": "a14",
-   "type": "afaire",
-   "ordre": 14,
-   "idee": "Or contre taux d'intérêt réels ; bilan de la banque centrale américaine",
-   "famille": "Signaux inhabituels",
-   "quand": "Ensuite"
+   "idee": "Lire les résultats du crible ; chaque règle confirmée passe la vérification finale sur 2022-2025",
+   "famille": "Or, argent, pétrole, devises, indices",
+   "quand": "Samedi et après"
   },
   {
    "id": "jour",
    "type": "jour",
    "date": "2026-11-19",
    "texte": "8 idées testées aujourd'hui, aucune ne passe. Depuis lundi : 34 idées étudiées (27 testées, 7 écartées faute de données), rien de trouvé pour l'instant. La piste d'hier ne se confirme pas : les très gros chocs après les résultats d'entreprises ne rapportent rien sur 382 autres actions, c'était un hasard sur les 40 premières. Sur le Bitcoin, un test a paru gagner à l'achat, mais ce n'était que la hausse générale du Bitcoin ces années-là.",
-   "direction": "J'arrête les actions américaines : effet trop faible, frais trop lourds. Demain, 8 idées sur les marchés peu chers à traiter (devises, or, indices, Bitcoin), dont la vérification d'une piste d'aujourd'hui : acheter quand le Bitcoin est plus cher sur la bourse américaine qu'ailleurs (elle a failli passer ; je la teste sur l'Ether). J'ai aussi ajouté à mes outils un contrôle qui démasque les faux gains dus à la seule hausse d'un marché.",
-   "rythme": "8 idées par jour au plus, en un lot lancé chaque jour vers 13 h 30. Cette feuille est mise à jour juste après. Chaque idée a peu de chances de passer (quelques pour cent) : c'est normal dans ce genre de recherche."
+   "direction": "Nouveau cap, à ta demande du 19 nov. au soir : uniquement les marchés ouverts presque en continu (or, argent, pétrole, euro-dollar et 7 autres devises, 4 indices), avec des règles de prix : chocs brutaux, indicateurs classiques, indicateurs maison, mélanges. J'ai relu toutes les recherches passées : l'or a déjà été fouillé à fond (environ 500 essais, d'où viennent trois règles du robot), mais le reste de ce terrain est presque vierge. MACD, moyennes mobiles, stochastique, Ichimoku, chocs, mélanges d'indicateurs n'ont jamais été testés ; le pétrole et l'argent presque pas. Plutôt que 8 idées par jour à la main, je construis un crible qui teste environ 1 400 règles sur 15 marchés d'un coup, en trois étages pour écarter les faux gains : recherche sur 2013-2018, confirmation sur 2019-2021, vérification finale sur 2022-2025. Franchement : sur ces marchés, les effets trouvés jusqu'ici étaient souvent plus petits que les frais. Il se peut que le crible ne trouve rien, mais on le saura proprement, une fois pour toutes.",
+   "rythme": "10 % du crédit de la semaine par jour au plus. Construction du crible vendredi, calcul vendredi soir, premiers résultats samedi."
   },
   {
    "id": "i001",

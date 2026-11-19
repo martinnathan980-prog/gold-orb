@@ -55,36 +55,39 @@ are the costly part; the idea agents are cheap.
 7. Final message in the conversation: three lines at most, in plain French, with the sheet's link. Everything else
    goes on the sheet.
 
-## The next batch (written 2026-11-19 for the batch of 2026-11-20)
-`Workflow({scriptPath: "<scratchpad>/wf/ideas4.js", args: {selftest: "<N/N checks passed, from today's run>", ideas: [
-{num: "064", slug: "coinbase_premium_long_btc_eth", row: "IDEAS.md"},
-{num: "029", slug: "round_numbers_fx", scout: 15}, {num: "047", slug: "gold_option_expiry", scout: 33},
-{num: "046", slug: "treasury_settlement_days", scout: 32}, {num: "045", slug: "rate_gaps_fx", scout: 31},
-{num: "033", slug: "dix_long_sp", scout: 19}, {num: "034", slug: "btc_fee_spike", scout: 20},
-{num: "044", slug: "btc_active_addresses", scout: 30}]}})`
-after bringing `<scratchpad>/explore_wt` to the pushed head. The script's copy in git is `lab/explore/lead/batch_ideas.js`
-(kit v2.3 wording): if the scratchpad was lost, copy it back to `<scratchpad>/wf/ideas4.js`.
-Direction 3 (US shares around results and news) is closed: the ledger's note of 2026-11-19 says why. Idea 064 is the
-one lead of the batch of 2026-11-19 that stood against the same-year null (021's buying side): its row in IDEAS.md is
-the full brief, with the two conditions on any validation look; if it passes in sample, re-run it, read its attack,
-check condition (1) on the ether leg, and only then declare the look (condition 2). The other seven come
-from the scout's queue, on the markets that are cheap to trade (currencies, gold, indices, bitcoin); each needs outside
-data the scout checked (`scout/sources.md`), and an idea agent closes its idea as blocked or insufficient when a source
-refuses or the count is short. Every run now also gives the same-year null (kit v2.3, information); before any
-validation look read the charter's paragraph "Rules on one side, signals bunched in time".
-What the queue still holds after this batch: 024 and 041 (Wikipedia: one request every 10 seconds at most), 027, 032,
-037, 049, 035; and 003, 004, 006, 012, 013, 014, which have only a sketch in IDEAS.md (write a full brief first). 007 and 008
-need traded volume and ask prices the local bars do not have. The nature ideas (028, 031, 039, 040, 050) stay aside.
-When the queue is done the next direction is the lead's to choose (the user gave free rein on 2026-11-18): start from
-what the failures have in common (short holds die on costs; one-sided rules ride a market's drift; shares cost too
-much) and from where the ten rules came from (intraday momentum and breakouts on cheap, liquid markets).
-Delete this section once the batch is merged and write the next one.
+## The next batch (written 2026-11-19 evening for 2026-11-20, after the user's new instruction)
+**The user's instruction of 2026-11-19 evening (it replaces the plan written that afternoon):** only markets that
+trade almost round the clock and move all the time (gold, euro-dollar, oil ...), with price rules: sudden shocks,
+existing indicators, new indicators, mixes of indicators. No shares, no exotic data. The demo is for later: do not
+bring it up. Credit: about 10 % of the weekly allowance a day at most (he was at 80 % on Thursday evening; it renews
+on Saturday 00:00 Paris), so keep the lead's own steps few and add no review beyond what the scripts hold.
+The plan is `lab/explore/lead/DIRECTION4.md` (a pre-registered SCAN of about 1,390 rules on 15 markets, in three
+stages), not eight hand-written ideas. On 2026-11-20:
+1. Bring `<scratchpad>/explore_wt` to the pushed head; run the kit's self-test (`231/231`).
+2. Launch together: (a) idea 064, `Workflow({scriptPath: "<scratchpad>/wf/ideas4.js", args: {selftest: "...",
+   ideas: [{num: "064", slug: "coinbase_premium_long_btc_eth", row: "IDEAS.md"}]}})`; (b) the scan's build,
+   `Workflow({scriptPath: "<scratchpad>/wf/scan_build.js", args: {selftest: "..."}})` (copies in git:
+   `lead/batch_ideas.js`, `lead/batch_scan_build.js`): a builder writes `lab/explore/scan/` on synthetic bars only,
+   a verifier attacks it, at most two rounds of repair.
+3. When the build is verified: copy `scan/` from the worktree into the main checkout, read `GRAMMAR.md` and the
+   verifier's last report, commit the code WITH `scan/rules.csv` and its sha256 (the grammar is frozen by that
+   commit), push. Only then start the real scan, detached: `bash lab/explore/scan/run_all.sh` (discovery on bars
+   before 2019, selection, confirmation on 2019-2021, report; it resumes after a restart; it costs no credit).
+4. Merge 064 as usual (re-run, ledger, status; if it passes: its two conditions, then the look with the extra bar).
+5. When the scan has finished: commit its summaries (`discovery_summary.json`, `frozen_candidates.json`,
+   `confirmation.json`), one ledger line (running total + the number of rule-unit cells), and write on the sheet, in
+   plain French: how many rules, how many candidates, how many confirmed, which. Each confirmed candidate becomes an
+   idea (number, row in IDEAS.md, declaration) and goes through the ordinary protocol on the following days.
+The scout's remaining ideas (outside data) are set aside by the user's instruction: see the note at the top of
+IDEAS.md. What the archives already hold on these markets: `lead/archive_map_2026-11-19.json`.
+Delete this section once done and write the next one.
 
 ## Rules that do not move
 - In sample to 2021-12-31; one declared, logged look at 2022-2025 per finalist; never 2026.
 - Never edit `lab/robot`, `lab/live_ai`, earlier rounds' files. No market data, secrets or personal data in git.
 - Honest wording on the sheet: "Oui" only for an idea that passed in sample AND on the validation years AND was
   verified by the lead. A near miss is "Non".
-- Credit: the user set the pace (8 ideas a day, this session on Fable 5.2, idea agents on Opus). If he reports his
-  weekly credit is short, slow down first, ask second.
+- Credit: the user set the pace on 2026-11-19: about 10 % of his weekly allowance a day, never more than that day's
+  work (this session on Fable 5.2, agents on Opus or Sonnet). If he reports his credit is short, slow down first,
+  ask second.
 - The scheduled worker runs (launcher trigger) are paused while this routine runs the daily batch.

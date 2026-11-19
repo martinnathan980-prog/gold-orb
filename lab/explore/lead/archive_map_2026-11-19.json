@@ -1,0 +1,746 @@
+{
+ "ab63d2d8b40abfcbe": {
+  "families": [
+   {
+    "family": "Opening-range / session breakout (ORB)",
+    "rule": "Range of a session (Asia 00-07 London, London 08:00 30/60 min, COMEX 08:20 15/30 min, US 09:30 15 min, 5-min first bar), OCO stop entries beyond the range, stop at the opposite side, exit same day or after 1-4 days; variants: 0.5 ATR stop, cost filter, 2R target, Crabel NR7 filter, prior-day and SMA50 trend filter, 10% buffer, break-even, ATR trail.",
+    "markets": "Gold (48 configs). Also a fixed London 08-09 ORB on EURUSD, GBPUSD, USDJPY, DAX, WTI in crossasset Part B.",
+    "result": "Intraday gold ORB: gross +0.02 to +0.19 R per trade, cost 0.13 to 0.51 R, so net -0.03 to -0.42 R. Only the Asia range held 2 days with 10% buffer (orb_asia_2d_buf10) passes nearly all: IS PF 1.196, t 1.99, n 1028; VAL PF 1.115, t 0.84; every-day diagnostic PF 1.06; without 2013 PF 1.08. Other markets London ORB net PF 0.87-1.05 (DAX 1.046, t 0.76). Bilan: 2026 test PF 1.30 on 70 trades (mostly shorts), status CONDITIONNEL (needs low-cost ECN).",
+    "sources": "results/orb/report.md, results/orb/trials.jsonl, results/orb/gross_vs_net_is.json, results/audit/orb__orb_asia_2d_buf10.txt, results/crossasset/report.md, report/bilan.html",
+    "bar_size_and_hold": "M1 simulation; ranges of 5 min to 7 h; hold intraday to 2 days (best), max 4 days",
+    "n_configs": "48 on gold (budget 150)",
+    "why": "Small real breakout signal (+0.1 to +0.2 R) eaten by costs; the multi-day version depends on trend years (2013 shorts, 2024-25 longs) and path dependence."
+   },
+   {
+    "family": "Donchian channel breakout and trend following",
+    "rule": "Close or stop-entry breakout of the n-bar high/low (Turtle style), 2 x ATR14 stop, 2 x ATR trailing stop, 5-day time stop; also TSMOM (sign of 5/20/60-day return, vol regime) and Larry Williams volatility breakout (open +/- k x previous range, NR7 filter).",
+    "markets": "Gold (50 configs). Donchian 20 H4 and daily also on EURUSD, GBPUSD, USDJPY, DAX, WTI (crossasset Part B).",
+    "result": "Finalist donch4h_stop (4 h, n=60 bars = 10 days, stop entries): IS PF 1.356 t 2.37 n 494; VAL PF 1.232 t 1.19 n 243, but every-signal VAL PF 0.913 (taken +0.08 R vs skipped -0.07 R); VAL all long and mostly 2025. Neighbours PF 1.31-1.41; 1h PF 1.378. Bilan: 2026 PF 1.53 on 43 trades (kept as the robot rule). Fast versions lose: 1 h channels 1-5 days PF 0.81-0.89, 4h n=20 PF 1.006, n=40 1.12, daily 0.96-1.11, vol breakout 0.83-1.02, NR7 0.78, TSMOM 0.82-0.97. Other markets Donchian20 H4 net PF: gold 1.002 (gross 1.254), EURUSD 0.77, GBPUSD 0.88, USDJPY 0.90, DAX 1.02, WTI 0.99; daily channel WTI 1.30 on n=160 t 1.34 (1 cell of 24), others 0.77-0.98.",
+    "sources": "results/trend/report.md, results/trend/trials.jsonl, results/crossasset/report.md, results/report_data_donch4h.json, report/bilan.html",
+    "bar_size_and_hold": "1 h, 4 h, daily bars; hold up to 5 trading days (average a few days)",
+    "n_configs": "50 on gold trend track; 24 distinct rule x instrument cells in crossasset Part B",
+    "why": "Only slow channels (>= ~10 days) with trailing stops carry information; the pass depends on a few large trades (top 5% = 144% of R) and on gold's long drift."
+   },
+   {
+    "family": "RSI(2) mean reversion",
+    "rule": "Daily or H4/H1 RSI(2) < 10 / > 90 (H1 < 5/> 95), with or without SMA200 trend filter, ADX<20 ranging filter, exit on close beyond SMA5 or 5 days, 2-3 ATR stop (Connors style).",
+    "markets": "Gold (meanrev track); also daily RSI(2) on gold, EURUSD, GBPUSD, USDJPY, DAX, WTI in crossasset.",
+    "result": "Gold: daily PF 0.68-0.78 (gross about 0), H4 0.63-0.65 (0/9 years), H1 0.58; ADX<20 filter 0.78-0.81. Crossasset daily RSI2: gold 0.699 (gross 0.839), EURUSD 0.747, GBPUSD 0.954, USDJPY 0.967, DAX 0.775, WTI 0.836. Loses everywhere.",
+    "sources": "results/meanrev/report.md, results/meanrev/trials_summary.csv, results/crossasset/report.md",
+    "bar_size_and_hold": "daily, 4 h, 1 h; hold 1-5 days",
+    "n_configs": "about 8 on gold (#1,2,6,7,9,15 and others) plus 6 market cells",
+    "why": "Gold continues after big moves; costs are small at daily horizon but the pre-cost edge is already <= 0."
+   },
+   {
+    "family": "Bollinger / z-score fades and overextension fades",
+    "rule": "Fade a close outside Bollinger(20,2) or (20,2.5) back to the SMA20 (daily, H4, H1); fade >= 1 ATR from day open at 11:00 NY, >= 0.75 ATR from London open, Asian overextension; 5-day and 3-day return z +/-2 reversal; IBS < 0.2 / > 0.8.",
+    "markets": "Gold only",
+    "result": "Bollinger D PF 0.64, H4 0.69, H1 0.73; session-open fades PF 0.47-0.65 (lose before costs, gross -0.05 to -0.08 R); IBS D 0.77-0.79; 5-day z 0.94, 3-day z 0.72. Best frequency-feasible IS PF 1.03.",
+    "sources": "results/meanrev/report.md, results/meanrev/trials_summary.csv, hybrid/skew_demo_results.json",
+    "bar_size_and_hold": "daily, H4, H1; intraday to 5 days",
+    "n_configs": "about 12 of 30 exploration configs",
+    "why": "Momentum dominates after large moves on gold (after a >3 sd up-hour the next hour averages +0.22 sd; after a >2 sd day the next day moves 0.12-0.15 sd further the same way)."
+   },
+   {
+    "family": "Failed breakout / Turtle Soup / weekend-gap fade",
+    "rule": "Today's low (high) goes beyond the previous n-day extreme then closes back inside: buy (sell) next morning; Turtle Soup Plus One (buy-stop at old low); close-back-inside on D n=5/10/20, H4 n30/60, H1 n120; weekend gap fade toward Friday close; stop 1 ATR beyond the extreme variant.",
+    "markets": "Gold",
+    "result": "Best finalist meanrev-A-failedbreak-D5: IS PF 1.026 t 0.19 n 346 (stress 0.975), VAL PF 0.685 t -1.84 0/4 years; neighbours median 1.003; every-signal VAL 0.752. Turtle Soup 20d close-back-inside PF 1.53 but n=57, 7/yr, not robust at n=10/5 (PF 0.79-0.90) or on H4/H1; Plus One 0.89-0.95; gap fade 0.87.",
+    "sources": "results/meanrev/report.md, results/meanrev/finalist_A_is.json, results/meanrev/val_meanrev-A-failedbreak-D5.json, results/meanrev/neighbours_A.json",
+    "bar_size_and_hold": "daily (also H4/H1); about 3 days",
+    "n_configs": "about 14 of the 38 logged (incl. 7 neighbours, 1 diagnostic)",
+    "why": "Pre-cost edge only in high-volatility years (2013, 2019, 2020); long side positive in every neighbour while short about 0.8 = gold drift, not reversal."
+   },
+   {
+    "family": "Classic pivot points, Camarilla, previous-day high/low (bounce, break, rejection candle)",
+    "rule": "Floor P/S1-S3/R1-R3, Camarilla L1-L4/H1-H4, PDH/PDL/PDC, weekly pivots; fade the first touch with limit/market, break by stop or M15/H1 close, rejection candle M5/M15, open-vs-P bias, range filters; stop 0.25-0.6 ATR, target next level or 1-2R, exit 16:00 NY.",
+    "markets": "Gold",
+    "result": "All textbook rules lose: PF 0.60-0.85 (S1/R1 fade 0.762, P fade 0.789, Camarilla H3/L3 fade 0.770, M15 break 0.671, H1 close break 0.628), same as 10 placebo seeds on shifted levels (0.74-0.76). Event study: S1/R1, Camarilla, weekly pivots no better than random lines; PDH/PDL and round numbers break through more than random (z -4.5, -5.5). Weekly WR1/WS1 break PF 1.003.",
+    "sources": "results/pivots/report.md, results/pivots/event_study.json, results/pivots/stage2_textbook.json, results/pivots/trials.jsonl",
+    "bar_size_and_hold": "M1 simulation with M5/M15/H1 signals; intraday, weekly variants up to 3 days",
+    "n_configs": "84 logged (20 event-study, 39 strategies, 12 placebos, 10 neighbours, 3 diagnostics)",
+    "why": "Edge no larger than random levels and about equal to costs; footprint of 4-8 win-rate points is the size of the spread."
+   },
+   {
+    "family": "Round-number breakout (rn100_break_fresh) and key-level break-through",
+    "rule": "First touch of the day of a round-number level ($10/$25/$50/$100), buy/sell stop at the level, stop 0.4 ATR(D) back through, target 1R, exit 16:00 NY; PDH/PDL break-through grid stop x target; $50 hold 2 days.",
+    "markets": "Gold",
+    "result": "Finalist rn100_break_fresh passed IS (n 225, PF 1.379, t 2.26, 8/9 years, neighbours median 1.381, stress 1.28) then failed VAL: PF 0.836, expectancy -0.071 R, 1/4 years (0.94 even at zero commission and slippage). $50 grid PF 1.00-1.10, $25 0.83, PDH/PDL 0.76-0.84, $50 2-day hold 1.217 (87% of R from 5 trades in 2013).",
+    "sources": "results/pivots/report.md, results/pivots/stage3_round.json, results/pivots/stage4_fresh.json, results/pivots/stage6_val.json, results/audit/pivots__rn100_break_fresh.txt",
+    "bar_size_and_hold": "M1 with ATR(D) stops; intraday, same day exit",
+    "n_configs": "within the 39 strategy configs of the pivots track",
+    "why": "Passed IS as the single winner of a sequential search (39 configs) and then selection/regime decay: win rate fell from 58% to 48%."
+   },
+   {
+    "family": "Pivot + Bollinger on 15-minute gold (user's own claim), tracks bounce / run / policy",
+    "rule": "Daily/weekly/monthly Traditional pivots with Bollinger(20,2) 15-min state (squeeze, expansion, band walk, close outside band), RSI, candle confirmations; bounce (fade the touch, 62 engine configs) and run (break to next pivot, 77 configs); policy = gradient boosting walk-forward wait/fade/follow.",
+    "markets": "Gold, 15-min bars with M1 fills",
+    "result": "Bounce: nothing survives; best non-finalist I3 fade of daily pivot when day range >= 1.5 ATR: IS PF 1.199, t 1.82, shorts +31 R vs longs +4 R, placebo levels PF 1.147 median (not pivot-specific). Run: textbook break to next pivot PF 0.93-0.97; no Bollinger state helps (squeeze 0.92, expansion 0.98, band walk 0.95, close outside 0.94); retest PF 0.88-0.89; only outer levels work: A r2s2_touch_run (touch R2/S2, market, stop 0.25 ATR, target next pivot) IS PF 1.246 t 3.26 n 1197, placebo median 1.105; B outer_close_ride (M15 close beyond R2/S2/R3/S3, 02-12 NY, no target) PF 1.395 t 3.14 n 686 but not pivot-specific (yesterday close +/-0.88 ATR gives 1.384); 10 trades make 67 of 122 R. Scout GBM walk-forward AUC 0.526 real vs 0.507-0.518 placebo. Policy track: only ideas written, no result found.",
+    "sources": "pivbb/PROTOCOL_PIVBB.md, results/pivbb/bounce/finalists.json, results/pivbb/bounce/trials_summary.csv, results/pivbb/run/finalists.json, results/pivbb/run/trials_table.csv, results/pivbb/workflow_results.json, results/pivbb/policy/ideas.txt",
+    "bar_size_and_hold": "15 min signals, M1 entries; intraday exit 16:50 NY",
+    "n_configs": "bounce 64 (62 engine + 2 models), run 77, policy 12 model specs planned (no result seen)",
+    "why": "Pivots add nothing over random lines; the surviving outer-pivot rules are generic volatility breakouts. No VAL result for A or B found in my files (IS only)."
+   },
+   {
+    "family": "Seasonality / calendar (time of day, Friday PM, weekend, fix, NFP, FOMC, month end)",
+    "rule": "Hour-of-day, session, weekday, London fix, NFP/FOMC windows, turn of month, Monday gap, Beijing clock descriptive study (about 450 cells); trades T01-T06 and neighbours: Friday 13:30 to 16:45 NY or Sunday 22:00 NY (market or buy-limit at last bid valid 60 min), Asia long, US short; stop 3 ATR(1h).",
+    "markets": "Gold (EURUSD, USDJPY only as controls)",
+    "result": "Friday PM +5.96 bp gross t 4.9 (8/9 years) but costs ~5.7 bp; finalists WKND_LIM IS PF 1.039 t 0.26, VAL 0.775; FRI_PM_LIM IS 0.953, VAL 0.807; T05 Asia long 0.686, T06 US short 0.817; neighbours 0.87-1.05. Effect decayed after 2016 (14.2 bp 2013 to 0.6 bp 2021). FOMC follow +15 bp by 16:45 t 2.3 but 8 events/yr.",
+    "sources": "results/seasonality/report.md, results/audit/seasonality__FRI_PM_LIM.txt, results/audit/seasonality__WKND_LIM.txt",
+    "bar_size_and_hold": "M1 simulation, fixed clock windows; hold 3 hours to a weekend",
+    "n_configs": "24 engine configs (about 450 descriptive cells)",
+    "why": "Real effects but 1-2 bp per hour against a 5.7 bp round trip; the Friday effect faded."
+   },
+   {
+    "family": "Cross-asset lead-lag (USD basket, yen, DAX, residual momentum) incl. shocks in other markets",
+    "rule": "A1 gold follows a >=3 sigma USD-basket move on M5/M15; A2 gold reverts to its basket-implied path (24 h/72 h, Asia @08 LDN); A3a yen shock (USDJPY z beyond +/-2.5 on H1) then gold follows; A3b DAX risk-off follow/give-back; A4 H4 breakout with USD confirmation/contradiction; A5 residual momentum (24 h residual z beyond +/-2).",
+    "markets": "Gold traded; predictors EURUSD, GBPUSD, USDJPY, DAX, WTI",
+    "result": "A1 PF 0.46-0.50; A2 0.50-0.77; A3a all hours 0.856, London-morning (post hoc) PF 1.19 t 0.96 n 219 (neighbours t <= 1.3); A3b 0.49/1.08; A4a 1.063, A4b 1.006; A5a 0.977. USD shock has no predictive power (1% tail spread 0.1-1.4 bp vs 5.9 bp cost). No candidate passes; VAL not touched.",
+    "sources": "results/crossasset/report.md, results/crossasset/candidates.json, results/crossasset/trials.jsonl, results/crossasset/descriptive/",
+    "bar_size_and_hold": "M5, M15, H1, H4; 1 h to 3 (5) trading days",
+    "n_configs": "77 logged (19 part A + 9 overlap, 24 part B + 7 re-runs + 18 overlap)",
+    "why": "Gold absorbs dollar moves within one 5-minute bar; cross-asset information is real but about 0.04-0.09 R per trade, far below the 0.2 R needed."
+   },
+   {
+    "family": "Machine-learning scale study (micro vs macro): will price first move +B or -B",
+    "rule": "Gradient boosting on ~45 causal features (momentum on many horizons, Bollinger/RSI on 1 and 5 min, volatility, clock, spread, Nasdaq, euro, yen); decision every 3 minutes in London/NY hours; trade the 10% most confident calls with stop B and target B; walk-forward 2017-2021 per year. Sleeve version on US100 B=25 and B=50.",
+    "markets": "Gold, US100, BTCUSD",
+    "result": "Best-tenth accuracy 51-56%, AUC 0.506-0.542. Gold net bp (optimistic/lab cost): B 2.5: -0.27/-1.07; 12.5: +0.30/-0.50; 25: +1.78/+0.98; 50: +3.39/+2.59. US100 breaks even from B 7.5 optimistic, positive in lab costs from B 12.5-25 (25 bp: +1.53/+1.08). BTC positive from B 40 (+1.96/+0.71), 160 bp +15.9/+14.7. Models only saved for us100 B25/B50; engine results of the sleeve are in results/r2/micro (not in my files).",
+    "sources": "micro/study.py, micro/sleeve.py, results/micro/summary.json, results/micro/summary_us100.json, results/micro/summary_btcusd.json",
+    "bar_size_and_hold": "1-minute decisions every 3 min; hold minutes to about 1-2 hours (move of 25-50 bp)",
+    "n_configs": "6 move sizes on gold and US100, 5 on BTC; one model per cell",
+    "why": "Short moves (below ~12 bp) are not predictable enough to cover costs; edge appears only at about an hour horizon."
+   },
+   {
+    "family": "Hard-stop test on a Bollinger H1 fade (illustration)",
+    "rule": "Enter on H1 close outside Bollinger(20,2), target middle band; no stop (hold up to 20 days) versus stop 1, 2, 3 x ATR(H1); then leveraged account profile.",
+    "markets": "Gold 2013-2026, low-cost ECN costs",
+    "result": "PF 0.768 (no stop, 721 trades, 85% winners, avg loss -4.59% of price, account wiped out at 10x and 20x leverage), 0.868 (3 ATR, 3011 trades), 0.865 (2 ATR), 0.838 (1 ATR).",
+    "sources": "hybrid/skew_demo.py, hybrid/skew_demo_results.json",
+    "bar_size_and_hold": "1 h; up to 20 days or 7 days",
+    "n_configs": "4 variants",
+    "why": "Style illustration, not a search; the fade loses with or without a stop (no stop gives many small wins and rare ruinous losses)."
+   }
+  ],
+  "never_tested_seen": [
+   "Sudden large hourly or daily moves (shocks) on gold as a trading signal: only a descriptive check exists in the meanrev EDA (after a >3 sd up-hour the next hour continues +0.22 sd; no rule tested). The shock rules tested were on other markets as predictors (USD basket 3 sigma, USDJPY z 2.5), not a shock on the traded market itself",
+   "Shocks, spikes or jumps on silver, oil, EURUSD, indices, bitcoin or ether as trading rules (no trace in my files)",
+   "MACD (0 files)",
+   "Stochastic oscillator (0 files)",
+   "Keltner channels (0 files)",
+   "Ichimoku (0 files)",
+   "Supertrend (0 files)",
+   "VWAP (0 files)",
+   "Range-expansion rules (0 files), inside bar (0 files); NR7 only as a filter on gold volatility breakout and ORB",
+   "Moving-average crossover systems: only SMA as filter or exit (SMA200 / SMA50 trend filter, SMA5 exit), no MA-cross rule and no EMA rule found",
+   "ADX as an entry or trend-strength signal: only ADX<20 as a ranging filter on RSI2 and Bollinger fades",
+   "Bollinger squeeze breakout as a standalone rule: squeeze appears only as a filter on the 15-min pivot breaks (PF 0.92)",
+   "RSI on oil, bitcoin, ether, silver, indices, or on FX other than daily RSI(2) in one table; RSI(14), RSI divergence, RSI momentum regimes not tested",
+   "Silver (xag): no rule tested (the meanrev report says no silver data; xagusd only appears as an unused cost line). Oil: only WTI, with two generic rules in crossasset (Donchian20 daily PF 1.30 n 160, ORB 0.89) and RSI2 0.836",
+   "EURUSD, GBPUSD, USDJPY: only 4 generic untuned rules (ORB, Donchian H4, RSI2, Donchian D) as a market comparison, bid-only and synthetic spread, indicative only",
+   "US and German indices: DAX only in the same 4 generic rules (ORB 1.046 best); US indices, bitcoin and ether appear only in the micro scale study (ML) and as markets of later rounds not in my files",
+   "Engulfing / candle patterns beyond M5/M15 rejection and engulfing at pivots (PF 0.85-0.93); no general candlestick set",
+   "Home-made composite indicators or mixes of several indicators (multi-timeframe filter plus oscillator): none found beyond the pivot + Bollinger + RSI context study on gold and a gradient-boosting model on pivot context",
+   "Gold-silver ratio (no silver data), news-spike fades (no calendar), momentum on residuals of any index"
+  ],
+  "lessons": [
+   "Costs decide on gold: round trip about 5.7-5.9 bp (about $0.80 per oz in IS, under the protocol model) = 0.13-0.51 R per intraday trade, 25% of an H1 ATR vs 8-13% for DAX and FX; only rules with cost under about 0.05 R per trade (wide stops, few trades, multi-day holds) survive. A random entry loses about 0.25 R per trade.",
+   "Horizons that died on costs: M5/M15 lead-lag, 1 h channels, H1/H4 RSI2 and Bollinger fades, intraday ORB (gross +0.1 to +0.2 R vs cost 0.13 to 0.51 R), all seasonality trades (1-2 bp per hour vs 5.7 bp), micro ML below about 12 bp moves.",
+   "What survived: slow breakouts with a trailing stop (Donchian 10 days on 4 h bars, PF 1.356 IS, 1.53 on 43 trades in 2026 per the bilan) and the multi-day Asian-range breakout (conditional on low costs). Both depend on a few big trend trades and on gold's drift (long side in VAL).",
+   "Gold continues after big moves (hourly and daily): fades lose even before costs; mean reversion has no pre-cost edge at the daily horizon.",
+   "The one-position-at-a-time rule can manufacture the pass: always run the every-signal diagnostic (Trend VAL 0.91, ORB IS 1.06, meanrev 0.95). Also check long vs short separately (drift) and a random-entry or shifted-level placebo; pivots equal random lines.",
+   "IS winners often fail VAL: rn100_break_fresh 1.379 to 0.836, Trend t 2.37 is best of 48 correlated configs (p about 0.1 after selection), pivbb rules t 3.26 best of 40 (Bonferroni p about 0.045).",
+   "Cross-market, untuned generic rules give no better results than gold (net PF 0.70-1.05 over 4 families x 6 markets); FX/DAX cost hurdle is 2-3x lower but there is no gross edge there either. Cross-asset information is worth 0.04-0.09 R per trade.",
+   "Practical caveats found: data holes on gold M1 (59 partial days), reopen spread at 18:00 NY about 3x normal, weekend closures; engine has no OCO (workarounds in place); non-gold markets are bid-only with fixed spread in round 1.",
+   "Frozen criteria per protocol: PF >= 1.20, t >= 2, 2/3 years positive, neighbours median >= 1.10, stress x1.5 PF >= 1.05 (round 1); round 2 uses PF >= 1.12, t >= 2.5, n >= 250, random-timing null at 97.5%. Total 321 gold-lab configurations in round 1 across 6 tracks (48 ORB, 50 trend, 38 meanrev, 84 pivots, 24 seasonality, 77 crossasset)."
+  ]
+ },
+ "a1f76cb1df6c13cfe": {
+  "families": [
+   {
+    "family": "FX trend and range breakouts (frozen transfers from gold/crypto)",
+    "rule": "A1 Donchian 60 bars on 4h, stop order, 2 ATR stop and trail; A2 Asian-range (00-07 London) stop breakout, held 2 days, 10% buffer; A3 close above/below the 72-bar H1 channel, 24 h hold, weekdays; A4 close beyond the outer daily pivots R2/S2/R3/S3, exit 16:50 NY.",
+    "markets": "eurusd gbpusd usdjpy audusd usdcad usdchf nzdusd eurjpy (basket of 8)",
+    "result": "IS 2013-2021, FP Raw costs, basket: A1 PF 0.977 t -0.46 (n 4103, 3/9 yrs, gross 1.14 bp, net -1.35 bp); A2 PF 0.977 t -0.64 (n 8715); A3 PF 0.956 t -1.39 (n 10932); A4 PF 0.918 t -1.89 (n 5021). None passes. Only yen pairs are positive (usdjpy A3 PF 1.118 t 1.58; A2 usdjpy PF 1.122 t 1.32).",
+    "sources": "results/r2/fx/stageA.json, summary_table.csv, finalists_preval.json, trials.jsonl, plan_A_frozen_transfers.json",
+    "bar_size_and_hold": "1h to 4h bars; holds 24 h to 5 days; A2 two days",
+    "n_configs": "4 (one per rule, 8 pairs each)",
+    "why": "Gross edge only 0.4 to 1.7 bp per trade against about 1 bp all-in cost; the six non-yen pairs lose together in every case."
+   },
+   {
+    "family": "FX time-of-day and fix effects (month-end 16:00 London reversal, USD European morning, London-open break)",
+    "rule": "B1 month-end 16:00 London fix: trade against the 15:00-16:00 move, exit 16:30, stop 1.5 ATR(24); B2 buy USD 07:00-12:00 London, stop 2 ATR; B3 first break of 00-07 London range between 07 and 10, exit 16:00. Plus 8 predeclared neighbours of B1 (exit 16:20/16:45/17:00, look 30/120 min, stop 1.0/2.5, last 2 business days).",
+    "markets": "8 pairs (B1 to B3)",
+    "result": "IS basket: B1 PF 1.175 t 1.32 net +0.85 bp (gross t 3.53), fails t, pairs, 41.5% single-pair share, stress PF 1.016; neighbours t 0.37-1.55, none >= 2.5. B2 PF 0.969 t -0.98 (gross t 3.63, net -0.18 bp, only eurusd and gbpusd positive). B3 PF 0.952 t -1.70 (usdjpy PF 1.157 t 2.32 and eurjpy 1.128 t 2.05 only). No finalist.",
+    "sources": "results/r2/fx/finalists_preval.json, summary_table.csv, plan_B_rules.json, stageB.json, trials.jsonl",
+    "bar_size_and_hold": "M1 entry, 30 minutes (B1), 5 h (B2), up to 9 h (B3)",
+    "n_configs": "3 rules + 8 neighbours of B1 (about 11)",
+    "why": "Effects are real before costs (gross daily t 2.9-4.1, 1-2 bp) but about equal to the 1 bp cost."
+   },
+   {
+    "family": "FX month-end fix with the S&P 500 sign (B5, addendum B)",
+    "rule": "Last weekday of the month, at 16:02 London buy dollars if the S&P 500 is up month-to-date, sell if down, exit 16:30, stop 1.5 ATR; frozen before any 2022+ result, 6 neighbour variants of entry/exit.",
+    "markets": "eurusd gbpusd audusd nzdusd usdcad usdchf",
+    "result": "IS 108 dates: +3.95 bp per date, t 4.65, PF 2.52, 8/9 years, all criteria pass. VALIDATION FAIL (2022-2025, 48 dates): +0.72 bp, t 0.57, 54% of dates, 2/4 years, negative at costs x2 (-0.53 bp).",
+    "sources": "results/r2/fx/B5_fix_me_spx_is.json, B5_fix_me_spx_val.json, round3_summary.json, PROTOCOL_V3.md addendum B",
+    "bar_size_and_hold": "M1 entry, 28 minutes",
+    "n_configs": "1 frozen + 6 neighbours",
+    "why": "In-sample only; validation shows no edge after costs."
+   },
+   {
+    "family": "FX Tokyo gotobi fixing (USDJPY), addendum D",
+    "rule": "Sell USDJPY at 09:55 Tokyo on Japanese settlement days (5th, 10th, 15th, 20th, 25th, month-end), exit 11:55, stop 3 ATR(24), BoJ days skipped; fallback B7 gotobi days plus Fridays.",
+    "markets": "usdjpy",
+    "result": "IS 2013-2021 at 0.71 bp cost: B6 n 606, PF 1.542, t 3.63, +2.06 bp net, 9/9 years, null 100th percentile; B7 n 770, PF 1.603, t 4.5. Fragile: entry one minute late gives t 2.14-2.66 at 0.95 bp. No validation result in my files; decision depended on measuring the real cost.",
+    "sources": "results/r2/fx/tokyo_is.json, tokyo_review.json, trials.jsonl, PROTOCOL_V3.md addendum D",
+    "bar_size_and_hold": "M1 entry, 2 h hold",
+    "n_configs": "2 rules + 5 neighbours + cost grid of 8 values",
+    "why": "Passes in sample, but the edge is a late-morning drift and the entry-minute timing carries it."
+   },
+   {
+    "family": "FX descriptive scan",
+    "rule": "360 descriptive cells (192 hourly, 40 windows, 80 fix/open, 48 US100 spill-over); includes NY-open momentum, Asia-window drift, fix momentum, US-afternoon leg.",
+    "markets": "8 FX pairs",
+    "result": "Rejected as under 2x cost: spill-over from us100 <= 0.9 bp, NY-open momentum <= 1.1 bp, fix reversal on all days <= 0.8 bp, Asia drift <= 1.7 bp.",
+    "sources": "results/r2/fx/descB_summary.json, plan_B_rules.json",
+    "bar_size_and_hold": "1h and minute cells",
+    "n_configs": "360 cells (descriptive)",
+    "why": "Edges under 2 bp."
+   },
+   {
+    "family": "Gold and silver session opening-range breakouts (ORB) and round-number break",
+    "rule": "A1-A4: breakout of the 00-07 London, 08:00-08:30, 08:00-09:00 London or 09:30-09:45 NY range, exit 16:00 NY; A5 Asian range, 2-day hold, 10% buffer; A6 first break of a 100-dollar round number with 0.4 ATR stop, 1R target.",
+    "markets": "xauusd, xagusd",
+    "result": "Gold IS 2013-2021: A1 PF 1.112 t 1.76, A2 1.095 t 1.40, A3 1.078 t 1.21, A4 1.078 t 1.23 (profit on short side only); A5 PF 1.311 t 2.94 (VAL and 2026 already consumed in round 1); A6 PF 1.603 t 3.33 but n 228 and failed VAL in round 1 (PF 0.84). Silver: all session ORBs PF 0.73-0.90 (t down to -5.69), A5 PF 0.897.",
+    "sources": "results/r2/gold2/trials_table.csv, plan_stageA.json, finalists_preval.json",
+    "bar_size_and_hold": "M1 entry, intraday (A1-A4, A6) or 2 days (A5)",
+    "n_configs": "6 rules x 2 metals = 12",
+    "why": "Intraday breakouts have gross PF 1.25-1.32 but net edge below bar; silver has no gross edge."
+   },
+   {
+    "family": "Gold and silver 1h channel breakout, trend-filtered, squeeze and pullback (gold2 stages B-E)",
+    "rule": "1h Donchian n 240/120 with 2 or 3 ATR stop and trail; London/NY session only; 2-day channel taken only on the side of the 10-day state (B3); pullback in trend (B4); volatility-contraction breakout (24-bar channel, width <= 0.7 x its 20-day median, B5).",
+    "markets": "xauusd (all), xagusd (5 replications)",
+    "result": "Gold IS: B1 n240 k2 PF 1.284 t 2.65, k3 PF 1.463 t 3.17; B3 n48 tr240 PF 1.229 t 2.55 9/9 yrs; B5 sq24 PF 1.248 t 2.63; B4 pullback PF 0.93-0.96 t < 0; session-only B2 PF 1.07-1.16 t <= 1.4. Silver replications PF 0.90-0.98. Squeeze finalist sq24_breakout_1h FAILED VALIDATION: n 463, PF 0.80, t -1.78, 1/4 years, short side -52 R. Legacy 4h Donchian (reference) gold IS PF 1.512 t 3.17, silver PF 1.14 t 1.08.",
+    "sources": "results/r2/gold2/trials_table.csv, plan_stageB.json, finalists_preval.json, validation.json, causality.json",
+    "bar_size_and_hold": "1h bars (also 2h controls); hold up to 5 days",
+    "n_configs": "64 logged (60 distinct) plus 3 delay probes",
+    "why": "Passed IS but duplicated the legacy 4h sleeve or failed validation; silver does not replicate."
+   },
+   {
+    "family": "Gold and silver large-bar follow-through (shock descriptive)",
+    "rule": "After a bar whose body is >= 1.5/2/2.5/3 ATR14, mean signed return over the next 1/2/4/8 bars; cost-free descriptive only.",
+    "markets": "xauusd, xagusd; 15, 60, 240-minute bars",
+    "result": "Gold 15 min: mean -0.5 to +0.6 bp, |t| < 1 at every k and horizon, no continuation. No rule built.",
+    "sources": "results/r2/gold2/eda1_large_bar_followthrough.json, r2/tracks/gold2/eda1.py",
+    "bar_size_and_hold": "15 min, 1h, 4h; 1 to 8 bars",
+    "n_configs": "descriptive only, about 48 cells per tf per metal",
+    "why": "No follow-through after large bars."
+   },
+   {
+    "family": "US index intraday momentum (opening candle, noise-area, ORB, last 30 minutes)",
+    "rule": "ocm: trade the direction of the first n-minute candle (n=2..6, big-candle filter vs 20-day median), stop 0.3 ATR14, flat 15:55 NY; noise: enter when price leaves the band around the open (avg abs move of the last 14 days), checks every 30 min, exit inside band; orb 15 min; last: sign of return since previous close at 15:30.",
+    "markets": "us100, us500, us30 (M1 clock, NY time)",
+    "result": "IS 2014-2021: noise30 us100 n 1643 PF 1.282 t 3.12 8/8 years (us500 PF 1.125 t 1.59, us30 0.983); ocm4 us100 n 999 PF 1.243 t 2.69 (us500 1.098); orb PF 0.96-1.02; last30 PF 0.958. Both finalists pass VAL: noise30 n 850 PF 1.216 t 1.89 4/4 (short side +0.1 R only); ocm4 n 503 PF 1.302 t 2.32 4/4. Kept in the robot.",
+    "sources": "results/r2/idx_us/trials.jsonl, finalists_preval.json, val_results.json, null_tests.json, neighbors.json, recalc/summary.json",
+    "bar_size_and_hold": "M1 decisions, 5 to 30 minute checks; flat the same day (2-6 h)",
+    "n_configs": "94 lines, 87 distinct",
+    "why": "Real edge on us100 only (null 100th percentile); us500/us30 about 2x cost and fragile; gain mostly on the long side."
+   },
+   {
+    "family": "US index stressed-market gate on noise30 (addendum C)",
+    "rule": "Gate noise30 us100 by gamma flag (previous gex below 33rd percentile) or by weak last-5-day S&P return; size tilt only.",
+    "markets": "us100",
+    "result": "IS +0.169 R vs +0.026 R (gamma) and +0.161 vs +0.021 (price flag). VALIDATION FAIL: +0.062 vs +0.055 R and +0.019 vs +0.083 R; no gate.",
+    "sources": "results/r2/idx_us/gate_is.json, gate_val.json, round3_summary.json",
+    "bar_size_and_hold": "daily flag on the noise30 sleeve",
+    "n_configs": "2 flags",
+    "why": "In-sample split did not replicate."
+   },
+   {
+    "family": "DAX (ger40) opening-range, momentum-from-previous-close and gap rules",
+    "rule": "7 ORB variants (09:00-10:00 Berlin, 30/15 min, pre-market, US open); momentum rules anchored on previous 17:30 close with |z| >= 1.5 at 12:00/16:00 and first 30-min marks; gap 09:05; last half-hour; close-run 17:25 to 17:30 with |z| >= 0.5.",
+    "markets": "ger40 (us500 read once as control)",
+    "result": "IS: ORBs PF 0.94-1.08, t <= 1.3 (round-1 rule PF 1.08 t 1.29, long side only); mom 16:00 PF 1.667 t 3.49, first-30-min mom PF 1.42 t 3.27, gap PF 1.365 t 2.66, last half-hour PF 1.04. VAL 2022-2025: late_mom_1600 FAIL (n 151, PF 0.98, t -0.12); close_run_1725 passes letter (n 618 PF 1.105 t 0.93, 2/4 years, +0.38 bp, loses at costs x1.5 PF 0.89, exit minute knife-edge).",
+    "sources": "results/r2/idx_eu/report.txt, trials_summary.csv, val_results.json, finalists_preval.json",
+    "bar_size_and_hold": "M1 decisions; 5 minutes (close run) to 90 minutes (late_mom)",
+    "n_configs": "64 of budget 120",
+    "why": "Continuation after big moves vanished after 2021; close-run edge about 0.4 bp net."
+   },
+   {
+    "family": "Crypto breakout, session momentum and trend pullback",
+    "rule": "brk: H1 close above highest / below lowest close of the previous n=24/72/168 bars, stop 3 ATR(24) or trailing, hold 12/24/72 h; sess: at 08:00 UTC trade sign of the previous 6/8/10-hour move, hold 5-16 h; pull: new 6/24-bar extreme against a 168-bar trend. Weekday-only variants, entry delay 5/30 min and parameter neighbours.",
+    "markets": "btcusd, ethusd (H1 bars, mid prices)",
+    "result": "IS (BTC 2017-2021, ETH 2018-2021): brk72/24h btc PF 1.529 t 3.75, eth PF 1.600 t 4.17; weekday-only btc PF 1.775 t 4.57 (+58 bp net), eth 1.668 t 4.15; sess 8h/13h btc PF 1.342 t 3.54, weekday PF 1.433; pull PF 0.98-1.14, t <= 1.6. Delay 30 min changes little (PF 1.55). VAL: brk72_24h_wd btc n 681 PF 1.084 t 0.77 3/4 yrs (2025 -18 R), eth PF 1.134 t 1.2, basket PF 1.108 t 1.38; sess_8_8_13_wd FAILED (PF 1.032/1.047).",
+    "sources": "results/r2/crypto/trials.jsonl, finalists_preval.json, val_results.json, null_tests.json, log_diag1.txt",
+    "bar_size_and_hold": "1h bars, holds 5 h to 72 h (finalist 24 h)",
+    "n_configs": "118 lines, 94 distinct",
+    "why": "Edge shrank from +0.31 R in sample to +0.04 R in validation; weekend trades lose; slow trend holds, fast pullbacks do not."
+   },
+   {
+    "family": "Crypto cross-asset bursts (Nasdaq to bitcoin, ether to bitcoin) and other lead-lag",
+    "rule": "nq_btc_follow: if a US100 1-minute bar moves >= 6 sigma during NY cash hours, enter BTCUSD in the same direction, stop 2 sigma, hold 60 min (grid k 1/2/5 bars, z 4-7, hold 15-72 min, stops 1-3). ETH-to-BTC 1-minute burst, z 5/8, hold 5 min. DAX residual vs S&P in thin hours; us100/us500/us30 relative strength 10:00 to close.",
+    "markets": "btcusd, ethusd, ger40, us500, us100, us30",
+    "result": "nq_btc_follow IS n 1063 PF 1.409 t 3.86 (3/5 yrs, +11.9 bp) and VAL n 990 PF 1.159 t 1.73 (2/4 years, 2022-23 negative; passes letter, kept in robot; ETH PF 1.139 t 1.44 not nominated). ETH-to-BTC burst IS PF 1.498 t 6.78 but dies on delay (1 min PF 1.19, 2 min 1.03): quote-lag artefact, not nominated. DAX residual best PF 1.174 t 2.06; relative strength best PF 1.206 t 1.79 (us100 leg); mirror on us500 PF 0.976.",
+    "sources": "results/r2/leadlag/trials.jsonl, plan_prereg.json, finalists_preval.json, validation_nq_btc.json, descriptive/summary_tails.txt",
+    "bar_size_and_hold": "1-minute signals; holds 5 to 60 minutes",
+    "n_configs": "61 logged",
+    "why": "Bursts clear 2x cost only at extreme tails; ETH-BTC effect is a stale-quote artefact; us indices 1-15 min lead-lag and gold/silver lead-lag are under cost (<= 1 bp vs 0.8-1.2 bp; silver after gold 4 bp vs 6.7 bp)."
+   },
+   {
+    "family": "Daily-scale mean reversion on indices (IBS, RSI(2), 3 down closes, Bollinger 20,2)",
+    "rule": "Buy at the cash close when IBS < 0.2/0.3/0.4, RSI(2) < 10 (with or without SMA200 trend filter), 3 lower closes, or close below the lower Bollinger band; exits: first close above prior high, above close-5 SMA, next close, 3 days; swap-free 18:30 variant; mirror shorts; stop 2.0-3.0 ATR.",
+    "markets": "us100, us500, us30, ger40",
+    "result": "IS 2014-2021: best us100 IBS<0.3 exit sma5 n 312 PF 1.476 t 2.60 (net 31.6 bp); IBS<0.2 PF 1.786 t 3.42; Bollinger us100 PF 2.373 t 2.70 but n 56; us500 PF 1.075 t 0.47; us30 PF 0.935; ger40 PF 0.984; mirror shorts PF 0.74-0.89. Random-entry null: best at 85th percentile (need 97.5). No finalist.",
+    "sources": "results/r2/dip/trials.jsonl, finalists_preval.json, trials_log.txt, round3_summary.json",
+    "bar_size_and_hold": "daily signals (1 to 5 business days)",
+    "n_configs": "44",
+    "why": "Long-only profit is the Nasdaq drift; fails the random-entry null and does not replicate on the other indices."
+   },
+   {
+    "family": "Macro-event rules (FOMC, NFP, CPI)",
+    "rule": "Buy 5 minutes before the release, exit 15 minutes later, stop 1 ATR (premium); post-release momentum, breakout, NFP fade, 24 h pre-FOMC drift; lead 3-10 min, holds 5-60 min or to 15:55.",
+    "markets": "us500, us100, xauusd",
+    "result": "IS premium long: us500 n 268 PF 1.602 t 2.65, us100 n 267 PF 1.639 t 2.75, gold PF 1.207 t 1.16; momentum us100/us500 PF 0.84-0.94, breakout PF 0.81-0.92. Gold FOMC-only momentum IS PF 1.9-2.6 t 2.2-2.9 but n 70 (no finalist). VAL EV_PREM_LONG FAIL: us500 n 126 PF 0.909 t -0.40, us100 PF 0.893.",
+    "sources": "results/r2/events/summary.json, trials.jsonl, validation.json, finalists_preval.json",
+    "bar_size_and_hold": "M1 entry, 5 to 60 minutes",
+    "n_configs": "78 logged (75 distinct sym/params)",
+    "why": "Pre-release drift did not persist after 2021."
+   },
+   {
+    "family": "Overnight, session and calendar timed trades",
+    "rule": "Fixed-clock market or limit entry then timed exit, optionally conditioned on the previous session: gold Friday 13:30-16:45 NY limit; index overnight 15:55 to 09:30 and 18:30 reopen, with previous session up/down/fade; month-end overnight; bitcoin 17:05-19:00 NY; index prev-session-down at the open.",
+    "markets": "xauusd, us500, us100, ger40, btcusd",
+    "result": "GOLD_FRI_PM IS n 408 PF 1.421 t 2.53 7/9 yrs; VAL n 184 PF 1.279 t 1.15 4/4 passes letter (kept in robot at +2.6 bp). MONTH_END_NIGHT IS PF 1.75-2.30 t 2.1-3.1 on n 92-95; VAL FAIL us500 n 45 PF 0.662, us100 PF 0.65; ger40 n 47 PF 1.107 t 0.25. Plain overnight us500 PF 0.90, us100 1.03, ger40 1.00. BTC 17:05-19:00 PF 1.168 t 2.05, null 96.5th percentile, not validated.",
+    "sources": "results/r2/overnight/trials.jsonl, finalists_preval.json, finalists_val.json, desc3_btc.txt",
+    "bar_size_and_hold": "M1 entries; 2 h to overnight",
+    "n_configs": "63 logged",
+    "why": "Calendar edges with few trades do not hold in validation; gold Friday is thin (about 2.6 bp)."
+   },
+   {
+    "family": "Learned filter on hourly breakouts (ridge, logistic, boosted trees)",
+    "rule": "Candidate = H1 close beyond the 14-session-bar channel (02:00-15:00 NY); stop 2 x average range or time exit; walk-forward ridge/logistic/GBT on 13 scale-free features plus clock dummies, threshold on training-score quantile; hand-rule versions.",
+    "markets": "us100, ger40, xauusd, btcusd (pool), ethusd transfer, xagusd for a London-open rule",
+    "result": "Unfiltered breakout break-even on indices and gold (PF 0.95-1.04). Walk-forward filter: us100 PF 0.91-1.06, ger40 0.97-1.06, gold 1.05-1.09, t < 1; btc PF 1.60-1.91 t 3.5-4.4; eth PF 1.568. Validation F1 (filtered): btc PF 1.33 n 523 +0.128 R 4/4, eth PF 1.22 +0.090 R; unfiltered F2 PF 1.14. Silver London-open rule PF 1.016 t 0.17.",
+    "sources": "results/r2/ml/report.txt, trials_summary.csv, finalists_preval.json, val_basket.json",
+    "bar_size_and_hold": "1h bars; exit same day (up to 13 h)",
+    "n_configs": "85 logged",
+    "why": "Filter helps only on bitcoin and ether; edge shrinking (+0.31 R in sample to +0.13 R in validation)."
+   },
+   {
+    "family": "Gold pivot bounce / fade with candle, RSI and Bollinger conditions",
+    "rule": "Fade a touch of daily/weekly/monthly pivots and round numbers, limit/market/M5-M15 confirmation (close, wick, engulfing, failed break), conditions: band stretch, RSI > 70 or divergence, band walk, squeeze, range already used >= 1.2-1.8 ATR, Asia/London/NY windows.",
+    "markets": "xauusd",
+    "result": "IS 62 configs: nearly all PF 0.78-0.98 (t down to -5.6, 0/9 to 3/9 years). Best I3 range_used >= 1.5 ATR: n 444 PF 1.199 t 1.82 (shorts +31 R, longs +4 R), fails t, level placebo PF median 1.147. NOTHING SURVIVES.",
+    "sources": "results/r2/pivbb_bounce/trials.jsonl, results/pivbb/bounce/finalists.json",
+    "bar_size_and_hold": "M1 entry, M5/M15 confirmation; intraday to 16:50 NY",
+    "n_configs": "62 engine configs plus 2 model specs",
+    "why": "Edge before costs near zero; best candidate is not pivot-specific (placebo lines earn the same)."
+   },
+   {
+    "family": "Gold pivot break and run (breakout of pivots, Bollinger squeeze context)",
+    "rule": "Break of R1/S1/R2/S2/yesterday high-low/weekly pivots, entry on close, touch or retest, target at next pivot, Bollinger squeeze/expansion/band-walk/outside-band conditions, stop 0.15-0.4 daily ATR; finalists on R2/S2 and an outer-pivot close ride.",
+    "markets": "xauusd",
+    "result": "IS 77 configs. Textbook break PF 0.93-0.97, retest PF 0.88-0.89, no Bollinger condition helps (PF 0.91-0.99). Finalist A r2s2_touch_run n 1197 PF 1.246 t 3.26 7/9 yrs; Finalist B outer_close_ride (02-12 NY, no target) n 686 PF 1.395 t 3.14, but 10 trades make 67 of 122 R; 10 shifted-level placebos give PF 1.03-1.40 (median 1.105). Outer_close_ride transfer to 8 FX pairs failed (PF 0.918).",
+    "sources": "results/r2/pivbb_run/trials.jsonl, results/pivbb/workflow_results.json, results/r2/fx/stageA.json",
+    "bar_size_and_hold": "M1 entry, 15-minute closes; intraday to 16:50 NY",
+    "n_configs": "77 (40 rules, 15 neighbours, 20 placebo sets, 2 controls)",
+    "why": "Only outer pivots and no-target variants pass in sample; a third to a half of the edge is generic and breakout-family overlap with existing sleeves."
+   },
+   {
+    "family": "Short VIX future (selling insurance)",
+    "rule": "Short the front VX contract, roll 5 days before expiry, only when contango >= c and/or front below its n-day average, protective close stop s.",
+    "markets": "VIX futures (daily)",
+    "result": "Always short: t 0.89, Sharpe 0.30, worst day -4.5 R; best filtered configs t 0.55-0.63. No configuration passes; no validation look.",
+    "sources": "results/r2/vol/trials.jsonl, pick.json, round3_summary.json",
+    "bar_size_and_hold": "daily; holds weeks",
+    "n_configs": "24",
+    "why": "Risk premium with violent losses, t below 1."
+   },
+   {
+    "family": "Funding carry (long spot, short perpetual)",
+    "rule": "Collect perpetual-future funding on bitcoin and ether, delta-neutral, 5x and 2x leverage.",
+    "markets": "btcusd, ethusd (Binance, OKX data 2020-2026)",
+    "result": "Gross about 9.9% a year 2020-2026 (off5x), 80.7% green days; EU-taker 6.0% a year; 2026 only 1.8% gross / 0.7% EU-taker; carry no longer beats a savings account.",
+    "sources": "results/r2/carry/summary.json, funding_carry.json",
+    "bar_size_and_hold": "hours; held indefinitely",
+    "n_configs": "not a trial grid (one structure, several leverage/fee readings)",
+    "why": "Premium compressed since 2025."
+   },
+   {
+    "family": "Exit shaping, pyramiding and stake rules on the validated sleeves (not entry rules)",
+    "rule": "Profit targets, break-even and half exits (48 variants); adding to winners at +1R/+2R (24 configs); stake catch-up, daily/weekly locks, daily targets (39+ configs); Martingale-like and day-target combos.",
+    "markets": "the 10 validated sleeves (gold, us100, btc, eth)",
+    "result": "Shape: winning days 49.6% -> 49.6%, total R 831 -> 805. Pyramiding: no finalist (add-on +0.134 R vs +0.160 R fresh, profit at equal drawdown 0.82-1.08x). Stake: cushion_only adopted (weeks 69.9% vs 53.1% in VAL); winning days cannot be raised (+1 to +6 points).",
+    "sources": "results/r2/shape/selection.json, results/r2/pyramid/summary.json, results/r2/jours/profiles.json, PROTOCOL_V3.md addenda E, F",
+    "bar_size_and_hold": "inherits the sleeves",
+    "n_configs": "48 + 24 + 39",
+    "why": "Gains are manufactured by the stake rule, not by edge."
+   },
+   {
+    "family": "Micro-scale price prediction (seconds-minutes)",
+    "rule": "Predict the next 2.5-50 bp move from the recent tape on us100 and bitcoin; best-tenth signals about 20-25 trades a day.",
+    "markets": "us100, btcusd",
+    "result": "Accuracy 50.5-52% all signals, 51-56% best tenth; needs 51-75% to beat cost; net -0.2 to -1.1 bp at small moves, +1 to +3 bp only for 25-50 bp targets on the optimistic cost model (us100); engine trials PF 1.01 and 0.98.",
+    "sources": "results/micro/summary.json, summary_us100.json, summary_btcusd.json, results/r2/micro/trials.jsonl",
+    "bar_size_and_hold": "1-second to minute scale; minutes to hours",
+    "n_configs": "8 (2 logged engine trials)",
+    "why": "Edge below cost at the horizons that matter."
+   },
+   {
+    "family": "Frozen us100 opening rules on 40 US share CFDs, and language-model news trader",
+    "rule": "ocm4 and noise30 unchanged on 40 US shares; a language model reading presidential posts after its knowledge cut-off.",
+    "markets": "40 US share CFDs; gold/us100/eurusd/btc headlines",
+    "result": "Stocks: gross PF 1.07-1.08 (t 2.35-2.41), net PF 0.68-0.73 after share costs, no finalist. News: 115 calls, -5.8 bp net per call, p 0.77 (third negative blind test).",
+    "sources": "results/r2/round3_summary.json",
+    "bar_size_and_hold": "intraday",
+    "n_configs": "2 frozen transfers; 115 model calls",
+    "why": "Costs of share CFDs and no skill from the model."
+   }
+  ],
+  "never_tested_seen": [
+   "MACD (0 files)",
+   "Stochastic oscillator (0 files)",
+   "Keltner channel (0 files)",
+   "ADX or any trend-strength filter (0 files)",
+   "Ichimoku (0 files)",
+   "Supertrend / Parabolic SAR (0 files)",
+   "VWAP (0 files)",
+   "moving-average crossover (SMA appears only as an exit in dip, as a trend filter in gold2/crypto and as ML inputs; EMA: 0 files)",
+   "oil / WTI / Brent / lightcmd: no trace anywhere in these files",
+   "shock rules on gold, silver, oil, eurusd and the other currencies: only descriptive large-bar follow-through on gold and silver (gold2/eda1) and 1-minute tail studies on BTC/ETH/indices (leadlag); no engine rule for sudden hourly or daily moves on any currency, oil, silver or the DAX/US indices",
+   "RSI as an entry signal on gold, silver, oil, currencies, bitcoin or ether (RSI(2) only on us500/us100 in dip; RSI > 70 and RSI divergence only as filters on the gold pivot bounce)",
+   "Bollinger bands (20,2) as a stand-alone rule on gold, FX, oil or crypto (only dip signal S6 on indices and band conditions in the gold pivot tracks)",
+   "range expansion / NR7 / inside bar (0 files; the MQL5 survey says round 1 tested narrow-range filters on gold with PF 0.78-0.91)",
+   "multi-timeframe filter plus oscillator mixes (none; the ML track used generic features on H1 breakouts only)",
+   "home-made indicators other than the ridge/boosted filter on hourly breakouts",
+   "any of these families on currencies other than the 8 FX pairs of track fx (no AUD/NZD/CAD/CHF crosses beyond eurjpy), on the DAX beyond the listed rules, or on silver beyond gold2/ml replications"
+  ],
+  "lessons": [
+   "Costs set the horizon: FX all-in is about 1 bp (usdjpy 0.71 bp in the lab frame), US indices about 0.8 to 1.2 bp, DAX about 1.0 bp, bitcoin about 3.1 bp, ether about 7.8 bp (ether 6.5 bp spread, silver 5.4 bp spread); FX effects exist before costs (gross daily t 2.9 to 4.1) but measure only 1 to 2 bp per trade, so they die.",
+   "Micro-scale and short-horizon rules die on costs: best-tenth accuracy 51 to 56% against 51 to 75% needed; lead-lag at the 1% tail on us indices and gold/silver is 0.3 to 4 bp against 0.8 to 6.7 bp of cost; the DAX close-run is a 5-minute trade worth 0.38 bp net and flips with a one-minute shift of the exit.",
+   "What survived as an edge in sample and validation: slow breakout/trend on gold and crypto (4h Donchian, 24 h-hold H1 breakouts), opening-candle and noise-area momentum on us100 only, Nasdaq-to-bitcoin follow, gold Friday afternoon, an ML-filtered crypto breakout; each with a thin net edge and shrinking in 2022-2025 (btc +0.31 R to +0.04 R).",
+   "Many in-sample passes failed the single validation look: B5 month-end fix with S&P sign (+3.95 bp t 4.65 to +0.72 bp t 0.57), squeeze breakout on gold (PF 1.25 to 0.80), event premium (PF 1.6 to 0.9), DAX late momentum, month-end night, stress gate; calendar rules with n under 100 are particularly unreliable.",
+   "Long-only profits on rising markets are not edge: dip rules gave PF 1.48 yet sat at the 85th percentile of the random-entry null; always show long and short separately and run the random-entry null.",
+   "Currencies and silver did not carry the trend/breakout rules that work on gold and crypto: all four frozen transfers lose on the FX basket (PF 0.92-0.98), and silver loses everywhere except the legacy 4h Donchian reference (net PF 1.14, t 1.08).",
+   "Indicator-style pivot, Bollinger, RSI and candle-pattern conditions on gold added nothing: 139 configs, almost all PF below 1; the only survivors are outer pivots or yesterday-close bands, not pivot-specific (placebo lines earn the same).",
+   "Entry timing and quote artefacts matter: ether-to-bitcoin burst (PF 1.5) collapses with a 1 to 2 minute delay; Tokyo gotobi fails at one minute late; real FX fills and cost frames must be measured before trust.",
+   "Winning days or weeks cannot be bought with exit shaping, pyramiding or stake rules: they move risk from the number of red weeks to their size; zero-edge controls reproduce 4 to 22 points of 'winning weeks'."
+  ],
+  "not_read": "[\"Skipped the long PROTOCOL_V3 sections after addendum F (stake, growth paths, rounds 4-6) as instructed; read sections 1-6 and addenda A-E, F summary. Did not open any parquet or holdout file and ran no research script.\",\"Did not read per-file detail of gold2 nulls/overlap/spanning/independent_check, idx_us stage 3-7 diagnostics and latency files, events desc3-desc7 descriptive tables, crypto descriptive_is.json (variance ratio, tsmom) beyond headers, fx descB*.csv rows, leadlag descriptive CSVs beyond summary_tails, jours/stake files in detail.\",\"The validation outcome of fx Tokyo B6/B7 is not in my files (only in-sample and a reviewer note); the mql5_survey.json lists mostly ideas that were already tested (dip, round 1 breakouts) or later rounds (reopen drift, night mean reversion on crosses), so I did not catalogue its full text.\",\"Counts of configurations for fx are approximate (stage A/B + 22 logged trials per the round3 summary; trials.jsonl has 169 per-pair lines).\"]"
+ },
+ "acd51e6af6904d78c": {
+  "families": [
+   {
+    "family": "Robot rule N30 noise30 (kept)",
+    "rule": "Noise-area intraday momentum: at checks every 30 min 10:00-15:30 NY, trade a break of the band open/prev-close +/- mean |move| of the last 14 days; exit when back inside the band or at 15:55; stop at the band edge.",
+    "markets": "us100, NY cash hours",
+    "result": "Kept in the robot. FP costs in sample: n 1643, PF 1.30, t 3.28, 8/8 years, +0.082 R. Validation 2022-25: n 850, PF 1.227, t 1.97, 4/4 years.",
+    "sources": "robot/SPEC.md section 3; results/r2/round4_ideas.json (inventory.tried)",
+    "bar_size_and_hold": "1 min data, 30-min checks, held less than 6 h",
+    "n_configs": "part of 87 idx_us trials",
+    "why": "Passed both periods; edge sits in real intraday momentum on the Nasdaq open."
+   },
+   {
+    "family": "Robot rule OC4 ocm4 (kept)",
+    "rule": "Opening 4-minute candle (09:30-09:33 NY) sets the side if its move is at least the median of the last 20 days; enter at 09:34, stop 0.3 ATR, exit 15:55.",
+    "markets": "us100",
+    "result": "Kept in the robot. In sample FP: n 999, PF 1.255, t 2.80, 7/8 years. Validation: n 503, PF 1.305, t 2.35, 4/4 years (2025 alone gives 43.8 of 81 R).",
+    "sources": "robot/SPEC.md section 3; results/r2/round4_ideas.json",
+    "bar_size_and_hold": "1 min, held to 15:55 NY",
+    "n_configs": "part of 87 idx_us trials",
+    "why": "Passed; but concentrated in one year and one cluster with N30."
+   },
+   {
+    "family": "Robot rules BKB and BKE brk72_24h_wd (kept, with changes K1 and S0.75r)",
+    "rule": "At every UTC hour on weekdays, a close beyond the extreme of the 72 previous hourly closes gives the side; stop 3 ATR(24), exit after 24 h. Changes: K1 skips ETH signals with wide risk, S0.75r uses a 0.75 x stop on BTC.",
+    "markets": "btcusd (BKB), ethusd (BKE)",
+    "result": "Kept in the robot. In sample FP: BTC n 645 PF 1.687 t 3.88; ETH n 519 PF 1.496 t 3.24. Validation: edge fell by 69-80 % (BTC +0.268 to +0.0525 R, ETH +0.200 to +0.063 R). 2022-25 look: K1 passed (ETH 0.063 to 0.080 R), S0.75r passed (BTC sleeve weekly Sharpe 0.52 to 0.85).",
+    "sources": "robot/SPEC.md section 3; PROTOCOL_V3.md Addendum H outcome of the look; results/r2/round4_ideas.json",
+    "bar_size_and_hold": "1 h bars, 24 h hold",
+    "n_configs": "part of 118 crypto trials (plus K1 and S0.75r picked among about 845 variants)",
+    "why": "Passed validation but with heavy decay."
+   },
+   {
+    "family": "Robot rules F1B and F1E F1_brk_ridge_filter (kept, with change H2)",
+    "rule": "Hourly 14-bar breakout during NY hours 02-15, accepted only if a frozen ridge score of 15 causal features is at least 0.0279; stop 2 ATR, exit 15:55 same day (change H2 holds winners two more days).",
+    "markets": "btcusd (F1B), ethusd (F1E)",
+    "result": "Kept in the robot. In sample FP: BTC n 631 PF 2.022 t 4.83; ETH n 517 PF 1.545 t 3.39. Validation: BTC n 523 PF 1.320 t 2.44; ETH n 547 PF 1.144 t 1.17. 2022-25 look: H2 on ETH passed (sleeve weekly Sharpe 0.57 to 0.83).",
+    "sources": "robot/SPEC.md section 3; PROTOCOL_V3.md Addendum H outcome; results/r2/round4_ideas.json",
+    "bar_size_and_hold": "1 h bars, intraday (2 days with H2)",
+    "n_configs": "part of 85 ml trials",
+    "why": "The learned filter helped only on crypto."
+   },
+   {
+    "family": "Robot rule NQB nq_btc_follow (kept)",
+    "rule": "When us100 makes a one-minute move of at least 6 sigma in NY cash hours, buy or sell bitcoin on the same side one minute later; stop 2 sigma x sqrt(60), exit after 60 min.",
+    "markets": "btcusd, leader us100",
+    "result": "Kept in the robot (weak, regime dependent). In sample: n 1063, PF 1.353, t 3.41, 3/5 years. Validation: n 977, PF 1.138, t 1.49, 2/4 years.",
+    "sources": "robot/SPEC.md section 3; results/r2/round4_ideas.json",
+    "bar_size_and_hold": "1 min, 60 min hold",
+    "n_configs": "part of 61 leadlag trials",
+    "why": "A real lead-lag, but a regime effect that fails at cost x2."
+   },
+   {
+    "family": "Robot rule GFP GOLD_FRI_PM (kept)",
+    "rule": "Fridays: buy limit at 13:30 NY, stop 3 ATR(14, hourly), exit at 16:45 NY; skipped on holidays and half days.",
+    "markets": "xauusd",
+    "result": "Kept in the robot. FP recalc in sample: n 408, PF 1.421, t 2.53, null 99th percentile. With the historical spread PF 1.18, t 1.12. It failed at round-1 Dukascopy costs (PF 0.953).",
+    "sources": "robot/SPEC.md section 3; results/r2/round4_ideas.json",
+    "bar_size_and_hold": "1 min, 3 h hold",
+    "why": "The pass depends on today's FP spread holding."
+   },
+   {
+    "family": "Robot rule D4H donch4h_stop (kept)",
+    "rule": "4-hour Donchian breakout of the last 60 bars (10 days) by stop order, stop and trail 2 ATR, at most 5 days.",
+    "markets": "xauusd",
+    "result": "Kept in the robot. Round 1 in sample n 494, PF 1.356, t 2.37. Validation n 243, PF 1.232, t 1.19 (every signal taken PF 0.913). 2022-25 S0.75r variant rejected (sleeve Sharpe 1.01 to 0.84).",
+    "sources": "robot/SPEC.md section 3; results/r2/round4_ideas.json; PROTOCOL_V3.md Addendum H look",
+    "bar_size_and_hold": "4 h bars, up to 5 days",
+    "n_configs": "part of 50 trend trials in round 1",
+    "why": "Path dependent: one position at a time; top 5 % of trades carry 144 % of the R."
+   },
+   {
+    "family": "Robot rule ORX orb_asia_2d_buf10 (kept)",
+    "rule": "London 07:00: range of 00:00-07:00, stop-entry at the range edge plus 10 % of its width in 07:00-12:00, opposite level as stop, exit 16:00 NY two business days later.",
+    "markets": "xauusd",
+    "result": "Kept in the robot. FP recalc in sample: n 1038, PF 1.333, t 3.09, 7/9 years. Validation n 447, PF 1.213, t 1.46, 3/4 years. 2022-25 S0.75r variant rejected (0.76 to 0.71).",
+    "sources": "robot/SPEC.md section 3; results/r2/round4_ideas.json",
+    "bar_size_and_hold": "1 min, about 2 days",
+    "n_configs": "finalist of 48 round-1 trials",
+    "why": "Passes at FP costs only; failed the round-1 bar at Dukascopy costs."
+   },
+   {
+    "family": "Breadth: ten frozen rules carried to untried instruments (autopsy lens)",
+    "rule": "The frozen rules (noise30, ocm4, donch4h_stop, orb_asia_2d_buf10, GOLD_FRI_PM, brk72_24h_wd, F1_brk_ridge_filter, nq_btc_follow) unchanged on instruments never tried, on their own clocks.",
+    "markets": "8 FX pairs (audusd, eurjpy, eurusd, gbpusd, nzdusd, usdcad, usdchf, usdjpy), us500, us30, ger40, us100, jp225, xagusd, btc/eth, 40 US shares (nq_btc only)",
+    "result": "126 rule x instrument pairs; 9 passed (1.3 expected by chance), 117 failed. Passers: orb_asia on ethusd (n 345, PF 1.79, t 3.60, null 99) and btcusd (n 376, PF 1.838, t 3.49, null 100); donch4h on ethusd (PF 2.03, t 3.81), btcusd (PF 1.895, t 3.01), us100 (PF 1.235, t 1.22), jp225 (PF 1.30, t 1.40); brk72 on jp225 (PF 1.16, t 1.33); F1 on xagusd (PF 1.164, t 1.20); ocm4 on btcusd (PF 1.247, t 1.23). After independent attacks only orb on ETH and BTC were kept for the look.",
+    "sources": "results/r2/autopsy/breadth/analysis.json, pooled.csv, gross_vs_net_by_family.csv, null.json; PROTOCOL_V3.md Addendum H",
+    "bar_size_and_hold": "1 min to 4 h, same as each rule",
+    "n_configs": "126 pairs",
+    "why": "Costs ate the small gross edges; the qualifiers on BTC/ETH are one crypto cluster."
+   },
+   {
+    "family": "Breadth pooled results by rule and market group",
+    "rule": "Same as above, pooled by group.",
+    "markets": "fx, metals, indices, crypto, shares",
+    "result": "FX: noise30 PF 0.722 (n 6486, t -6.22), ocm4 0.90, GOLD_FRI_PM 0.714, F1 0.926, nq_btc 0.852 (t -4.46). 40 shares: nq_btc PF 0.663, n 35370. Indices: donch4h 1.121 (t 1.03), brk72 1.016, ocm4 1.051, orb 0.99. Crypto: orb 1.816 (t 4.22), donch4h 1.956 (t 4.36), ocm4 1.135, noise30 1.102.",
+    "sources": "results/r2/autopsy/breadth/pooled.csv",
+    "bar_size_and_hold": "as rules",
+    "why": "Only trend breakouts on crypto transfer."
+   },
+   {
+    "family": "Frozen transfer of noise30 and ocm4 to 40 US shares",
+    "rule": "The us100 rules run on 40 US share CFDs with the same NY cash clocks.",
+    "markets": "40 US shares, 2017-2021",
+    "result": "ocm4: n 23065, gross PF 1.073 (t 2.35, +2.5 bp), net PF 0.73 (-12.6 bp per trade). noise30: n 38175, gross PF 1.082 (t 2.41, +1.9 bp), net PF 0.675 (-10.1 bp). 7.5 % of tickers positive net.",
+    "sources": "results/r2/stocks/transfer_ocm4.json, transfer_noise30.json",
+    "bar_size_and_hold": "1 min, intraday",
+    "n_configs": "2 (80 log lines)",
+    "why": "Edge before costs, destroyed by costs of 12-15 bp."
+   },
+   {
+    "family": "Round 4: US index relative strength pair (IDXRS_1000)",
+    "rule": "At 10:00 NY, long the strongest and short the weakest of us100, us500, us30 (raw return since 09:30) when the gap is in the top quartile of the last 60 days, hedged by volatility; stop 1.5 sd, exit 15:55.",
+    "markets": "us100, us500, us30",
+    "result": "Failed one bar: 518 pairs, PF 1.288, t 2.15 (bar 2.5), 7/8 years, PF 1.22 at costs x1.5, null 100; before costs t 3.10 (+6.1 bp). Without 2020 t 1.29. Would add +0.8 % to the ten's weekly Sharpe. Not kept.",
+    "sources": "results/r2/round4/synthesis.json; PROTOCOL_V3.md Addendum J",
+    "bar_size_and_hold": "1 min, intraday (5.4 h)",
+    "n_configs": "12",
+    "why": "Edge before costs, costs of 1.6 bp take t under the bar; one year carries it."
+   },
+   {
+    "family": "Round 4: FX weekend overreaction fade",
+    "rule": "Sunday 20:00 NY, fade the weekend move of each pair when its |z| is in the top quartile; stop 1 ATR; exit Monday 16:00 NY.",
+    "markets": "8 G10 pairs as one basket",
+    "result": "Failed 9 of 11 bars: 785 trades, PF 0.870, t -0.99, years 4/8, PF 0.839 at x1.5, null 17.5. Gross -0.19 bp per trade.",
+    "sources": "results/r2/round4/synthesis.json; PROTOCOL_V3.md Addendum J",
+    "bar_size_and_hold": "1 min, about 19 h",
+    "n_configs": "11",
+    "why": "No edge before costs."
+   },
+   {
+    "family": "Round 4: noise30 on the DAX's own Xetra clock",
+    "rule": "Frozen us100 noise-area rule on ger40 with checks 09:30-17:00 Berlin, exit 17:25.",
+    "markets": "ger40",
+    "result": "Failed 6 of 10 bars: 2012 trades, PF 1.027, t 0.37, years 4/8, PF 0.990 at x1.5, null 90. Gross +0.66 bp against 0.96 bp cost.",
+    "sources": "results/r2/round4/synthesis.json; PROTOCOL_V3.md Addendum J",
+    "bar_size_and_hold": "1 min, 2 h average hold",
+    "n_configs": "11",
+    "why": "Edge before costs smaller than cost."
+   },
+   {
+    "family": "Round 4: FOMC-cycle even/odd weeks",
+    "rule": "us500 long in even weeks of the FOMC cycle and short in odd weeks, 15:55 NY to 15:55 NY; ger40 as mechanism check.",
+    "markets": "us500, ger40",
+    "result": "Failed 7 of 9 bars: 375 trades, PF 0.977, t -0.17, years 3/9. The published effect is absent (-5 bp a week, t -0.24). ger40 check PF 0.976.",
+    "sources": "results/r2/round4/synthesis.json; PROTOCOL_V3.md Addendum J",
+    "bar_size_and_hold": "1 min, weekly hold",
+    "n_configs": "10",
+    "why": "The effect does not exist in this sample; costs about 6 bp, mostly swap."
+   },
+   {
+    "family": "Round 4: leveraged-ETF close pair (us100 vs us30)",
+    "rule": "At 15:30 NY on big same-sign days, long the leader and short the other, hedged; exit 15:59.",
+    "markets": "us100, us30",
+    "result": "Failed 8 of 10 bars: 355 pairs, PF 0.755, t -2.09, 1/8 years, PF 0.604 at x1.5. Gross +0.24 bp against 1.7 bp cost.",
+    "sources": "results/r2/round4/synthesis.json; PROTOCOL_V3.md Addendum J",
+    "bar_size_and_hold": "1 min, 30 min",
+    "n_configs": "11",
+    "why": "Costs larger than a tiny edge."
+   },
+   {
+    "family": "Round 5: gold daily-reopen drift",
+    "rule": "Buy gold at the first M1 bar at or after 18:15 NY on Monday-Thursday evenings, stop 2.0 x mean H1 range, exit after 120 min.",
+    "markets": "xauusd",
+    "result": "Failed 7 of 10 bars: 1737 trades, PF 0.811, t -2.93, 2/9 years, PF 0.728 at x1.5, null 61. Gross PF 1.014, t 0.19. Independent attack confirmed. Neighbours PF 0.79-0.85.",
+    "sources": "PROTOCOL_V3.md Addendum K outcome; results/r2/round5/gold_reopen/results.json",
+    "bar_size_and_hold": "1 min, 2 h",
+    "n_configs": "7",
+    "why": "No edge before costs (the move is in the widest-spread minutes)."
+   },
+   {
+    "family": "Round 6: night mean reversion on FX crosses (Bollinger-style band fade)",
+    "rule": "After 17:15 NY, buy a close below or sell a close above the 20-bar M5 mean +/- 2 sigma, if the distance is at least 2 x spread; target the mean, stop 2 x mean H1 range, exit 21:00 NY.",
+    "markets": "12 FX crosses (EURCAD, GBPCAD, EURAUD, AUDCAD, EURGBP, EURCHF, GBPCHF, AUDNZD, NZDCAD, CADCHF, GBPAUD, EURNZD)",
+    "result": "Failed 8 of 12 bars: 12138 trades, PF 0.711, t -8.90, 0/9 years, 0/12 crosses positive, PF 0.571 and 0.493 at x1.5. Before cost PF 1.48, +1.78 bp per trade against 3.34 bp all-in. Neighbours PF 0.661-0.824.",
+    "sources": "PROTOCOL_V3.md Addendum L outcome; results/r2/round6/night_fade/results.json, trials.jsonl",
+    "bar_size_and_hold": "M5 bars (M15 neighbour), up to 3.75 h, about 2 h",
+    "n_configs": "7 configurations, 91 log lines",
+    "why": "Real gross edge, costs about twice the edge."
+   },
+   {
+    "family": "Round 3 shape: profit targets, partial exits, break-even on the validated sleeves",
+    "rule": "Targets T0.5-T2, halves and break-even exits added to the 11 sleeves.",
+    "markets": "the sleeves (us100, gold, btc, eth)",
+    "result": "No gain: winning days 49.6 to 49.6 %, total 831 to 805 R; T1 on everything gives 52.1 % of days for -41 % of the profit. No look.",
+    "sources": "results/r2/shape/selection.json, variants_all.csv, trials.jsonl; results/r2/round4_ideas.json",
+    "bar_size_and_hold": "as the sleeves",
+    "n_configs": "48",
+    "why": "Cutting winners shrinks the few big trades that carry the profit."
+   },
+   {
+    "family": "Loss autopsy Addendum H: path, payoff, entry, context, cluster lenses",
+    "rule": "Cut early or on no progress; tighter stops, longer holds, break-even; limit or delayed or split entries; causal filters; portfolio guards.",
+    "markets": "the ten sleeves",
+    "result": "Path: cutting at -0.25 R after 5-120 min costs 68-231 R. Entry: median total R change LIM -14.3, HALF -30.3, CONF -6.3, RT -5.6; 23 of 120 cells keep the total. Cluster: 29 variants, none passes, best +14.7 % at -9.5 % total. Context: 330 trials, one kept (K1). Look on 2022-25: 3 of 8 changes kept (K1, F1 H2 on ETH, S0.75r on BTC), 5 rejected.",
+    "sources": "PROTOCOL_V3.md Addendum H; results/r2/round4_ideas.json (inventory); results/r2/autopsy/",
+    "bar_size_and_hold": "1 min to 4 h",
+    "n_configs": "about 845 in-sample variants",
+    "why": "73 % of gross loss is full stops that cannot be sorted early."
+   },
+   {
+    "family": "Stakes by conviction, clock and sleeve weights (Addendum I)",
+    "rule": "Stakes of 0 to 2 x the base by descriptor tercile, by hour and weekday, or by walk-forward sleeve weights.",
+    "markets": "the ten sleeves",
+    "result": "No stake rule survives (bar x1.10 on weekly Sharpe at equal swing, 2019-21). Clock x0.933-1.000, weights x0.919-1.059, conviction x0.942-1.095 (best: crypto ridge score x1.095).",
+    "sources": "PROTOCOL_V3.md Addendum I outcome; results/r2/sizing/synthesis.json",
+    "bar_size_and_hold": "as sleeves",
+    "n_configs": "about 60",
+    "why": "No structure beyond noise."
+   },
+   {
+    "family": "Open search: slow trend following (50-day breakouts)",
+    "rule": "Follow 50-day channel breakouts, held up to 40 days.",
+    "markets": "14 FP markets (idea 055); 40 US shares (idea 058)",
+    "result": "055: n 776, PF net 0.87, t -1.42, 2/9 years, null 37.1 (gross PF 1.04). 058: below a random entry on the same share and side. Swaps 19-49 bp a trade.",
+    "sources": "explore/LEDGER.md (055, 058)",
+    "bar_size_and_hold": "1 h bars, days to weeks",
+    "n_configs": "8 each",
+    "why": "No edge before costs."
+   },
+   {
+    "family": "Open search: oil channel breakout and inventory report",
+    "rule": "056: gold 4-hour channel breakout on crude oil. 057: momentum after the weekly inventory report.",
+    "markets": "oil",
+    "result": "056: n 338, PF net 1.22, t 1.39, null 99.9, every-signal variant losing. 057: n 289, PF 1.02, t 0.11, PF 0.90 at x1.5. Both earn only on the short side in 2015, 2018, 2020.",
+    "sources": "explore/LEDGER.md (056, 057)",
+    "bar_size_and_hold": "1 h bars, up to days",
+    "n_configs": "9 each",
+    "why": "One-sided crash years; t too low (provisional oil costs)."
+   },
+   {
+    "family": "Open search: hedged pair z-score reversion, weekly dollar-pair reversal, slow reversion",
+    "rule": "015: fade a 20-day z-score stretch on 7 hedged pairs. 030: weekly reversal across 7 dollar pairs.",
+    "markets": "audusd*usdcad, audusd/nzdusd, eurusd*usdchf, eurusd/gbpusd, ger40/us500, us100/us30, xauusd/xagusd; 7 dollar pairs",
+    "result": "015: n 1333, PF 0.80, t -3.05, 1/9 years, null 43. 030: n 1851, PF 0.94, t -1.12, 3/9 years, null 57.",
+    "sources": "explore/LEDGER.md (015, 030)",
+    "bar_size_and_hold": "1 h bars, days",
+    "n_configs": "11 and 9",
+    "why": "No edge."
+   },
+   {
+    "family": "Open search: macro and positioning signals on FX, gold and indices",
+    "rule": "COT flow reversal (016) and COT 3-year extreme fade (022); long Treasury auction hours on USDJPY (019); GDELT news tone (002); credit leads equity (005); VIX above realised (036); rate shock rotation Dow/Nasdaq (026); gold ETF short volume (020); options-expiry week (025).",
+    "markets": "12 FX/metals/index markets (COT); usdjpy; ger40, us500, usdjpy, xauusd; us500; us30/us100; xauusd; 4 indices",
+    "result": "All failed. 016 PF 0.99 t -0.19; 022 PF 1.01 t 0.12; 019 PF 0.86 t -1.27; 002 PF 0.77 t -1.19; 005 PF 1.10 t 0.82; 036 PF 0.86 t -1.40; 026 PF 1.04 t 0.24; 020 PF 1.06 t 0.45; 025 PF 1.42 t 1.65, null 99.6, 2020-21 negative (closest miss).",
+    "sources": "explore/LEDGER.md",
+    "bar_size_and_hold": "1 h bars, hours to a week",
+    "n_configs": "8-11 each",
+    "why": "No edge, or t under 2.5 because the markets are one bet."
+   },
+   {
+    "family": "Open search: crypto flow gauges and funding",
+    "rule": "Coinbase premium (021), taker flow absorbed (023), Bitfinex margin rate (042, mirror 063), Korean premium (043), USDT issuance (010).",
+    "markets": "btcusd, ethusd",
+    "result": "021 PF 1.18 t 1.37 null 98.4 (buy side t 2.38, 2019); 023 PF 0.89; 042 PF 0.62 null 1.9; 063 PF 1.40 t 2.25 null 91.3 (same-year null 43); 043 PF 1.14 t 0.86; 010 PF 1.54 t 2.18 null 75.9 (drift). 064 (ether test of 021) reserved, no result.",
+    "sources": "explore/LEDGER.md; explore/IDEAS.md (064)",
+    "bar_size_and_hold": "1 h bars, 24 h to 5 days",
+    "n_configs": "7-10 each",
+    "why": "Bitcoin and ether drift, not timing."
+   },
+   {
+    "family": "Open search: US shares, earnings and news",
+    "rule": "Earnings drift 052, run-up 053, earnings day 054, large shocks 059 and 060, no-news fade 062.",
+    "markets": "40 US shares; 382 other shares",
+    "result": "All failed. 052 gross PF 1.31 (+32 bp) eaten by 30 bp cost; 059 n 524 PF gross 1.11, net 0.71, 0/5 years; 060 net 0.86; 062 net 0.80. Direction closed.",
+    "sources": "explore/LEDGER.md",
+    "bar_size_and_hold": "daily and hourly, 5 sessions to 8 weeks",
+    "n_configs": "7-8 each",
+    "why": "Gross edge too small for the costs."
+   },
+   {
+    "family": "Closed without a run (data or power insufficient)",
+    "rule": "Crypto weekend move (001, 051), mining difficulty (009), ETH/BTC ratio (011), VXN/VIX (038), 8-K shocks (061).",
+    "markets": "btcusd, ethusd, us100/us500, shares",
+    "result": "Fewer than the 250 signals needed (e.g. 226 weekends of 469 for 051); no test run.",
+    "sources": "explore/LEDGER.md",
+    "bar_size_and_hold": "n/a",
+    "n_configs": "0",
+    "why": "Too few events."
+   }
+  ],
+  "never_tested_seen": [
+   "Sudden large hourly or minute moves (shocks) on gold, silver, oil, euro-dollar or the other FX majors: only found as an event window (FX weekend fade, FOMC and CPI event days, a 6 sigma us100 minute move leading bitcoin, round 1 yen shock on gold at PF 1.19 t 0.96 post hoc). No pure shock rule on a round-the-clock market.",
+   "RSI in any rule of my files: only Connors RSI2 and Bollinger fades on gold in round 1 and RSI2 fades on six markets (the archivist summary says RSI2 loses everywhere). RSI on oil, silver, FX or crypto in my files: none.",
+   "MACD: no trace in any file I read.",
+   "Ichimoku, Supertrend, Keltner channels, volatility squeeze with Keltner: no trace (only a gold range-contraction breakout sq24 in round 2 and a mention of NR7 at PF 0.78).",
+   "Stochastic, CCI, Williams %R: appear only in the MQL5 vendor notes (round 6 sources), never run.",
+   "ADX regime filter and any trend-strength gate: only in the MQL5 night-scalper notes, never run.",
+   "Moving-average crossovers or price-versus-moving-average filters: no trace (only a 'fast moving average' gap filter in the vendor notes, and a moving-average filter on the VIX carry in round 3).",
+   "Bollinger bands outside the gold H1 fade and the FX-cross night fade: no Bollinger band rule on silver, oil, euro-dollar, indices or crypto in my files (pivot and Bollinger track belongs to another reader).",
+   "Home-made indicators and mixes of indicators (multi-timeframe filter plus oscillator, oscillator plus band): none in my files; the only mix is the ridge scorecard on crypto breakouts.",
+   "Any fresh price rule on silver, oil, euro-dollar, other majors, us500, ger40, bitcoin and ether at 1 h to 4 h with an oscillator or moving-average signal: nothing beyond the frozen transfers and the Donchian and 72-hour breakouts.",
+   "Oil and Brent with price-only rules at FP costs: oil only had a Donchian transfer and a report rule (idea 056, 057, provisional costs), Brent and natural gas never; WTI round-1 data judged unfit.",
+   "Other crypto than BTC and ETH (SOL, LTC, ADA ...): never tested, no data.",
+   "Cross-sectional ranking (FX momentum or carry across pairs, alt-coins): never tested.",
+   "1 to 3 month time-series momentum on FX, indices or crypto: never tested (judge rejected it as unable to reach the bar)."
+  ],
+  "lessons": [
+   "Costs kill short-horizon edges: FX gross edges are 1-2 bp against about 1 bp all-in on majors; FX crosses at night had +1.78 bp gross against 3.34 bp all-in; 40 shares 1.9-2.5 bp gross against 12-15 bp; silver spread 5.4 bp; gold reopen drift and FX weekend fade had no gross edge at all.",
+   "Edges under about 2x their cost did not survive; round 6 would need costs 44 % lower to break even.",
+   "Nothing below 60 minutes survives (micro 2-171 min failed; the ETH-to-BTC 5-min rule was a quote-lag artifact; anything living in one minute is not an edge).",
+   "Frozen transfers rarely work outside the home market: 117 of 126 breadth pairs failed; only trend breakouts (donch4h, orb_asia) transferred, and only to bitcoin and ether, which are one cluster (6 of 9 qualifiers on BTC/ETH).",
+   "Crypto short-horizon momentum lost 65-80 % of its edge per trade between sample and validation; gold and us100 lost 20-40 %.",
+   "A strong in-sample t does not protect (sess_8_8_13 t 3.9 to PF 1.03; EV_PREM t 2.7 to PF 0.91; month-end basket t 4.27 to PF 0.81); after about 1,500 trials the best noise rule reaches t 3.35.",
+   "The random-entry null is decisive: long-only rules on drifting markets (indices, bitcoin) look good against it only because of drift; the same-year null removed 063 and 042.",
+   "Profits come from few trades and losses are plain stops: the best 5 % of trades carry 144 % of the R; cutting early, targets, partial exits, break-even, pyramiding, stakes by conviction, clock or weights all lowered or did not raise the gain per unit of swing.",
+   "Mean reversion failed at every intraday and daily scale (gold fades, pivots, dip buying, night FX crosses, hedged pairs z-score).",
+   "Slow trend (50-day breakouts) has no gross edge on 14 markets or 40 shares and pays 19-49 bp of swaps.",
+   "Closest misses were one-sided, one-year or one-cluster results (IDXRS t 2.15 with 2020 carrying it; options-expiry week t 1.65; Coinbase premium buy side t 2.38).",
+   "Many ideas close for lack of events: a single market needs at least 250 signals, which rules out rare-event ideas.",
+   "Breadth cannot reach the user's demand: the ten rules form about 3 independent clusters; adding all 9 qualifiers moved in-sample weekly Sharpe only 2.9 to 3.3."
+  ],
+  "not_read": "[\"I did not open any parquet file, holdout path or price data, and did not run any script. The results/r2/autopsy path, payoff, entry, context and cluster lenses, and the sizing sub-tracks, are quoted from PROTOCOL_V3 Addenda H and I and from the archivist summary in round4_ideas.json, not from every lens file. I did not read explore/synthese, explore/lead or the scout files. LEDGER notes on stock earnings (052, 053, 054) were read only in part (rows truncated at the figures cell). The 2022-2025 per-sleeve robot results beyond the numbers quoted in the protocol were not read.\"]"
+ }
+}

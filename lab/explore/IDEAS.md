@@ -5,6 +5,9 @@ Status: `ouverte` (not tried), `en cours (date time UTC)` (a run holds it), `res
 of its own here first (with why it is unusual and the mechanism). Numbers are never reused. Each idea needs at least 4
 years of in-sample history (before 2022). Column Prices: `crypto` = the traded market is priced from Binance (works);
 `duka` = it needs FX, metal or index bars (Dukascopy: read the notice in CHARTER.md first).
+**Since 2026-11-19 (the user's instruction): price rules on round-the-clock markets only.** The ideas still `ouverte`
+below need outside data (options, debt auctions, on-chain counts, page views ...): they are set aside, not closed, and
+no run takes them unless the lead says so. The current plan is `lead/DIRECTION4.md` (the scan) and idea 064.
 Ideas 015 to 050 come from the scout of 2026-11-17: their full rule, mechanism, sources and signal counts are in
 `lab/explore/scout/ideas.md` (same order: idea 015 is the scout's idea 1, 050 its idea 36); read that row and the
 source sections of `lab/explore/scout/sources.md` it names before declaring. Nothing in it was tested.

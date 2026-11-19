@@ -270,6 +270,13 @@ does not pass.
   validation bars on that rise alone; this bar asks that its days beat other days of the same years. A pass in
   sample stays a pass: this only says what the validation must show. The lead may declare the same bar for any
   other rule (it is written in the idea's row of IDEAS.md before the run).
+- **Direction 4, the scan of price rules (amendment of 2026-11-19, the user's instruction; written before any
+  run):** shocks, classic indicators, home-made indicators and mixes of two of them, on 15 round-the-clock markets,
+  are tested by ONE pre-registered scan, not idea by idea: `lab/explore/lead/DIRECTION4.md` fixes its grammar (about
+  1,390 rules), its three stages (discovery on bars before 2019, frozen candidates, confirmation on 2019-2021) and
+  its selection numbers. The scan is not an idea run and takes no validation look; each of its survivors then follows
+  this charter as an ordinary idea (number, declaration, bars, attack, one validation look). The families closed
+  above stay closed for hand-written ideas; the scan carries some of their signals as references.
 - **Baskets of many markets (amendment of 2026-11-18, written before any run on such a basket):** for a basket of
   MORE THAN 40 markets (several hundred shares with a few trades each) the two basket bars are read on GROUPS of
   markets fixed in the declaration before any result (at least 8 groups, for example sectors): at least 65 % of the
