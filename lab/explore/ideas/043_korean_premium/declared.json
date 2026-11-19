@@ -1,0 +1,41 @@
+{
+ "idea": "043 Korean premium: sell bitcoin when it is dearer in won (scout idea 29)",
+ "date_declared": "2026-11-19",
+ "track": "fast",
+ "family": "crypto-flow",
+ "hypothesis": "When bitcoin on Upbit (Korean won) trades 3 % or more above the dollar price converted at the won rate, Korean retail demand is running ahead of the capital controls (retail euphoria): bitcoin falls over the next day.",
+ "mechanism": "Makarov and Schoar (2020, JFE): the Korean premium opens when local retail demand outruns arbitrage capital that the capital controls keep out; a high premium marks local euphoria, which tends to precede reversals of the global price. The premium is cross-border flow information that no single dollar venue's price holds. Not one of the closed families (crypto short horizon was price-only rules; idea 021 was a Coinbase/Bitstamp premium in dollars, a different venue pair and a z-score rule).",
+ "data": {
+  "signal": "k(T) = Upbit KRW-BTC price / (Bitstamp BTC/USD price x KRW per USD) - 1 at T = 00:00 UTC. (1) Upbit daily candle (api.upbit.com/v1/candles/days, field trade_price = last trade of the candle) dated D covers 00:00 UTC D to 00:00 UTC D+1 (09:00 KST day): KNOWN at D+1 00:00 UTC (the candle's end); fetched by fetch_upbit.py with the bound to=2021-12-31T00:00:00Z (last candle 2021-12-30), cached in ~/explore_data/idea_043/upbit. (2) Bitstamp btcusd hourly candle opening at T - 1 h (kit.data.crypto_h1('bitstamp','btcusd')), close KNOWN at T. Both prices must exist exactly at T (no stale fill). (3) FRED DEXKOUS (H.10 noon buying rate, won per dollar), the last value PUBLISHED by T: H.10 is released weekly on the Monday after the week (Tuesday after a Monday holiday) at 16:15 New York, so a rate observed on day D is KNOWN on the Wednesday 00:00 UTC after the Friday that ends D's week (premium.h10_known). This is the brief's 'last published rate'.",
+  "publication_lag": "Upbit and Bitstamp: none beyond the candle's end (real time, not revised). DEXKOUS: known at least 5 days after its observation date (Friday obs -> next Wednesday 00:00 UTC; Monday obs -> 9 days); current FRED vintage, H.10 exchange rates are not revised (scout/sources.md 1).",
+  "prices": "trades priced on kit.data.load_bars('btcusd', 2017) = Binance BTCUSDT 1h (kit default), price_is mid, FP crypto weekend closure removed; costs FP btcusd. Binance is neither signal venue (Bitstamp is the dollar leg): the premium's own convergence is not booked on the traded price.",
+  "in_sample_years": "2017-09-26 .. 2021-12-31 (4.27 years); power check from the signal data alone (power.py / power.json): weekdays with k >= 3 %: 315 (2017: 30, 2018: 107, 2019: 22, 2020: 6, 2021: 150); k >= 2 %: 428; >= 4 %: 215; >= 5 %: 146",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": ["btcusd"],
+ "rule_main": {
+  "signal": "every Monday to Friday at T = 00:00 UTC (all inside FP's crypto hours) with k(T) >= 0.03, k built as in data.signal; known_at = T",
+  "side": "-1 (sell bitcoin)",
+  "entry": "open of the first Binance H1 bar opening at or after known_at (the 00:00 UTC bar), max_wait_h = 2",
+  "exit": ["hours", 23],
+  "stop": ["d20", 2.0],
+  "target": null,
+  "overlap": "one position at a time (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+ },
+ "what_changed_vs_brief": "Exit 23 hours instead of 24: the kit's one-position rule needs the next entry to open AFTER the previous exit bar, so with a 24-hour exit (at the next 00:00 open) every second consecutive premium day would be skipped; exiting at the 23:00 UTC open lets the next weekday's 00:00 signal be taken, which is the brief's intent (short every premium weekday, one day at a time). The literal 24-hour exit is neighbour 05_h24. Friday entries: the 23-hour exit falls in FP's weekend closure and is done at the close of the last bar before it (kit convention). The won rate is the last H.10 rate published (a lag of 5 to 9 days), as the brief says 'last published rate'.",
+ "configurations": [
+  {"id": "01_main", "thr": 0.03, "exit": ["hours", 23], "stop": ["d20", 2.0]},
+  {"id": "02_thr2", "thr": 0.02, "exit": ["hours", 23], "stop": ["d20", 2.0]},
+  {"id": "03_thr4", "thr": 0.04, "exit": ["hours", 23], "stop": ["d20", 2.0]},
+  {"id": "04_thr5", "thr": 0.05, "exit": ["hours", 23], "stop": ["d20", 2.0]},
+  {"id": "05_h24", "thr": 0.03, "exit": ["hours", 24], "stop": ["d20", 2.0]},
+  {"id": "06_h12", "thr": 0.03, "exit": ["hours", 12], "stop": ["d20", 2.0]},
+  {"id": "07_h47", "thr": 0.03, "exit": ["hours", 47], "stop": ["d20", 2.0]},
+  {"id": "08_s1.5", "thr": 0.03, "exit": ["hours", 23], "stop": ["d20", 1.5]},
+  {"id": "09_s3", "thr": 0.03, "exit": ["hours", 23], "stop": ["d20", 3.0]}
+ ],
+ "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw btcusd): gross, net, spread and slippage x1.5",
+ "bars": "CHARTER.md 'The bars' on 01_main, one market, computed by kit.judge.verdict; random-entry null 2000 draws with the main's exit and stop; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported); truncation test with default cuts on the main build (items up: row length 1 day, bs: 1 h, won: 0)",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead does it).",
+ "kit": "lab/explore/kit v2.2, unchanged"
+}

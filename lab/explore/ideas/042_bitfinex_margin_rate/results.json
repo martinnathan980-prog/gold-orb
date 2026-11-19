@@ -1,0 +1,828 @@
+{
+ "idea": "042 Dear dollars on Bitfinex: the margin funding rate as a crowding gauge (scout idea 28)",
+ "declared_sha256": "4617f082bbdd4c0ae7be4a55ce8cd1242d46133a155510600d8ddb9da15be7fa",
+ "verdict": "fail",
+ "failed_bars": [
+  "t>=2.5",
+  "PF>=1.12",
+  "years>=60%",
+  "PF_stress>=1.04",
+  "neighbours_median_PF>=1.06",
+  "every_signal_exp>0",
+  "null>=97.5"
+ ],
+ "basket": false,
+ "bars": {
+  "truncation_test": {
+   "value": "passed",
+   "bar": "checks.truncation_test on the main signal build passed (same signals, dense cuts: checks.cuts_ok)",
+   "pass": true
+  },
+  "declared_hash": {
+   "value": "matches declared.sha256",
+   "bar": "declared.json matches declared.sha256",
+   "pass": true
+  },
+  "configs<=11": {
+   "value": 7,
+   "bar": "at most 11 configurations",
+   "pass": true
+  },
+  "n>=250": {
+   "value": 351,
+   "bar": ">= 250 trades",
+   "pass": true
+  },
+  "t>=2.5": {
+   "value": -3.3150444373401755,
+   "bar": "t per trade >= 2.5",
+   "pass": false
+  },
+  "PF>=1.12": {
+   "value": 0.6158720062008909,
+   "bar": "PF net >= 1.12",
+   "pass": false
+  },
+  "years>=60%": {
+   "value": 0.16666666666666666,
+   "bar": ">= 60 % of years positive",
+   "pass": false
+  },
+  "PF_stress>=1.04": {
+   "value": 0.6078397351953059,
+   "bar": "PF with spread and slippage x1.5 >= 1.04",
+   "pass": false
+  },
+  "neighbours_median_PF>=1.06": {
+   "value": 0.6312169292208818,
+   "bar": "median PF of the neighbours >= 1.06",
+   "pass": false
+  },
+  "every_signal_exp>0": {
+   "value": -0.07147765205087063,
+   "bar": "every-signal expectancy > 0",
+   "pass": false
+  },
+  "hold<=5d": {
+   "value": 1,
+   "bar": "hold <= 5 trading days",
+   "pass": true
+  },
+  "null>=97.5": {
+   "value": 1.95,
+   "bar": "random-entry null (same market, side, clock, the main's own exit rule: exit_key; >= 2000 draws) >= 97.5th percentile",
+   "pass": false
+  },
+  "corr<=0.30": {
+   "value": -0.13659890354472315,
+   "bar": "weekly corr with the sum of the ten <= 0.30 (CHARTER 'Independence'; a negative one passes)",
+   "pass": true
+  }
+ },
+ "selection": {
+  "N_all": 2678,
+  "N_main": 180,
+  "dsr_N_all": {
+   "dsr": 2.1555500504602166e-11,
+   "sr": -0.17694398184436871,
+   "sr0": 0.18844377952585223,
+   "T": 351,
+   "n_trials": 2678,
+   "skew": 0.2559132539017949,
+   "kurtosis": 4.798321533212398,
+   "var_sr_used": 0.002857142857142857
+  },
+  "dsr_N_main": {
+   "dsr": 2.8278026500604207e-09,
+   "sr": -0.17694398184436871,
+   "sr0": 0.14597281874532234,
+   "T": 351,
+   "n_trials": 180,
+   "skew": 0.2559132539017949,
+   "kurtosis": 4.798321533212398,
+   "var_sr_used": 0.002857142857142857
+  },
+  "dsr_N_all_V_noise": {
+   "dsr": 2.1555500504602166e-11,
+   "sr": -0.17694398184436871,
+   "sr0": 0.18844377952585223,
+   "T": 351,
+   "n_trials": 2678,
+   "skew": 0.2559132539017949,
+   "kurtosis": 4.798321533212398,
+   "var_sr_used": 0.002857142857142857
+  },
+  "pass": false
+ },
+ "main": {
+  "n": 351,
+  "markets": [
+   "btcusd"
+  ],
+  "PF_gross": 0.6357921067573747,
+  "PF": 0.6158720062008909,
+  "PF_stress": 0.6078397351953059,
+  "mean_R": -0.07147765205087063,
+  "mean_R_gross": -0.06661188311294385,
+  "mean_R_stress": -0.07344976129517719,
+  "mean_net_bp": -67.24138478961252,
+  "mean_gross_bp": -62.46273689175632,
+  "t_trade": -3.3150444373401755,
+  "t_daily": -3.3150444373401755,
+  "n_days": 351,
+  "years_positive_frac": 0.16666666666666666,
+  "by_year_R": {
+   "2016": -6.301339475079533,
+   "2017": -13.507528781418808,
+   "2018": 2.8883178080794667,
+   "2019": -3.7436574229217814,
+   "2020": -3.207794561159224,
+   "2021": -1.2166534373557116
+  },
+  "hold_tdays_max": 1,
+  "hold_h_mean": 22.304843304843306,
+  "exit_reasons": {
+   "time": 263,
+   "time_close": 72,
+   "stop": 16
+  },
+  "long_n": 0,
+  "long_R": 0.0,
+  "short_n": 351,
+  "short_R": -25.088655869855593,
+  "by_market": {
+   "btcusd": {
+    "n": 351,
+    "sum_R": -25.08865586985559,
+    "mean_R": -0.07147765205087063
+   }
+  },
+  "markets_positive_frac": 0.0,
+  "max_market_share_of_profit": null,
+  "max_market_share_note": "n/a (total profit <= 0)"
+ },
+ "sizing": {
+  "judged": false,
+  "note": "reported only: the charter's sizing bar is checked by the lead (risk plan)",
+  "by_market": {
+   "btcusd": {
+    "min_lot": 0.01,
+    "margin_eur": 1.3031967995451175,
+    "loss_at_median_stop_eur": 6.345095652173901
+   }
+  },
+  "min_lot_margin_eur": 1.3031967995451175,
+  "min_lot_loss_at_median_stop_eur": 6.345095652173901,
+  "min_lot_loss_pct_of_1000_eur": 0.6345095652173901
+ },
+ "dividends": {
+  "by_market": {},
+  "credit_long_used": null
+ },
+ "max_hold_tdays": 5,
+ "slow_track": false,
+ "costs": "FP costs (lab/r2/fp_costs.json)",
+ "groups": null,
+ "hold_count": "bdays",
+ "provisional_costs": false,
+ "commission_min_only": null,
+ "neighbours": {
+  "02_thr4": {
+   "n": 479,
+   "PF": 0.6483045875115837,
+   "mean_R": -0.060644447900830456
+  },
+  "03_thr6": {
+   "n": 279,
+   "PF": 0.586258914841564,
+   "mean_R": -0.08348058300359083
+  },
+  "04_h11": {
+   "n": 351,
+   "PF": 0.7120834194065084,
+   "mean_R": -0.032314904782470476
+  },
+  "05_h47": {
+   "n": 230,
+   "PF": 0.5731581605874386,
+   "mean_R": -0.11034497933066699
+  },
+  "06_s15": {
+   "n": 351,
+   "PF": 0.6293984865534504,
+   "mean_R": -0.08993162269096697
+  },
+  "07_s3": {
+   "n": 351,
+   "PF": 0.633035371888313,
+   "mean_R": -0.044458888008648806
+  }
+ },
+ "every_signal": {
+  "n": 351,
+  "mean_R": -0.07147765205087063
+ },
+ "null": {
+  "real_mean_R": -0.07147765205087063,
+  "percentile": 1.95,
+  "n_draws": 2000,
+  "seed": 0,
+  "exit_key": "0e188bd56144b8adde1a43304be35cce801d9eb5740fdd81d50150de47bebf3b",
+  "mode": "every",
+  "joint_groups": 0,
+  "joint_no_common_day": 0,
+  "null_mean": -0.03396512664166112,
+  "null_sd": 0.020006455995432923
+ },
+ "counts": {
+  "btcusd": {
+   "signals": 351,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 351
+  }
+ },
+ "rule": {
+  "exit": [
+   "hours",
+   23
+  ],
+  "stop": [
+   "d20",
+   2.0
+  ],
+  "target": null,
+  "delay_h": 0.0,
+  "mode": "one"
+ },
+ "ledger_line": "| 042 | 2026-11-19 | 042 Dear dollars on Bitfinex: the margin funding rate as a crowding gauge (scout idea 28) | btcusd | Bitfinex fUSD 2-day funding rate (daily, known at 00:00 UTC); trades on Bitstamp BTC/USD 1h, 2016-11..2021 (5.2 years) | 7 | fermee : echoue (t>=2.5, PF>=1.12, years>=60%, PF_stress>=1.04, neighbours_median_PF>=1.06, every_signal_exp>0, null>=97.5) | n 351, PF net 0.62, t -3.32, PF x1.5 0.61, years + 1/6, null 1.9 pct, corr -0.14, DSR 0.000 (N_all 2678) / 0.000 (N_main 180), sizing not judged (min lot: margin 1 EUR, loss at median stop 6.3 EUR) |",
+ "written_utc": "2026-11-19T13:10:51Z",
+ "extra": {
+  "shift_test": {
+   "base": {
+    "n": 351,
+    "PF": 0.6158720062008909,
+    "mean_R": -0.07147765205087063,
+    "PF_gross": 0.6357921067573747,
+    "stale": 0
+   },
+   "shifted": {
+    "n": 351,
+    "PF": 0.587831241349489,
+    "mean_R": -0.07694835872671148,
+    "PF_gross": 0.6057093877151642,
+    "stale": 0
+   },
+   "delay_extra_h": 1.0,
+   "max_wait_h": 2
+  },
+  "years": {
+   "2016": {
+    "n": 32,
+    "markets": [
+     "btcusd"
+    ],
+    "PF_gross": 0.19798752266478192,
+    "PF": 0.17767159377158742,
+    "PF_stress": 0.17116959540827015,
+    "mean_R": -0.1969168585962354,
+    "mean_R_gross": -0.1821168194230737,
+    "mean_R_stress": -0.20103200855702114,
+    "mean_net_bp": -84.36480844525555,
+    "mean_gross_bp": -77.58235272967357,
+    "t_trade": -3.0442435234894143,
+    "t_daily": -3.0442435234894143,
+    "n_days": 32,
+    "years_positive_frac": 0.0,
+    "by_year_R": {
+     "2016": -6.301339475079533
+    },
+    "hold_tdays_max": 1,
+    "hold_h_mean": 21.75,
+    "exit_reasons": {
+     "time": 21,
+     "time_close": 7,
+     "stop": 4
+    },
+    "long_n": 0,
+    "long_R": 0.0,
+    "short_n": 32,
+    "short_R": -6.301339475079533,
+    "by_market": {
+     "btcusd": {
+      "n": 32,
+      "sum_R": -6.301339475079533,
+      "mean_R": -0.1969168585962354
+     }
+    },
+    "markets_positive_frac": 0.0,
+    "max_market_share_of_profit": "inf"
+   },
+   "2017": {
+    "n": 164,
+    "markets": [
+     "btcusd"
+    ],
+    "PF_gross": 0.619557739496897,
+    "PF": 0.6065360908829969,
+    "PF_stress": 0.6007264335866811,
+    "mean_R": -0.08236298037450493,
+    "mean_R_gross": -0.07876752055274104,
+    "mean_R_stress": -0.08399353387297692,
+    "mean_net_bp": -104.70990505587594,
+    "mean_gross_bp": -100.16523125991472,
+    "t_trade": -2.387353375485114,
+    "t_daily": -2.387353375485114,
+    "n_days": 164,
+    "years_positive_frac": 0.0,
+    "by_year_R": {
+     "2017": -13.507528781418808
+    },
+    "hold_tdays_max": 1,
+    "hold_h_mean": 22.26829268292683,
+    "exit_reasons": {
+     "time": 123,
+     "time_close": 32,
+     "stop": 9
+    },
+    "long_n": 0,
+    "long_R": 0.0,
+    "short_n": 164,
+    "short_R": -13.50752878141881,
+    "by_market": {
+     "btcusd": {
+      "n": 164,
+      "sum_R": -13.507528781418808,
+      "mean_R": -0.08236298037450493
+     }
+    },
+    "markets_positive_frac": 0.0,
+    "max_market_share_of_profit": "inf"
+   },
+   "2018": {
+    "n": 37,
+    "markets": [
+     "btcusd"
+    ],
+    "PF_gross": 2.1907588009944843,
+    "PF": 2.1225245946726634,
+    "PF_stress": 2.0926111061808306,
+    "mean_R": 0.07806264346160723,
+    "mean_R_gross": 0.08125516235411967,
+    "mean_R_stress": 0.07662021062557332,
+    "mean_net_bp": 121.20303923952478,
+    "mean_gross_bp": 125.83122246212514,
+    "t_trade": 1.7307752783964265,
+    "t_daily": 1.7307752783964265,
+    "n_days": 37,
+    "years_positive_frac": 1.0,
+    "by_year_R": {
+     "2018": 2.8883178080794667
+    },
+    "hold_tdays_max": 1,
+    "hold_h_mean": 22.7027027027027,
+    "exit_reasons": {
+     "time": 30,
+     "time_close": 7
+    },
+    "long_n": 0,
+    "long_R": 0.0,
+    "short_n": 37,
+    "short_R": 2.888317808079467,
+    "by_market": {
+     "btcusd": {
+      "n": 37,
+      "sum_R": 2.8883178080794667,
+      "mean_R": 0.07806264346160721
+     }
+    },
+    "markets_positive_frac": 1.0,
+    "max_market_share_of_profit": 0.9999999999999999
+   },
+   "2019": {
+    "n": 51,
+    "markets": [
+     "btcusd"
+    ],
+    "PF_gross": 0.6095287925111555,
+    "PF": 0.5933322727018701,
+    "PF_stress": 0.5860940330209679,
+    "mean_R": -0.07340504750827022,
+    "mean_R_gross": -0.06968147667312127,
+    "mean_R_stress": -0.07510487080799175,
+    "mean_net_bp": -76.51590820779406,
+    "mean_gross_bp": -71.93594042994026,
+    "t_trade": -1.2983293127580198,
+    "t_daily": -1.2983293127580198,
+    "n_days": 51,
+    "years_positive_frac": 0.0,
+    "by_year_R": {
+     "2019": -3.7436574229217814
+    },
+    "hold_tdays_max": 1,
+    "hold_h_mean": 22.07843137254902,
+    "exit_reasons": {
+     "time": 38,
+     "time_close": 11,
+     "stop": 2
+    },
+    "long_n": 0,
+    "long_R": 0.0,
+    "short_n": 51,
+    "short_R": -3.7436574229217814,
+    "by_market": {
+     "btcusd": {
+      "n": 51,
+      "sum_R": -3.7436574229217814,
+      "mean_R": -0.07340504750827022
+     }
+    },
+    "markets_positive_frac": 0.0,
+    "max_market_share_of_profit": "inf"
+   },
+   "2020": {
+    "n": 49,
+    "markets": [
+     "btcusd"
+    ],
+    "PF_gross": 0.6542252375118414,
+    "PF": 0.6294176427548048,
+    "PF_stress": 0.618455209205078,
+    "mean_R": -0.06546519512569844,
+    "mean_R_gross": -0.0599528879280446,
+    "mean_R_stress": -0.06797160574395067,
+    "mean_net_bp": -51.32068528102566,
+    "mean_gross_bp": -46.71432359329855,
+    "t_trade": -1.2000251447073174,
+    "t_daily": -1.2000251447073174,
+    "n_days": 49,
+    "years_positive_frac": 0.0,
+    "by_year_R": {
+     "2020": -3.207794561159224
+    },
+    "hold_tdays_max": 1,
+    "hold_h_mean": 22.591836734693878,
+    "exit_reasons": {
+     "time": 37,
+     "time_close": 11,
+     "stop": 1
+    },
+    "long_n": 0,
+    "long_R": 0.0,
+    "short_n": 49,
+    "short_R": -3.207794561159224,
+    "by_market": {
+     "btcusd": {
+      "n": 49,
+      "sum_R": -3.207794561159224,
+      "mean_R": -0.06546519512569844
+     }
+    },
+    "markets_positive_frac": 0.0,
+    "max_market_share_of_profit": "inf"
+   },
+   "2021": {
+    "n": 18,
+    "markets": [
+     "btcusd"
+    ],
+    "PF_gross": 0.5968570682364353,
+    "PF": 0.5784078645087465,
+    "PF_stress": 0.5701832289623765,
+    "mean_R": -0.06759185763087287,
+    "mean_R_gross": -0.06389742048635857,
+    "mean_R_stress": -0.06927183811663044,
+    "mean_net_bp": -99.83973979093494,
+    "mean_gross_bp": -95.15043600727458,
+    "t_trade": -0.8505897427069022,
+    "t_daily": -0.8505897427069022,
+    "n_days": 18,
+    "years_positive_frac": 0.0,
+    "by_year_R": {
+     "2021": -1.2166534373557116
+    },
+    "hold_tdays_max": 1,
+    "hold_h_mean": 22.666666666666668,
+    "exit_reasons": {
+     "time": 14,
+     "time_close": 4
+    },
+    "long_n": 0,
+    "long_R": 0.0,
+    "short_n": 18,
+    "short_R": -1.2166534373557116,
+    "by_market": {
+     "btcusd": {
+      "n": 18,
+      "sum_R": -1.2166534373557116,
+      "mean_R": -0.06759185763087287
+     }
+    },
+    "markets_positive_frac": 0.0,
+    "max_market_share_of_profit": "inf"
+   }
+  },
+  "neighbours_summary": {
+   "02_thr4": {
+    "n": 479,
+    "PF_gross": 0.6701264290176261,
+    "PF": 0.6483045875115837,
+    "PF_stress": 0.6393172421238852,
+    "t_trade": -3.4514177317829464,
+    "mean_R_gross": -0.05587959155674291,
+    "mean_R": -0.060644447900830456
+   },
+   "03_thr6": {
+    "n": 279,
+    "PF_gross": 0.6044750149536064,
+    "PF": 0.586258914841564,
+    "PF_stress": 0.5790641274985734,
+    "t_trade": -3.297658329555469,
+    "mean_R_gross": -0.0784658411663835,
+    "mean_R": -0.08348058300359083
+   },
+   "04_h11": {
+    "n": 351,
+    "PF_gross": 0.7429618565478213,
+    "PF": 0.7120834194065084,
+    "PF_stress": 0.6972065431414439,
+    "t_trade": -2.1764820023859013,
+    "mean_R_gross": -0.028235601616912246,
+    "mean_R": -0.032314904782470476
+   },
+   "05_h47": {
+    "n": 230,
+    "PF_gross": 0.5860945832462587,
+    "PF": 0.5731581605874386,
+    "PF_stress": 0.567748910344681,
+    "t_trade": -3.043734668013044,
+    "mean_R_gross": -0.10593788758241553,
+    "mean_R": -0.11034497933066699
+   },
+   "06_s15": {
+    "n": 351,
+    "PF_gross": 0.6475139939058362,
+    "PF": 0.6293984865534504,
+    "PF_stress": 0.6213359957526001,
+    "t_trade": -3.2470839125199085,
+    "mean_R_gross": -0.08435484385713304,
+    "mean_R": -0.08993162269096697
+   },
+   "07_s3": {
+    "n": 351,
+    "PF_gross": 0.6523255843429521,
+    "PF": 0.633035371888313,
+    "PF_stress": 0.6244950782072946,
+    "t_trade": -3.032821315419195,
+    "mean_R_gross": -0.041478589059202,
+    "mean_R": -0.044458888008648806
+   }
+  },
+  "info_only": {
+   "bitfinex_prices": {
+    "n": 351,
+    "markets": [
+     "btcusd"
+    ],
+    "PF_gross": 0.684615478322063,
+    "PF": 0.6647099975762791,
+    "PF_stress": 0.6558697868823344,
+    "mean_R": -0.05936101793427344,
+    "mean_R_gross": -0.05501925979904366,
+    "mean_R_stress": -0.061334656040958155,
+    "mean_net_bp": -54.99665996410899,
+    "mean_gross_bp": -50.42524361987104,
+    "t_trade": -2.790459926836367,
+    "t_daily": -2.790459926836367,
+    "n_days": 351,
+    "years_positive_frac": 0.16666666666666666,
+    "by_year_R": {
+     "2016": -5.793886576478164,
+     "2017": -9.559009455935774,
+     "2018": 2.7702611377430673,
+     "2019": -3.510545536166829,
+     "2020": -3.2939921752874595,
+     "2021": -1.4485446888048201
+    },
+    "hold_tdays_max": 1,
+    "hold_h_mean": 22.3988603988604,
+    "exit_reasons": {
+     "time": 265,
+     "time_close": 73,
+     "stop": 13
+    },
+    "long_n": 0,
+    "long_R": 0.0,
+    "short_n": 351,
+    "short_R": -20.835717294929978,
+    "by_market": {
+     "btcusd": {
+      "n": 351,
+      "sum_R": -20.835717294929978,
+      "mean_R": -0.05936101793427344
+     }
+    },
+    "markets_positive_frac": 0.0,
+    "max_market_share_of_profit": "inf"
+   },
+   "bitfinex_prices_bitstamp_same_signals": {
+    "n": 351,
+    "markets": [
+     "btcusd"
+    ],
+    "PF_gross": 0.6357921067573747,
+    "PF": 0.6158720062008909,
+    "PF_stress": 0.6078397351953059,
+    "mean_R": -0.07147765205087063,
+    "mean_R_gross": -0.06661188311294385,
+    "mean_R_stress": -0.07344976129517719,
+    "mean_net_bp": -67.24138478961252,
+    "mean_gross_bp": -62.46273689175632,
+    "t_trade": -3.3150444373401755,
+    "t_daily": -3.3150444373401755,
+    "n_days": 351,
+    "years_positive_frac": 0.16666666666666666,
+    "by_year_R": {
+     "2016": -6.301339475079533,
+     "2017": -13.507528781418808,
+     "2018": 2.8883178080794667,
+     "2019": -3.7436574229217814,
+     "2020": -3.207794561159224,
+     "2021": -1.2166534373557116
+    },
+    "hold_tdays_max": 1,
+    "hold_h_mean": 22.304843304843306,
+    "exit_reasons": {
+     "time": 263,
+     "time_close": 72,
+     "stop": 16
+    },
+    "long_n": 0,
+    "long_R": 0.0,
+    "short_n": 351,
+    "short_R": -25.088655869855593,
+    "by_market": {
+     "btcusd": {
+      "n": 351,
+      "sum_R": -25.08865586985559,
+      "mean_R": -0.07147765205087063
+     }
+    },
+    "markets_positive_frac": 0.0,
+    "max_market_share_of_profit": "inf"
+   },
+   "binance_from_2017_08": {
+    "n": 214,
+    "markets": [
+     "btcusd"
+    ],
+    "PF_gross": 0.6785450453336663,
+    "PF": 0.6595260813088817,
+    "PF_stress": 0.6510574362003728,
+    "mean_R": -0.05823797164993462,
+    "mean_R_gross": -0.05429735269292552,
+    "mean_R_stress": -0.06002986343735103,
+    "mean_net_bp": -55.11662962307202,
+    "mean_gross_bp": -50.54895510559982,
+    "t_trade": -2.246102070091518,
+    "t_daily": -2.246102070091518,
+    "n_days": 214,
+    "years_positive_frac": 0.2,
+    "by_year_R": {
+     "2017": -6.480309802977409,
+     "2018": 2.7541122443019304,
+     "2019": -3.8782382160756317,
+     "2020": -3.3915444834056103,
+     "2021": -1.466945674929287
+    },
+    "hold_tdays_max": 1,
+    "hold_h_mean": 22.434579439252335,
+    "exit_reasons": {
+     "time": 161,
+     "time_close": 45,
+     "stop": 8
+    },
+    "long_n": 0,
+    "long_R": 0.0,
+    "short_n": 214,
+    "short_R": -12.462925933086009,
+    "by_market": {
+     "btcusd": {
+      "n": 214,
+      "sum_R": -12.462925933086009,
+      "mean_R": -0.05823797164993462
+     }
+    },
+    "markets_positive_frac": 0.0,
+    "max_market_share_of_profit": "inf"
+   },
+   "binance_from_2017_08_bitstamp_same_signals": {
+    "n": 214,
+    "markets": [
+     "btcusd"
+    ],
+    "PF_gross": 0.6863955399011241,
+    "PF": 0.6675691563063944,
+    "PF_stress": 0.6591766537154439,
+    "mean_R": -0.0575634220170465,
+    "mean_R_gross": -0.05361912001590608,
+    "mean_R_stress": -0.05935669232471246,
+    "mean_net_bp": -57.330869506802664,
+    "mean_gross_bp": -52.76252490224043,
+    "t_trade": -2.199214379284071,
+    "t_daily": -2.199214379284071,
+    "n_days": 214,
+    "years_positive_frac": 0.2,
+    "by_year_R": {
+     "2017": -7.0387846982907005,
+     "2018": 2.8883178080794667,
+     "2019": -3.7436574229217814,
+     "2020": -3.207794561159224,
+     "2021": -1.2166534373557116
+    },
+    "hold_tdays_max": 1,
+    "hold_h_mean": 22.397196261682243,
+    "exit_reasons": {
+     "time": 161,
+     "time_close": 45,
+     "stop": 8
+    },
+    "long_n": 0,
+    "long_R": 0.0,
+    "short_n": 214,
+    "short_R": -12.318572311647952,
+    "by_market": {
+     "btcusd": {
+      "n": 214,
+      "sum_R": -12.31857231164795,
+      "mean_R": -0.05756342201704649
+     }
+    },
+    "markets_positive_frac": 0.0,
+    "max_market_share_of_profit": "inf"
+   }
+  },
+  "counts": {
+   "btcusd": {
+    "signals": 351,
+    "stale": 0,
+    "no_bar": 0,
+    "open_at_end": 0,
+    "no_d20": 0,
+    "overlap_skipped": 0,
+    "same_bar_skipped": 0,
+    "taken": 351
+   }
+  },
+  "every_summary": {
+   "n": 351,
+   "markets": [
+    "btcusd"
+   ],
+   "PF_gross": 0.6357921067573747,
+   "PF": 0.6158720062008909,
+   "PF_stress": 0.6078397351953059,
+   "mean_R": -0.07147765205087063,
+   "mean_R_gross": -0.06661188311294385,
+   "mean_R_stress": -0.07344976129517719,
+   "mean_net_bp": -67.24138478961252,
+   "mean_gross_bp": -62.46273689175632,
+   "t_trade": -3.3150444373401755,
+   "t_daily": -3.3150444373401755,
+   "n_days": 351,
+   "years_positive_frac": 0.16666666666666666,
+   "by_year_R": {
+    "2016": -6.301339475079533,
+    "2017": -13.507528781418808,
+    "2018": 2.8883178080794667,
+    "2019": -3.7436574229217814,
+    "2020": -3.207794561159224,
+    "2021": -1.2166534373557116
+   },
+   "hold_tdays_max": 1,
+   "hold_h_mean": 22.304843304843306,
+   "exit_reasons": {
+    "time": 263,
+    "time_close": 72,
+    "stop": 16
+   },
+   "long_n": 0,
+   "long_R": 0.0,
+   "short_n": 351,
+   "short_R": -25.088655869855593,
+   "by_market": {
+    "btcusd": {
+     "n": 351,
+     "sum_R": -25.08865586985559,
+     "mean_R": -0.07147765205087063
+    }
+   },
+   "markets_positive_frac": 0.0,
+   "max_market_share_of_profit": "inf"
+  }
+ }
+}

@@ -1,0 +1,39 @@
+{
+  "idea": "042 Dear dollars on Bitfinex: the margin funding rate as a crowding gauge (scout idea 28)",
+  "date_declared": "2026-11-19",
+  "track": "fast",
+  "family": "crypto-funding",
+  "hypothesis": "When borrowing dollars on Bitfinex for 2 days costs 0.05 % a day or more (about 18 % a year), margin longs in bitcoin are crowded and bitcoin falls (or rises less than usual) over the next day: sell BTC at 00:00 UTC on weekdays, hold one day.",
+  "mechanism": "Margin buyers on Bitfinex borrow USD from lenders; the 2-day USD funding rate is the price of that leverage. A high rate means demand for leveraged long exposure exceeds lenders' supply: the long side is crowded, carry is expensive, and forced or voluntary deleveraging should follow. A fade of leverage, the opposite of the breakout rules; not a closed family (no funding/positioning gauge of crypto was tested by the lab; Binance perp funding starts 2019-09 only).",
+  "data": {
+    "signal": "Bitfinex public API, https://api-pub.bitfinex.com/v2/candles/trade:1D:fUSD:p2/hist (daily candles of the USD margin-funding rate, 2-day period, rate per day; first candle 2016-07-31). Field: close of the daily candle that starts at D 00:00 UTC = the last funding trade before D+1 00:00 UTC. KNOWN AT: D+1 00:00 UTC (the candle's end; real time, not revised, sources.md section 13). Fetched once 2026-11-19, cached in ~/explore_data/idea_042/funding/fusd_p2_1d.json, request bounded at 2021-12-31 23:59 UTC.",
+    "publication_lag": "data.external(obs = candle start date D, known = D + 1 day 00:00 UTC, min_lag = 1 day). Not revised.",
+    "prices": "kit.data.load_bars('btcusd', 2016, venue='bitstamp') = Bitstamp BTC/USD hourly candles (trade prices treated as mid), FP crypto weekend closure removed. Information only (not judged, not a trial): the same main signals priced on Bitfinex BTC/USD hourly and on Binance BTCUSDT from 2017-08.",
+    "in_sample_years": "signals from 2016-11-01 to 2021-12-31 (5.2 years). Power check from the funding data alone: 351 weekday signals at >= 0.0005 (2016: 32, 2017: 164, 2018: 37, 2019: 51, 2020: 49, 2021: 18); 479 at >= 0.0004; 279 at >= 0.0006.",
+    "nothing_after": "2021-12-31"
+  },
+  "markets": ["btcusd"],
+  "rule_main": {
+    "signal": "r(D) = close of the Bitfinex trade:1D:fUSD:p2 candle starting D 00:00 UTC, known at D+1 00:00 UTC. Signal at known_at = D+1 00:00 UTC if r(D) >= 0.0005 and D+1 is Monday to Friday (UTC weekday of known_at), known_at >= 2016-11-01.",
+    "side": "-1 always (short bitcoin)",
+    "entry": "open of the first H1 bar opening at or after known_at (the 00:00 UTC bar), max_wait_h = 2",
+    "exit": ["hours", 23],
+    "stop": ["d20", 2.0],
+    "target": null,
+    "overlap": "one position per market (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+  },
+  "what_changed_vs_brief": "The brief exits after 24 hours. With the kit's one-position filter a 24 h exit happens at the open of the next 00:00 bar and the next day's signal enters that same bar, which the kit skips (the next entry must open after the exit bar): consecutive dear-dollar days would be taken one in two (about 227 trades instead of 351, under the 250 bar). The main exit is therefore 23 hours (the open of the 23:00 UTC bar), so every weekday signal can be taken; the 47 h neighbour keeps the brief's longer hold. A Friday trade's exit falls in FP's weekend closure and is done at the close of the last bar before it (kit convention). Prices: Bitstamp (the brief allows Bitfinex or Bitstamp) because Bitfinex's own BTC price carried a premium in 2017 tied to its dollar troubles, the same episode that lifts the funding rate.",
+  "configurations": [
+    {"id": "01_main", "thr": 0.0005, "exit": ["hours", 23], "stop": ["d20", 2.0]},
+    {"id": "02_thr4", "thr": 0.0004, "exit": ["hours", 23], "stop": ["d20", 2.0]},
+    {"id": "03_thr6", "thr": 0.0006, "exit": ["hours", 23], "stop": ["d20", 2.0]},
+    {"id": "04_h11", "thr": 0.0005, "exit": ["hours", 11], "stop": ["d20", 2.0]},
+    {"id": "05_h47", "thr": 0.0005, "exit": ["hours", 47], "stop": ["d20", 2.0]},
+    {"id": "06_s15", "thr": 0.0005, "exit": ["hours", 23], "stop": ["d20", 1.5]},
+    {"id": "07_s3", "thr": 0.0005, "exit": ["hours", 23], "stop": ["d20", 3.0]}
+  ],
+  "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw btcusd): gross, net, spread and slippage x1.5; swaps charged per FP convention",
+  "bars": "CHARTER.md 'The bars' on 01_main, one market, computed by kit.judge.verdict; random-entry null 2000 draws with the main's exit and stop; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported); long side not traded (short only), reported as such",
+  "split": "IS only (to 2021-12-31). No validation look in this run (lead's instruction); attack only if every IS bar passes.",
+  "kit": "lab/explore/kit v2.2, unchanged"
+}

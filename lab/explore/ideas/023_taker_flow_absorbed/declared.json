@@ -1,0 +1,158 @@
+{
+ "idea": "023 Aggressive order flow absorbed: taker-buy share against the block's own return (scout idea 9)",
+ "date_declared": "2026-11-19",
+ "track": "fast",
+ "family": "order-flow",
+ "hypothesis": "On bitcoin and ether, a 4-hour block in which aggressive buyers take an unusually large share of the volume (z of the taker-buy share over the last 180 blocks >= +1.5) while the block's price did not rise (close <= open) predicts a fall over the next 12 hours; an unusually low taker-buy share (z <= -1.5) with a price that did not fall (close >= open) predicts a rise.",
+ "mechanism": "Signed volume read as absorption: when market orders on one side dominate and the price does not move their way, a large passive (limit) trader is absorbing them and the price tends to move the other way once the aggressors stop. Signed (taker) volume is information the lab's 118 crypto price-only configurations never used. A fade on a flow imbalance, not one of the closed price-only families.",
+ "data": {
+  "signal": "Binance spot 1h klines BTCUSDT and ETHUSDT (kit.data.binance_klines(sym, '1h'), data.binance.vision monthly dumps, columns volume and taker_buy_base), 2017-08-17 .. 2021-12-31, every hour including weekends (Binance trades 24/7). Blocks = 4-hour UTC blocks starting 00, 04, 08, 12, 16, 20 UTC, built from their 4 hourly klines (a block missing an hour or with zero volume is dropped). b = sum taker_buy_base / sum volume over the block; r = close of the last hour / open of the first hour - 1. z = (b - mean) / std over the last W valid blocks including the current one (rolling W rows, at least 70 % of W), past only. A block's b, r and z are KNOWN at the block's end (block open + 4 h = open of its last kline + 1 h).",
+  "publication_lag": "none: exchange klines are final at the candle's close and never revised; a value is used from its block's end, never earlier",
+  "prices": "kit.data.load_bars('btcusd') and load_bars('ethusd') = Binance BTCUSDT / ETHUSDT 1h (price_is mid), FP's crypto closure (Fri 23:55 to Mon 00:00 server) removed by the kit; costs FP's btcusd / ethusd",
+  "in_sample_years": "2017-08-17 .. 2021-12-31 (4.4 years); power check from the signal data alone (power.py / power.json): main = 140 BTC and 133 ETH signal blocks, 128 + 125 = 253 entries with one position per market and a 12 h hold; the basket route (no n bar on a basket; one market cannot reach 250)",
+  "nothing_after": "2021-12-31 (signals known at 2022-01-01 00:00 or later dropped)"
+ },
+ "markets": [
+  "btcusd",
+  "ethusd"
+ ],
+ "rule_main": {
+  "signal": "at each block end t with W = 180: short if z >= +1.5 and r <= 0; long if z <= -1.5 and r >= 0. Only blocks that START Monday to Friday (UTC) and whose end t lies outside FP's crypto closure (kit.data.fp_closed): the brief's 'weekdays' on FP's clock. known_at = t.",
+  "side": "-1 when buyers dominate without a rise (z >= +thr, r <= 0); +1 when sellers dominate without a fall (z <= -thr, r >= 0)",
+  "entry": "open of the first H1 bar opening at or after known_at (the next block's open; delay 0, max_wait_h = 2)",
+  "exit": [
+   "hours",
+   12
+  ],
+  "stop": [
+   "d20",
+   0.7
+  ],
+  "target": null,
+  "overlap": "one position per market (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+ },
+ "what_changed_vs_brief": "Stop: the brief's '2 x the mean 4-hour range of the last 30 blocks' cannot be given to kit.sim (stops are d20 or bps). Translated to ('d20', 0.7): the median ratio of 2 x mean(4h high-low over 30 blocks) to the kit's D20, measured on ranges only (no return, no trade outcome) over 2017-2021, is 0.698 (BTC) and 0.707 (ETH) (cache script stop_ratio.py). The z window counts blocks on all days (crypto trades 24/7); signals only on weekday blocks outside FP's closure. My count (140 / 133) differs from the scout's (151 / 144), probably because the scout did not remove blocks ending in FP's closure (Friday evening) or counted the z window differently: written, not chased.",
+ "configurations": [
+  {
+   "id": "01_main",
+   "win_blocks": 180,
+   "thr": 1.5,
+   "exit": [
+    "hours",
+    12
+   ],
+   "stop": [
+    "d20",
+    0.7
+   ]
+  },
+  {
+   "id": "02_thr1.25",
+   "win_blocks": 180,
+   "thr": 1.25,
+   "exit": [
+    "hours",
+    12
+   ],
+   "stop": [
+    "d20",
+    0.7
+   ]
+  },
+  {
+   "id": "03_thr1.75",
+   "win_blocks": 180,
+   "thr": 1.75,
+   "exit": [
+    "hours",
+    12
+   ],
+   "stop": [
+    "d20",
+    0.7
+   ]
+  },
+  {
+   "id": "04_win120",
+   "win_blocks": 120,
+   "thr": 1.5,
+   "exit": [
+    "hours",
+    12
+   ],
+   "stop": [
+    "d20",
+    0.7
+   ]
+  },
+  {
+   "id": "05_win270",
+   "win_blocks": 270,
+   "thr": 1.5,
+   "exit": [
+    "hours",
+    12
+   ],
+   "stop": [
+    "d20",
+    0.7
+   ]
+  },
+  {
+   "id": "06_h8",
+   "win_blocks": 180,
+   "thr": 1.5,
+   "exit": [
+    "hours",
+    8
+   ],
+   "stop": [
+    "d20",
+    0.7
+   ]
+  },
+  {
+   "id": "07_h16",
+   "win_blocks": 180,
+   "thr": 1.5,
+   "exit": [
+    "hours",
+    16
+   ],
+   "stop": [
+    "d20",
+    0.7
+   ]
+  },
+  {
+   "id": "08_stop0.5",
+   "win_blocks": 180,
+   "thr": 1.5,
+   "exit": [
+    "hours",
+    12
+   ],
+   "stop": [
+    "d20",
+    0.5
+   ]
+  },
+  {
+   "id": "09_stop1.0",
+   "win_blocks": 180,
+   "thr": 1.5,
+   "exit": [
+    "hours",
+    12
+   ],
+   "stop": [
+    "d20",
+    1.0
+   ]
+  }
+ ],
+ "costs": "kit.costs (FP Raw, crypto btcusd / ethusd): gross, net, spread and slippage x1.5",
+ "bars": "CHARTER.md 'The bars' on 01_main as a BASKET of 2 markets (small-basket amendment: no market above 75 % of the profit), computed by kit.judge.verdict; t on daily sums of R; random-entry null 2000 draws (same-day for legs decided together); weekly corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported). Gross, net, long and short sides and each market reported apart.",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead does it).",
+ "kit": "lab/explore/kit v2.2, unchanged"
+}

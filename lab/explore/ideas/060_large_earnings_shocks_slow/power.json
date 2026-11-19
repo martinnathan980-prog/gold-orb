@@ -1,0 +1,48 @@
+{
+ "events": 6913,
+ "session_mismatch_vs_calendar": 0,
+ "no_bar": 0,
+ "thr_0.06": {
+  "n": 1068,
+  "long": 531,
+  "short": 537,
+  "days": 482,
+  "markets": 286,
+  "by_year": {
+   "2017": 152,
+   "2018": 245,
+   "2019": 247,
+   "2020": 230,
+   "2021": 194
+  }
+ },
+ "thr_0.08": {
+  "n": 534,
+  "long": 256,
+  "short": 278,
+  "days": 333,
+  "markets": 216,
+  "by_year": {
+   "2017": 80,
+   "2018": 129,
+   "2019": 133,
+   "2020": 97,
+   "2021": 95
+  }
+ },
+ "thr_0.1": {
+  "n": 267,
+  "long": 131,
+  "short": 136,
+  "days": 210,
+  "markets": 133,
+  "by_year": {
+   "2017": 42,
+   "2018": 64,
+   "2019": 67,
+   "2020": 52,
+   "2021": 42
+  }
+ },
+ "note": "signal counts before the one-position filter and before D20 availability (a share's first 20 sessions have no D20); with a 40-session hold one position per share can only drop signals within 40 sessions of an earlier one of the same share, i.e. almost none (results are about 63 sessions apart)"
+}

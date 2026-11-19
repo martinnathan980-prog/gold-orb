@@ -1,0 +1,40 @@
+{
+ "idea": "062 Large moves without news in a calm market: fade an abnormal move of 6 % or more for five sessions, on the broad universe of US shares (daily bars)",
+ "date_declared": "2026-11-19",
+ "track": "fast",
+ "family": "news",
+ "hypothesis": "On a calm session (the universe's median absolute ret_total under 2 %), a share whose abnormal move (ret_total minus the universe's median ret_total) is at or beyond +/-6 % while the company filed nothing with the SEC in the last three sessions and had no results-like day in them reverts: a trade AGAINST the move from the next session's open to the close of the fifth session of the hold beats the provisional (heavy) costs and the same-day random-entry null on the same share and side, on 382 US shares that were NOT in the lab's 40.",
+ "mechanism": "The other half of the literature on large moves: with public news prices drift, without identifiable news they tend to revert (Chan 2003; Savor 2012): a move without information is liquidity pressure (a fund's forced sale or buying, an index or ETF flow, a rumour) that market makers absorb at a discount and that reverts over days. 'No filing' is not 'no news' (a broker's note, a rival's results, a lawsuit are not filed; most non-results 8-Ks are filed days after the news): the test reads whatever is left. Not one of the closed families: 061 (8-K news days) was closed without a run; 059 follows results shocks; this fades moves on days WITHOUT filings.",
+ "data": {
+  "signal": "SEC EDGAR filing calendar of scout/events_edgar.py (~/explore_data/events_d1, built 2026-11-18, not rebuilt): idea_sessions('062', results_ahead=0) = share-sessions s (from the share's in_universe_from and 2017-01-01 to 2021-12-31) with no 8-K / 8-K/A of any kind and no 10-Q / 10-K whose event_session (first session closing after the EDGAR acceptance) is s-2, s-1 or s, and no results-like session (results row event or reaction session, any other 8-K 2.02, a results candidate, a 10-Q/10-K) in s-2..s. results_ahead=0: no look at results days AFTER s (the brief's choice). Each allowed share-session enters data.event_table stamped at the CLOSE of s (data.us_sessions close_utc: 16:00 New York, 13:00 on half days), when every filing accepted before that close is public. The moves are read from the daily bars of the same session, known at that session's close (bars' known_at).",
+  "publication_lag": "allowed share-sessions: min_lag 0 from the session date, stamped at the session's close (the absence of filings up to the close of s is known at that close); bars: row_len 'known_at'. No other external series.",
+  "prices": "kit v2.2 daily session bars of the 382 shares of kit/universe_us.csv (data.load_bars(key), ~/explore_data/d1/bars, Yahoo quote prices, ratios only), long frame data.long_bars; moves by data.session_moves (ret_total = close/previous close - 1 + the ex-date's dividend fraction; 'action' flag).",
+  "in_sample_years": "2017 .. 2021 (5 years). Power check (signal data alone, power.py / power.json, no price after the signal session read): main 6 %: 912 signals on 439 sessions, 223 shares, 11 sectors, 401 long (after a fall) / 511 short (after a rise), by year 79 / 100 / 104 / 348 / 281; 5 %: 1,767; 8 %: 287 (the lead's count before ret_total and the action flag: 935 at 6 %).",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": ["the 382 shares of kit/universe_us.csv (us_shares_d1 class), the lab's 40 excluded"],
+ "groups": "sector",
+ "rule_main": {
+  "signal": "For each share k and session s with a bar: abn = ret_total(s) - median over the universe's shares with a bar on s of ret_total(s); calm = median over the same shares of |ret_total(s)| (NaN, a share's first bar, skipped in both). Signal if abn is finite, calm < 0.02, s is not flagged action (ex-date with dividend >= 2 % or split/spin-off record), (k, s) is in idea_sessions('062', results_ahead=0), and |abn| >= 0.06. Stamp known_at = s's close (bar known_at). Every feature computed inside build from the bars passed to it.",
+  "side": "-1 if abn > 0 (fade a rise), +1 if abn < 0 (fade a fall)",
+  "entry": "open of the next session (first bar opening at or after known_at), max_wait_h=96",
+  "exit": ["session_close", 4],
+  "exit_words": "the CLOSE of the fifth session of the hold, the entry session being the first (session_close N=4; N=0 is the entry session's own close)",
+  "stop": ["d20", 1.5],
+  "target": null,
+  "overlap": "one position per share (kit.sim mode 'one'); every-signal variant (mode 'every') for the every-signal bar"
+ },
+ "configurations": [
+  {"id": "01_main", "threshold": 0.06, "exit": ["session_close", 4], "stop": ["d20", 1.5]},
+  {"id": "02_thr5", "threshold": 0.05, "exit": ["session_close", 4], "stop": ["d20", 1.5]},
+  {"id": "03_thr8", "threshold": 0.08, "exit": ["session_close", 4], "stop": ["d20", 1.5]},
+  {"id": "04_close3", "threshold": 0.06, "exit": ["session_close", 2], "stop": ["d20", 1.5]},
+  {"id": "05_close4", "threshold": 0.06, "exit": ["session_close", 3], "stop": ["d20", 1.5]},
+  {"id": "06_stop1", "threshold": 0.06, "exit": ["session_close", 4], "stop": ["d20", 1.0]},
+  {"id": "07_stop2", "threshold": 0.06, "exit": ["session_close", 4], "stop": ["d20", 2.0]}
+ ],
+ "costs": "kit v2.2 class us_shares_d1, PROVISIONAL and heavy: spread 56 bp at the session's open (entry), 12 bp at a close (exit), commission max(0.03 USD a share, 2 USD an order) at 4,791.67 USD a trade on Yahoo levels (pessimistic for shares split after 2021), slippage 1 bp (2 on a stop), swaps 7 % long / 3 % short a year, dividends (a short pays, a long is credited 70 %); gross, net, stress (spread, commission, slippage x1.5). Reported, never judged: checks.min_commission_test (2 USD minimum alone), the dividend credit at 0 and 1 (results.json dividends), checks.shift_test (one session later), and in a SEPARATE process the main with the open spread at 12 bp (EXPLORE_EXTRA_COSTS = a copy of kit/extra_costs.json in ~/explore_data/idea_062 with _classes.us_shares_d1.spread_bps_open = 12), which never touches results.json or trials.jsonl.",
+ "bars": "CHARTER.md 'The bars' on 01_main, basket of more than 40 markets: t on daily sums of R >= 2.5, pooled PF >= 1.12 and >= 1.04 at costs x1.5, >= 60 % of years positive, groups (11 sectors) >= 65 % positive and no group above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days, same-day random-entry null >= 97.5th percentile (2,000 draws, the main's own exit and stop), weekly correlation with the ten <= 0.30; deflated Sharpe on N_all (label). Reported apart: long and short sides, each year (2020 and 2021 hold two thirds of the signals), each sector, gross figures. Survivors only (today's S&P 500 list): stated with the result.",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead does it).",
+ "kit": "lab/explore/kit v2.2 unchanged"
+}

@@ -1,0 +1,41 @@
+{
+ "idea": "059 Large earnings shocks: follow a results-day abnormal move of 8 % or more for five sessions, on the broad universe of US shares (daily bars)",
+ "date_declared": "2026-11-19",
+ "track": "fast",
+ "family": "earnings",
+ "hypothesis": "After a results 8-K, a share whose abnormal move (ret_total minus the universe's median ret_total) on the event session is at or beyond +/-8 % keeps drifting in the same direction from the next session's open to the close of the fifth session of the hold, enough to beat the provisional (heavy) costs and the same-day random-entry null on the same share and side, on 382 US shares that were NOT in the lab's 40.",
+ "mechanism": "Post-earnings-announcement drift, strongest after the largest surprises (Bernard and Thomas 1989; the announcement return as the surprise: Brandt, Kishore, Santa-Clara and Venkatachalam 2008): investors under-react to large news, analysts revise slowly, institutions build positions over days. On the lab's 40 shares (idea 052, read AFTER its verdict by the lead) the drift was nil below 5 % and, at 8 % or more, +128 bp gross from the next open to the fifth close (83 events): a hypothesis from one sample, tested here out of that sample on other shares. Not one of the closed families (052 was on the 40 hourly shares with other thresholds; 054 traded the results day itself).",
+ "data": {
+  "signal": "SEC EDGAR 8-K calendar of scout/events_edgar.py (~/explore_data/events_d1, built 2026-11-18, not rebuilt): idea_sessions('059') = results rows (item 2.02 results pick) with event_session = the first session that CLOSES after the EDGAR acceptance time (close 16:00 New York, 13:00 on half days), late_suspect rows dropped, sessions from the share's in_universe_from (and 2017-01-01) to 2021-12-31. Each event enters data.event_table indexed by its acceptance time (UTC). The move is read from the daily bars of the same session: known at that session's close (bars' known_at).",
+  "publication_lag": "events: min_lag 0 (indexed by the acceptance time itself, the first moment the filing is public; the signal is stamped at the close of the event session, after the acceptance by construction); bars: row_len 'known_at' (a session's values are known at its close). No other external series.",
+  "prices": "kit v2.2 daily session bars of the 382 shares of kit/universe_us.csv (data.load_bars(key), ~/explore_data/d1/bars, Yahoo quote prices, ratios only), long frame data.long_bars; moves by data.session_moves (ret_total = close/previous close - 1 + the ex-date's dividend fraction; 'action' flag).",
+  "in_sample_years": "2017 .. 2021 (5 years). Power check (signal data alone, power.py / power.json, no price after the signal session read): main 8 %: 534 signals on 333 sessions, 216 shares, 11 sectors, 256 up / 278 down, by year 80 / 129 / 133 / 97 / 95; 6 %: 1,068; 10 %: 267.",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": ["the 382 shares of kit/universe_us.csv (us_shares_d1 class), the lab's 40 excluded"],
+ "groups": "sector",
+ "rule_main": {
+  "signal": "For each results event (key, event session S): abn = ret_total(S) - median over the universe's shares with a bar on S of ret_total(S) (NaN, a share's first bar, skipped). Signal if abn is finite, S is not flagged action (ex-date with dividend >= 2 % or split/spin-off record), and |abn| >= 0.08. One signal per (share, S). Stamp known_at = S's close (bar known_at). Every feature computed inside build from the bars passed to it.",
+  "side": "+1 if abn > 0 (follow an up-shock), -1 if abn < 0",
+  "entry": "open of the next session (first bar opening at or after known_at), max_wait_h=96",
+  "exit": ["session_close", 4],
+  "exit_words": "the CLOSE of the fifth session of the hold, the entry session being the first (session_close N=4; N=0 is the entry session's own close)",
+  "stop": ["d20", 1.5],
+  "target": null,
+  "overlap": "one position per share (kit.sim mode 'one'); every-signal variant (mode 'every') for the every-signal bar"
+ },
+ "configurations": [
+  {"id": "01_main", "threshold": 0.08, "exit": ["session_close", 4], "stop": ["d20", 1.5]},
+  {"id": "02_thr6", "threshold": 0.06, "exit": ["session_close", 4], "stop": ["d20", 1.5]},
+  {"id": "03_thr10", "threshold": 0.10, "exit": ["session_close", 4], "stop": ["d20", 1.5]},
+  {"id": "04_close3", "threshold": 0.08, "exit": ["session_close", 2], "stop": ["d20", 1.5]},
+  {"id": "05_close4", "threshold": 0.08, "exit": ["session_close", 3], "stop": ["d20", 1.5]},
+  {"id": "06_open6", "threshold": 0.08, "exit": ["sessions", 5], "stop": ["d20", 1.5]},
+  {"id": "07_stop1", "threshold": 0.08, "exit": ["session_close", 4], "stop": ["d20", 1.0]},
+  {"id": "08_stop2", "threshold": 0.08, "exit": ["session_close", 4], "stop": ["d20", 2.0]}
+ ],
+ "costs": "kit v2.2 class us_shares_d1, PROVISIONAL and heavy: spread 56 bp at the session's open (entry), 12 bp at a close (exit, main), commission max(0.03 USD a share, 2 USD an order) at 4,791.67 USD a trade on Yahoo levels (pessimistic for shares split after 2021), slippage 1 bp (2 on a stop), swaps 7 % long / 3 % short a year, dividends (a short pays, a long is credited 70 %); gross, net, stress (spread, commission, slippage x1.5). Reported, never judged: checks.min_commission_test (2 USD minimum alone), the dividend credit at 0 and 1 (results.json dividends), checks.shift_test (one session later), and in a SEPARATE process the main with the open spread at 12 bp (EXPLORE_EXTRA_COSTS = a copy of kit/extra_costs.json in ~/explore_data/idea_059 with _classes.us_shares_d1.spread_bps_open = 12), which never touches results.json or trials.jsonl.",
+ "bars": "CHARTER.md 'The bars' on 01_main, basket of more than 40 markets: t on daily sums of R >= 2.5, pooled PF >= 1.12 and >= 1.04 at costs x1.5, >= 60 % of years positive, groups (11 sectors) >= 65 % positive and no group above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 5 trading days, same-day random-entry null >= 97.5th percentile (2,000 draws, the main's own exit and stop), weekly correlation with the ten <= 0.30; deflated Sharpe on N_all (label). Reported apart: long and short sides, each year, each sector, gross figures. Survivors only (today's S&P 500 list): stated with the result.",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead does it).",
+ "kit": "lab/explore/kit v2.2 unchanged"
+}

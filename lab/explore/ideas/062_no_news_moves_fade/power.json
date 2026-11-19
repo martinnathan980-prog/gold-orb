@@ -1,0 +1,87 @@
+{
+ "0.05": {
+  "n": 1767,
+  "days": 635,
+  "long_after_fall": 805,
+  "short_after_rise": 962,
+  "by_year": {
+   "2017": 139,
+   "2018": 199,
+   "2019": 225,
+   "2020": 634,
+   "2021": 570
+  },
+  "markets": 286,
+  "sectors": 11,
+  "by_sector": {
+   "Energy": 377,
+   "Consumer Discretionary": 293,
+   "Health Care": 270,
+   "Information Technology": 217,
+   "Materials": 148,
+   "Industrials": 118,
+   "Financials": 107,
+   "Communication Services": 70,
+   "Real Estate": 69,
+   "Consumer Staples": 54,
+   "Utilities": 44
+  }
+ },
+ "0.06": {
+  "n": 912,
+  "days": 439,
+  "long_after_fall": 401,
+  "short_after_rise": 511,
+  "by_year": {
+   "2017": 79,
+   "2018": 100,
+   "2019": 104,
+   "2020": 348,
+   "2021": 281
+  },
+  "markets": 223,
+  "sectors": 11,
+  "by_sector": {
+   "Energy": 177,
+   "Consumer Discretionary": 156,
+   "Health Care": 153,
+   "Information Technology": 111,
+   "Materials": 71,
+   "Industrials": 69,
+   "Financials": 51,
+   "Communication Services": 43,
+   "Real Estate": 31,
+   "Consumer Staples": 26,
+   "Utilities": 24
+  }
+ },
+ "0.08": {
+  "n": 287,
+  "days": 185,
+  "long_after_fall": 115,
+  "short_after_rise": 172,
+  "by_year": {
+   "2017": 19,
+   "2018": 33,
+   "2019": 31,
+   "2020": 119,
+   "2021": 85
+  },
+  "markets": 117,
+  "sectors": 11,
+  "by_sector": {
+   "Energy": 67,
+   "Health Care": 56,
+   "Consumer Discretionary": 47,
+   "Information Technology": 29,
+   "Industrials": 20,
+   "Materials": 16,
+   "Communication Services": 16,
+   "Utilities": 13,
+   "Financials": 13,
+   "Real Estate": 7,
+   "Consumer Staples": 3
+  }
+ },
+ "allowed_share_sessions": 364507
+}

@@ -1,0 +1,156 @@
+{
+ "idea": "021 Coinbase premium: bitcoin priced higher on the US exchange than elsewhere (scout idea 7)",
+ "date_declared": "2026-11-19",
+ "track": "fast",
+ "family": "crypto-flow",
+ "hypothesis": "When bitcoin trades unusually high on Coinbase (the US retail venue) relative to Bitstamp, both in dollars (z of the log premium over the last 168 hours >= +2), US buying pressure is ahead of the rest of the market and bitcoin rises over the next 24 hours; an unusually low premium (z <= -2) predicts a fall.",
+ "mechanism": "Makarov and Schoar (2020, JFE): price gaps between exchanges come from order flow on one side and persist for hours to days because arbitrage capital is limited; crypto traders watch the Coinbase premium as a gauge of US demand. The premium is information that a single venue's price does not hold. Not one of the closed families: crypto short horizon was price-only rules; this is a cross-venue flow signal.",
+ "data": {
+  "signal": "Coinbase Exchange BTC-USD hourly candles (kit.data.crypto_h1('coinbase','btcusd'), from 2015-07-20) and Bitstamp btcusd hourly candles (kit.data.crypto_h1('bitstamp','btcusd')), both in USD. p_t = log(Coinbase close / Bitstamp close) of the hour opening at t, KNOWN at t + 1 h (the candle's close). Hours kept: a Coinbase candle exists (Coinbase omits hours without a trade) and the Bitstamp candle has volume > 0 (Bitstamp sends flat zero-volume candles: a stale price; 4 such hours). z_t = (p_t - mean) / std over the p values known in the last 168 hours (time window ending at and including the current value), at least 118 values (70 %), std > 0. Past only.",
+  "publication_lag": "none: venue candles are real time and never revised (scout/sources.md 14, 15); a value is used from its candle's end (open + 1 h), never earlier",
+  "prices": "trades priced on Bitfinex BTC/USD hourly candles (kit.data.load_bars('btcusd', 2015, venue='bitfinex', allow_holes=True)): a third venue, neither of the two signal venues, so that the premium's own convergence between Coinbase and Bitstamp is not booked as a gain or a loss (pricing on Bitstamp would mechanically favour the rule, on Coinbase penalise it). FP's crypto weekend closure removed by the kit; price_is mid; costs FP's btcusd. allow_holes: the real Bitfinex outage after its hack, 2016-08-02 19:00 to 2016-08-10 15:00 UTC (the only hole > 48 h found, recorded by the kit). Information only, not judged and not a configuration: the same main signals priced on Binance BTCUSDT 1h (kit default) from 2017-08.",
+  "in_sample_years": "2015-08-01 .. 2021-12-31 (6.4 years); power check from the signal data alone (power.py / power.json): main = 1923 signal hours outside FP's closure, about 710 entries with a one-position 24 h hold (360 long, 350 short), 51 to 132 a year",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": [
+  "btcusd"
+ ],
+ "rule_main": {
+  "signal": "every hour t (bar end) with z_t >= +2 or z_t <= -2, with z built as in data.signal, known at the Coinbase / Bitstamp candles' end; signals whose known_at lies inside FP's crypto closure (Fri 23:55 to Mon 00:00 server time, kit.data.fp_closed) are dropped: 'each hour on weekdays' of the brief, on FP's clock; signals from 2015-08-01",
+  "side": "+1 if z >= +2 (Coinbase rich: buy), -1 if z <= -2 (sell)",
+  "entry": "open of the first Bitfinex H1 bar opening at or after known_at (delay 0, max_wait_h = 2: a hole in the venue data cannot delay an entry)",
+  "exit": [
+   "hours",
+   24
+  ],
+  "stop": [
+   "d20",
+   2.0
+  ],
+  "target": null,
+  "overlap": "one position at a time (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+ },
+ "configurations": [
+  {
+   "id": "01_main",
+   "win_h": 168,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "02_thr1.5",
+   "win_h": 168,
+   "thr": 1.5,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "03_thr2.5",
+   "win_h": 168,
+   "thr": 2.5,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "04_win96",
+   "win_h": 96,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "05_win336",
+   "win_h": 336,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "06_h12",
+   "win_h": 168,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    12
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "07_h48",
+   "win_h": 168,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    48
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "08_s1.5",
+   "win_h": 168,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "09_s3",
+   "win_h": 168,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    3.0
+   ]
+  }
+ ],
+ "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw btcusd): gross, net, spread and slippage x1.5",
+ "bars": "CHARTER.md 'The bars' on 01_main, one market, computed by kit.judge.verdict; random-entry null 2000 draws with the main's exit and stop; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported); truncation test with default cuts on the main build (items cb, bs with row length 1 h)",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead does it).",
+ "kit": "lab/explore/kit v2.2, unchanged"
+}

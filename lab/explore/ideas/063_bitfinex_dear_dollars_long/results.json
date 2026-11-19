@@ -1,0 +1,745 @@
+{
+ "idea": "063 Dear dollars on Bitfinex, long side: the exact mirror of idea 042 (declared post hoc)",
+ "declared_sha256": "f9482e4d0aa36d8aef9c266cca0385192aab8c529247758ca7a9a05b6f91f8bb",
+ "verdict": "fail",
+ "failed_bars": [
+  "t>=2.5",
+  "null>=97.5"
+ ],
+ "basket": false,
+ "bars": {
+  "truncation_test": {
+   "value": "passed",
+   "bar": "checks.truncation_test on the main signal build passed (same signals, dense cuts: checks.cuts_ok)",
+   "pass": true
+  },
+  "declared_hash": {
+   "value": "matches declared.sha256",
+   "bar": "declared.json matches declared.sha256",
+   "pass": true
+  },
+  "configs<=11": {
+   "value": 7,
+   "bar": "at most 11 configurations",
+   "pass": true
+  },
+  "n>=250": {
+   "value": 351,
+   "bar": ">= 250 trades",
+   "pass": true
+  },
+  "t>=2.5": {
+   "value": 2.245699796695755,
+   "bar": "t per trade >= 2.5",
+   "pass": false
+  },
+  "PF>=1.12": {
+   "value": 1.404117169596813,
+   "bar": "PF net >= 1.12",
+   "pass": true
+  },
+  "years>=60%": {
+   "value": 0.8333333333333334,
+   "bar": ">= 60 % of years positive",
+   "pass": true
+  },
+  "PF_stress>=1.04": {
+   "value": 1.3855310504081642,
+   "bar": "PF with spread and slippage x1.5 >= 1.04",
+   "pass": true
+  },
+  "neighbours_median_PF>=1.06": {
+   "value": 1.3977744275529234,
+   "bar": "median PF of the neighbours >= 1.06",
+   "pass": true
+  },
+  "every_signal_exp>0": {
+   "value": 0.050136717222474404,
+   "bar": "every-signal expectancy > 0",
+   "pass": true
+  },
+  "hold<=5d": {
+   "value": 1,
+   "bar": "hold <= 5 trading days",
+   "pass": true
+  },
+  "null>=97.5": {
+   "value": 91.3,
+   "bar": "random-entry null (same market, side, clock, the main's own exit rule: exit_key; >= 2000 draws) >= 97.5th percentile",
+   "pass": false
+  },
+  "corr<=0.30": {
+   "value": 0.15786474894528663,
+   "bar": "weekly corr with the sum of the ten <= 0.30 (CHARTER 'Independence'; a negative one passes)",
+   "pass": true
+  }
+ },
+ "selection": {
+  "N_all": 2678,
+  "N_main": 180,
+  "dsr_N_all": {
+   "dsr": 0.09606147980209756,
+   "sr": 0.11986658748178358,
+   "sr0": 0.18844377952585223,
+   "T": 351,
+   "n_trials": 2678,
+   "skew": 0.42445142997680857,
+   "kurtosis": 6.1194390207589295,
+   "var_sr_used": 0.002857142857142857
+  },
+  "dsr_N_main": {
+   "dsr": 0.3097583898204487,
+   "sr": 0.11986658748178358,
+   "sr0": 0.14597281874532234,
+   "T": 351,
+   "n_trials": 180,
+   "skew": 0.42445142997680857,
+   "kurtosis": 6.1194390207589295,
+   "var_sr_used": 0.002857142857142857
+  },
+  "dsr_N_all_V_noise": {
+   "dsr": 0.09606147980209756,
+   "sr": 0.11986658748178358,
+   "sr0": 0.18844377952585223,
+   "T": 351,
+   "n_trials": 2678,
+   "skew": 0.42445142997680857,
+   "kurtosis": 6.1194390207589295,
+   "var_sr_used": 0.002857142857142857
+  },
+  "pass": false
+ },
+ "main": {
+  "n": 351,
+  "markets": [
+   "btcusd"
+  ],
+  "PF_gross": 1.4812785957363255,
+  "PF": 1.404117169596813,
+  "PF_stress": 1.3855310504081642,
+  "mean_R": 0.050136717222474404,
+  "mean_R_gross": 0.05824152749813473,
+  "mean_R_stress": 0.0481225156455824,
+  "mean_net_bp": 37.82133491079368,
+  "mean_gross_bp": 46.23886759369412,
+  "t_trade": 2.245699796695755,
+  "t_daily": 2.245699796695755,
+  "n_days": 351,
+  "years_positive_frac": 0.8333333333333334,
+  "by_year_R": {
+   "2016": 5.60746072561445,
+   "2017": 8.362497186770794,
+   "2018": -3.2270389745331407,
+   "2019": 4.486696863252567,
+   "2020": 1.8608660970574262,
+   "2021": 0.5075058469264226
+  },
+  "hold_tdays_max": 1,
+  "hold_h_mean": 22.364672364672366,
+  "exit_reasons": {
+   "time": 269,
+   "time_close": 70,
+   "stop": 12
+  },
+  "long_n": 351,
+  "long_R": 17.597987745088517,
+  "short_n": 0,
+  "short_R": 0.0,
+  "by_market": {
+   "btcusd": {
+    "n": 351,
+    "sum_R": 17.597987745088517,
+    "mean_R": 0.050136717222474404
+   }
+  },
+  "markets_positive_frac": 1.0,
+  "max_market_share_of_profit": 1.0
+ },
+ "sizing": {
+  "judged": false,
+  "note": "reported only: the charter's sizing bar is checked by the lead (risk plan)",
+  "by_market": {
+   "btcusd": {
+    "min_lot": 0.01,
+    "margin_eur": 1.3037562653890535,
+    "loss_at_median_stop_eur": 6.345095652173901
+   }
+  },
+  "min_lot_margin_eur": 1.3037562653890535,
+  "min_lot_loss_at_median_stop_eur": 6.345095652173901,
+  "min_lot_loss_pct_of_1000_eur": 0.6345095652173901
+ },
+ "dividends": {
+  "by_market": {},
+  "credit_long_used": null
+ },
+ "max_hold_tdays": 5,
+ "slow_track": false,
+ "costs": "FP costs (lab/r2/fp_costs.json)",
+ "groups": null,
+ "hold_count": "bdays",
+ "provisional_costs": false,
+ "commission_min_only": null,
+ "neighbours": {
+  "02_thr4": {
+   "n": 479,
+   "PF": 1.2941165189350181,
+   "mean_R": 0.03639283727195106
+  },
+  "03_thr6": {
+   "n": 279,
+   "PF": 1.436933908934244,
+   "mean_R": 0.05613378886697821
+  },
+  "04_h11": {
+   "n": 351,
+   "PF": 1.2506237092954453,
+   "mean_R": 0.021550466280297095
+  },
+  "05_h47": {
+   "n": 228,
+   "PF": 1.5535889959086764,
+   "mean_R": 0.08843260237079598
+  },
+  "06_s15": {
+   "n": 351,
+   "PF": 1.3772936354420011,
+   "mean_R": 0.06350594359446254
+  },
+  "07_s3": {
+   "n": 351,
+   "PF": 1.4182552196638458,
+   "mean_R": 0.03424898156096575
+  }
+ },
+ "every_signal": {
+  "n": 351,
+  "mean_R": 0.050136717222474404
+ },
+ "null": {
+  "real_mean_R": 0.050136717222474404,
+  "percentile": 91.3,
+  "n_draws": 2000,
+  "seed": 0,
+  "exit_key": "0e188bd56144b8adde1a43304be35cce801d9eb5740fdd81d50150de47bebf3b",
+  "mode": "every",
+  "joint_groups": 0,
+  "joint_no_common_day": 0,
+  "null_mean": 0.02231601654471721,
+  "null_sd": 0.02046654653729177
+ },
+ "counts": {
+  "btcusd": {
+   "signals": 351,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 0,
+   "same_bar_skipped": 0,
+   "taken": 351
+  }
+ },
+ "rule": {
+  "exit": [
+   "hours",
+   23
+  ],
+  "stop": [
+   "d20",
+   2.0
+  ],
+  "target": null,
+  "delay_h": 0.0,
+  "mode": "one"
+ },
+ "ledger_line": "| 063 | 2026-11-19 | 063 Dear dollars on Bitfinex, long side: the exact mirror of idea 042 (declared post hoc) | btcusd | Bitfinex fUSD 2-day funding rate (daily, known at 00:00 UTC); trades on Bitstamp BTC/USD 1h, 2016-11..2021 (5.2 years); POST HOC mirror of 042 (long side) | 7 | fermee : echoue (t>=2.5, null>=97.5) | n 351, PF net 1.40, t 2.25, PF x1.5 1.39, years + 5/6, null 91.3 pct, corr 0.16, DSR 0.096 (N_all 2678) / 0.310 (N_main 180), sizing not judged (min lot: margin 1 EUR, loss at median stop 6.3 EUR) |",
+ "written_utc": "2026-11-19T13:22:52Z",
+ "extra": {
+  "post_hoc": "DECLARED AFTER SEEING THE RESULT OF IDEA 042. Idea 042 (same signal, same clock, same exit and stop, side -1) failed in sample with n 351, PF net 0.62, t -3.3, random-entry null at the 1.95th percentile. The lead chose this sign flip (side +1) AFTER that result. The in-sample bars of 063 are therefore expected to pass more or less by construction (a strongly losing short is a winning long, minus costs twice and plus the long drift of bitcoin) and prove NOTHING by themselves; they are reported for completeness only. The only evidence will be the lead's single validation look (2022-2025), which is not part of this run.",
+  "shift_test": {
+   "base": {
+    "n": 351,
+    "PF": 1.404117169596813,
+    "mean_R": 0.050136717222474404,
+    "PF_gross": 1.4812785957363255,
+    "stale": 0
+   },
+   "shifted": {
+    "n": 351,
+    "PF": 1.4612530492564126,
+    "mean_R": 0.05612038201770939,
+    "PF_gross": 1.5542666435577495,
+    "stale": 0
+   },
+   "delay_extra_h": 1.0,
+   "max_wait_h": 2
+  },
+  "years": {
+   "2016": {
+    "n": 32,
+    "PF_gross": 5.29899000822856,
+    "PF": 4.483045244171769,
+    "PF_stress": 4.307685560686911,
+    "mean_R_gross": 0.19327389071531761,
+    "mean_R": 0.17523314767545156,
+    "mean_gross_bp": 81.81088806415502,
+    "mean_net_bp": 73.39688330327107,
+    "t_trade": 2.577613388901401,
+    "years_positive_frac": 1.0,
+    "by_year_R": {
+     "2016": 5.60746072561445
+    }
+   },
+   "2017": {
+    "n": 164,
+    "PF_gross": 1.4267660198872603,
+    "PF": 1.3711276311561542,
+    "PF_stress": 1.3578066586778987,
+    "mean_R_gross": 0.057694713025996915,
+    "mean_R": 0.05099083650469995,
+    "mean_gross_bp": 65.93119833170086,
+    "mean_net_bp": 57.49498158698879,
+    "t_trade": 1.4568973077233156,
+    "years_positive_frac": 1.0,
+    "by_year_R": {
+     "2017": 8.362497186770794
+    }
+   },
+   "2018": {
+    "n": 37,
+    "PF_gross": 0.45646284727741593,
+    "PF": 0.429667764144353,
+    "PF_stress": 0.42347104780951755,
+    "mean_R_gross": -0.08125516235411967,
+    "mean_R": -0.08721726958197679,
+    "mean_gross_bp": -125.83122246212514,
+    "mean_net_bp": -134.51168584838462,
+    "t_trade": -1.9341279699233944,
+    "years_positive_frac": 0.0,
+    "by_year_R": {
+     "2018": -3.2270389745331407
+    }
+   },
+   "2019": {
+    "n": 51,
+    "PF_gross": 1.9618883204747148,
+    "PF": 1.8647693148327538,
+    "PF_stress": 1.8415974349187487,
+    "mean_R_gross": 0.09488766682887441,
+    "mean_R": 0.08797444829906993,
+    "mean_gross_bp": 90.2795461290264,
+    "mean_net_bp": 81.80165016427104,
+    "t_trade": 1.4453045069982593,
+    "years_positive_frac": 1.0,
+    "by_year_R": {
+     "2019": 4.486696863252567
+    }
+   },
+   "2020": {
+    "n": 49,
+    "PF_gross": 1.385652089186442,
+    "PF": 1.296851892906752,
+    "PF_stress": 1.275191529067045,
+    "mean_R_gross": 0.04779172213680854,
+    "mean_R": 0.03797685912362094,
+    "mean_gross_bp": 36.53816846693392,
+    "mean_net_bp": 28.32784248700388,
+    "t_trade": 0.6633058673443172,
+    "years_positive_frac": 1.0,
+    "by_year_R": {
+     "2020": 1.8608660970574262
+    }
+   },
+   "2021": {
+    "n": 18,
+    "PF_gross": 1.2784901351413882,
+    "PF": 1.2217165740339406,
+    "PF_stress": 1.2077243760977852,
+    "mean_R_gross": 0.03452524037876931,
+    "mean_R": 0.028194769273690135,
+    "mean_gross_bp": 58.905872476291876,
+    "mean_net_bp": 50.799735770386945,
+    "t_trade": 0.29752966481516296,
+    "years_positive_frac": 1.0,
+    "by_year_R": {
+     "2021": 0.5075058469264226
+    }
+   }
+  },
+  "a_without_2017": {
+   "n": 187,
+   "PF_gross": 1.5408022423830225,
+   "PF": 1.4394907220670106,
+   "PF_stress": 1.4151277053111602,
+   "mean_R_gross": 0.05872108671434117,
+   "mean_R": 0.049387650044479814,
+   "mean_gross_bp": 28.968588229880712,
+   "mean_net_bp": 20.567441569103842,
+   "t_trade": 1.7257420825337275,
+   "years_positive_frac": 0.8,
+   "by_year_R": {
+    "2016": 5.60746072561445,
+    "2018": -3.2270389745331407,
+    "2019": 4.486696863252567,
+    "2020": 1.8608660970574262,
+    "2021": 0.5075058469264226
+   }
+  },
+  "a_only_2017": {
+   "n": 164,
+   "PF_gross": 1.4267660198872603,
+   "PF": 1.3711276311561542,
+   "PF_stress": 1.3578066586778987,
+   "mean_R_gross": 0.057694713025996915,
+   "mean_R": 0.05099083650469995,
+   "mean_gross_bp": 65.93119833170086,
+   "mean_net_bp": 57.49498158698879,
+   "t_trade": 1.4568973077233156,
+   "years_positive_frac": 1.0,
+   "by_year_R": {
+    "2017": 8.362497186770794
+   }
+  },
+  "b_control_other_weekdays": {
+   "other_weekdays": {
+    "n": 997,
+    "PF_gross": 1.2100089265544183,
+    "PF": 1.1306019391795574,
+    "PF_stress": 1.1120025237572193,
+    "mean_R_gross": 0.023139825387021258,
+    "mean_R": 0.014887932975137356,
+    "mean_gross_bp": 22.414954247583186,
+    "mean_net_bp": 13.833543158770574,
+    "t_trade": 1.2706322556937402,
+    "years_positive_frac": 0.6666666666666666,
+    "by_year_R": {
+     "2016": 2.384464199592699,
+     "2017": 5.735598050359714,
+     "2018": -11.493938139847879,
+     "2019": 2.8950221331396637,
+     "2020": 16.49777510411125,
+     "2021": -1.1756521711434977
+    }
+   },
+   "n_other_days": 998,
+   "signal_minus_other_meanR_net": 0.035248784247337045,
+   "t_net_welch": 1.3980110878382719,
+   "signal_minus_other_meanR_gross": 0.03510170211111347,
+   "t_gross_welch": 1.387600396584504,
+   "other_by_year_meanR_net": {
+    "2016": 0.19870534996605826,
+    "2017": 0.05974581302458037,
+    "2018": -0.051312223838606605,
+    "2019": 0.013785819681617443,
+    "2020": 0.0774543432117899,
+    "2021": -0.004858066822907018
+   },
+   "signal_by_year_meanR_net": {
+    "2016": 0.17523314767545156,
+    "2017": 0.05099083650469995,
+    "2018": -0.08721726958197679,
+    "2019": 0.08797444829906993,
+    "2020": 0.03797685912362094,
+    "2021": 0.028194769273690135
+   },
+   "counts": {
+    "btcusd": {
+     "signals": 998,
+     "stale": 0,
+     "no_bar": 0,
+     "open_at_end": 1,
+     "no_d20": 0,
+     "taken": 997
+    }
+   },
+   "without_2017_signal_minus_other_meanR_net": 0.03927924701911663,
+   "without_2017_t_net_welch": 1.262915160283366
+  },
+  "c_null_same_year": {
+   "real_mean_R": 0.050136717222474404,
+   "percentile": 51.65,
+   "n_draws": 2000,
+   "null_mean": 0.04922623159565696,
+   "null_sd": 0.020997605959174465,
+   "seed": 63,
+   "pool_sizes": {
+    "2016": 44,
+    "2017": 260,
+    "2018": 261,
+    "2019": 261,
+    "2020": 262,
+    "2021": 260
+   },
+   "pool_meanR_by_year": {
+    "2016": 0.18163465739107154,
+    "2017": 0.05422344321973272,
+    "2018": -0.0564022111662108,
+    "2019": 0.028282448262039194,
+    "2020": 0.0700711496227812,
+    "2021": -0.0025697935546810575
+   },
+   "how": "each main trade re-entered long at the open of the 00:00 UTC bar of a random weekday of its own entry year (uniform with replacement among complete trades), exit 23 h, stop 2 x D20, net costs; statistic = pooled mean net R; percentile = share of draws strictly below"
+  },
+  "d_costs_long": {
+   "per_trade_mean_bp": {
+    "spread_and_slippage": 4.15985620300173,
+    "commission": 0.0,
+    "swap": 4.257676479898702,
+    "total": 8.417532682900433
+   },
+   "per_trade_mean_R": {
+    "spread_and_slippage": 0.004027514702884596,
+    "commission": 0.0,
+    "swap": 0.004077295572775726,
+    "total": 0.008104810275660323
+   },
+   "swap_bp_by_entry_weekday": {
+    "0": 5.401234567901234,
+    "1": 5.471380471380471,
+    "2": 5.3921568627450975,
+    "3": 5.320813771517996,
+    "4": 0.0
+   },
+   "note": "FP Raw btcusd: spread 22.5 USD at 76000 (Raw commission folded into the spread in lab/r2/fp_costs.json, so commission shows as 0), slippage 0.5 bp a side at market, 1.5 bp on a stop; long swap 0.2 a year / 360 per 17:00 New York rollover, triple on Friday"
+  },
+  "side_split": {
+   "long_n": 351,
+   "short_n": 0
+  },
+  "neighbours_summary": {
+   "02_thr4": {
+    "n": 479,
+    "PF_gross": 1.369315068389175,
+    "PF": 1.2941165189350181,
+    "PF_stress": 1.2761144148941856,
+    "mean_R_gross": 0.04453349587418858,
+    "mean_R": 0.03639283727195106,
+    "mean_gross_bp": 35.787598787925106,
+    "mean_net_bp": 27.348772883273647,
+    "t_trade": 1.991065601367269,
+    "years_positive_frac": 0.8333333333333334,
+    "by_year_R": {
+     "2016": 6.138024976083979,
+     "2017": 7.213046533472692,
+     "2018": -4.515659494741304,
+     "2019": 4.74878956630745,
+     "2020": 3.6951519926097776,
+     "2021": 0.15281547953196323
+    }
+   },
+   "03_thr6": {
+    "n": 279,
+    "PF_gross": 1.5120024445031786,
+    "PF": 1.436933908934244,
+    "PF_stress": 1.4188200993176483,
+    "mean_R_gross": 0.06429290283749893,
+    "mean_R": 0.05613378886697821,
+    "mean_gross_bp": 54.32180003419222,
+    "mean_net_bp": 45.90991859241403,
+    "t_trade": 2.199048252785254,
+    "years_positive_frac": 0.6666666666666666,
+    "by_year_R": {
+     "2016": 5.586578025784705,
+     "2017": 10.323100711611715,
+     "2018": -2.177364551116729,
+     "2019": 1.387776742827077,
+     "2020": 0.7720090822731608,
+     "2021": -0.23077291749300777
+    }
+   },
+   "04_h11": {
+    "n": 351,
+    "PF_gross": 1.303932966865491,
+    "PF": 1.2506237092954453,
+    "PF_stress": 1.2247257539912864,
+    "mean_R_gross": 0.02562572420645583,
+    "mean_R": 0.021550466280297095,
+    "mean_gross_bp": 14.497410879405212,
+    "mean_net_bp": 10.292602572591859,
+    "t_trade": 1.4126758425935162,
+    "years_positive_frac": 0.5,
+    "by_year_R": {
+     "2016": 4.358156378707977,
+     "2017": 8.185222303386565,
+     "2018": -3.2720802233218573,
+     "2019": 0.37512971964767206,
+     "2020": -0.904816073404606,
+     "2021": -1.1773984406314697
+    }
+   },
+   "05_h47": {
+    "n": 228,
+    "PF_gross": 1.6390626479803705,
+    "PF": 1.5535889959086764,
+    "PF_stress": 1.538570093177778,
+    "mean_R_gross": 0.09943057254119557,
+    "mean_R": 0.08843260237079598,
+    "mean_gross_bp": 88.45141704947495,
+    "mean_net_bp": 77.15010718914392,
+    "t_trade": 2.314297788466455,
+    "years_positive_frac": 0.8333333333333334,
+    "by_year_R": {
+     "2016": 7.294663005877527,
+     "2017": 8.398862096416678,
+     "2018": -3.3916663728265517,
+     "2019": 3.2354959960416347,
+     "2020": 3.8400850350461306,
+     "2021": 0.7851935799860589
+    }
+   },
+   "06_s15": {
+    "n": 351,
+    "PF_gross": 1.4663881646318957,
+    "PF": 1.3772936354420011,
+    "PF_stress": 1.3597174437535138,
+    "mean_R_gross": 0.07586666149190453,
+    "mean_R": 0.06350594359446254,
+    "mean_gross_bp": 43.7019955131148,
+    "mean_net_bp": 34.673757561928724,
+    "t_trade": 2.1570376509507945,
+    "years_positive_frac": 0.8333333333333334,
+    "by_year_R": {
+     "2016": 7.028240831653351,
+     "2017": 10.402416447524281,
+     "2018": -4.478850944892157,
+     "2019": 6.315545817670091,
+     "2020": 2.01327625379889,
+     "2021": 1.009957795901896
+    }
+   },
+   "07_s3": {
+    "n": 351,
+    "PF_gross": 1.498403470050466,
+    "PF": 1.4182552196638458,
+    "PF_stress": 1.3990761661601374,
+    "mean_R_gross": 0.03974971185864766,
+    "mean_R": 0.03424898156096575,
+    "mean_gross_bp": 50.598029625040944,
+    "mean_net_bp": 42.0226147933949,
+    "t_trade": 2.2753487806919113,
+    "years_positive_frac": 0.8333333333333334,
+    "by_year_R": {
+     "2016": 3.7383071504096335,
+     "2017": 5.519866157865398,
+     "2018": -2.1513593163554274,
+     "2019": 2.6578479088350453,
+     "2020": 1.570427676417037,
+     "2021": 0.6863029507272909
+    }
+   }
+  },
+  "info_only": {
+   "bitfinex_prices": {
+    "n": 351,
+    "PF_gross": 1.4380413140521608,
+    "PF": 1.3627270251644317,
+    "PF_stress": 1.3444937464301343,
+    "mean_R_gross": 0.05343608508419684,
+    "mean_R": 0.04537800626654004,
+    "mean_gross_bp": 42.57889068850706,
+    "mean_net_bp": 34.155400079057486,
+    "t_trade": 2.066061380066313,
+    "years_positive_frac": 0.8333333333333334,
+    "by_year_R": {
+     "2016": 5.303657262999523,
+     "2017": 7.284298324569745,
+     "2018": -3.100014150320501,
+     "2019": 3.9570275463965814,
+     "2020": 1.9334419258581157,
+     "2021": 0.5492692900520872
+    }
+   },
+   "bitfinex_prices_bitstamp_same_signals": {
+    "n": 351,
+    "PF_gross": 1.4812785957363255,
+    "PF": 1.404117169596813,
+    "PF_stress": 1.3855310504081642,
+    "mean_R_gross": 0.05824152749813473,
+    "mean_R": 0.050136717222474404,
+    "mean_gross_bp": 46.23886759369412,
+    "mean_net_bp": 37.82133491079368,
+    "t_trade": 2.245699796695755,
+    "years_positive_frac": 0.8333333333333334,
+    "by_year_R": {
+     "2016": 5.60746072561445,
+     "2017": 8.362497186770794,
+     "2018": -3.2270389745331407,
+     "2019": 4.486696863252567,
+     "2020": 1.8608660970574262,
+     "2021": 0.5075058469264226
+    }
+   },
+   "binance_from_2017_08": {
+    "n": 214,
+    "PF_gross": 1.3382791429833523,
+    "PF": 1.2742786576089797,
+    "PF_stress": 1.2587887774240414,
+    "mean_R_gross": 0.042826371218619465,
+    "mean_R": 0.035590043173857784,
+    "mean_gross_bp": 31.717418514744555,
+    "mean_net_bp": 23.303685562643533,
+    "t_trade": 1.2595682640995767,
+    "years_positive_frac": 0.8,
+    "by_year_R": {
+     "2017": 3.2768786603372084,
+     "2018": -3.0768425296279887,
+     "2019": 4.7977456952852915,
+     "2020": 2.0427086272206436,
+     "2021": 0.5757787859904115
+    }
+   },
+   "binance_from_2017_08_bitstamp_same_signals": {
+    "n": 214,
+    "PF_gross": 1.3863625544198521,
+    "PF": 1.3200029992800961,
+    "PF_stress": 1.3039846746579153,
+    "mean_R_gross": 0.04820908895491016,
+    "mean_R": 0.040941689520152445,
+    "mean_gross_bp": 41.98123620687473,
+    "mean_net_bp": 33.52453879684993,
+    "t_trade": 1.4390432930319608,
+    "years_positive_frac": 0.8,
+    "by_year_R": {
+     "2017": 5.133491724609348,
+     "2018": -3.2270389745331407,
+     "2019": 4.486696863252567,
+     "2020": 1.8608660970574262,
+     "2021": 0.5075058469264226
+    }
+   }
+  },
+  "counts": {
+   "btcusd": {
+    "signals": 351,
+    "stale": 0,
+    "no_bar": 0,
+    "open_at_end": 0,
+    "no_d20": 0,
+    "overlap_skipped": 0,
+    "same_bar_skipped": 0,
+    "taken": 351
+   }
+  },
+  "every_summary": {
+   "n": 351,
+   "PF_gross": 1.4812785957363255,
+   "PF": 1.404117169596813,
+   "PF_stress": 1.3855310504081642,
+   "mean_R_gross": 0.05824152749813473,
+   "mean_R": 0.050136717222474404,
+   "mean_gross_bp": 46.23886759369412,
+   "mean_net_bp": 37.82133491079368,
+   "t_trade": 2.245699796695755,
+   "years_positive_frac": 0.8333333333333334,
+   "by_year_R": {
+    "2016": 5.60746072561445,
+    "2017": 8.362497186770794,
+    "2018": -3.2270389745331407,
+    "2019": 4.486696863252567,
+    "2020": 1.8608660970574262,
+    "2021": 0.5075058469264226
+   }
+  }
+ }
+}

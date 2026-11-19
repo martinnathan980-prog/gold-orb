@@ -1,0 +1,21 @@
+{
+ "note": "information only, open spread 12 bp (separate process), never judged",
+ "n": 524,
+ "PF_net": 0.86997326360553,
+ "PF_stress": 0.7764644802107683,
+ "PF_gross": 1.1082265947268264,
+ "mean_R": -0.05920185740043413,
+ "t_daily_net": -1.3363243216760154,
+ "mean_net_bp": -21.01359252390832,
+ "mean_gross_bp": 16.369067652083192,
+ "long": {
+  "n": 250,
+  "PF_net": 0.9388210267315412,
+  "mean_net_bp": 14.22605154227644
+ },
+ "short": {
+  "n": 274,
+  "PF_net": 0.8034244679713334,
+  "mean_net_bp": -53.16655243831048
+ }
+}

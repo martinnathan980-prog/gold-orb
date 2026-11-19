@@ -1,0 +1,547 @@
+{
+ "idea": "023 Aggressive order flow absorbed: taker-buy share against the block's own return (scout idea 9)",
+ "declared_sha256": "1c00085c5048a55aa9be7cd58f670c53540a73841cf0bd888d4f3c78ce3a3d1d",
+ "verdict": "fail",
+ "failed_bars": [
+  "t_daily>=2.5",
+  "markets_positive>=65%",
+  "max_market_share<=75%",
+  "PF>=1.12",
+  "PF_stress>=1.04",
+  "neighbours_median_PF>=1.06",
+  "every_signal_exp>0",
+  "null>=97.5"
+ ],
+ "basket": true,
+ "bars": {
+  "truncation_test": {
+   "value": "passed",
+   "bar": "checks.truncation_test on the main signal build passed (same signals, dense cuts: checks.cuts_ok)",
+   "pass": true
+  },
+  "declared_hash": {
+   "value": "matches declared.sha256",
+   "bar": "declared.json matches declared.sha256",
+   "pass": true
+  },
+  "configs<=11": {
+   "value": 9,
+   "bar": "at most 11 configurations",
+   "pass": true
+  },
+  "t_daily>=2.5": {
+   "value": -0.6318117336065124,
+   "bar": "t on daily sums of R >= 2.5",
+   "pass": false
+  },
+  "markets_positive>=65%": {
+   "value": 0.5,
+   "bar": ">= 65 % of markets with positive expectancy",
+   "pass": false
+  },
+  "max_market_share<=75%": {
+   "value": "n/a (total profit <= 0)",
+   "bar": "no market above 75% of the profit",
+   "pass": false
+  },
+  "PF>=1.12": {
+   "value": 0.8919565015012815,
+   "bar": "PF net >= 1.12",
+   "pass": false
+  },
+  "years>=60%": {
+   "value": 0.6,
+   "bar": ">= 60 % of years positive",
+   "pass": true
+  },
+  "PF_stress>=1.04": {
+   "value": 0.857653056252882,
+   "bar": "PF with spread and slippage x1.5 >= 1.04",
+   "pass": false
+  },
+  "neighbours_median_PF>=1.06": {
+   "value": 0.8790949697530268,
+   "bar": "median PF of the neighbours >= 1.06",
+   "pass": false
+  },
+  "every_signal_exp>0": {
+   "value": -0.04195167482239424,
+   "bar": "every-signal expectancy > 0",
+   "pass": false
+  },
+  "hold<=5d": {
+   "value": 1,
+   "bar": "hold <= 5 trading days",
+   "pass": true
+  },
+  "null>=97.5": {
+   "value": 47.599999999999994,
+   "bar": "random-entry null (same market, side, clock, the main's own exit rule: exit_key; >= 2000 draws) >= 97.5th percentile",
+   "pass": false
+  },
+  "corr<=0.30": {
+   "value": 0.004650380636356923,
+   "bar": "weekly corr with the sum of the ten <= 0.30 (CHARTER 'Independence'; a negative one passes)",
+   "pass": true
+  }
+ },
+ "selection": {
+  "N_all": 2680,
+  "N_main": 180,
+  "dsr_N_all": {
+   "dsr": 2.962322450063944e-05,
+   "sr": -0.04193481761370337,
+   "sr0": 0.23452329744028128,
+   "T": 227,
+   "n_trials": 2680,
+   "skew": 1.5956375922946588,
+   "kurtosis": 10.49436095992921,
+   "var_sr_used": 0.004424778761061947
+  },
+  "dsr_N_main": {
+   "dsr": 0.0005813790467303852,
+   "sr": -0.04193481761370337,
+   "sr0": 0.18165685747817453,
+   "T": 227,
+   "n_trials": 180,
+   "skew": 1.5956375922946588,
+   "kurtosis": 10.49436095992921,
+   "var_sr_used": 0.004424778761061947
+  },
+  "dsr_N_all_V_noise": {
+   "dsr": 2.962322450063944e-05,
+   "sr": -0.04193481761370337,
+   "sr0": 0.23452329744028128,
+   "T": 227,
+   "n_trials": 2680,
+   "skew": 1.5956375922946588,
+   "kurtosis": 10.49436095992921,
+   "var_sr_used": 0.004424778761061947
+  },
+  "pass": false
+ },
+ "main": {
+  "n": 252,
+  "markets": [
+   "btcusd",
+   "ethusd"
+  ],
+  "PF_gross": 0.9768779079731844,
+  "PF": 0.8919565015012815,
+  "PF_stress": 0.857653056252882,
+  "mean_R": -0.02620230187207427,
+  "mean_R_gross": -0.005361535361078997,
+  "mean_R_stress": -0.03516774255284662,
+  "mean_net_bp": -11.128773577114382,
+  "mean_gross_bp": -1.3061922761944336,
+  "t_trade": -0.6325602212645147,
+  "t_daily": -0.6318117336065124,
+  "n_days": 227,
+  "years_positive_frac": 0.6,
+  "by_year_R": {
+   "2017": 0.5078080247430634,
+   "2018": -2.9183428726053537,
+   "2019": -12.02588742246228,
+   "2020": 4.68147747847032,
+   "2021": 3.1519647200915344
+  },
+  "hold_tdays_max": 1,
+  "hold_h_mean": 10.841269841269842,
+  "exit_reasons": {
+   "time": 205,
+   "stop": 30,
+   "time_close": 17
+  },
+  "long_n": 121,
+  "long_R": 5.300504907107498,
+  "short_n": 131,
+  "short_R": -11.903484978870214,
+  "by_market": {
+   "btcusd": {
+    "n": 126,
+    "sum_R": 6.583410233888459,
+    "mean_R": 0.05224928757054332
+   },
+   "ethusd": {
+    "n": 126,
+    "sum_R": -13.186390305651173,
+    "mean_R": -0.10465389131469185
+   }
+  },
+  "markets_positive_frac": 0.5,
+  "max_market_share_of_profit": null,
+  "max_market_share_note": "n/a (total profit <= 0)"
+ },
+ "sizing": {
+  "judged": false,
+  "note": "reported only: the charter's sizing bar is checked by the lead (risk plan)",
+  "by_market": {
+   "btcusd": {
+    "min_lot": 0.01,
+    "margin_eur": 1.4482719830782167,
+    "loss_at_median_stop_eur": 2.687159999999984
+   },
+   "ethusd": {
+    "min_lot": 0.01,
+    "margin_eur": 0.041455490119917886,
+    "loss_at_median_stop_eur": 0.12066021739130436
+   }
+  },
+  "min_lot_margin_eur": 1.4482719830782167,
+  "min_lot_loss_at_median_stop_eur": 2.687159999999984,
+  "min_lot_loss_pct_of_1000_eur": 0.2687159999999984
+ },
+ "dividends": {
+  "by_market": {},
+  "credit_long_used": null
+ },
+ "max_hold_tdays": 5,
+ "slow_track": false,
+ "costs": "FP costs (lab/r2/fp_costs.json)",
+ "groups": null,
+ "hold_count": "bdays",
+ "provisional_costs": false,
+ "commission_min_only": null,
+ "neighbours": {
+  "02_thr1.25": {
+   "n": 397,
+   "PF": 0.8701303811644321,
+   "mean_R": -0.031636693430948874
+  },
+  "03_thr1.75": {
+   "n": 155,
+   "PF": 0.9774472425971609,
+   "mean_R": -0.005200595870280837
+  },
+  "04_win120": {
+   "n": 247,
+   "PF": 0.8461371830708803,
+   "mean_R": -0.03793196196804973
+  },
+  "05_win270": {
+   "n": 247,
+   "PF": 0.9856813850912233,
+   "mean_R": -0.0033887096429573776
+  },
+  "06_h8": {
+   "n": 254,
+   "PF": 0.8890866754540655,
+   "mean_R": -0.021711717039851176
+  },
+  "07_h16": {
+   "n": 240,
+   "PF": 0.8512902082943292,
+   "mean_R": -0.04052693419173949
+  },
+  "08_stop0.5": {
+   "n": 253,
+   "PF": 0.8880595583416214,
+   "mean_R": -0.03738014040645799
+  },
+  "09_stop1.0": {
+   "n": 250,
+   "PF": 0.8620773200194208,
+   "mean_R": -0.02441926133287571
+  }
+ },
+ "every_signal": {
+  "n": 273,
+  "mean_R": -0.04195167482239424
+ },
+ "null": {
+  "real_mean_R": -0.02620230187207427,
+  "percentile": 47.599999999999994,
+  "n_draws": 2000,
+  "seed": 0,
+  "exit_key": "1513ed4b19e127450dca487bee49a9151bf53aa22194f1ed293b4054870c2cfd",
+  "mode": "every",
+  "joint_groups": 4,
+  "joint_no_common_day": 0,
+  "null_mean": -0.022069552583816848,
+  "null_sd": 0.040304313025056826
+ },
+ "counts": {
+  "btcusd": {
+   "signals": 140,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 14,
+   "same_bar_skipped": 0,
+   "taken": 126
+  },
+  "ethusd": {
+   "signals": 133,
+   "stale": 0,
+   "no_bar": 0,
+   "open_at_end": 0,
+   "no_d20": 0,
+   "overlap_skipped": 7,
+   "same_bar_skipped": 0,
+   "taken": 126
+  }
+ },
+ "rule": {
+  "exit": [
+   "hours",
+   12
+  ],
+  "stop": [
+   "d20",
+   0.7
+  ],
+  "target": null,
+  "delay_h": 0.0,
+  "mode": "one"
+ },
+ "ledger_line": "| 023 | 2026-11-19 | 023 Aggressive order flow absorbed: taker-buy share against the block's own return (scout idea 9) | btcusd, ethusd | Binance BTCUSDT / ETHUSDT 1h klines (taker-buy volume) 2017-08..2021 (4.4 years) | 9 | fermee : echoue (t_daily>=2.5, markets_positive>=65%, max_market_share<=75%, PF>=1.12, PF_stress>=1.04, neighbours_median_PF>=1.06, every_signal_exp>0, null>=97.5) | n 252, PF net 0.89, t -0.63 (daily sums), PF x1.5 0.86, years + 3/5, null 47.6 pct, corr 0.00, DSR 0.000 (N_all 2680) / 0.001 (N_main 180), sizing not judged (min lot: margin 1 EUR, loss at median stop 2.7 EUR) |",
+ "written_utc": "2026-11-19T13:11:15Z",
+ "extra": {
+  "shift_test": {
+   "base": {
+    "n": 252,
+    "PF": 0.8919565015012815,
+    "mean_R": -0.02620230187207427,
+    "PF_gross": 0.9768779079731844,
+    "stale": 0
+   },
+   "shifted": {
+    "n": 243,
+    "PF": 0.892083228592903,
+    "mean_R": -0.025470337959359067,
+    "PF_gross": 0.9731967643381398,
+    "stale": 9
+   },
+   "delay_extra_h": 1.0,
+   "max_wait_h": 2
+  },
+  "sides": {
+   "long": {
+    "n": 121,
+    "PF_gross": 1.3137926709916332,
+    "PF": 1.1985214157482444,
+    "PF_stress": 1.1540048390620958,
+    "t_trade": 0.6448237308094761,
+    "t_daily": 0.6338238873314856,
+    "mean_R_gross": 0.06575830366988833,
+    "mean_R": 0.04380582567857436
+   },
+   "short": {
+    "n": 131,
+    "PF_gross": 0.7185990538350685,
+    "PF": 0.6541109874697155,
+    "PF_stress": 0.6265410115734115,
+    "t_trade": -1.8661180167013713,
+    "t_daily": -1.8560214495155771,
+    "mean_R_gross": -0.07105237904617097,
+    "mean_R": -0.09086629754862759
+   }
+  },
+  "per_market": {
+   "btcusd": {
+    "n": 126,
+    "PF_gross": 1.2959247851417934,
+    "PF": 1.2316085180954894,
+    "PF_stress": 1.2051902725755557,
+    "t_trade": 0.7770692620610957,
+    "t_daily": 0.7787488716424371,
+    "mean_R_gross": 0.06506569312660557,
+    "mean_R": 0.05224928757054331
+   },
+   "ethusd": {
+    "n": 126,
+    "PF_gross": 0.6892454698544245,
+    "PF": 0.596615183195231,
+    "PF_stress": 0.5595438891090997,
+    "t_trade": -2.195956099216789,
+    "t_daily": -2.194559453035984,
+    "mean_R_gross": -0.07578876384876353,
+    "mean_R": -0.10465389131469184
+   }
+  },
+  "per_market_side": {
+   "btcusd_long": {
+    "n": 64,
+    "PF_gross": 1.6904450006392189,
+    "PF": 1.5937532778206642,
+    "PF_stress": 1.55682932746016,
+    "t_trade": 1.1056237769089352,
+    "t_daily": 1.1056237769089352,
+    "mean_R_gross": 0.13466973005124172,
+    "mean_R": 0.11961910660665759
+   },
+   "btcusd_short": {
+    "n": 62,
+    "PF_gross": 0.9723678443665051,
+    "PF": 0.9309636166696219,
+    "PF_stress": 0.9120723077258016,
+    "t_trade": -0.21976232898025594,
+    "t_daily": -0.2106621441144353,
+    "mean_R_gross": -0.0067836353117285315,
+    "mean_R": -0.017293751434477832
+   },
+   "ethusd_long": {
+    "n": 57,
+    "PF_gross": 0.948568829317632,
+    "PF": 0.8294172246954831,
+    "PF_stress": 0.7835529540490189,
+    "t_trade": -0.5350581069130232,
+    "t_daily": -0.5342357517072894,
+    "mean_R_gross": -0.011615929460052304,
+    "mean_R": -0.04131785817050148
+   },
+   "ethusd_short": {
+    "n": 69,
+    "PF_gross": 0.5022806498923732,
+    "PF": 0.4264024337700245,
+    "PF_stress": 0.3946229007737776,
+    "t_trade": -2.6616204587908148,
+    "t_daily": -2.6616204587908148,
+    "mean_R_gross": -0.12880110530030767,
+    "mean_R": -0.15697496217293608
+   }
+  },
+  "years": {
+   "2017": {
+    "n": 22,
+    "sum_R": 0.508,
+    "sum_R_gross": 0.884
+   },
+   "2018": {
+    "n": 52,
+    "sum_R": -2.918,
+    "sum_R_gross": -1.681
+   },
+   "2019": {
+    "n": 88,
+    "sum_R": -12.026,
+    "sum_R_gross": -10.139
+   },
+   "2020": {
+    "n": 48,
+    "sum_R": 4.681,
+    "sum_R_gross": 5.68
+   },
+   "2021": {
+    "n": 42,
+    "sum_R": 3.152,
+    "sum_R_gross": 3.905
+   }
+  },
+  "neighbours_summary": {
+   "02_thr1.25": {
+    "n": 397,
+    "PF_gross": 0.9553556046066963,
+    "PF": 0.8701303811644321,
+    "PF_stress": 0.8336370264598376,
+    "t_trade": -0.9925603503591705,
+    "t_daily": -0.9806807441376872,
+    "mean_R_gross": -0.010410801239643743,
+    "mean_R": -0.031636693430948874
+   },
+   "03_thr1.75": {
+    "n": 155,
+    "PF_gross": 1.0747828358400988,
+    "PF": 0.9774472425971609,
+    "PF_stress": 0.9393291053395132,
+    "t_trade": -0.09915926006234434,
+    "t_daily": -0.09852291000539844,
+    "mean_R_gross": 0.016359779885088493,
+    "mean_R": -0.005200595870280837
+   },
+   "04_win120": {
+    "n": 247,
+    "PF_gross": 0.9256539829571286,
+    "PF": 0.8461371830708803,
+    "PF_stress": 0.8142848267220759,
+    "t_trade": -0.943825736196514,
+    "t_daily": -0.9493365601629332,
+    "mean_R_gross": -0.017539808845449603,
+    "mean_R": -0.03793196196804973
+   },
+   "05_win270": {
+    "n": 247,
+    "PF_gross": 1.0822704366418585,
+    "PF": 0.9856813850912233,
+    "PF_stress": 0.9431216624663752,
+    "t_trade": -0.07911840259101592,
+    "t_daily": -0.07771116051956962,
+    "mean_R_gross": 0.018586808418968852,
+    "mean_R": -0.0033887096429573776
+   },
+   "06_h8": {
+    "n": 254,
+    "PF_gross": 0.9982284402443042,
+    "PF": 0.8890866754540655,
+    "PF_stress": 0.8449427842387691,
+    "t_trade": -0.6259265020960985,
+    "t_daily": -0.6221509562143269,
+    "mean_R_gross": -0.00032772136839646687,
+    "mean_R": -0.021711717039851176
+   },
+   "07_h16": {
+    "n": 240,
+    "PF_gross": 0.9310835571041154,
+    "PF": 0.8512902082943292,
+    "PF_stress": 0.8227971413514598,
+    "t_trade": -0.9321719357591538,
+    "t_daily": -0.9291895557409339,
+    "mean_R_gross": -0.0179258557348568,
+    "mean_R": -0.04052693419173949
+   },
+   "08_stop0.5": {
+    "n": 253,
+    "PF_gross": 1.0064837175253782,
+    "PF": 0.8880595583416214,
+    "PF_stress": 0.8506428212336216,
+    "t_trade": -0.6730593514339109,
+    "t_daily": -0.6700212334106482,
+    "mean_R_gross": 0.0020011920245433337,
+    "mean_R": -0.03738014040645799
+   },
+   "09_stop1.0": {
+    "n": 250,
+    "PF_gross": 0.9429708987664012,
+    "PF": 0.8620773200194208,
+    "PF_stress": 0.8280377204490145,
+    "t_trade": -0.798679759633315,
+    "t_daily": -0.8033083837105807,
+    "mean_R_gross": -0.009666275007575472,
+    "mean_R": -0.02441926133287571
+   }
+  },
+  "every_signal": {
+   "n": 273,
+   "PF_gross": 0.9096360727053703,
+   "PF": 0.829523896909588,
+   "PF_stress": 0.7971836684729575,
+   "t_trade": -1.0761413822134982,
+   "t_daily": -1.131069543525154,
+   "mean_R_gross": -0.021234471589272646,
+   "mean_R": -0.04195167482239424
+  },
+  "counts": {
+   "btcusd": {
+    "signals": 140,
+    "stale": 0,
+    "no_bar": 0,
+    "open_at_end": 0,
+    "no_d20": 0,
+    "overlap_skipped": 14,
+    "same_bar_skipped": 0,
+    "taken": 126
+   },
+   "ethusd": {
+    "signals": 133,
+    "stale": 0,
+    "no_bar": 0,
+    "open_at_end": 0,
+    "no_d20": 0,
+    "overlap_skipped": 7,
+    "same_bar_skipped": 0,
+    "taken": 126
+   }
+  }
+ }
+}

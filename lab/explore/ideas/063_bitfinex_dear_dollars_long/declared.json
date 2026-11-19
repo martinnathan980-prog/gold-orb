@@ -1,0 +1,42 @@
+{
+  "idea": "063 Dear dollars on Bitfinex, long side: the exact mirror of idea 042 (declared post hoc)",
+  "date_declared": "2026-11-19",
+  "track": "fast",
+  "family": "crypto-funding",
+  "post_hoc": "DECLARED AFTER SEEING THE RESULT OF IDEA 042. Idea 042 (same signal, same clock, same exit and stop, side -1) failed in sample with n 351, PF net 0.62, t -3.3, random-entry null at the 1.95th percentile. The lead chose this sign flip (side +1) AFTER that result. The in-sample bars of 063 are therefore expected to pass more or less by construction (a strongly losing short is a winning long, minus costs twice and plus the long drift of bitcoin) and prove NOTHING by themselves; they are reported for completeness only. The only evidence will be the lead's single validation look (2022-2025), which is not part of this run.",
+  "lead_validation_bar": "Fixed by the lead in IDEAS.md (the lead's bar, not computed in this run): in the validation look, the mean net R of the validation trades must stand at or above the 90th percentile of random long entries of 2022-2025 (in addition to the charter's VAL bars).",
+  "hypothesis": "When borrowing dollars on Bitfinex for 2 days costs 0.05 % a day or more (about 18 % a year), bitcoin rises (more than on a random day) over the next 23 hours: buy BTC at 00:00 UTC on weekdays, hold 23 hours.",
+  "mechanism": "Margin buyers on Bitfinex borrow USD from lenders; the 2-day USD funding rate is the price of that leverage. A high rate marks strong demand for leveraged long exposure; that demand persists into the next day (momentum of positioning: buyers who pay up for leverage keep buying, and the flow they represent is not exhausted in one day) instead of reversing. Not a closed family (no funding/positioning gauge of crypto was tested by the lab except its mirror 042).",
+  "data": {
+    "signal": "Bitfinex public API, https://api-pub.bitfinex.com/v2/candles/trade:1D:fUSD:p2/hist (daily candles of the USD margin-funding rate, 2-day period, rate per day; first candle 2016-07-31). Field: close of the daily candle that starts at D 00:00 UTC = the last funding trade before D+1 00:00 UTC. KNOWN AT: D+1 00:00 UTC (the candle's end; real time, not revised, sources.md section 13). No new download: the file fetched once by idea 042 on 2026-11-19 (request bounded at 2021-12-31 23:59 UTC) is copied to ~/explore_data/idea_063/funding/fusd_p2_1d.json and cut at 2021-12-31 in the read.",
+    "publication_lag": "data.external(obs = candle start date D, known = D + 1 day 00:00 UTC, min_lag = 1 day). Not revised.",
+    "prices": "kit.data.load_bars('btcusd', 2016, venue='bitstamp') = Bitstamp BTC/USD hourly candles (trade prices treated as mid), FP crypto weekend closure removed; venue months copied from ~/explore_data/idea_042/crypto. Information only (not judged, not a trial): the same main signals priced on Bitfinex BTC/USD hourly and on Binance BTCUSDT from 2017-08 (cached months copied from idea 042).",
+    "in_sample_years": "signals from 2016-11-01 to 2021-12-31 (5.2 years). Power check from the funding data alone (recounted for 063): 351 weekday signals at >= 0.0005 (2016: 32, 2017: 164, 2018: 37, 2019: 51, 2020: 49, 2021: 18); 479 at >= 0.0004; 279 at >= 0.0006.",
+    "nothing_after": "2021-12-31"
+  },
+  "markets": ["btcusd"],
+  "rule_main": {
+    "signal": "r(D) = close of the Bitfinex trade:1D:fUSD:p2 candle starting D 00:00 UTC, known at D+1 00:00 UTC. Signal at known_at = D+1 00:00 UTC if r(D) >= 0.0005 and D+1 is Monday to Friday (UTC weekday of known_at), known_at >= 2016-11-01.",
+    "side": "+1 always (long bitcoin)",
+    "entry": "open of the first H1 bar opening at or after known_at (the 00:00 UTC bar), max_wait_h = 2",
+    "exit": ["hours", 23],
+    "stop": ["d20", 2.0],
+    "target": null,
+    "overlap": "one position per market (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+  },
+  "what_changed_vs_brief": "Nothing against the lead's brief for 063: the rule, exit (23 h), stop, venue and the seven configurations are those of 042 with side +1. (042 itself had moved the scout's 24 h exit to 23 h so that consecutive signal days are all taken under the one-position filter; kept here unchanged.) A Friday trade's exit falls in FP's weekend closure and is done at the close of the last bar before it (kit convention).",
+  "configurations": [
+    {"id": "01_main", "thr": 0.0005, "exit": ["hours", 23], "stop": ["d20", 2.0]},
+    {"id": "02_thr4", "thr": 0.0004, "exit": ["hours", 23], "stop": ["d20", 2.0]},
+    {"id": "03_thr6", "thr": 0.0006, "exit": ["hours", 23], "stop": ["d20", 2.0]},
+    {"id": "04_h11", "thr": 0.0005, "exit": ["hours", 11], "stop": ["d20", 2.0]},
+    {"id": "05_h47", "thr": 0.0005, "exit": ["hours", 47], "stop": ["d20", 2.0]},
+    {"id": "06_s15", "thr": 0.0005, "exit": ["hours", 23], "stop": ["d20", 1.5]},
+    {"id": "07_s3", "thr": 0.0005, "exit": ["hours", 23], "stop": ["d20", 3.0]}
+  ],
+  "information_only": "Not configurations, not trials, nothing chosen from them (put in results.json through judge.verdict's extra): (a) result by year and without 2017; (b) control: the same long trade (same entry hour, exit and stop) on every OTHER weekday of 2016-11..2021 without a signal, gross and net, and the difference of mean net R signal days minus other days with its Welch t; (c) stricter null: 2000 draws of the whole set, each trade re-entered long at the 00:00 UTC bar of a random weekday of the SAME calendar year (same exit and stop, net), percentile of the main's mean net R; (d) the long side's costs as charged (spread plus slippage, commission (folded into FP's Raw spread in the lab's cost file), swap), per trade in R and in basis points; plus prices on Bitfinex and Binance as in 042.",
+  "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw btcusd): gross, net, spread and slippage x1.5; long swap charged per FP convention (swap_long 0.2 a year / 360 per rollover, triple on Friday)",
+  "bars": "CHARTER.md 'The bars' on 01_main, one market, computed by kit.judge.verdict; random-entry null 2000 draws with the main's exit and stop; weekly corr with the ten <= 0.30; deflated Sharpe on N_all (N_main reported); short side not traded (long only), reported as such",
+  "split": "IS only (to 2021-12-31). No validation look in this run (lead's instruction); attack (charter rule 5) only if every IS bar passes; the validation look is the lead's.",
+  "kit": "lab/explore/kit v2.2, unchanged"
+}

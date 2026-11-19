@@ -1,0 +1,124 @@
+{
+ "idea": "060 Large earnings shocks, held for weeks (broad universe of US shares, daily bars, slow track)",
+ "date_declared": "2026-11-19",
+ "track": "slow",
+ "family": "earnings",
+ "hypothesis": "After a results day on which a share's move net of the market (its ret_total minus the median ret_total of the universe's shares that session) is at or beyond +/-8 %, the share keeps drifting in the direction of that move over the next eight weeks, enough to beat heavy provisional CFD costs (56 bp at the open, swaps every night, dividends on shorts) and the same-day random-entry null on the same share and side, on a basket of the 382 S&P 500 shares that are not the lab's 40.",
+ "mechanism": "Post-earnings-announcement drift, strongest after the largest surprises (Bernard and Thomas 1989; announcement returns as the surprise: Brandt, Kishore, Santa-Clara and Venkatachalam 2008): investors under-react to large news, analysts revise slowly, and the classic drift runs for about sixty trading days. Idea 059 holds five sessions; this idea (lead/DIRECTION3.md row 060) holds forty to catch more of the drift, at the price of about 80 bp of long swaps and some exposure to the next quarter's results. On the lab's 40 shares (idea 052, a reading after its verdict: a hypothesis) the five-day drift after shocks of 8 % or more was +128 bp gross; this run tests it on OTHER shares. Survivors only (today's index list): the long side after up-shocks is flattered and the short side after down-shocks is judged on a sample that lacks its best cases; both sides are reported apart.",
+ "data": {
+  "signal": "SEC EDGAR 8-K results calendar of scout/events_edgar.py, idea_sessions('059') (results rows by event session, the 77 late_suspect rows dropped; cached in ~/explore_data/events_d1, not re-downloaded). Each event is KNOWN at its EDGAR acceptance time (accepted_utc). Event session S = the share's first session whose close (bars' known_at, 16:00 or 13:00 New York) is strictly after the acceptance (= the calendar's event_session: 0 mismatches in 6,913 events, power.json). Move of S = data.session_moves(bars).ret_total (close / previous close - 1 + the ex-date's dividend fraction), known at S's close; abnormal move = ret_total(S) - median of ret_total(S) over the universe's shares with a bar that session (all complete at the same close).",
+  "publication_lag": "events: data.event_table(acceptance times, known = acceptance, min_lag = 0) (an 8-K is public at acceptance); the signal is stamped at S's close, at or after the acceptance; prices: none beyond the bars' own known_at (the session's close).",
+  "prices": "kit v2.2 daily session bars of the 382 shares of kit/universe_us.csv (data.load_bars(key), Yahoo, 2017-2021 from each share's in_universe_from; ratios only), data.long_bars for the build. PROVISIONAL costs of the class us_shares_d1 (kit/extra_costs.json).",
+  "in_sample_years": "2017 .. 2021 (5 years). Power check (signal data alone, power.py, power.json): 534 signals at 8 % on 333 sessions in 216 shares (256 long, 278 short; 80 / 129 / 133 / 97 / 95 by year 2017..2021); 1,068 at 6 %, 267 at 10 %. Before the D20 filter (no D20 in a share's first 20 sessions) and the one-position filter.",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": "the 382 keys of kit/universe_us.csv (one basket, one rule, same parameters)",
+ "groups": "sector",
+ "rule_main": {
+  "signal": "For each results event (above): S = its event session; abn = ret_total(S) - median over the universe of ret_total(S). Signal if |abn| >= 0.08 and S is not flagged 'action' by data.session_moves (an ex-date of 2 % or more, a split or spin-off record) and abn is finite (no signal on a share's first bar). Two results 8-Ks of one share on one session count once. known_at = S's close (the bar's known_at).",
+  "side": "+1 if abn > 0, -1 if abn < 0 (follow the shock)",
+  "entry": "the open of the next session (kit.sim entry at the first bar opening at or after known_at; max_wait_h = 96, so a hole in the data cannot delay an entry beyond a long weekend)",
+  "exit": [
+   "session_close",
+   39
+  ],
+  "exit_words": "the close of the fortieth session of the hold, the entry session being the first (kit ('session_close', 39): the close of the session 39 sessions after the entry's; hold = 39 sessions by the kit's count, <= 40)",
+  "stop": [
+   "d20",
+   3
+  ],
+  "target": null,
+  "overlap": "one position per share (kit.sim mode 'one'); every-signal variant (mode 'every') for the every-signal bar. Positions are held through ex-dividend dates (shorts pay, longs credited 70 %, PROVISIONAL) and, when it falls inside the hold, through the next results day (reported)."
+ },
+ "configurations": [
+  {
+   "id": "01_main",
+   "threshold": 0.08,
+   "exit": [
+    "session_close",
+    39
+   ],
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "02_exit20",
+   "threshold": 0.08,
+   "exit": [
+    "session_close",
+    19
+   ],
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "03_exit30",
+   "threshold": 0.08,
+   "exit": [
+    "session_close",
+    29
+   ],
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "04_thr06",
+   "threshold": 0.06,
+   "exit": [
+    "session_close",
+    39
+   ],
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "05_thr10",
+   "threshold": 0.1,
+   "exit": [
+    "session_close",
+    39
+   ],
+   "stop": [
+    "d20",
+    3
+   ]
+  },
+  {
+   "id": "06_stop2",
+   "threshold": 0.08,
+   "exit": [
+    "session_close",
+    39
+   ],
+   "stop": [
+    "d20",
+    2
+   ]
+  },
+  {
+   "id": "07_stop4",
+   "threshold": 0.08,
+   "exit": [
+    "session_close",
+    39
+   ],
+   "stop": [
+    "d20",
+    4
+   ]
+  }
+ ],
+ "costs": "kit.costs class us_shares_d1, PROVISIONAL: spread 56 bp of price for an order at the session's open (entries), 12 bp at a close (time exits), stops on the day's high / low with the open spread; commission max(0.03 USD a share, 2 USD an order) on Yahoo's price levels at 4,791.67 USD a trade (pessimistic for shares split after 2021: checks.min_commission_test reported, not judged); slippage 1 bp (2 on a stop); swaps 7 % long, 3 % short a year every night (triple Friday); dividends (a short pays, a long is credited 70 %). Gross, net, and spread / slippage / commission x1.5. Reported, never judged: the result at dividend credits 0 and 1 (judge), the main with the 2 USD minimum commission alone, and the main with the open priced like a close (12 bp) in a SEPARATE process (EXPLORE_EXTRA_COSTS = a modified copy of kit/extra_costs.json in ~/explore_data/idea_060), which writes only ~/explore_data/idea_060/info_open12.json and extra_open12.json in the idea folder.",
+ "bars": "CHARTER.md 'The bars' on 01_main, basket of more than 40 markets: t on daily sums of R >= 2.5, pooled PF >= 1.12 and >= 1.04 at costs x1.5, >= 60 % of years positive, groups (the 11 sectors) >= 65 % positive and no group above 25 % of the profit, neighbours' median PF >= 1.06, every-signal expectancy > 0, hold <= 40 sessions (slow track, judge.verdict(max_hold_tdays=40)), same-day random-entry null (2,000 draws, same exit and stop) >= 97.5th percentile, weekly correlation with the ten <= 0.30, truncation test passing with the default cuts; deflated Sharpe on N_all (label). Survivors only: stated with the result.",
+ "reports": "long and short sides apart; each year; each sector (judge groups); how many holds cross the company's next results day (next results event_session of the share, from calendar(kind='results'), inside [entry session, exit session]) and the mean R of those that do and do not; checks.min_commission_test; the dividend report (credits 0 and 1); checks.shift_test (one session later); the 12 bp open variant (information only).",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead's call).",
+ "kit": "lab/explore/kit v2.2 unchanged"
+}
