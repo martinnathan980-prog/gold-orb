@@ -1,0 +1,159 @@
+{
+ "idea": "064 Coinbase premium, the buying side only, on bitcoin and ether (follow-up of 021: post hoc for bitcoin, ether is the fresh test)",
+ "date_declared": "2026-11-20",
+ "track": "fast",
+ "family": "crypto-flow",
+ "hypothesis": "When a coin trades unusually high on Coinbase (the US venue) relative to Bitstamp, both in dollars (z of the log premium over the last 168 hours >= +2), US buying pressure is ahead of the rest of the market and the coin rises over the next 24 hours. Long side only, bitcoin and ether, one basket of two markets.",
+ "mechanism": "Idea 021's: Makarov and Schoar (2020, JFE): price gaps between exchanges come from order flow on one side and persist for hours because arbitrage capital is limited; the premium of the US venue is a gauge of US demand that one venue's price does not hold.",
+ "post_hoc_statement": "POST HOC FOR BITCOIN, declared before any run: in idea 021 (both sides, bitcoin, 2026-11-19) only the buying side earned (354 trades, +59 bp net a trade, t 2.38; random-entry null 96.1, same-year null 96.4 computed afterwards) and the whole rule failed (t 1.37). Taking the better side is selection; the bitcoin leg proves nothing here. ETHER IS THE TEST: its premium and its trades were never looked at by the lab. Fixed before any run (lead's brief): (1) no validation look unless the ether leg ALONE has a positive net mean R and stands at or above the 90th percentile of its own same-year null; (2) a validation look, if any, carries the one-sided extra bar (\"extra_null_bar\": 90 in val_declared.json, judge.val_verdict).",
+ "data": {
+  "signal": "per market separately, hourly candles of Coinbase Exchange (kit.data.crypto_h1('coinbase', mk): BTC-USD from 2015-07-20; ETH-USD read from 2017-07, because Bitstamp's ETH/USD hourly candles start 2017-08-16 and the signal needs both venues; Coinbase ETH-USD's thin first weeks of 2016-05 hold a >48 h hole the kit refuses and are never used by the signal) and of Bitstamp (crypto_h1('bitstamp', mk): btcusd from 2015-07, ethusd from its first month 2017-08), both in USD. p_t = log(Coinbase close / Bitstamp close) of the hour opening at t, KNOWN at t + 1 h (the candle's close). Hours kept: a Coinbase candle exists and the Bitstamp candle has volume > 0 (flat zero-volume Bitstamp candles = stale price; btc 4 hours, eth 27 hours). z_t = (p_t - mean) / std over the p values of that market known in the last 168 hours (time window ending at and including the current value), at least 118 values (70 %), std > 0. Past only.",
+  "publication_lag": "none: venue candles are real time and never revised (scout/sources.md 14, 15); a value is used from its candle's end (open + 1 h), never earlier",
+  "prices": "trades priced on Bitfinex hourly candles of each market, a third venue (kit.data.load_bars(mk, start_year, venue='bitfinex', allow_holes=True): btcusd from 2015, ethusd from 2017): neither signal venue, so the premium's own convergence is not booked. FP crypto weekend closure removed by the kit; price_is mid; costs FP's btcusd and ethusd. allow_holes: the real Bitfinex outage after its hack, 2016-08-02 19:00 to 2016-08-10 15:00 UTC (bitcoin; recorded by the kit in idea 021); Bitfinex ETH 2017-2021 has no hole above 48 h (read without allow_holes before this declaration, no price used).",
+  "in_sample_years": "btcusd 2015-08-01 .. 2021-12-31 (6.4 years); ethusd from the first filled window 2017-08-22 .. 2021-12-31 (4.4 years). Power from the signal data alone (power.py / power.json, long signals only, one-position 24 h hold, stop ignored): main = btcusd 1054 signal hours, about 451 entries (30 to 101 a year); ethusd 656 signal hours, about 358 entries (25 in 2017, then 70 to 96 a year; 7 to 27 a quarter, no quarter bunching): above the brief's 150 for ether; basket about 809.",
+  "nothing_after": "2021-12-31"
+ },
+ "markets": [
+  "btcusd",
+  "ethusd"
+ ],
+ "rule_main": {
+  "signal": "for each market, every hour t (candle end) with z_t >= +2, z built as in data.signal, known at the Coinbase / Bitstamp candles' end; signals whose known_at lies inside FP's crypto closure (kit.data.fp_closed) are dropped; btcusd signals from 2015-08-01, ethusd from its first filled window",
+  "side": "+1 only (buy). No selling side.",
+  "entry": "open of the first Bitfinex H1 bar of that market opening at or after known_at (delay 0, max_wait_h = 2)",
+  "exit": [
+   "hours",
+   24
+  ],
+  "stop": [
+   "d20",
+   2.0
+  ],
+  "target": null,
+  "overlap": "one position per market (kit.sim mode 'one'); every-signal variant for the every-signal bar"
+ },
+ "configurations": [
+  {
+   "id": "01_main",
+   "win_h": 168,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "02_thr1.5",
+   "win_h": 168,
+   "thr": 1.5,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "03_thr2.5",
+   "win_h": 168,
+   "thr": 2.5,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "04_win96",
+   "win_h": 96,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "05_win336",
+   "win_h": 336,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "06_h12",
+   "win_h": 168,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    12
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "07_h48",
+   "win_h": 168,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    48
+   ],
+   "stop": [
+    "d20",
+    2.0
+   ]
+  },
+  {
+   "id": "08_s1.5",
+   "win_h": 168,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    1.5
+   ]
+  },
+  {
+   "id": "09_s3",
+   "win_h": 168,
+   "thr": 2.0,
+   "exit": [
+    "hours",
+    24
+   ],
+   "stop": [
+    "d20",
+    3.0
+   ]
+  }
+ ],
+ "costs": "kit.costs (lab/r2/fp_costs.json, FP Raw btcusd and ethusd): gross, net, spread and slippage x1.5",
+ "bars": "CHARTER.md 'The bars' on 01_main as a basket of two markets (small-basket amendment: no market above 75 % of the profit), computed by kit.judge.verdict; random-entry null 2000 draws with the main's exit and stop (same-day joint null where both legs signal at the same hour, automatic); same-year null (within='year', 2000 draws, same rule) of the basket given as null_year (information); information only, not bars: per leg alone, every figure of the main, its judged null and its same-year null, signal counts by year and quarter; weekly corr with the ten <= 0.30; deflated Sharpe on N_all; truncation test with default cuts on the main build (items cb_btc, bs_btc, cb_eth, bs_eth with row length 1 h)",
+ "information_only": "the lead's condition (1) for a validation look is read on the ethusd leg alone: net mean R > 0 AND same-year null percentile >= 90. The long and short split is moot (long only).",
+ "split": "IS only (to 2021-12-31). No validation look in this run (the lead does it).",
+ "kit": "lab/explore/kit v2.3, unchanged"
+}

@@ -4,7 +4,7 @@ Configurations tested by the lab before this search: about 2,500 (round 1 321, r
 micro 8, language-model tests 2, round 3 tracks, round 4 55, round 5, round 6 91; see lab/PROTOCOL*.md). Use the
 running total below for the deflated Sharpe ratio.
 
-Running total of configurations (before this search + this search): **2734**
+Running total of configurations (before this search + this search): **2743**
 
 ## Notes for later runs (the lead, 2026-11-18)
 - **GDELT 1.0 daily event files** are written at about 07:00 UTC on D+1 since 2015-03, between 07:34 and 14:15 UTC from
@@ -90,6 +90,14 @@ Running total of configurations (before this search + this search): **2734**
     had finished (the declarations were already hashed and nothing was changed). From the next batch on the brief
     says the judged run comes first.
 
+- **Idea 064 (2026-11-20, re-run by the lead): the last crypto lead is closed.** The buying side of the Coinbase premium
+  (021's best side, picked after the fact) was tested on a basket of bitcoin and ether with ether as the fresh test:
+  ether has no edge even before costs (358 trades, PF gross 0.91, t -1.31, same-year null at the 12th percentile), so
+  the lead's condition 1 fails and no validation look is taken; bitcoin stays mildly positive (446 trades, t 1.66) but
+  only at the 78th percentile of random long entries of the same years. A t of 2.4 on the better side of one idea
+  among eight was what chance gives. Kit note: Coinbase ETH-USD has a hole of more than 48 hours in 2016-05 (its first
+  weeks), so `crypto_h1('coinbase', 'ethusd')` needs a later start or `allow_holes=True`.
+
 | N | Date | Idea | Markets | Data (in-sample years) | Configs | Verdict | Key figures (main configuration) |
 |---|---|---|---|---|---|---|---|
 | 001 | 2026-11-17 | Crypto weekend move, then Monday at FP | BTCUSD, ETHUSD | Binance 1h from 2017-08 (4.4 years) | 0 | fermee : donnees insuffisantes (structurellement) | At most about 228 Mondays per market before 2022, below n >= 250; a basket of two markets cannot meet 'no market above 25 % of the profit'. No test run. (Concluded by the runs of 16-17 November, whose work could not be pushed: written here by the lead.) |
@@ -126,3 +134,4 @@ Running total of configurations (before this search + this search): **2734**
 | 060 | 2026-11-19 | 060 Large earnings shocks, held for weeks (broad universe of US shares, daily bars, slow track) | us_shares_d1 class (212 shares) | EDGAR 8-K results calendar + Yahoo daily bars of 382 S&P 500 shares (not the lab's 40), 2017-2021, survivors only | 7 | fermee : echoue (t_daily>=2.5, groups_positive>=65%, max_group_share<=25%, PF>=1.12, years>=60%, PF_stress>=1.04, neighbours_median_PF>=1.06, every_signal_exp>0, null>=97.5) ; slow track (hold<=40d) ; PROVISIONAL COSTS (us_shares_d1 class (212 shares)) ; us_shares_d1: spread 56 bp at the open, 12 bp at a close; per-share commission on Yahoo prices, pessimistic for shares split after 2021 | n 513, PF net 0.86, t -1.32 (daily sums), PF x1.5 0.77, years + 1/5, null 75.5 pct, corr -0.06, DSR 0.000 (N_all 2678) / 0.000 (N_main 180), PF net at the 2 USD minimum commission 0.88, groups + 5/11, max group share n/a, long dividend credit 0.70 (PF net at credit 0 / 1: 0.84 / 0.87), sizing not judged (min lot: margin 656 EUR, loss at median stop 289.3 EUR) |
 | 062 | 2026-11-19 | 062 Large moves without news in a calm market: fade an abnormal move of 6 % or more for five sessions, on the broad universe of US shares (daily bars) | us_shares_d1 class (220 shares) | 382 US shares (S&P 500 list minus the lab's 40), daily bars 2017-2021 (kit v2.2, Yahoo, PROVISIONAL costs); EDGAR filing calendar idea_sessions('062', results_ahead=0) (no filing in s-2..s); calm sessions (median |ret_total| < 2 %); survivors only | 7 | fermee : echoue (t_daily>=2.5, groups_positive>=65%, max_group_share<=25%, PF>=1.12, years>=60%, PF_stress>=1.04, neighbours_median_PF>=1.06, every_signal_exp>0, null>=97.5) ; PROVISIONAL COSTS (us_shares_d1 class (220 shares)) ; us_shares_d1: spread 56 bp at the open, 12 bp at a close; per-share commission on Yahoo prices, pessimistic for shares split after 2021 | n 832, PF net 0.80, t -1.71 (daily sums), PF x1.5 0.69, years + 2/5, null 88.9 pct, corr -0.06, DSR 0.000 (N_all 2678) / 0.000 (N_main 180), PF net at the 2 USD minimum commission 0.83, groups + 2/11, max group share n/a, long dividend credit 0.70 (PF net at credit 0 / 1: 0.80 / 0.80), sizing not judged (min lot: margin 108 EUR, loss at median stop 25.7 EUR) |
 | 063 | 2026-11-19 | 063 Dear dollars on Bitfinex, long side: the exact mirror of idea 042 (declared post hoc) | btcusd | Bitfinex fUSD 2-day funding rate (daily, known at 00:00 UTC); trades on Bitstamp BTC/USD 1h, 2016-11..2021 (5.2 years); POST HOC mirror of 042 (long side) | 7 | fermee : echoue (t>=2.5, null>=97.5) | n 351, PF net 1.40, t 2.25, PF x1.5 1.39, years + 5/6, null 91.3 pct, corr 0.16, DSR 0.096 (N_all 2678) / 0.310 (N_main 180), sizing not judged (min lot: margin 1 EUR, loss at median stop 6.3 EUR) |
+| 064 | 2026-11-20 | 064 Coinbase premium, the buying side only, on bitcoin and ether (follow-up of 021: post hoc for bitcoin, ether is the fresh test) | btcusd, ethusd | Coinbase / Bitstamp premium per coin, long only; trades on Bitfinex 1h, btcusd 2015-08..2021 (6.4 y), ethusd 2017-08..2021 (4.4 y) | 9 | fermee : echoue (t_daily>=2.5, markets_positive>=65%, max_market_share<=75%, PF>=1.12, PF_stress>=1.04, null>=97.5) | n 804, PF net 1.06, t 0.47 (daily sums), PF x1.5 1.03, years + 5/7, null 34.4 pct, corr -0.02, DSR 0.001 (N_all 2743) / 0.011 (N_main 187), same-year null 44.0 pct (information), sizing not judged (min lot: margin 1 EUR, loss at median stop 6.6 EUR) |
