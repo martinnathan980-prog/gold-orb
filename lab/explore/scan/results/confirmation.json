@@ -1,0 +1,90 @@
+{
+ "candidates_sha256": "87e60428781ba13b4288093c41a03abd8ab1237237e5aec750b9df9330197b88",
+ "n_candidates": 2,
+ "n_confirmed": 0,
+ "nothing": false,
+ "results": [
+  {
+   "PF": 1.048376,
+   "PF_stress": 1.019422,
+   "bars": {
+    "PF>=1.08": false,
+    "PF_stress>=1.00": true,
+    "null>=90": false,
+    "t_daily>=1.65": false,
+    "years_pos>=2of3": false
+   },
+   "by_market_R": {
+    "gbpusd": 1.4195451950689675
+   },
+   "by_year_R": {
+    "2019": 3.282503123069418,
+    "2020": -0.38863920576063804,
+    "2021": -1.4743187222398122
+   },
+   "confirmed": false,
+   "markets": [
+    "gbpusd"
+   ],
+   "markets_pos_frac": 1.0,
+   "mean_R": 0.007133,
+   "mean_R_gross": 0.017257,
+   "n": 199,
+   "null_joint_groups": 0,
+   "null_pct": 75.8,
+   "null_same_year_information": {
+    "percentile": 77.0,
+    "year_no_room": false,
+    "year_room_share": 1.0
+   },
+   "order": 1,
+   "rule": "K01|H1|F0|24h",
+   "stage": "single",
+   "t_daily": 0.243355,
+   "unit": "gbpusd",
+   "years_pos": 1
+  },
+  {
+   "PF": 0.783453,
+   "PF_stress": 0.750384,
+   "bars": {
+    "PF>=1.08": false,
+    "PF_stress>=1.00": false,
+    "null>=90": false,
+    "t_daily>=1.65": false,
+    "years_pos>=2of3": false
+   },
+   "by_market_R": {
+    "eurusd": -4.121238279052852
+   },
+   "by_year_R": {
+    "2019": -2.636445066411366,
+    "2020": -1.6952249113492281,
+    "2021": 0.21043169870774214
+   },
+   "confirmed": false,
+   "markets": [
+    "eurusd"
+   ],
+   "markets_pos_frac": 0.0,
+   "mean_R": -0.027293,
+   "mean_R_gross": -0.015042,
+   "n": 151,
+   "null_joint_groups": 0,
+   "null_pct": 27.35,
+   "null_same_year_information": {
+    "percentile": 30.8,
+    "year_no_room": false,
+    "year_room_share": 1.0
+   },
+   "order": 2,
+   "rule": "T08|H1|F6|24h",
+   "stage": "single",
+   "t_daily": -1.177922,
+   "unit": "eurusd",
+   "years_pos": 1
+  }
+ ],
+ "source": "real (kit.data.load_bars, cut at the wall)",
+ "what": "DIRECTION4 section 5: confirmation on trades entered in 2019-2021"
+}

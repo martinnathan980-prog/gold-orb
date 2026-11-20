@@ -4,7 +4,7 @@ Configurations tested by the lab before this search: about 2,500 (round 1 321, r
 micro 8, language-model tests 2, round 3 tracks, round 4 55, round 5, round 6 91; see lab/PROTOCOL*.md). Use the
 running total below for the deflated Sharpe ratio.
 
-Running total of configurations (before this search + this search): **2743**
+Running total of configurations (before this search + this search): **29079**
 
 ## Notes for later runs (the lead, 2026-11-18)
 - **GDELT 1.0 daily event files** are written at about 07:00 UTC on D+1 since 2015-03, between 07:34 and 14:15 UTC from
@@ -97,6 +97,31 @@ Running total of configurations (before this search + this search): **2743**
   only at the 78th percentile of random long entries of the same years. A t of 2.4 on the better side of one idea
   among eight was what chance gives. Kit note: Coinbase ETH-USD has a hole of more than 48 hours in 2016-05 (its first
   weeks), so `crypto_h1('coinbase', 'ethusd')` needs a later start or `allow_holes=True`.
+- **Direction 4, the scan of price rules (2026-11-20; `lead/DIRECTION4.md`, code and results in `scan/`): nothing.**
+  1,388 rules (39 signals: 21 classic trend and reversal indicators, 7 shock rules, 3 compression rules, 2 candle
+  rules, round levels, 5 home-made indicators; each alone and mixed with one filter: trend, ADX or session; H1, H4
+  and D1; two holding times) on 15
+  markets (gold, silver, oil, 8 currency pairs, 4 indices): 5.3 million trades before 2019. The rule list and the
+  frozen candidates were committed before each stage (commits e1ce4e0 and e4f9264).
+  - Discovery (bars before 2019): 175 rule-units of 26,336 are eligible; no basket reaches t >= 2.5; two single
+    markets reach t >= 3.0. Confirmation on 2019-2021: 0 of 2 (K01|H1|F0|24h on gbpusd: n 199, PF 1.05, t 0.24, null
+    at the 75.8th percentile; T08|H1|F6|24h on eurusd: n 151, PF 0.78, t -1.18).
+  - The lead recomputed the first candidate from the bars with its own signal code
+    (`scan/results/lead_check_k01_gbpusd.py`): discovery n 452 against the scan's 451 (one trade at the 2019 wall), PF
+    1.536 against 1.539, t 3.12 against 3.13; confirmation n 199, PF 1.0484, t 0.243, the same as the scan's. Its best
+    discovery trade is the night of the Brexit vote (+3.6 R) and 2016 gives 47 % of its discovery result.
+  - The whole grammar BEFORE costs is what chance gives (`scan/results/gross_t.json`, rule-units with 30 trades or
+    more): 2.3 % have a gross t above 2 and 3.1 % below -2, against about 2.3 % on each side for pure noise; the median
+    gross t is -0.05. After costs: 0.5 % above 2, 17.8 % below -2. Mean gross R per trade by family lies between
+    -0.003 and +0.001, mean net R between -0.015 and -0.012. The only tilts before costs: trend rules on D1 (4.7 %
+    above 2 against 0.8 % below, median +0.42) and reversal rules on H1 (4.1 % against 2.2 %); neither survives costs
+    (D1, all families: 1.1 % above 2 net).
+  - What this closes: a textbook indicator, a plain price shock or one of the five home-made indicators, alone or
+    with one trend / ADX / session filter, held 6 hours to 5 days, on these 15 markets. What it does not close: rules
+    built on a market's own clock (opens, closes, fixings), on another market's move, or on a dated event, which is
+    where the robot's ten rules come from; holds under one hour (closed earlier by costs); tuned parameters (refused
+    on purpose).
+  - The ledger's running total grows by the 26,336 rule-unit cells: every later deflated-Sharpe label is weak.
 
 | N | Date | Idea | Markets | Data (in-sample years) | Configs | Verdict | Key figures (main configuration) |
 |---|---|---|---|---|---|---|---|
@@ -135,3 +160,4 @@ Running total of configurations (before this search + this search): **2743**
 | 062 | 2026-11-19 | 062 Large moves without news in a calm market: fade an abnormal move of 6 % or more for five sessions, on the broad universe of US shares (daily bars) | us_shares_d1 class (220 shares) | 382 US shares (S&P 500 list minus the lab's 40), daily bars 2017-2021 (kit v2.2, Yahoo, PROVISIONAL costs); EDGAR filing calendar idea_sessions('062', results_ahead=0) (no filing in s-2..s); calm sessions (median |ret_total| < 2 %); survivors only | 7 | fermee : echoue (t_daily>=2.5, groups_positive>=65%, max_group_share<=25%, PF>=1.12, years>=60%, PF_stress>=1.04, neighbours_median_PF>=1.06, every_signal_exp>0, null>=97.5) ; PROVISIONAL COSTS (us_shares_d1 class (220 shares)) ; us_shares_d1: spread 56 bp at the open, 12 bp at a close; per-share commission on Yahoo prices, pessimistic for shares split after 2021 | n 832, PF net 0.80, t -1.71 (daily sums), PF x1.5 0.69, years + 2/5, null 88.9 pct, corr -0.06, DSR 0.000 (N_all 2678) / 0.000 (N_main 180), PF net at the 2 USD minimum commission 0.83, groups + 2/11, max group share n/a, long dividend credit 0.70 (PF net at credit 0 / 1: 0.80 / 0.80), sizing not judged (min lot: margin 108 EUR, loss at median stop 25.7 EUR) |
 | 063 | 2026-11-19 | 063 Dear dollars on Bitfinex, long side: the exact mirror of idea 042 (declared post hoc) | btcusd | Bitfinex fUSD 2-day funding rate (daily, known at 00:00 UTC); trades on Bitstamp BTC/USD 1h, 2016-11..2021 (5.2 years); POST HOC mirror of 042 (long side) | 7 | fermee : echoue (t>=2.5, null>=97.5) | n 351, PF net 1.40, t 2.25, PF x1.5 1.39, years + 5/6, null 91.3 pct, corr 0.16, DSR 0.096 (N_all 2678) / 0.310 (N_main 180), sizing not judged (min lot: margin 1 EUR, loss at median stop 6.3 EUR) |
 | 064 | 2026-11-20 | 064 Coinbase premium, the buying side only, on bitcoin and ether (follow-up of 021: post hoc for bitcoin, ether is the fresh test) | btcusd, ethusd | Coinbase / Bitstamp premium per coin, long only; trades on Bitfinex 1h, btcusd 2015-08..2021 (6.4 y), ethusd 2017-08..2021 (4.4 y) | 9 | fermee : echoue (t_daily>=2.5, markets_positive>=65%, max_market_share<=75%, PF>=1.12, PF_stress>=1.04, null>=97.5) | n 804, PF net 1.06, t 0.47 (daily sums), PF x1.5 1.03, years + 5/7, null 34.4 pct, corr -0.02, DSR 0.001 (N_all 2743) / 0.011 (N_main 187), same-year null 44.0 pct (information), sizing not judged (min lot: margin 1 EUR, loss at median stop 6.6 EUR) |
+| D4 | 2026-11-20 | Direction 4 scan: 1,388 price rules (classic indicators, shocks, compression, candles, round levels, home-made indicators; alone and with one trend / ADX / session filter; H1, H4, D1) in three stages | xauusd, xagusd, oil, eurusd, gbpusd, usdjpy, audusd, usdcad, usdchf, nzdusd, eurjpy, us100, us500, us30, ger40 | prepared hourly bars; discovery 2013-2018 (6 years), confirmation 2019-2021 (3 years); oil with PROVISIONAL costs | 26336 | fermee : rien de confirme (0 of 2 frozen candidates) | 5,305,928 trades; 175 eligible rule-units of 26,336; candidates K01|H1|F0|24h gbpusd (discovery n 451, PF 1.54, t 3.13 -> 2019-2021 n 199, PF 1.05, t 0.24, null 75.8 pct) and T08|H1|F6|24h eurusd (n 299, PF 1.63, t 3.07 -> n 151, PF 0.78, t -1.18, null 27.4 pct); gross t beyond +2 / -2: 2.3 % / 3.1 % of rule-units (noise: 2.3 % each), net: 0.5 % / 17.8 % |

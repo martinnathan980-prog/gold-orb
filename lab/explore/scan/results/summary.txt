@@ -1,0 +1,29 @@
+DIRECTION4 scan (real (kit.data.load_bars, cut at the wall)); rules sha256 a7d90697971ddace9e292babefbe9c93d8f80d08f4edb518d1f3ccddbe0ed107
+discovery (before 2019): 1388 rules, 20784 rule-market cells, 5305928 trades, 26336 rule-unit cells, 175 eligible
+by family (baskets / single markets): share t>2, share t<-2, mean gross R, mean net R; over n >= 30: rule-units, share t>2, median t
+  candle       single markets  0.0102 0.1269 0.0006 -0.0118; 896 0.0078 -0.6878
+  candle       baskets         0.0 0.2812 0.0006 -0.0118; 286 0.0 -1.2275
+  compression  single markets  0.0068 0.163 -0.002 -0.0145; 1327 0.0038 -0.713
+  compression  baskets         0.0023 0.2778 -0.002 -0.0145; 415 0.0024 -1.1182
+  home-made    single markets  0.0126 0.1056 -0.0027 -0.0153; 1658 0.0066 -0.6856
+  home-made    baskets         0.0056 0.2306 -0.0027 -0.0153; 620 0.0 -1.1946
+  level        single markets  0.0119 0.0754 -0.0008 -0.0132; 345 0.0087 -0.4653
+  level        baskets         0.0 0.0903 -0.0008 -0.0132; 126 0.0 -0.3214
+  reversal     single markets  0.0059 0.148 -0.0001 -0.0129; 3751 0.0037 -0.8395
+  reversal     baskets         0.0009 0.4072 -0.0001 -0.0129; 1060 0.0 -1.662
+  shock        single markets  0.0156 0.082 -0.0002 -0.0125; 2361 0.0068 -0.5175
+  shock        baskets         0.004 0.1597 -0.0002 -0.0125; 861 0.0046 -0.6992
+  trend        single markets  0.0067 0.1256 -0.0006 -0.0131; 5887 0.0058 -0.7086
+  trend        baskets         0.008 0.2997 -0.0006 -0.0131; 1730 0.0058 -1.2804
+selection: 2 frozen candidates
+   1 single K01|H1|F0|24h      gbpusd t 3.134895 -> 2019-2021: n 199, t 0.243355, PF 1.048376, null 75.8: not confirmed
+   2 single T08|H1|F6|24h      eurusd t 3.072551 -> 2019-2021: n 151, t -1.177922, PF 0.783453, null 27.35: not confirmed
+confirmed: 0 of 2 (about 1 in 24 expected by chance if nothing is real); each survivor goes to the lab's ordinary protocol
+notes:
+  - Entry at the open of the next hourly bar after known_at, with no time limit (DIRECTION4 section 2): a Friday D1 signal enters at the Sunday reopening, an index signal of the session close at the next session's open.
+  - An H4/D1 value is stamped known at its block's scheduled end (17, 21, 01, 05, 09, 13 New York); where a block's bars stop early this is later than its last hourly bar's end, but no hourly bar lies in between, so the entry bar of every rule and the F1/F2 trend of H4/D1 signals are the same as with the end of the last hourly bar; an H1 signal on the last bar of an H4 block that stops early sees the previous H4 block for F1/F2 (GRAMMAR.md section 1).
+  - K05/K06 compare the range with the ATR(20) of the previous bar; K07's 38.2 % is measured on the shock bar's close-to-close move (GRAMMAR.md section 3).
+  - Siblings: the other exit, plus the neighbouring parameter along T01-T03, T06-T07, R01-R03, K01-K02, K03-K04 only; every other signal has only its other-exit sibling (GRAMMAR.md section 8).
+  - F1/F2 use the last H4 bar known at the signal's known_at (GRAMMAR.md section 4).
+  - Signals needing 500 bars (K01-K04, K07, H05) have no D1 signal before about 2015, T03 on D1 none before about late 2013: those D1 rules need 4 positive years out of about 4 usable ones (as pre-registered).
+  - share_t_gt_2 counts every rule-unit; rule-units with few trades have huge, noisy t, so the shares and median t over the rule-units with n >= 30 are given beside it; no mean or sd of t is reported.
