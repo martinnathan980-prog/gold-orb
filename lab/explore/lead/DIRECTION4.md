@@ -137,3 +137,21 @@ It covers one- to five-day holds on hourly bars with fixed, textbook parameters:
 rules (the lab's own lesson: nothing under one hour pays its costs) nor finer tuning (which this design refuses on
 purpose). Three stages reduce selection, they do not remove it. Oil is judged with provisional costs: a survivor on
 oil needs FP's real figures before anything else.
+
+## 9. Frozen on 2026-11-20, before any run on real bars
+- The rule list is `lab/explore/scan/rules.csv`: 1,388 rules, 20,784 rule-market cells, 26,336 rule-unit cells;
+  sha256 `a7d90697971ddace9e292babefbe9c93d8f80d08f4edb518d1f3ccddbe0ed107` (also in `scan/rules.csv.sha256`). Every
+  run is started with `EXPECT_RULES_SHA` set to that hash.
+- Section 2 names the rules in plain words; every definition it left open (warm-up, what "crosses" and "becomes true"
+  mean, ties, the session clock, the round-level grids) is fixed in `lab/explore/scan/GRAMMAR.md`. The builder wrote
+  it on synthetic bars, plus one pass on the real bars before 2019 that counted signals only (no price result, no
+  trade). Two independent verifications on synthetic bars (60 checks; 11 worlds of pure noise: 10 picks, none
+  confirmed; a planted rule found and confirmed) ended with the verdict "sound".
+- Two conventions are accepted here explicitly, because they decide when a rule may act: (a) an H4 or D1 value is
+  known at its block's scheduled end (17, 21, 01, 05, 09, 13 New York), never before its last bar has closed; (b) a
+  signal enters at the open of the first hourly bar at or after that moment, with no time limit: a signal known while
+  the market is shut enters at the reopening.
+- Two small points of the second verification are left as they are, and known: the summary gives the share of rules
+  with t > 2 on net results (gross and net appear as mean R per family); the confirmation is bound to the discovery
+  directory by the hash of the frozen list, which is committed before the confirmation runs.
+- From this commit on, nothing in sections 2, 4 and 5 nor in `scan/rules.csv` changes.
