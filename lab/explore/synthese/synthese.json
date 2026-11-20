@@ -545,6 +545,28 @@
    "marche": "Non",
    "gain": "Non",
    "pourquoi": "Aucune ne tient. Les 2 meilleures de 2013-2018 échouent sur 2019-2021. Avant frais, l'ensemble ne fait pas mieux que le hasard."
+  },
+  {
+   "id": "i065",
+   "type": "idee",
+   "n": "065",
+   "date": "2026-11-20",
+   "idee": "Indices (Nasdaq, S&P 500, Dow Jones, DAX) : parier sur le retour en arrière après un mouvement brutal d'une heure",
+   "famille": "Indices",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Gagnait sur 2013-2018, perd sur 2019-2021 : aucune des 3 années positive, 1 indice sur 4."
+  },
+  {
+   "id": "i066",
+   "type": "idee",
+   "n": "066",
+   "date": "2026-11-20",
+   "idee": "Devises (8 paires) : suivre un mouvement brutal de 4 heures dans le sens de la tendance, 3 jours",
+   "famille": "Devises",
+   "marche": "Non",
+   "gain": "Non",
+   "pourquoi": "Gagnait sur 2013-2018, perd sur 2019-2021 : 1 année sur 3 positive, 3 paires sur 8."
   }
  ]
 }

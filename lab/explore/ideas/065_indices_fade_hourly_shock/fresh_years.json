@@ -1,0 +1,48 @@
+{
+ "PF": 0.896429,
+ "PF_stress": 0.887285,
+ "bars": {
+  "PF>=1.08": false,
+  "PF_stress>=1.00": false,
+  "markets_pos>=60%": false,
+  "null>=90": false,
+  "t_daily>=1.65": false,
+  "years_pos>=2of3": false
+ },
+ "by_market_R": {
+  "ger40": -3.2511462786931737,
+  "us100": 2.4557701630861377,
+  "us30": -9.144034858052054,
+  "us500": -5.184327738290637
+ },
+ "by_year_R": {
+  "2019": -2.816483137557803,
+  "2020": -3.1071627755483875,
+  "2021": -9.200092798843539
+ },
+ "condition_1_passed": false,
+ "confirmed": false,
+ "markets": [
+  "us100",
+  "us500",
+  "us30",
+  "ger40"
+ ],
+ "markets_pos_frac": 0.25,
+ "mean_R": -0.018376,
+ "mean_R_gross": -0.012181,
+ "n": 823,
+ "null_joint_groups": 189,
+ "null_pct": 15.1,
+ "null_same_year_information": {
+  "percentile": 19.1,
+  "year_no_room": false,
+  "year_room_share": 1.0
+ },
+ "order": 1,
+ "rule": "K03|H1|F0|24h",
+ "stage": "basket",
+ "t_daily": -0.768237,
+ "unit": "IDX4",
+ "years_pos": 0
+}

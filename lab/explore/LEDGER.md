@@ -4,7 +4,7 @@ Configurations tested by the lab before this search: about 2,500 (round 1 321, r
 micro 8, language-model tests 2, round 3 tracks, round 4 55, round 5, round 6 91; see lab/PROTOCOL*.md). Use the
 running total below for the deflated Sharpe ratio.
 
-Running total of configurations (before this search + this search): **29079**
+Running total of configurations (before this search + this search): **29081**
 
 ## Notes for later runs (the lead, 2026-11-18)
 - **GDELT 1.0 daily event files** are written at about 07:00 UTC on D+1 since 2015-03, between 07:34 and 14:15 UTC from
@@ -139,6 +139,14 @@ Running total of configurations (before this search + this search): **29079**
     against the trend it loses; the 24-hour hold is weaker; on H1 following a shock loses. They become ideas 065 and
     066 (IDEAS.md), each judged first on the trades entered in 2019-2021 alone with the scan's confirmation bars
     (DIRECTION4 section 5), then by the ordinary protocol. No other follow-up of the scan is allowed.
+  - **Both follow-ups fail on the fresh years (2026-11-20 evening; declared in commit 35913ea before the run; one
+    configuration each, the scan's own `confirm_one`).** 065, indices, fade an hourly shock: trades entered 2019-2021
+    n 823, PF 0.90, t -0.77, no year of 3 positive, 1 index of 4, random-entry null at the 15th percentile. 066,
+    currencies, follow a 4-hour shock with the trend: n 295, PF 0.90, t -0.50, 1 year of 3, 3 pairs of 8, null at the
+    48th percentile, mean gross R 0.001. The two places where the discovery tables showed an ordered pattern across
+    neighbours (PF 1.2 to 1.5 over six years, five years of six positive) are plain losers on the next three years:
+    a pattern across neighbouring cells of the same years is not evidence, because the cells share the same trades.
+    The scan is closed: 1,388 rules, 2 candidates, 2 follow-ups, nothing.
 
 | N | Date | Idea | Markets | Data (in-sample years) | Configs | Verdict | Key figures (main configuration) |
 |---|---|---|---|---|---|---|---|
@@ -178,3 +186,5 @@ Running total of configurations (before this search + this search): **29079**
 | 063 | 2026-11-19 | 063 Dear dollars on Bitfinex, long side: the exact mirror of idea 042 (declared post hoc) | btcusd | Bitfinex fUSD 2-day funding rate (daily, known at 00:00 UTC); trades on Bitstamp BTC/USD 1h, 2016-11..2021 (5.2 years); POST HOC mirror of 042 (long side) | 7 | fermee : echoue (t>=2.5, null>=97.5) | n 351, PF net 1.40, t 2.25, PF x1.5 1.39, years + 5/6, null 91.3 pct, corr 0.16, DSR 0.096 (N_all 2678) / 0.310 (N_main 180), sizing not judged (min lot: margin 1 EUR, loss at median stop 6.3 EUR) |
 | 064 | 2026-11-20 | 064 Coinbase premium, the buying side only, on bitcoin and ether (follow-up of 021: post hoc for bitcoin, ether is the fresh test) | btcusd, ethusd | Coinbase / Bitstamp premium per coin, long only; trades on Bitfinex 1h, btcusd 2015-08..2021 (6.4 y), ethusd 2017-08..2021 (4.4 y) | 9 | fermee : echoue (t_daily>=2.5, markets_positive>=65%, max_market_share<=75%, PF>=1.12, PF_stress>=1.04, null>=97.5) | n 804, PF net 1.06, t 0.47 (daily sums), PF x1.5 1.03, years + 5/7, null 34.4 pct, corr -0.02, DSR 0.001 (N_all 2743) / 0.011 (N_main 187), same-year null 44.0 pct (information), sizing not judged (min lot: margin 1 EUR, loss at median stop 6.6 EUR) |
 | D4 | 2026-11-20 | Direction 4 scan: 1,388 price rules (classic indicators, shocks, compression, candles, round levels, home-made indicators; alone and with one trend / ADX / session filter; H1, H4, D1) in three stages | xauusd, xagusd, oil, eurusd, gbpusd, usdjpy, audusd, usdcad, usdchf, nzdusd, eurjpy, us100, us500, us30, ger40 | prepared hourly bars; discovery 2013-2018 (6 years), confirmation 2019-2021 (3 years); oil with PROVISIONAL costs | 26336 | fermee : rien de confirme (0 of 2 frozen candidates) | 5,305,928 trades; 175 eligible rule-units of 26,336; candidates K01|H1|F0|24h gbpusd (discovery n 451, PF 1.54, t 3.13 -> 2019-2021 n 199, PF 1.05, t 0.24, null 75.8 pct) and T08|H1|F6|24h eurusd (n 299, PF 1.63, t 3.07 -> n 151, PF 0.78, t -1.18, null 27.4 pct); gross t beyond +2 / -2: 2.3 % / 3.1 % of rule-units (noise: 2.3 % each), net: 0.5 % / 17.8 % |
+| 065 | 2026-11-20 | 065 Indices: fade a brutal hourly move, hold a day (follow-up of the scan, POST HOC; the scan's rule K03|H1|F0|24h on IDX4) | us100, us500, us30, ger40 | prepared hourly bars; condition 1 only: trades entered 2019-2021 (3 years), the scan's confirmation bars | 1 | fermee : echoue (condition 1: t_daily>=1.65, PF>=1.08, PF_stress>=1.00, years>=2of3, markets>=60%, null>=90) | 2019-2021: n 823, PF net 0.90, t -0.77, PF x1.5 0.89, years + 0/3, indices + 1/4, null 15.1 pct, same-year null 19.1 pct (discovery 2013-2018 was n 1326, PF 1.21, t 1.77) |
+| 066 | 2026-11-20 | 066 Currencies: follow a brutal 4-hour move in the direction of the trend, hold three days (follow-up of the scan, POST HOC; the scan's rule K01|H4|F1|72h on FX8) | eurusd, gbpusd, usdjpy, audusd, usdcad, usdchf, nzdusd, eurjpy | prepared hourly bars; condition 1 only: trades entered 2019-2021 (3 years), the scan's confirmation bars | 1 | fermee : echoue (condition 1: t_daily>=1.65, PF>=1.08, PF_stress>=1.00, years>=2of3, markets>=60%, null>=90) | 2019-2021: n 295, PF net 0.90, t -0.50, PF x1.5 0.86, years + 1/3, pairs + 3/8, null 47.6 pct, same-year null 33.6 pct, mean gross R 0.001 (discovery 2013-2018 was n 616, PF 1.29, t 1.95) |

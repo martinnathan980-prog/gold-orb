@@ -1,0 +1,56 @@
+{
+ "PF": 0.897318,
+ "PF_stress": 0.864415,
+ "bars": {
+  "PF>=1.08": false,
+  "PF_stress>=1.00": false,
+  "markets_pos>=60%": false,
+  "null>=90": false,
+  "t_daily>=1.65": false,
+  "years_pos>=2of3": false
+ },
+ "by_market_R": {
+  "audusd": -5.030882808028733,
+  "eurjpy": -1.5765350723175073,
+  "eurusd": -3.7615865088800926,
+  "gbpusd": 1.8300957855899895,
+  "nzdusd": 2.1940725963321936,
+  "usdcad": -0.9779420479056188,
+  "usdchf": 4.336670463145,
+  "usdjpy": -4.399808982098079
+ },
+ "by_year_R": {
+  "2019": -13.272862473828745,
+  "2020": 10.250796448460461,
+  "2021": -4.363850548794561
+ },
+ "condition_1_passed": false,
+ "confirmed": false,
+ "markets": [
+  "eurusd",
+  "gbpusd",
+  "usdjpy",
+  "audusd",
+  "usdcad",
+  "usdchf",
+  "nzdusd",
+  "eurjpy"
+ ],
+ "markets_pos_frac": 0.375,
+ "mean_R": -0.025037,
+ "mean_R_gross": 0.001009,
+ "n": 295,
+ "null_joint_groups": 65,
+ "null_pct": 47.6,
+ "null_same_year_information": {
+  "percentile": 33.6,
+  "year_no_room": false,
+  "year_room_share": 1.0
+ },
+ "order": 1,
+ "rule": "K01|H4|F1|72h",
+ "stage": "basket",
+ "t_daily": -0.500903,
+ "unit": "FX8",
+ "years_pos": 1
+}
