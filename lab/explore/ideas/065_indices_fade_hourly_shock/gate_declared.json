@@ -1,0 +1,33 @@
+{
+ "bars": {
+  "PF>=1.08": true,
+  "PF_stress>=1.00": true,
+  "markets_pos>=60%": true,
+  "null>=90 (2,000 random-entry draws, books starting 2019-01-01)": true,
+  "t_daily>=1.65": true,
+  "years_pos>=2of3": true
+ },
+ "configurations": 1,
+ "declared_on": "2026-11-20",
+ "discovery_row_of_the_scan": {
+  "PF": 1.209,
+  "n": 1326,
+  "t": 1.773,
+  "years_pos": "5 of 6"
+ },
+ "idea": "065",
+ "if_it_fails": "the idea is closed, whatever the in-sample years say; no neighbour is run, no validation look is taken",
+ "if_it_passes": "the ordinary idea protocol follows (declared.json with at most 11 configurations, judge, attack), then one logged validation look on 2022-2025",
+ "main": "K03|H1|F0|24h",
+ "markets": [
+  "us100",
+  "us500",
+  "us30",
+  "ger40"
+ ],
+ "post_hoc": "picked under the scan's own bar from 26,336 rule-units of the discovery years (2013-2018): those years prove nothing here",
+ "rules_sha256": "a7d90697971ddace9e292babefbe9c93d8f80d08f4edb518d1f3ccddbe0ed107",
+ "title": "Indices: fade a brutal hourly move, hold a day (follow-up of the scan, POST HOC)",
+ "unit": "IDX4",
+ "what": "Condition 1, declared before any look at this rule's 2019-2021 results: the main rule's trades ENTERED from 2019-01-01 to 2021-12-31, taken alone, against the bars of DIRECTION4 section 5, computed by scan.confirm.confirm_one (the kit's simulator, FP costs, stop 2 x D20, one position per market)."
+}
