@@ -55,39 +55,33 @@ are the costly part; the idea agents are cheap.
 7. Final message in the conversation: three lines at most, in plain French, with the sheet's link. Everything else
    goes on the sheet.
 
-## The next batch (written 2026-11-20 for 2026-11-21, after the scan)
-**The user's standing instructions (2026-11-19 evening, still in force):** only markets that trade almost round the
-clock and move all the time (gold, euro-dollar, oil ...), with price rules: sudden shocks, existing indicators, new
-indicators, mixes of indicators. No shares, no exotic data. The demo is for later: do not bring it up. Credit: about
-10 % of the weekly allowance a day AT MOST (the week renews on Saturday 00:00 Paris); keep the lead's own steps few.
-**Where things stand:** the scan of `lead/DIRECTION4.md` ran on 2026-11-20 (1,388 rules, 15 markets): 2 candidates,
-0 confirmed; before costs the whole grammar is what chance gives. Results: `scan/results/`, LEDGER.md note of
-2026-11-20. Idea 064 failed. The scan allows exactly two follow-ups, both post hoc: ideas 065 and 066 (IDEAS.md).
-On 2026-11-21:
-1. Bring `<scratchpad>/explore_wt` to the pushed head (it must hold `lab/explore/scan/`); run the kit's self-test
-   (`231/231`).
-2. Launch the two ideas in one batch: `Workflow({scriptPath: "<scratchpad>/wf/ideas4.js", args: {selftest: "...",
-   ideas: [{num: "065", slug: "indices_fade_hourly_shock", row: "IDEAS.md"}, {num: "066", slug:
-   "fx_follow_h4_shock_with_trend", row: "IDEAS.md"}], note: "..."}})` (copy in git: `lead/batch_ideas.js`). The note
-   must say: build the signals with the scan's own code (`scan.frames`, `scan.signals`, run with
-   `PYTHONPATH=lab/explore`, never run a file of `scan/` as a script); first reproduce the scan's discovery row given
-   in the idea's row; compute CONDITION 1 (the main's trades entered in 2019-2021 alone against DIRECTION4 section 5)
-   and write `fresh_years.json`; take no validation look.
-3. Re-run each `run.py`, check the reproduced discovery row and condition 1 yourself, merge (folder, ledger line with
-   `judge.ledger_add`, IDEAS status, commit, push).
-4. Only if an idea passes condition 1 AND the ordinary in-sample verdict: build its 2022-2025 hourly bars with care
-   (`~/explore_data/h1_val/<key>.parquet`, 2022-2025 only, logged in `lab/results/val_access.log`), write
-   `val_declared.json`, take the one look. A survivor on indices or currencies is then compared with the robot's ten
-   rules (weekly correlation <= 0.30).
-5. Write the sheet (the two rows, the day's row, what is left to do) and the three-line message.
-6. If both fail: say so plainly on the sheet. The search on price rules has then covered textbook rules (the scan),
-   the clock and the neighbours (rounds 1 to 6, `lead/archive_map_2026-11-19.json`) and this week's 35 ideas; do not
-   start a second scan by reflex. Read the archive map first: a scan of clock rules and of rules built from two
-   markets is worth pre-registering only for the markets the earlier rounds did not cover (the 8 pairs outside the
-   fixings, oil, silver, the DAX), and only if the lead can name why an effect larger than twice its cost should be
-   there. Otherwise tell the user that the search has reached its end at this level and propose to keep his credit.
-The scout's remaining ideas (outside data) stay set aside by the user's instruction: see the top of IDEAS.md.
-Delete this section once done and write the next one.
+## The search is paused (2026-11-20 evening): read this before doing anything
+**Why.** On 2026-11-20 the scan of `lead/DIRECTION4.md` confirmed nothing (1,388 rules, 15 markets, 2 candidates, 0
+confirmed) and its only two follow-ups, ideas 065 and 066, lost on the fresh years 2019-2021 the same evening. The
+week's tally: 37 ideas (30 tested, 7 set aside) plus the scan, nothing found; no rule has been kept since round 2
+(2026-11-10); the ledger's running total is 29,081. The user then asked for the plain truth ("if we are chasing an
+illusion, be honest"). The lead's answer, checked by two independent readings of the repository (a skeptic and a
+realist, 2026-11-20):
+- More search for price rules is not worth his credit: before costs the scan's rules are distributed as chance, so
+  there is nothing for more time, computing power or history to amplify.
+- His earlier demand (about +100 % a month) needs about 0.35 R a trade against the robot's 0.08 (PROTOCOL_V3,
+  Addendum G): out of reach.
+- The robot is neither an illusion nor proven: +428.6 R on 5,400 trades in 2022-2025, four years of four, but the
+  rules come from about 2,500 tries, the edge per trade shrank by about 40 % from in sample to validation (65 to 80 %
+  on the crypto breakouts), six rules of ten have a validation t under 1.5, costs are a model and no real trade
+  exists. Both readings put the chance of a real edge after real costs near one in two (35-55 % and 45-60 %), at a
+  quarter to a half of the paper figures if it is real.
+- The stake matters most: the S7 plan of the demo guide (7 % a trade at the start, no guard) halves the account
+  within three years in 49 / 75 / 82 / 90 % of the lab's simulated paths (paper / half / quarter / zero edge);
+  F3S (3 % with stop and guard) in 0.7 / 2.5 / 4.3 / 7.4 % (`lab/results/r2/stake/scaled_summary.json`).
+**What was done.** The daily lead trigger is DISABLED (re-enable it only on the user's word). Nothing else changed.
+**What is proposed to the user, and is his to decide (do none of it without his word):** (1) the stake plan (F3S
+instead of S7) before any real money; (2) the one look at 2026 on the frozen ten-rule robot, with its reading written
+first (PROTOCOL_V2: under PF 1.0 against, 1.0 to 1.3 weak, 1.3 or more strong; gold 2026 to 5 November was already
+seen for D4H and ORX); (3) the demo, when he has time, read for fills and costs, not for profit. Do not push the demo.
+**If the user asks for the search to resume:** take only an idea that brings a new kind of information, with a
+written reason why an effect larger than twice its cost should be there; no second scan of price rules; no other
+follow-up of the scan. The scout's remaining ideas (outside data) stay set aside by his instruction of 2026-11-19.
 
 ## Rules that do not move
 - In sample to 2021-12-31; one declared, logged look at 2022-2025 per finalist; never 2026.

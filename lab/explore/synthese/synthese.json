@@ -3,14 +3,14 @@
   {
    "id": "robot",
    "type": "robot",
-   "texte": "Le robot (10 règles) est prêt. La démo attendra : tu m'as dit qu'on y reviendrait plus tard."
+   "texte": "Le robot (10 règles) est prêt, mais pas encore prouvé en réel : à peu près une chance sur deux qu'il gagne vraiment après les frais réels. La démo attendra : tu m'as dit qu'on y reviendrait plus tard."
   },
   {
    "id": "s15",
    "type": "stop",
    "ordre": 1,
    "famille": "Indicateurs classiques (moyennes mobiles, MACD, RSI, Bollinger, Ichimoku…), chocs bruts et indicateurs maison, seuls ou avec un filtre",
-   "pourquoi": "Crible du 20 nov. : 1 388 règles sur 15 marchés, 5 millions de trades simulés. Avant frais, pas mieux que le hasard ; après frais, perdant. Aucune règle confirmée."
+   "pourquoi": "Crible du 20 nov. : 1 388 règles sur 15 marchés, 5 millions de trades simulés. Avant frais, pas mieux que le hasard ; après frais, perdant. Aucune règle confirmée, et les deux pistes juste sous la barre (chocs brutaux sur les indices et sur les devises) perdent sur 2019-2021."
   },
   {
    "type": "stop",
@@ -114,41 +114,41 @@
    "id": "a01",
    "type": "afaire",
    "ordre": 1,
-   "idee": "Indices (Nasdaq, S&P 500, Dow Jones, DAX) : parier sur le retour en arrière après un mouvement brutal d'une heure, position gardée un jour. C'est la piste la plus nette que le crible laisse entrevoir, juste sous sa barre.",
-   "famille": "Indices",
-   "quand": "Samedi"
+   "idee": "Recherche de nouvelles règles : en pause, pour garder ton crédit. Elle ne reprend que si tu le demandes, ou pour une idée qui apporte une information vraiment nouvelle.",
+   "famille": "Recherche",
+   "quand": "En pause"
   },
   {
    "id": "a02",
    "type": "afaire",
    "ordre": 2,
-   "idee": "Devises (8 paires) : suivre un mouvement brutal de 4 heures quand il va dans le sens de la tendance, position gardée 3 jours. Deuxième piste entrevue par le crible.",
-   "famille": "Devises",
-   "quand": "Samedi"
+   "idee": "Revoir la mise avant tout argent réel : le plan à 3 % avec arrêt automatique plutôt que 7 % (chiffres dans « mon avis franc »)",
+   "famille": "Robot",
+   "quand": "Ta décision, quand tu veux"
   },
   {
    "id": "a03",
    "type": "afaire",
    "ordre": 3,
-   "idee": "Pour chacune des deux : d'abord 2019-2021 (années que le crible n'a pas regardées pour elles), puis la vérification finale sur 2022-2025 si elle tient",
-   "famille": "Indices, devises",
-   "quand": "Samedi et dimanche"
+   "idee": "Le seul examen propre qui reste : faire tourner le robot, sans rien changer, sur l'année 2026, jamais regardée pour lui (sauf l'or), avec la règle de lecture écrite avant. Peu de crédit, aucun temps pour toi. On ne peut le faire qu'une fois.",
+   "famille": "Robot",
+   "quand": "Si tu es d'accord"
   },
   {
    "id": "a04",
    "type": "afaire",
    "ordre": 4,
-   "idee": "Si les deux échouent : te dire franchement s'il reste une piste sérieuse du côté des règles de prix, ou s'il vaut mieux garder ton crédit",
-   "famille": "—",
-   "quand": "Dimanche"
+   "idee": "La démo, quand tu auras le temps : elle sert à mesurer les vrais frais chez FP, pas à juger le gain",
+   "famille": "Robot",
+   "quand": "Sans urgence"
   },
   {
    "id": "jour",
    "type": "jour",
    "date": "2026-11-20",
-   "texte": "Le crible a tourné : 1 388 règles classiques (moyennes mobiles, MACD, RSI, Bollinger, Ichimoku, chocs brutaux, indicateurs maison, mélanges avec un filtre) sur 15 marchés, soit 5 millions de trades simulés. Résultat : aucune règle ne tient. Sur 2013-2018, deux seulement passaient le tri (une sur la livre, une sur l'euro) ; les deux échouent sur 2019-2021. La dernière piste crypto échoue aussi. Depuis lundi : 35 idées étudiées (28 testées, 7 écartées faute de données) plus le crible, rien de trouvé pour l'instant.",
-   "direction": "Ce que le crible apprend : avant frais, l'ensemble de ces règles ne fait pas mieux que le hasard, et les frais font le reste. Un indicateur classique, seul ou avec un filtre, ne donne donc pas d'avantage sur ces marchés. Une nuance : le crible ne laisse passer que du très solide. Un petit avantage, comme ceux des règles du robot, ne se trouve pas en ratissant large mais avec une idée précise, testée à part. Le crible en laisse entrevoir deux, juste sous sa barre, et ce sont des chocs brutaux comme tu le voyais : sur les indices, le prix revient en arrière après un mouvement brutal d'une heure ; sur les devises, un mouvement brutal de 4 heures dans le sens de la tendance continue pendant 3 jours. Je les teste samedi, chacune à part, sur des années que le crible n'a pas regardées pour elles. Franchement : repérées après coup parmi 26 000 combinaisons, elles ont plus de chances d'échouer que de tenir.",
-   "rythme": "Vendredi : environ 10 % du crédit de la semaine (construction et vérification du crible ; le calcul lui-même ne coûte rien). Samedi : deux tests, nettement moins."
+   "texte": "Rien de nouveau trouvé. Le crible (1 388 règles classiques sur 15 marchés) : aucune ne tient. Les deux dernières pistes qu'il laissait entrevoir (chocs brutaux sur les indices et sur les devises) ont été testées ce soir sur 2019-2021 : elles perdent toutes les deux. Depuis lundi : 37 idées étudiées (30 testées, 7 écartées faute de données) plus le crible, zéro trouvée.",
+   "direction": "Mon avis franc (chiffres relus par deux vérifications indépendantes). 1) Chercher encore de nouvelles règles, c'est devenu courir après une illusion. Ce n'est ni un manque de temps ni un manque de moyens : avant frais, les règles classiques font exactement ce que ferait le hasard, il n'y a donc rien à amplifier. Aucune règle nouvelle n'a été gardée depuis le 10 novembre, sur environ 29 000 essais au total. La direction n'était pas une erreur : il fallait la vérifier, et elle est maintenant fermée, preuve à l'appui. 2) Doubler le compte chaque mois est hors d'atteinte : il faudrait des trades environ quatre fois meilleurs que ceux du robot. La recherche devait les trouver, elle n'en a trouvé aucun. 3) Le robot lui-même n'est ni une illusion ni une certitude. Sur 2022-2025, années qui n'ont pas servi à le construire, ses dix règles gagnent ensemble chacune des 4 années. Mais elles ont été choisies parmi des milliers d'essais, leur avantage a fondu d'environ 40 % entre la construction et la vérification (65 à 80 % sur les cryptos), six règles sur dix peuvent n'être que de la chance, les frais sont estimés et aucun trade réel n'existe. Mon estimation : à peu près une chance sur deux qu'il gagne vraiment après les frais réels, et dans ce cas le quart ou la moitié des chiffres simulés. 4) Le paramètre qui compte le plus aujourd'hui, c'est la mise. Avec le plan à 7 % par trade, la simulation du labo (1 000 € au départ puis 1 000 € par mois) donne 3 chances sur 4 de voir le compte fondre de moitié en trois ans si le robot ne vaut que la moitié du papier, et 9 sur 10 s'il ne vaut rien. Avec le plan à 3 % et arrêt automatique : 1 chance sur 40, et 1 sur 14. Si l'avantage réel n'est qu'un quart du papier, les deux plans gagnent pareil la première année (environ +1 800 €). C'est ta décision, mais tu dois le savoir.",
+   "rythme": "Recherche mise en pause ce soir pour garder ton crédit : elle ne tourne plus tous les jours. Un mot de ta part et elle reprend."
   },
   {
    "id": "i001",
