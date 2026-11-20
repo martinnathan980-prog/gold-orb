@@ -55,31 +55,38 @@ are the costly part; the idea agents are cheap.
 7. Final message in the conversation: three lines at most, in plain French, with the sheet's link. Everything else
    goes on the sheet.
 
-## The next batch (written 2026-11-19 evening for 2026-11-20, after the user's new instruction)
-**The user's instruction of 2026-11-19 evening (it replaces the plan written that afternoon):** only markets that
-trade almost round the clock and move all the time (gold, euro-dollar, oil ...), with price rules: sudden shocks,
-existing indicators, new indicators, mixes of indicators. No shares, no exotic data. The demo is for later: do not
-bring it up. Credit: about 10 % of the weekly allowance a day at most (he was at 80 % on Thursday evening; it renews
-on Saturday 00:00 Paris), so keep the lead's own steps few and add no review beyond what the scripts hold.
-The plan is `lab/explore/lead/DIRECTION4.md` (a pre-registered SCAN of about 1,390 rules on 15 markets, in three
-stages), not eight hand-written ideas. On 2026-11-20:
-1. Bring `<scratchpad>/explore_wt` to the pushed head; run the kit's self-test (`231/231`).
-2. Launch together: (a) idea 064, `Workflow({scriptPath: "<scratchpad>/wf/ideas4.js", args: {selftest: "...",
-   ideas: [{num: "064", slug: "coinbase_premium_long_btc_eth", row: "IDEAS.md"}]}})`; (b) the scan's build,
-   `Workflow({scriptPath: "<scratchpad>/wf/scan_build.js", args: {selftest: "..."}})` (copies in git:
-   `lead/batch_ideas.js`, `lead/batch_scan_build.js`): a builder writes `lab/explore/scan/` on synthetic bars only,
-   a verifier attacks it, at most two rounds of repair.
-3. When the build is verified: copy `scan/` from the worktree into the main checkout, read `GRAMMAR.md` and the
-   verifier's last report, commit the code WITH `scan/rules.csv` and its sha256 (the grammar is frozen by that
-   commit), push. Only then start the real scan, detached: `bash lab/explore/scan/run_all.sh` (discovery on bars
-   before 2019, selection, confirmation on 2019-2021, report; it resumes after a restart; it costs no credit).
-4. Merge 064 as usual (re-run, ledger, status; if it passes: its two conditions, then the look with the extra bar).
-5. When the scan has finished: commit its summaries (`discovery_summary.json`, `frozen_candidates.json`,
-   `confirmation.json`), one ledger line (running total + the number of rule-unit cells), and write on the sheet, in
-   plain French: how many rules, how many candidates, how many confirmed, which. Each confirmed candidate becomes an
-   idea (number, row in IDEAS.md, declaration) and goes through the ordinary protocol on the following days.
-The scout's remaining ideas (outside data) are set aside by the user's instruction: see the note at the top of
-IDEAS.md. What the archives already hold on these markets: `lead/archive_map_2026-11-19.json`.
+## The next batch (written 2026-11-20 for 2026-11-21, after the scan)
+**The user's standing instructions (2026-11-19 evening, still in force):** only markets that trade almost round the
+clock and move all the time (gold, euro-dollar, oil ...), with price rules: sudden shocks, existing indicators, new
+indicators, mixes of indicators. No shares, no exotic data. The demo is for later: do not bring it up. Credit: about
+10 % of the weekly allowance a day AT MOST (the week renews on Saturday 00:00 Paris); keep the lead's own steps few.
+**Where things stand:** the scan of `lead/DIRECTION4.md` ran on 2026-11-20 (1,388 rules, 15 markets): 2 candidates,
+0 confirmed; before costs the whole grammar is what chance gives. Results: `scan/results/`, LEDGER.md note of
+2026-11-20. Idea 064 failed. The scan allows exactly two follow-ups, both post hoc: ideas 065 and 066 (IDEAS.md).
+On 2026-11-21:
+1. Bring `<scratchpad>/explore_wt` to the pushed head (it must hold `lab/explore/scan/`); run the kit's self-test
+   (`231/231`).
+2. Launch the two ideas in one batch: `Workflow({scriptPath: "<scratchpad>/wf/ideas4.js", args: {selftest: "...",
+   ideas: [{num: "065", slug: "indices_fade_hourly_shock", row: "IDEAS.md"}, {num: "066", slug:
+   "fx_follow_h4_shock_with_trend", row: "IDEAS.md"}], note: "..."}})` (copy in git: `lead/batch_ideas.js`). The note
+   must say: build the signals with the scan's own code (`scan.frames`, `scan.signals`, run with
+   `PYTHONPATH=lab/explore`, never run a file of `scan/` as a script); first reproduce the scan's discovery row given
+   in the idea's row; compute CONDITION 1 (the main's trades entered in 2019-2021 alone against DIRECTION4 section 5)
+   and write `fresh_years.json`; take no validation look.
+3. Re-run each `run.py`, check the reproduced discovery row and condition 1 yourself, merge (folder, ledger line with
+   `judge.ledger_add`, IDEAS status, commit, push).
+4. Only if an idea passes condition 1 AND the ordinary in-sample verdict: build its 2022-2025 hourly bars with care
+   (`~/explore_data/h1_val/<key>.parquet`, 2022-2025 only, logged in `lab/results/val_access.log`), write
+   `val_declared.json`, take the one look. A survivor on indices or currencies is then compared with the robot's ten
+   rules (weekly correlation <= 0.30).
+5. Write the sheet (the two rows, the day's row, what is left to do) and the three-line message.
+6. If both fail: say so plainly on the sheet. The search on price rules has then covered textbook rules (the scan),
+   the clock and the neighbours (rounds 1 to 6, `lead/archive_map_2026-11-19.json`) and this week's 35 ideas; do not
+   start a second scan by reflex. Read the archive map first: a scan of clock rules and of rules built from two
+   markets is worth pre-registering only for the markets the earlier rounds did not cover (the 8 pairs outside the
+   fixings, oil, silver, the DAX), and only if the lead can name why an effect larger than twice its cost should be
+   there. Otherwise tell the user that the search has reached its end at this level and propose to keep his credit.
+The scout's remaining ideas (outside data) stay set aside by the user's instruction: see the top of IDEAS.md.
 Delete this section once done and write the next one.
 
 ## Rules that do not move

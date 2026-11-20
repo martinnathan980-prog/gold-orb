@@ -122,6 +122,23 @@ Running total of configurations (before this search + this search): **29079**
     where the robot's ten rules come from; holds under one hour (closed earlier by costs); tuned parameters (refused
     on purpose).
   - The ledger's running total grows by the 26,336 rule-unit cells: every later deflated-Sharpe label is weak.
+  - **What the sieve can and cannot see.** The robot's own kind of rule is in the grammar: Donchian 20 on H4 on
+    gold with a 24-hour hold (T06|H4|F0|24h on xauusd) shows n 496, PF 1.15, t 1.14, 5 years of 6 up before 2019. A
+    real but modest edge of that size is far under the sieve's bars (t >= 3.0 for one market, 2.5 for a basket),
+    which 26,336 cells make necessary. So the scan says "no strong effect in textbook rules", not "no modest effect":
+    modest effects are found by narrow ideas with few configurations, as rounds 1 to 6 found the robot's rules.
+  - **Two follow-ups, decided before any look at their 2019-2021 results** (the scan read those years for its two
+    frozen candidates only). They are the two places where the discovery tables show a pattern across neighbours
+    rather than a lone cell, both under the bars, both POST HOC (picked from 26,336 rule-units):
+    (1) indices, fade an hourly move beyond 3 sd, hold 24 h: K03|H1|F0|24h on IDX4 n 1326, PF 1.21, t 1.77, 5 years
+    of 6, each index positive (PF 1.03 to 1.51); the variant against the H4 trend PF 1.39, t 2.36, 6 years of 6; the
+    6-hour hold loses (PF 0.94); the same rule loses on the currencies (PF 0.84) and on metals and oil (PF 0.88); 73
+    of the 175 eligible rule-units are index units, 37 of them hourly fades. (2) currencies, follow a 4-hour move
+    beyond 3 or 4 sd in the direction of the H4 trend, hold 72 h: K01|H4|F1|72h on FX8 n 616, PF 1.29, t 1.95, 5
+    years of 6; K02 (4 sd) n 267, PF 1.54, t 2.35, 7 pairs of 8 positive; without the trend filter PF 1.21 and 1.31,
+    against the trend it loses; the 24-hour hold is weaker; on H1 following a shock loses. They become ideas 065 and
+    066 (IDEAS.md), each judged first on the trades entered in 2019-2021 alone with the scan's confirmation bars
+    (DIRECTION4 section 5), then by the ordinary protocol. No other follow-up of the scan is allowed.
 
 | N | Date | Idea | Markets | Data (in-sample years) | Configs | Verdict | Key figures (main configuration) |
 |---|---|---|---|---|---|---|---|
