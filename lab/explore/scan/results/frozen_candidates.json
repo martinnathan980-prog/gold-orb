@@ -1,0 +1,113 @@
+{
+ "candidates": [
+  {
+   "discovery": {
+    "PF": 1.538921,
+    "PF_stress": 1.484596,
+    "markets_pos_frac": 1.0,
+    "max_market_share": 1.0,
+    "mean_R": 0.05629,
+    "mean_R_gross": 0.067195,
+    "n": 451.0,
+    "n_days": 450.0,
+    "sibling_t_max": 1.344437,
+    "t": 3.134895,
+    "years_pos": 4.0
+   },
+   "markets": [
+    "gbpusd"
+   ],
+   "max_corr_with_picked": 0.0,
+   "order": 1,
+   "rule": "K01|H1|F0|24h",
+   "rule_idx": 741,
+   "stage": "single",
+   "unit": "gbpusd"
+  },
+  {
+   "discovery": {
+    "PF": 1.633896,
+    "PF_stress": 1.584517,
+    "markets_pos_frac": 1.0,
+    "max_market_share": 1.0,
+    "mean_R": 0.059242,
+    "mean_R_gross": 0.068704,
+    "n": 299.0,
+    "n_days": 299.0,
+    "sibling_t_max": 1.371139,
+    "t": 3.072551,
+    "years_pos": 6.0
+   },
+   "markets": [
+    "eurusd"
+   ],
+   "max_corr_with_picked": 0.0299,
+   "order": 2,
+   "rule": "T08|H1|F6|24h",
+   "rule_idx": 265,
+   "stage": "single",
+   "unit": "eurusd"
+  }
+ ],
+ "discovery_digests": {
+  "audusd": "811f3d2e5234fd10eb1b573cbe42bc471d49920b9e010462a2daac308a63d45e",
+  "eurjpy": "1f5ff654679bf1222cf4cea4ad0b127b8e3d89cd6a01d2c0c357e1062cc64e32",
+  "eurusd": "4c0b156a1abf475d27dc61bc5b49448ba1240549f32ca830e76c8aa402cc00ec",
+  "gbpusd": "d16158e11b88216a5bc703a534c3feece815241d8899802a12051c4a16cd5333",
+  "ger40": "2ea593e1cd538b607d9c4dc0b96e8d15fdd792a388828d7eed5f9e59f4c1f0d4",
+  "nzdusd": "241b0db6cd43cc23275127db924706992afb26680b445acaab8f10e553cf552a",
+  "oil": "040c67c2551ff2be5af8fba520a7ba1d832d727c93f6c141546c54062942e356",
+  "us100": "40e822cfffc15d9d03dccfa8a7063ada1d7b4c3aebd91da645dde915117a1e01",
+  "us30": "b508a9e0054a4c471acf9048fa7ba9657ffcc15397b355b02c89f79bc4748bd1",
+  "us500": "85464e86b03f6256826a771d5b45c84252ae61fa539e9241632424a871faaf0e",
+  "usdcad": "3a24a27d2db44ba28f8c03336775021ef0cc25ff7910fb3534a6f12e9323bd21",
+  "usdchf": "11ab0f140d4c16c24b2565a239929cfa10282f834a4229399b15a7597cb4149f",
+  "usdjpy": "982228dc895d3cd7e680f902cd1bc3305f3d05e386130cc02e32f7031630a93a",
+  "xagusd": "4f58a2dcb645e481b8591e605ff411eecc347c3a77d5c403160905e6d9bf63f8",
+  "xauusd": "d374a474b73bed5a3299d96262b196b374b84f9b5fbbfcc6e04cf5b0baeb866e"
+ },
+ "discovery_manifest": {
+  "frames": null,
+  "markets": [
+   "xauusd",
+   "xagusd",
+   "oil",
+   "eurusd",
+   "gbpusd",
+   "usdjpy",
+   "audusd",
+   "usdcad",
+   "usdchf",
+   "nzdusd",
+   "eurjpy",
+   "us100",
+   "us500",
+   "us30",
+   "ger40"
+  ],
+  "max_wait_h": null,
+  "mode": "trades",
+  "rules_sha256": "a7d90697971ddace9e292babefbe9c93d8f80d08f4edb518d1f3ccddbe0ed107",
+  "signals": null,
+  "source": "real (kit.data.load_bars, cut at the wall)",
+  "stage": "discovery",
+  "stop": [
+   "d20",
+   2.0
+  ],
+  "wall": "2019-01-01 00:00:00+00:00"
+ },
+ "n_eligible": 175,
+ "n_rule_units": 26336,
+ "nothing": false,
+ "rules_sha256": "a7d90697971ddace9e292babefbe9c93d8f80d08f4edb518d1f3ccddbe0ed107",
+ "skipped_for_correlation": [],
+ "thresholds": {
+  "corr_max": 0.6,
+  "max_baskets": 12,
+  "max_singles": 12,
+  "t_basket": 2.5,
+  "t_single": 3.0
+ },
+ "what": "DIRECTION4 section 4: frozen candidates for the confirmation on 2019-2021"
+}
