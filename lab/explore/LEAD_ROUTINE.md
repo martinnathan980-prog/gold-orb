@@ -79,6 +79,15 @@ realist, 2026-11-20):
 instead of S7) before any real money; (2) the one look at 2026 on the frozen ten-rule robot, with its reading written
 first (PROTOCOL_V2: under PF 1.0 against, 1.0 to 1.3 weak, 1.3 or more strong; gold 2026 to 5 November was already
 seen for D4H and ORX); (3) the demo, when he has time, read for fills and costs, not for profit. Do not push the demo.
+**The survey of commercial robots (2026-11-20 evening and 21 morning, at the user's request).** About 75 web researches and
+adversarial checks, the whole public MQL5 signal catalogue (3,794 real signals screened by a read-only script), 297
+Darwinex strategies, 348 robots of the MQL5 Market. Outcome: no robot is "sure"; what shows explosive gains is nearly
+always a grid or a martingale; what stands is two Darwinex strategies (SYO, SUG: about 11 to 14 % a year net over 8
+to 10 years), trend-following funds, and a handful of gold breakout robots with stops (Gold Trade Pro, SteadyRock,
+Dudu, Gold Reaper), proven on 2 to 4 years of a gold rally: the same family as the robot's own gold rules. The
+result is the user's private page "Robots à l'épreuve" (its link is not kept in this public repository); the raw
+notes are in `~/explore_data/robots_survey/` (out of git: they name third-party sellers). Sites that refuse automatic
+access (Myfxbook, FP Markets' site, FOLLOWME) were not read and must not be worked around.
 **If the user asks for the search to resume:** take only an idea that brings a new kind of information, with a
 written reason why an effect larger than twice its cost should be there; no second scan of price rules; no other
 follow-up of the scan. The scout's remaining ideas (outside data) stay set aside by his instruction of 2026-11-19.
